@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from '@/lib/prisma';
-import ServiceCard from "@/components/ServiceCard";
+import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 
 export default async function Home() {
   // Récupérer les services depuis la base de données
@@ -59,27 +59,138 @@ export default async function Home() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {sortedServices.map((service) => (
-              <ServiceCard
+              <Link 
                 key={service.id}
-                title={service.name}
-                description={service.shortDescription}
-                price={service.price}
-                promoPrice={service.promoPrice || undefined}
-                duration={`${service.duration} min`}
                 href={`/services/${service.slug}`}
-                image={service.mainImage || `/images/${service.slug}.jpg`}
-                isRecommended={service.featured}
-                badge={service.featured ? "⭐ Soin Signature" : undefined}
-                icon={
-                  service.featured ? (
-                    <span className="text-3xl">👑</span>
-                  ) : (
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                  )
-                }
-              />
+                className="group block h-full"
+              >
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 h-full flex flex-col min-h-[550px]">
+                  {/* Image/Header */}
+                  <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden flex-shrink-0">
+                    {/* Badge Soin Signature pour Hydro'Naissance uniquement */}
+                    {service.featured && (
+                      <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full shadow-lg">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Soin Signature</span>
+                      </div>
+                    )}
+                    {service.mainImage ? (
+                      <img 
+                        src={service.mainImage} 
+                        alt={service.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Sparkles className="w-20 h-20 text-[#d4b5a0]/40" />
+                      </div>
+                    )}
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#2c3e50]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                      <div className="p-6 text-white w-full">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Découvrir ce soin</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badge promo */}
+                    {service.promoPrice && (
+                      <div className="absolute top-4 right-4">
+                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                          -{Math.round((1 - service.promoPrice / service.price) * 100)}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 flex-1 flex flex-col">
+                    <h3 className="text-2xl font-bold text-[#2c3e50] mb-3 group-hover:text-[#d4b5a0] transition-colors">
+                      {service.name}
+                    </h3>
+                    
+                    <p className="text-[#2c3e50]/70 mb-4 line-clamp-2">
+                      {service.shortDescription}
+                    </p>
+
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2 text-sm text-[#2c3e50]/60">
+                        <Clock className="w-4 h-4" />
+                        <span>{service.duration} min</span>
+                      </div>
+                      
+                      {service.category && (
+                        <span className="text-xs px-3 py-1 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-full">
+                          {service.category}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Prix */}
+                    <div className="border-t pt-4 mt-auto">
+                      {service.promoPrice ? (
+                        <div>
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-3xl font-bold text-[#d4b5a0]">
+                              {service.promoPrice}€
+                            </span>
+                            <span className="text-xl line-through text-[#2c3e50]/40">
+                              {service.price}€
+                            </span>
+                          </div>
+                          <div className="mt-1">
+                            <span className="text-xs text-green-600 font-semibold uppercase tracking-wider">
+                              Tarif de lancement
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-3xl font-bold text-[#2c3e50]">
+                            {service.price}€
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Forfait si disponible */}
+                      {(service.forfaitPrice || service.forfaitPromo) && (
+                        <div className="mt-3 pt-3 border-t border-[#d4b5a0]/20">
+                          <div className="text-xs text-[#2c3e50]/60 mb-1">Forfait 4 séances</div>
+                          <div className="flex items-baseline gap-2">
+                            {service.forfaitPromo ? (
+                              <>
+                                <span className="text-lg font-bold text-[#d4b5a0]">
+                                  {service.forfaitPromo}€
+                                </span>
+                                {service.forfaitPrice && (
+                                  <span className="text-sm line-through text-[#2c3e50]/40">
+                                    {service.forfaitPrice}€
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-lg font-bold text-[#2c3e50]">
+                                {service.forfaitPrice}€
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <div className="mt-6 flex items-center justify-between">
+                      <span className="text-[#d4b5a0] font-medium group-hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                        Voir les détails
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
