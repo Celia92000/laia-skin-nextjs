@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  password      String
+  name          String
+  phone         String?
+  role          String        @default("client") // client or admin
+  loyaltyPoints Int           @default(0)
+  totalSpent    Float         @default(0)
+  birthDate     DateTime?
+  skinType      String?       // normal, dry, oily, combination, sensitive
+  allergies     String?
+  medicalNotes  String?
+  preferences   String?
+  adminNotes    String?       // Notes privées de l'admin
+  lastVisit     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  reservations  Reservation[]
+  loyaltyProfile LoyaltyProfile?
+  loyaltyHistory LoyaltyHistory[]
+}
+
+model Reservation {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  services        String   // JSON array of services
+  packages        String   // JSON object of packages
+  date            DateTime
+  time            String
+  totalPrice      Float
+  status          String   @default("pending") // pending, confirmed, cancelled, completed
+  source          String   @default("site") // site, planity, treatwell, appel, reseaux
+  notes           String?
+  
+  // Informations de paiement
+  paymentStatus   String   @default("unpaid") // unpaid, paid, partial
+  paymentDate     DateTime?
+  paymentAmount   Float?
+  paymentMethod   String?  // cash, card, transfer
+  invoiceNumber   String?
+  paymentNotes    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique @default("") // URL pour la page individuelle
+  name            String
+  shortDescription String   @default("") // Description courte pour les cartes
+  description     String   // Description complète
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  keywords        String?  // Mots-clés séparés par des virgules
+  
+  // Prix
+  price           Float
+  promoPrice      Float?
+  forfaitPrice    Float?
+  forfaitPromo    Float?
+  
+  // Détails
+  duration        Int      // in minutes
+  benefits        String?  // JSON array des bénéfices
+  process         String?  // JSON array des étapes du soin
+  recommendations String?  // Recommandations post-soin
+  contraindications String? // Contre-indications
+  
+  // Médias
+  mainImage       String?  // Image principale
+  gallery         String?  // JSON array d'URLs d'images
+  videoUrl        String?  // Vidéo YouTube ou autre
+  
+  // Options
+  canBeOption     Boolean  @default(false) // Peut être ajouté en option
+  category        String?  // hydro, beauty, wellness, etc.
+  order           Int      @default(0) // Ordre d'affichage
+  active          Boolean  @default(true)
+  featured        Boolean  @default(false) // Mis en avant
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LoyaltyProfile {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id])
+  
+  // Compteurs pour les cartes de fidélité
+  individualServicesCount Int      @default(0) // Nombre de soins individuels
+  packagesCount          Int      @default(0) // Nombre de forfaits
+  
+  // Données générales
+  totalSpent             Float    @default(0)
+  availableDiscounts     String   @default("[]") // JSON array des réductions disponibles
+  lastVisit              DateTime?
+  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model LoyaltyHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  
+  action        String   // SERVICE_COMPLETED, PACKAGE_COMPLETED, DISCOUNT_USED, BIRTHDAY_DISCOUNT
+  points        Int      @default(0)
+  description   String
+  reservationId String?
+  
+  createdAt     DateTime @default(now())
+}

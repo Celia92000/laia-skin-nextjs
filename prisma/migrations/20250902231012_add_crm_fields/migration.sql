@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "adminNotes" TEXT;
+ALTER TABLE "User" ADD COLUMN "allergies" TEXT;
+ALTER TABLE "User" ADD COLUMN "birthDate" DATETIME;
+ALTER TABLE "User" ADD COLUMN "lastVisit" DATETIME;
+ALTER TABLE "User" ADD COLUMN "medicalNotes" TEXT;
+ALTER TABLE "User" ADD COLUMN "preferences" TEXT;
+ALTER TABLE "User" ADD COLUMN "skinType" TEXT;

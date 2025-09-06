@@ -1,0 +1,98 @@
+import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
+import "./globals.css";
+
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-inter"
+});
+
+const playfair = Playfair_Display({ 
+  subsets: ["latin"],
+  variable: "--font-playfair"
+});
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
+export const metadata: Metadata = {
+  metadataBase: new URL('https://laia-skin.fr'),
+  title: {
+    default: "LAIA SKIN Institut - Soins Esthétiques Haut de Gamme à Paris",
+    template: "%s | LAIA SKIN Institut"
+  },
+  description: "Institut de beauté spécialisé dans les soins innovants du visage : HydroFacial, BB Glow, Microneedling, LED Thérapie. Réservation en ligne 24/7. Paris.",
+  keywords: ["institut beauté Paris", "soin visage", "hydrofacial", "bb glow", "led thérapie", "microneedling", "esthétique", "LAIA SKIN", "soins anti-âge", "rajeunissement visage"],
+  authors: [{ name: "LAIA SKIN Institut" }],
+  creator: "LAIA SKIN Institut",
+  publisher: "LAIA SKIN Institut",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "LAIA SKIN Institut - Soins Esthétiques Premium",
+    description: "Découvrez nos soins innovants pour révéler votre beauté naturelle",
+    url: "https://laia-skin.fr",
+    siteName: "LAIA SKIN Institut",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "LAIA SKIN Institut de Beauté",
+      },
+    ],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LAIA SKIN Institut",
+    description: "Institut de beauté premium à Paris",
+    images: ["/twitter-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://laia-skin.fr",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="fr" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <JsonLd />
+      </head>
+      <body
+        className={`${inter.className} antialiased`}
+      >
+        <Header />
+        {children}
+        <Footer />
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,1870 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon } from "lucide-react";
+import AuthGuard from "@/components/AuthGuard";
+import AdminCalendarEnhanced from "@/components/AdminCalendarEnhanced";
+import AdminServicesTab from "@/components/AdminServicesTab";
+import AdminDisponibilitesTab from "@/components/AdminDisponibilitesTab";
+import AdminDashboardOptimized from "@/components/AdminDashboardOptimized";
+import { InvoiceButton } from "@/components/InvoiceGenerator";
+import PaymentSection from "@/components/PaymentSection";
+import { logout } from "@/lib/auth-client";
+import { servicePricing, getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
+
+interface Reservation {
+  id: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  phone?: string;
+  services: string[];
+  packages: {[key: string]: string};
+  date: string;
+  time: string;
+  totalPrice: number;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  paymentStatus?: string;
+  paymentDate?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
+  invoiceNumber?: string;
+  paymentNotes?: string;
+  source?: string;
+  modifiedAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  loyaltyPoints: number;
+  totalSpent: number;
+  reservations: number;
+  lastVisit?: string;
+  birthdate?: string;
+  individualSoins?: number;
+  forfaits?: number;
+}
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [useOptimizedView, setUseOptimizedView] = useState(false); // Dashboard classique pour l'instant
+  const [activeTab, setActiveTab] = useState("planning");
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loyaltyProfiles, setLoyaltyProfiles] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [paymentDateFilter, setPaymentDateFilter] = useState("");
+  const [showNewReservationModal, setShowNewReservationModal] = useState(false);
+  const [showEditReservationModal, setShowEditReservationModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [editingReservation, setEditingReservation] = useState<any>(null);
+  const [newReservation, setNewReservation] = useState({
+    client: '',
+    email: '',
+    phone: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '09:00',
+    services: [] as string[],
+    notes: ''
+  });
+
+  const services = {
+    "hydro-naissance": "Hydro'Naissance",
+    "hydro": "Hydro'Cleaning",
+    "renaissance": "Renaissance",
+    "bbglow": "BB Glow",
+    "led": "LED Thérapie"
+  };
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (!token || !user) {
+        router.push('/login');
+        return;
+      }
+
+      const userInfo = JSON.parse(user);
+      if (userInfo.role !== 'admin') {
+        router.push('/espace-client');
+        return;
+      }
+
+      fetchReservations();
+      fetchClients();
+      fetchLoyaltyProfiles();
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const fetchReservations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/reservations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReservations(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des réservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/clients', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setClients(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des clients:', error);
+    }
+  };
+
+  const fetchLoyaltyProfiles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/loyalty', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLoyaltyProfiles(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des profils de fidélité:', error);
+    }
+  };
+
+  const applyDiscount = async (userId: string, amount: number, reason: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/loyalty', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId, discountAmount: amount, reason })
+      });
+
+      if (response.ok) {
+        alert(`Réduction de ${amount}€ appliquée avec succès !`);
+        fetchLoyaltyProfiles();
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'application de la réduction:', error);
+    }
+  };
+
+  const updateReservationStatus = async (reservationId: string, status: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        // Mettre à jour la liste localement
+        setReservations(prev => prev.map(r => 
+          r.id === reservationId ? { ...r, status } : r
+        ));
+        
+        // Si le soin est validé, les points sont automatiquement ajoutés
+        if (status === 'completed') {
+          fetchClients(); // Rafraîchir les données clients
+          fetchLoyaltyProfiles(); // Rafraîchir les profils de fidélité
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+    }
+  };
+
+  const addBonusPoints = async (clientId: string, points: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/clients/${clientId}/bonus`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ points })
+      });
+
+      if (response.ok) {
+        // Rafraîchir les données
+        fetchClients();
+        alert(`${points} points bonus ajoutés avec succès !`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout des points:', error);
+    }
+  };
+
+  const openEditModal = (reservation: Reservation) => {
+    setEditingReservation({
+      id: reservation.id,
+      client: reservation.userName || '',
+      email: reservation.userEmail || '',
+      phone: reservation.phone || '',
+      date: reservation.date.split('T')[0],
+      time: reservation.time,
+      services: reservation.services,
+      notes: reservation.notes || '',
+      totalPrice: reservation.totalPrice
+    });
+    setShowEditReservationModal(true);
+  };
+
+  const updateReservation = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`/api/admin/reservations/${editingReservation.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          date: editingReservation.date,
+          time: editingReservation.time,
+          services: editingReservation.services,
+          notes: editingReservation.notes,
+          totalPrice: editingReservation.totalPrice
+        })
+      });
+
+      if (response.ok) {
+        setShowEditReservationModal(false);
+        setEditingReservation(null);
+        fetchReservations();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error);
+    }
+  };
+
+  const cancelReservation = async (reservationId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancelledAt: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        fetchReservations();
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation:', error);
+    }
+  };
+
+  const createNewReservation = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Calculer le prix total en fonction des services sélectionnés
+      const totalPrice = calculateTotalPrice(newReservation.services, true); // true pour tarif lancement
+
+      const response = await fetch('/api/admin/reservations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...newReservation,
+          totalPrice,
+          status: 'confirmed',
+          source: 'admin'
+        })
+      });
+
+      if (response.ok) {
+        setShowNewReservationModal(false);
+        setNewReservation({
+          client: '',
+          email: '',
+          phone: '',
+          date: new Date().toISOString().split('T')[0],
+          time: '09:00',
+          services: [],
+          notes: ''
+        });
+        fetchReservations();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création de la réservation:', error);
+    }
+  };
+
+  const recordPayment = async (reservationId: string, appliedDiscount?: { type: string, amount: number }) => {
+    const amountInput = document.getElementById(`amount-${reservationId}`) as HTMLInputElement;
+    const methodSelect = document.getElementById(`method-${reservationId}`) as HTMLSelectElement;
+    const invoiceInput = document.getElementById(`invoice-${reservationId}`) as HTMLInputElement;
+    const notesInput = document.getElementById(`notes-${reservationId}`) as HTMLInputElement;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/reservations/${reservationId}/payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amountInput.value),
+          method: methodSelect.value,
+          invoiceNumber: invoiceInput.value,
+          notes: notesInput.value,
+          appliedDiscount: appliedDiscount
+        })
+      });
+
+      if (response.ok) {
+        fetchReservations();
+        fetchLoyaltyProfiles();
+        alert('Paiement enregistré avec succès !');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement du paiement:', error);
+    }
+  };
+
+  const exportPayments = () => {
+    const headers = ['Date', 'Client', 'Services', 'Montant', 'Méthode', 'Facture', 'Notes'];
+    const rows = reservations
+      .filter(r => r.paymentStatus === 'paid')
+      .map(r => [
+        new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
+        r.userName || '',
+        JSON.parse(r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
+        `${r.paymentAmount}€`,
+        r.paymentMethod === 'cash' ? 'Espèces' : r.paymentMethod === 'card' ? 'Carte' : 'Virement',
+        r.invoiceNumber || '',
+        r.paymentNotes || ''
+      ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const getLoyaltyLevel = (points: number, totalSpent: number) => {
+    if (points >= 400 || totalSpent >= 1200) {
+      return { name: "VIP Diamond 💎", color: "text-purple-600" };
+    }
+    if (points >= 250 || totalSpent >= 750) {
+      return { name: "Gold ⭐", color: "text-yellow-600" };
+    }
+    if (points >= 100 || totalSpent >= 300) {
+      return { name: "Silver 🌟", color: "text-gray-600" };
+    }
+    return { name: "Découverte", color: "text-[#d4b5a0]" };
+  };
+
+  // Filtrer les réservations par date pour le planning
+  const todayReservations = reservations.filter(r => 
+    r.date.split('T')[0] === selectedDate
+  ).sort((a, b) => a.time.localeCompare(b.time));
+
+  // Statistiques pour le dashboard
+  const stats = {
+    totalReservations: reservations.length,
+    pendingReservations: reservations.filter(r => r.status === 'pending').length,
+    completedToday: reservations.filter(r => 
+      r.status === 'completed' && r.date.split('T')[0] === new Date().toISOString().split('T')[0]
+    ).length,
+    totalRevenue: reservations.filter(r => r.status === 'completed')
+      .reduce((sum, r) => sum + r.totalPrice, 0)
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0]"></div>
+      </div>
+    );
+  }
+
+  // Afficher le nouveau dashboard optimisé avec les données
+  if (useOptimizedView) {
+    return (
+      <AuthGuard requireAdmin={true}>
+        <AdminDashboardOptimized 
+          reservations={reservations}
+          clients={clients}
+          services={services}
+        />
+      </AuthGuard>
+    );
+  }
+
+  // Dashboard classique
+  return (
+    <AuthGuard requireAdmin={true}>
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pt-32 pb-20">
+        <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-[#2c3e50] mb-2">
+                Tableau de Bord Admin
+              </h1>
+              <p className="text-[#2c3e50]/70">Gérez vos réservations et vos clients</p>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                router.push('/');
+              }}
+              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Réservations totales</p>
+              <p className="text-2xl font-bold text-[#2c3e50]">{stats.totalReservations}</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">En attente</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pendingReservations}</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Terminés aujourd'hui</p>
+              <p className="text-2xl font-bold text-green-600">{stats.completedToday}</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Revenus totaux</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.totalRevenue}€</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab("planning")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "planning"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Planning du jour
+          </button>
+          <button
+            onClick={() => setActiveTab("validation")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "validation"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Validation Soins
+          </button>
+          <button
+            onClick={() => setActiveTab("paiements")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "paiements"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Paiements
+          </button>
+          <button
+            onClick={() => setActiveTab("fidelite")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "fidelite"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Gestion Fidélité
+          </button>
+          <button
+            onClick={() => setActiveTab("clients")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "clients"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Tous les Clients
+          </button>
+          <button
+            onClick={() => setActiveTab("crm")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "crm"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            CRM Clients
+          </button>
+          <button
+            onClick={() => setActiveTab("services")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "services"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Gestion Services
+          </button>
+          <button
+            onClick={() => setActiveTab("disponibilites")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "disponibilites"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Disponibilités
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {activeTab === "planning" && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
+                  Planning & Calendrier
+                </h2>
+                <button
+                  onClick={() => setShowNewReservationModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Nouvelle réservation
+                </button>
+              </div>
+              
+              <AdminCalendarEnhanced 
+                reservations={reservations
+                  .filter(r => r.status !== 'cancelled') // Ne pas afficher les réservations annulées dans le calendrier
+                  .map(r => ({
+                    ...r,
+                    userName: r.userName || 'Client',
+                  }))}
+                onDateSelect={(date) => setSelectedDate(date)}
+              />
+
+              {/* Tableau des réservations avec toutes les infos */}
+              <div className="mt-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-[#2c3e50]">Toutes les réservations</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setViewMode('cards')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        viewMode === 'cards' 
+                          ? 'bg-[#d4b5a0] text-white' 
+                          : 'bg-[#d4b5a0]/10 text-[#2c3e50] hover:bg-[#d4b5a0]/20'
+                      }`}
+                    >
+                      <Grid3x3 className="w-4 h-4 inline mr-1" />
+                      Cartes
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${
+                        viewMode === 'table' 
+                          ? 'bg-[#d4b5a0] text-white' 
+                          : 'bg-[#d4b5a0]/10 text-[#2c3e50] hover:bg-[#d4b5a0]/20'
+                      }`}
+                    >
+                      <List className="w-4 h-4 inline mr-1" />
+                      Tableau
+                    </button>
+                  </div>
+                </div>
+
+                {/* Vue en cartes */}
+                {viewMode === 'cards' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {reservations.map((reservation) => (
+                      <div 
+                        key={reservation.id} 
+                        className="bg-white border border-[#d4b5a0]/20 rounded-xl p-5 hover:shadow-lg transition-all cursor-pointer"
+                        onClick={() => setSelectedReservation(reservation)}
+                      >
+                        {/* En-tête avec statut */}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Calendar className="w-4 h-4 text-[#d4b5a0]" />
+                              <span className="font-semibold text-[#2c3e50]">
+                                {new Date(reservation.date).toLocaleDateString('fr-FR', { 
+                                  weekday: 'short', 
+                                  day: 'numeric', 
+                                  month: 'short' 
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-[#2c3e50]/60" />
+                              <span className="text-lg font-bold text-[#2c3e50]">{reservation.time}</span>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            reservation.status === 'completed' ? 'bg-green-100 text-green-600' :
+                            reservation.status === 'confirmed' ? 'bg-blue-100 text-blue-600' :
+                            reservation.status === 'cancelled' ? 'bg-red-100 text-red-600' :
+                            'bg-yellow-100 text-yellow-600'
+                          }`}>
+                            {reservation.status === 'completed' ? '✓ Terminé' :
+                             reservation.status === 'confirmed' ? 'Confirmé' :
+                             reservation.status === 'cancelled' ? 'Annulé' :
+                             'En attente'}
+                          </span>
+                        </div>
+
+                        {/* Informations client */}
+                        <div className="bg-[#fdfbf7] rounded-lg p-3 mb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="w-4 h-4 text-[#d4b5a0]" />
+                            <span className="font-semibold text-[#2c3e50]">
+                              {reservation.userName || 'Client'}
+                            </span>
+                          </div>
+                          {reservation.userEmail && (
+                            <div className="flex items-center gap-2 text-sm text-[#2c3e50]/70">
+                              <Mail className="w-3 h-3" />
+                              <span>{reservation.userEmail}</span>
+                            </div>
+                          )}
+                          {reservation.phone && (
+                            <div className="flex items-center gap-2 text-sm text-[#2c3e50]/70 mt-1">
+                              <Phone className="w-3 h-3" />
+                              <span>{reservation.phone}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Services */}
+                        <div className="mb-3">
+                          <div className="text-xs text-[#2c3e50]/60 mb-1">Services</div>
+                          <div className="flex flex-wrap gap-1">
+                            {reservation.services.map((serviceId: string) => (
+                              <span 
+                                key={serviceId} 
+                                className="px-2 py-1 bg-[#d4b5a0]/10 rounded-full text-xs font-medium text-[#2c3e50]"
+                              >
+                                {services[serviceId as keyof typeof services]}
+                                {reservation.packages[serviceId] === 'forfait' && ' 📦'}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Notes si présentes */}
+                        {reservation.notes && (
+                          <div className="mb-3 p-2 bg-yellow-50 rounded-lg">
+                            <div className="text-xs text-[#2c3e50]/60 mb-1">Notes</div>
+                            <p className="text-sm text-[#2c3e50] line-clamp-2">{reservation.notes}</p>
+                          </div>
+                        )}
+
+                        {/* Prix et paiement */}
+                        <div className="flex justify-between items-center pt-3 border-t border-[#d4b5a0]/10">
+                          <div className="flex items-center gap-2">
+                            <Euro className="w-4 h-4 text-[#d4b5a0]" />
+                            <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                          </div>
+                          {reservation.paymentStatus && (
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              reservation.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' :
+                              reservation.paymentStatus === 'partial' ? 'bg-orange-100 text-orange-600' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {reservation.paymentStatus === 'paid' ? '✓ Payé' :
+                               reservation.paymentStatus === 'partial' ? 'Partiel' :
+                               'Non payé'}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Source */}
+                        <div className="mt-2 text-xs text-[#2c3e50]/50 text-center">
+                          {reservation.source === 'site' && '🌐 Site web'}
+                          {reservation.source === 'admin' && '👤 Admin'}
+                          {reservation.source === 'planity' && '📱 Planity'}
+                          {reservation.source === 'treatwell' && '💜 Treatwell'}
+                          {reservation.source === 'appel' && '📞 Appel'}
+                          {reservation.source === 'reseaux' && '📲 Réseaux'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#d4b5a0]/20">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Date/Heure</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Client</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Services</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Source</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Statut</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Prix</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reservations.map((reservation) => (
+                        <tr key={reservation.id} className="border-b border-gray-100 hover:bg-[#fdfbf7] transition-colors">
+                          <td className="py-3 px-4">
+                            <div>
+                              <div className="font-medium text-[#2c3e50]">
+                                {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                              </div>
+                              <div className="text-sm text-[#2c3e50]/60">{reservation.time}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <div className="font-medium text-[#2c3e50]">{reservation.userName || 'Client'}</div>
+                              <div className="text-sm text-[#2c3e50]/60">{reservation.userEmail}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-1">
+                              {reservation.services.map((serviceId: string) => (
+                                <span key={serviceId} className="px-2 py-1 bg-[#d4b5a0]/10 rounded text-xs">
+                                  {services[serviceId as keyof typeof services]}
+                                  {reservation.packages[serviceId] === 'forfait' && ' (F)'}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              reservation.source === 'site' ? 'bg-green-100 text-green-600' :
+                              reservation.source === 'planity' ? 'bg-blue-100 text-blue-600' :
+                              reservation.source === 'treatwell' ? 'bg-purple-100 text-purple-600' :
+                              reservation.source === 'appel' ? 'bg-yellow-100 text-yellow-600' :
+                              reservation.source === 'reseaux' ? 'bg-pink-100 text-pink-600' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {reservation.source === 'site' && <Globe className="inline w-3 h-3 mr-1" />}
+                              {reservation.source === 'planity' && 'Planity'}
+                              {reservation.source === 'treatwell' && 'Treatwell'}
+                              {reservation.source === 'appel' && <Phone className="inline w-3 h-3 mr-1" />}
+                              {reservation.source === 'reseaux' && <Instagram className="inline w-3 h-3 mr-1" />}
+                              {reservation.source || 'Site'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              reservation.status === 'completed' ? 'bg-green-100 text-green-600' :
+                              reservation.status === 'confirmed' ? 'bg-blue-100 text-blue-600' :
+                              reservation.status === 'cancelled' ? 'bg-red-100 text-red-600' :
+                              reservation.status === 'modified' ? 'bg-orange-100 text-orange-600' :
+                              'bg-yellow-100 text-yellow-600'
+                            }`}>
+                              {reservation.status === 'completed' && <CheckCircle className="inline w-3 h-3 mr-1" />}
+                              {reservation.status === 'cancelled' && <XCircle className="inline w-3 h-3 mr-1" />}
+                              {reservation.status === 'modified' && <Edit2 className="inline w-3 h-3 mr-1" />}
+                              {reservation.status === 'completed' ? 'Terminé' :
+                               reservation.status === 'confirmed' ? 'Confirmé' :
+                               reservation.status === 'cancelled' ? 'Annulé' :
+                               reservation.status === 'modified' ? 'Modifié' :
+                               'En attente'}
+                            </span>
+                            {reservation.modifiedAt && (
+                              <div className="text-xs text-orange-600 mt-1">
+                                Modifié le {new Date(reservation.modifiedAt).toLocaleDateString('fr-FR')}
+                              </div>
+                            )}
+                            {reservation.cancelledAt && (
+                              <div className="text-xs text-red-600 mt-1">
+                                Annulé le {new Date(reservation.cancelledAt).toLocaleDateString('fr-FR')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-[#d4b5a0]">{reservation.totalPrice}€</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => openEditModal(reservation)}
+                                className="text-blue-600 hover:underline text-sm"
+                              >
+                                Modifier
+                              </button>
+                              {reservation.status !== 'cancelled' && (
+                                <button 
+                                  onClick={() => cancelReservation(reservation.id)}
+                                  className="text-red-600 hover:underline text-sm"
+                                >
+                                  Annuler
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "validation" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Validation des Soins
+              </h2>
+              <p className="text-[#2c3e50]/70 mb-6">
+                Validez les soins une fois effectués pour que les clients reçoivent leurs points de fidélité
+              </p>
+
+              <div className="space-y-4">
+                {reservations.filter(r => r.status !== 'cancelled').map((reservation) => (
+                  <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Calendar className="w-5 h-5 text-[#d4b5a0]" />
+                          <span className="font-semibold text-[#2c3e50]">
+                            {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                          </span>
+                          <span className="text-[#2c3e50]/60">à {reservation.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4 text-[#2c3e50]/60" />
+                          <span className="text-[#2c3e50] font-medium">{reservation.userName || 'Client'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {reservation.services.map((serviceId: string) => (
+                            <span key={serviceId} className="px-3 py-1 bg-[#d4b5a0]/10 rounded-full text-sm">
+                              {services[serviceId as keyof typeof services]}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-bold text-[#d4b5a0] block mb-2">{reservation.totalPrice}€</span>
+                        <span className="text-sm text-green-600">
+                          +{Math.floor(reservation.totalPrice / 10)} points
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      {reservation.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'completed')}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            Valider (Client venu)
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                          >
+                            Client pas venu
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            Annuler
+                          </button>
+                        </>
+                      )}
+                      {reservation.status === 'confirmed' && (
+                        <>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'completed')}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            Valider (Client venu)
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                          >
+                            Client pas venu
+                          </button>
+                        </>
+                      )}
+                      {reservation.status === 'completed' && (
+                        <div className="flex-1 text-center py-2 bg-green-100 text-green-600 rounded-lg font-medium">
+                          ✓ Soin effectué - Points attribués
+                        </div>
+                      )}
+                      {reservation.status === 'cancelled' && (
+                        <div className="flex-1 text-center py-2 bg-red-100 text-red-600 rounded-lg font-medium">
+                          ✗ Annulé
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "paiements" && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
+                  Gestion des Paiements
+                </h2>
+                <button
+                  onClick={() => exportPayments()}
+                  className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Exporter CSV
+                </button>
+              </div>
+
+              {/* Filtres */}
+              <div className="mb-6 flex gap-4">
+                <select
+                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                >
+                  <option value="all">Tous les paiements</option>
+                  <option value="unpaid">Non payés</option>
+                  <option value="paid">Payés</option>
+                  <option value="today">Aujourd'hui</option>
+                  <option value="week">Cette semaine</option>
+                  <option value="month">Ce mois</option>
+                </select>
+                
+                <input
+                  type="date"
+                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  onChange={(e) => setPaymentDateFilter(e.target.value)}
+                />
+              </div>
+
+              {/* Statistiques */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">CA du jour</span>
+                    <Euro className="w-4 h-4 text-green-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">
+                    {reservations
+                      .filter(r => r.paymentStatus === 'paid' && new Date(r.paymentDate || '').toDateString() === new Date().toDateString())
+                      .reduce((sum, r) => sum + (r.paymentAmount || 0), 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">CA du mois</span>
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {reservations
+                      .filter(r => r.paymentStatus === 'paid' && new Date(r.paymentDate || '').getMonth() === new Date().getMonth())
+                      .reduce((sum, r) => sum + (r.paymentAmount || 0), 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">En attente</span>
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {reservations
+                      .filter(r => r.status === 'completed' && r.paymentStatus !== 'paid')
+                      .reduce((sum, r) => sum + r.totalPrice, 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">Factures du mois</span>
+                    <Receipt className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {reservations
+                      .filter(r => r.invoiceNumber && new Date(r.paymentDate || '').getMonth() === new Date().getMonth())
+                      .length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Liste des réservations à facturer */}
+              <div className="space-y-4">
+                {reservations
+                  .filter(r => r.status === 'completed')
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((reservation) => (
+                  <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <User className="w-5 h-5 text-[#d4b5a0]" />
+                          <span className="font-semibold text-[#2c3e50]">{reservation.userName}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            reservation.paymentStatus === 'paid' 
+                              ? 'bg-green-100 text-green-600'
+                              : reservation.paymentStatus === 'partial'
+                              ? 'bg-yellow-100 text-yellow-600'
+                              : 'bg-red-100 text-red-600'
+                          }`}>
+                            {reservation.paymentStatus === 'paid' ? '✓ Payé' : 
+                             reservation.paymentStatus === 'partial' ? 'Partiel' : 'Non payé'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#2c3e50]/60 mb-1">
+                          {new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}
+                        </p>
+                        <p className="text-sm text-[#2c3e50]/70">
+                          Services: {(() => {
+                            try {
+                              // Essayer de parser si c'est du JSON
+                              const servicesList = JSON.parse(reservation.services);
+                              return Array.isArray(servicesList) 
+                                ? servicesList.map((s: string) => services[s as keyof typeof services] || s).join(', ')
+                                : reservation.services;
+                            } catch {
+                              // Si ce n'est pas du JSON, c'est probablement une chaîne simple
+                              return services[reservation.services as keyof typeof services] || reservation.services;
+                            }
+                          })()}
+                        </p>
+                        {reservation.invoiceNumber && (
+                          <p className="text-sm text-[#2c3e50]/60 mt-1">
+                            Facture: #{reservation.invoiceNumber}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
+                        {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                          <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {reservation.paymentStatus !== 'paid' && (
+                      <PaymentSection
+                        reservation={reservation}
+                        loyaltyProfiles={loyaltyProfiles}
+                        recordPayment={recordPayment}
+                      />
+                    )}
+                    
+                    {reservation.paymentStatus === 'paid' && (
+                      <div className="border-t border-[#d4b5a0]/10 pt-4">
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-[#2c3e50]/60">
+                            <p>Payé le: {new Date(reservation.paymentDate || '').toLocaleDateString('fr-FR')}</p>
+                            <p>Méthode: {reservation.paymentMethod === 'cash' ? 'Espèces' : reservation.paymentMethod === 'card' ? 'Carte' : 'Virement'}</p>
+                            {reservation.paymentNotes && <p>Notes: {reservation.paymentNotes}</p>}
+                          </div>
+                          <div className="flex gap-2">
+                            <InvoiceButton reservation={{
+                              ...reservation,
+                              client: reservation.userName || 'Client',
+                              email: reservation.userEmail
+                            }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "fidelite" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Gestion de la Fidélité & Anniversaires
+              </h2>
+
+              {/* Rappel des règles simplifiées */}
+              <div className="mb-6 grid md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-4">
+                  <Gift className="w-8 h-8 text-[#d4b5a0] mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Soins Individuels</h3>
+                  <p className="text-sm text-[#2c3e50]/70">5 soins = -30€ sur le 6ème</p>
+                </div>
+                <div className="bg-gradient-to-r from-purple-100 to-purple-200 rounded-xl p-4">
+                  <CardIcon className="w-8 h-8 text-purple-600 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Forfaits</h3>
+                  <p className="text-sm text-[#2c3e50]/70">3 forfaits = -50€ sur le 4ème</p>
+                </div>
+                <div className="bg-gradient-to-r from-pink-100 to-red-100 rounded-xl p-4">
+                  <Cake className="w-8 h-8 text-red-500 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Anniversaires</h3>
+                  <p className="text-sm text-[#2c3e50]/70">-10% tout le mois</p>
+                </div>
+              </div>
+
+              {/* Anniversaires du mois */}
+              <div className="mb-8 bg-gradient-to-r from-pink-50 to-red-50 rounded-xl p-6 border border-red-200">
+                <h3 className="text-lg font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+                  <Cake className="w-6 h-6 text-red-500" />
+                  Anniversaires ce mois-ci
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Clients avec anniversaire ce mois */}
+                  {(() => {
+                    const currentMonth = new Date().getMonth();
+                    const birthdayClients = clients.filter(client => {
+                      if (!client.birthdate) return false;
+                      const birthMonth = new Date(client.birthdate).getMonth();
+                      return birthMonth === currentMonth;
+                    });
+
+                    if (birthdayClients.length === 0) {
+                      return (
+                        <p className="text-center text-[#2c3e50]/60 py-4 col-span-2">
+                          Aucun anniversaire ce mois-ci
+                        </p>
+                      );
+                    }
+
+                    return birthdayClients.map((client) => {
+                      const birthDate = new Date(client.birthdate!);
+                      const day = birthDate.getDate();
+                      const monthName = birthDate.toLocaleDateString('fr-FR', { month: 'long' });
+                      
+                      return (
+                        <div key={client.id} className="bg-white rounded-lg p-4 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-[#2c3e50]">{client.name}</p>
+                            <p className="text-sm text-[#2c3e50]/60">{day} {monthName}</p>
+                            <p className="text-xs text-[#2c3e50]/50">{client.phone || 'Pas de téléphone'}</p>
+                          </div>
+                          <div className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-bold">
+                            -10%
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* Cartes de fidélité actives */}
+              <h3 className="text-lg font-bold text-[#2c3e50] mb-4">Cartes de fidélité en cours</h3>
+              <div className="space-y-4">
+                {loyaltyProfiles.map((profile) => {
+                  // Utiliser les vraies données de fidélité (le premier compte aussi!)
+                  const soinsCount = profile.individualServicesCount;
+                  const forfaitsCount = profile.packagesCount;
+                  const soinsProgress = soinsCount % 5 || (soinsCount > 0 && soinsCount % 5 === 0 ? 5 : 0);
+                  const forfaitsProgress = forfaitsCount % 3 || (forfaitsCount > 0 && forfaitsCount % 3 === 0 ? 3 : 0);
+                  const hasIndividualDiscount = profile.individualServicesCount >= 5 && Math.floor(profile.individualServicesCount / 5) > 0;
+                  const hasPackageDiscount = profile.packagesCount >= 3 && Math.floor(profile.packagesCount / 3) > 0;
+                  const hasDiscount = hasIndividualDiscount || hasPackageDiscount;
+                  
+                  return (
+                    <div key={profile.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <User className="w-5 h-5 text-[#d4b5a0]" />
+                            <span className="font-semibold text-lg text-[#2c3e50]">{profile.user.name}</span>
+                            {hasDiscount && (
+                              <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm font-bold animate-pulse">
+                                Réduction disponible !
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[#2c3e50]/60">{profile.user.email}</p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          {hasIndividualDiscount && (
+                            <button
+                              onClick={() => applyDiscount(profile.userId, 30, '5 soins individuels effectués')}
+                              className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all">
+                              <Euro className="w-4 h-4 inline mr-2" />
+                              -30€
+                            </button>
+                          )}
+                          {hasPackageDiscount && (
+                            <button
+                              onClick={() => applyDiscount(profile.userId, 50, '3 forfaits effectués')}
+                              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                              <Euro className="w-4 h-4 inline mr-2" />
+                              -50€
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {/* Carte soins individuels */}
+                        <div className="bg-[#fdfbf7] rounded-lg p-4">
+                          <h4 className="font-semibold text-[#2c3e50] mb-2 flex items-center gap-2">
+                            <Gift className="w-4 h-4 text-[#d4b5a0]" />
+                            Soins individuels
+                          </h4>
+                          <div className="flex gap-2 mb-2">
+                            {[1, 2, 3, 4, 5].map((num) => (
+                              <div 
+                                key={num}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
+                                  num <= soinsProgress ? 'bg-[#d4b5a0] text-white' : 'bg-white border border-[#d4b5a0]/30 text-[#d4b5a0]/50'
+                                }`}
+                              >
+                                {num <= soinsProgress ? '✓' : num}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-sm text-[#2c3e50]/70">
+                            {hasIndividualDiscount 
+                              ? <span className="text-green-600 font-bold">Réduction de 30€ disponible !</span>
+                              : soinsProgress === 5
+                              ? <span className="text-green-600 font-bold">Prochaine visite : -30€ !</span>
+                              : `${soinsProgress}/5 soins (dès le 1er soin)`
+                            }
+                          </p>
+                          {soinsCount > 5 && (
+                            <p className="text-xs text-[#2c3e50]/50 mt-1">
+                              Total: {soinsCount} soins effectués
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Carte forfaits */}
+                        <div className="bg-purple-50 rounded-lg p-4">
+                          <h4 className="font-semibold text-[#2c3e50] mb-2 flex items-center gap-2">
+                            <CardIcon className="w-4 h-4 text-purple-600" />
+                            Forfaits
+                          </h4>
+                          <div className="flex gap-2 mb-2">
+                            {[1, 2, 3].map((num) => (
+                              <div 
+                                key={num}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
+                                  num <= forfaitsProgress ? 'bg-purple-600 text-white' : 'bg-white border border-purple-300 text-purple-300'
+                                }`}
+                              >
+                                {num <= forfaitsProgress ? '✓' : num}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-sm text-[#2c3e50]/70">
+                            {hasPackageDiscount 
+                              ? <span className="text-purple-600 font-bold">Réduction de 50€ disponible !</span>
+                              : forfaitsProgress === 3
+                              ? <span className="text-purple-600 font-bold">Prochain forfait : -50€ !</span>
+                              : `${forfaitsProgress}/3 forfaits (dès le 1er forfait)`
+                            }
+                          </p>
+                          {forfaitsCount > 3 && (
+                            <p className="text-xs text-[#2c3e50]/50 mt-1">
+                              Total: {forfaitsCount} forfaits effectués
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "clients" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Base Clients ({clients.length})
+              </h2>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Client</th>
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Téléphone</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Niveau</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Points</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Total</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Visites</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client) => {
+                      const level = getLoyaltyLevel(client.loyaltyPoints, client.totalSpent);
+                      return (
+                        <tr key={client.id} className="border-b border-gray-100 hover:bg-[#fdfbf7]">
+                          <td className="py-3 px-4 font-medium text-[#2c3e50]">{client.name}</td>
+                          <td className="py-3 px-4 text-[#2c3e50]/70">{client.email}</td>
+                          <td className="py-3 px-4 text-[#2c3e50]/70">{client.phone || '-'}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${level.color}`}>
+                              {level.name}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center font-medium text-[#2c3e50]">{client.loyaltyPoints}</td>
+                          <td className="py-3 px-4 text-center font-medium text-[#d4b5a0]">{client.totalSpent}€</td>
+                          <td className="py-3 px-4 text-center text-[#2c3e50]">{client.reservations}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "crm" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                CRM - Gestion Clients Détaillée
+              </h2>
+
+              <div className="space-y-6">
+                {clients.map((client) => {
+                  const [editingClient, setEditingClient] = useState<string | null>(null);
+                  const [clientNotes, setClientNotes] = useState<{[key: string]: any}>({});
+                  
+                  return (
+                    <div key={client.id} className="border border-[#d4b5a0]/20 rounded-xl overflow-hidden">
+                      {/* Header Client */}
+                      <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-xl font-semibold text-[#2c3e50] mb-2">{client.name}</h3>
+                            <div className="flex gap-4 text-sm text-[#2c3e50]/70">
+                              <span>📧 {client.email}</span>
+                              <span>📱 {client.phone || 'Non renseigné'}</span>
+                              <span>🎂 {client.birthDate || 'Non renseigné'}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setEditingClient(editingClient === client.id ? null : client.id)}
+                            className="px-4 py-2 bg-white rounded-lg hover:shadow-md transition-all"
+                          >
+                            {editingClient === client.id ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Informations détaillées */}
+                      <div className="p-6 grid md:grid-cols-2 gap-6">
+                        {/* Informations médicales */}
+                        <div>
+                          <h4 className="font-medium text-[#2c3e50] mb-3 flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-red-500" />
+                            Informations Médicales
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Type de peau</label>
+                              <select 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                disabled={editingClient !== client.id}
+                                value={clientNotes[client.id]?.skinType || 'normal'}
+                              >
+                                <option value="normal">Normale</option>
+                                <option value="dry">Sèche</option>
+                                <option value="oily">Grasse</option>
+                                <option value="combination">Mixte</option>
+                                <option value="sensitive">Sensible</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Allergies connues</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={2}
+                                disabled={editingClient !== client.id}
+                                placeholder="Aucune allergie connue"
+                                value={clientNotes[client.id]?.allergies || ''}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Notes médicales</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={3}
+                                disabled={editingClient !== client.id}
+                                placeholder="Antécédents, traitements en cours..."
+                                value={clientNotes[client.id]?.medicalNotes || ''}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Préférences et Notes */}
+                        <div>
+                          <h4 className="font-medium text-[#2c3e50] mb-3 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            Préférences & Notes
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Préférences soins</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={3}
+                                disabled={editingClient !== client.id}
+                                placeholder="Préfère les soins doux, n'aime pas les odeurs fortes..."
+                                value={clientNotes[client.id]?.preferences || ''}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Notes privées (visibles uniquement par vous)</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg bg-yellow-50"
+                                rows={4}
+                                disabled={editingClient !== client.id}
+                                placeholder="Notes personnelles sur le client..."
+                                value={clientNotes[client.id]?.adminNotes || ''}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Historique des soins */}
+                      <div className="border-t border-gray-200 p-6">
+                        <h4 className="font-medium text-[#2c3e50] mb-3">Historique des soins</h4>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {reservations
+                            .filter(r => r.userId === client.id && r.status === 'completed')
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .slice(0, 5)
+                            .map((reservation) => (
+                              <div key={reservation.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <span className="text-sm font-medium text-[#2c3e50]">
+                                    {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                                  </span>
+                                  <span className="text-sm text-[#2c3e50]/60 ml-3">
+                                    {reservation.services.map(s => services[s as keyof typeof services]).join(', ')}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Actions rapides */}
+                      {editingClient === client.id && (
+                        <div className="bg-gray-50 p-4 flex justify-end gap-2">
+                          <button
+                            onClick={() => setEditingClient(null)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Sauvegarder les données
+                              alert('Données sauvegardées !');
+                              setEditingClient(null);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+                          >
+                            Sauvegarder
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Onglet Services */}
+          {activeTab === "services" && <AdminServicesTab />}
+
+          {/* Onglet Disponibilités */}
+          {activeTab === "disponibilites" && <AdminDisponibilitesTab />}
+        </div>
+      </div>
+
+      {/* Modal Nouvelle Réservation */}
+      {showNewReservationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-[#2c3e50] mb-4">Nouvelle réservation</h3>
+            
+            <div className="space-y-4">
+              {/* Informations client */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Nom du client*</label>
+                <input
+                  type="text"
+                  value={newReservation.client}
+                  onChange={(e) => setNewReservation({...newReservation, client: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  placeholder="Marie Dupont"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newReservation.email}
+                  onChange={(e) => setNewReservation({...newReservation, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  placeholder="marie@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Téléphone</label>
+                <input
+                  type="tel"
+                  value={newReservation.phone}
+                  onChange={(e) => setNewReservation({...newReservation, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  placeholder="06 12 34 56 78"
+                />
+              </div>
+
+              {/* Date et heure */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-1">Date*</label>
+                  <input
+                    type="date"
+                    value={newReservation.date}
+                    onChange={(e) => setNewReservation({...newReservation, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-1">Heure*</label>
+                  <select
+                    value={newReservation.time}
+                    onChange={(e) => setNewReservation({...newReservation, time: e.target.value})}
+                    className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  >
+                    {['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'].map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Services */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">Services*</label>
+                <div className="space-y-2">
+                  {Object.entries(services).map(([key, name]) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newReservation.services.includes(key)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setNewReservation({
+                              ...newReservation,
+                              services: [...newReservation.services, key]
+                            });
+                          } else {
+                            setNewReservation({
+                              ...newReservation,
+                              services: newReservation.services.filter(s => s !== key)
+                            });
+                          }
+                        }}
+                        className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
+                      />
+                      <span className="text-sm text-[#2c3e50]">{name}</span>
+                      <span className="text-xs text-[#2c3e50]/60 ml-auto">
+                        {key === 'hydro-naissance' && '99€ (lancement)'}
+                        {key === 'hydro' && '70€ (lancement)'}
+                        {key === 'renaissance' && '70€ (lancement)'}
+                        {key === 'bbglow' && '50€ (lancement)'}
+                        {key === 'led' && '50€ (lancement)'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Notes</label>
+                <textarea
+                  value={newReservation.notes}
+                  onChange={(e) => setNewReservation({...newReservation, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  rows={3}
+                  placeholder="Informations complémentaires..."
+                />
+              </div>
+
+              {/* Prix total */}
+              {newReservation.services.length > 0 && (
+                <div className="bg-[#d4b5a0]/10 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-[#2c3e50]">Prix total</span>
+                    <span className="text-xl font-bold text-[#d4b5a0]">
+                      {newReservation.services.reduce((sum, service) => {
+                        const prices: { [key: string]: number } = {
+                          "hydro-naissance": 90,
+                          "hydro": 75,
+                          "renaissance": 85,
+                          "bbglow": 120,
+                          "led": 60
+                        };
+                        return sum + (prices[service] || 0);
+                      }, 0)}€
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Boutons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewReservationModal(false)}
+                className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 text-[#2c3e50] rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={createNewReservation}
+                disabled={!newReservation.client || newReservation.services.length === 0}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Créer la réservation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Modifier Réservation */}
+      {showEditReservationModal && editingReservation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-[#2c3e50] mb-4">Modifier la réservation</h3>
+            
+            <div className="space-y-4">
+              {/* Informations client */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Nom du client</label>
+                <input
+                  type="text"
+                  value={editingReservation.client}
+                  onChange={(e) => setEditingReservation({...editingReservation, client: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  disabled
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editingReservation.email}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg bg-gray-50"
+                  disabled
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Téléphone</label>
+                <input
+                  type="tel"
+                  value={editingReservation.phone}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg bg-gray-50"
+                  disabled
+                />
+              </div>
+
+              {/* Date et heure */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-1">Date*</label>
+                  <input
+                    type="date"
+                    value={editingReservation.date}
+                    onChange={(e) => setEditingReservation({...editingReservation, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-1">Heure*</label>
+                  <select
+                    value={editingReservation.time}
+                    onChange={(e) => setEditingReservation({...editingReservation, time: e.target.value})}
+                    className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  >
+                    {['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'].map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Services */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">Services*</label>
+                <div className="space-y-2">
+                  {Object.entries(services).map(([key, name]) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editingReservation.services.includes(key)}
+                        onChange={(e) => {
+                          let newServices;
+                          if (e.target.checked) {
+                            newServices = [...editingReservation.services, key];
+                          } else {
+                            newServices = editingReservation.services.filter((s: string) => s !== key);
+                          }
+                          
+                          const newTotalPrice = calculateTotalPrice(newServices, true); // true pour tarif lancement
+                          
+                          setEditingReservation({
+                            ...editingReservation,
+                            services: newServices,
+                            totalPrice: newTotalPrice
+                          });
+                        }}
+                        className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
+                      />
+                      <span className="text-sm text-[#2c3e50]">{name}</span>
+                      <span className="text-xs text-[#2c3e50]/60 ml-auto">
+                        {key === 'hydro-naissance' && '99€ (lancement)'}
+                        {key === 'hydro' && '70€ (lancement)'}
+                        {key === 'renaissance' && '70€ (lancement)'}
+                        {key === 'bbglow' && '50€ (lancement)'}
+                        {key === 'led' && '50€ (lancement)'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-1">Notes</label>
+                <textarea
+                  value={editingReservation.notes}
+                  onChange={(e) => setEditingReservation({...editingReservation, notes: e.target.value})}
+                  className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  rows={3}
+                  placeholder="Informations complémentaires..."
+                />
+              </div>
+
+              {/* Prix total */}
+              <div className="bg-[#d4b5a0]/10 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-[#2c3e50]">Prix total</span>
+                  <span className="text-xl font-bold text-[#d4b5a0]">
+                    {editingReservation.totalPrice}€
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditReservationModal(false);
+                  setEditingReservation(null);
+                }}
+                className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 text-[#2c3e50] rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={updateReservation}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+              >
+                Enregistrer les modifications
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    </AuthGuard>
+  );
+}
