@@ -227,7 +227,12 @@ export default function AdminServicesTab() {
                 >
                   {tab === 'general' && '📋 Général'}
                   {tab === 'seo' && '🔍 SEO'}
-                  {tab === 'media' && '📸 Médias'}
+                  {tab === 'media' && (
+                    <span className="flex items-center gap-1">
+                      📸 Médias
+                      <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">Images</span>
+                    </span>
+                  )}
                   {tab === 'details' && '📝 Détails'}
                 </button>
               ))}
@@ -516,32 +521,41 @@ export default function AdminServicesTab() {
             {/* Media Tab */}
             {activeTab === 'media' && (
               <div className="space-y-6">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <p className="text-sm text-purple-800">
-                    📸 Ajoutez des images et vidéos pour illustrer votre soin
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-purple-900 mb-2">📸 Images de votre service</h3>
+                  <p className="text-sm text-purple-700">
+                    L'image principale apparaîtra sur la page du service et dans la liste des prestations.
+                    La galerie permet d'ajouter plusieurs images supplémentaires.
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#2c3e50] mb-2">
-                    Image principale (URL)
+                <div className="bg-white p-6 rounded-lg border-2 border-[#d4b5a0]/30">
+                  <label className="block text-lg font-semibold text-[#2c3e50] mb-3">
+                    ⭐ Image principale (URL)
                   </label>
                   <input
                     type="text"
                     value={formData.mainImage || ''}
                     onChange={(e) => setFormData({...formData, mainImage: e.target.value})}
-                    placeholder="https://exemple.com/image.jpg"
-                    className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="https://exemple.com/image.jpg ou /images/mon-image.jpg"
+                    className="w-full px-4 py-3 text-lg border-2 border-[#d4b5a0]/30 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-[#d4b5a0] transition-all"
                   />
+                  <p className="text-sm text-gray-500 mt-2">
+                    💡 Formats: URL externe (https://...) ou chemin local (/images/...)
+                  </p>
                   {formData.mainImage && (
-                    <img 
-                      src={formData.mainImage} 
-                      alt="Aperçu" 
-                      className="mt-2 h-32 object-cover rounded-lg"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <div className="mt-4 p-2 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Aperçu :</p>
+                      <img 
+                        src={formData.mainImage} 
+                        alt="Aperçu" 
+                        className="w-full max-w-md h-64 object-cover rounded-lg shadow-md"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                          (e.target as HTMLImageElement).alt = 'Image non trouvée';
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -558,10 +572,13 @@ export default function AdminServicesTab() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#2c3e50] mb-2">
-                    Galerie d'images
+                <div className="bg-white p-6 rounded-lg border-2 border-[#d4b5a0]/30">
+                  <label className="block text-lg font-semibold text-[#2c3e50] mb-3">
+                    🖼️ Galerie d'images
                   </label>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Ajoutez plusieurs images pour créer une galerie sur la page du service
+                  </p>
                   {gallery.map((url, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <input
