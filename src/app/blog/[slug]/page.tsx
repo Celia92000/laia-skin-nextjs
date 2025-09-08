@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, Share2, Heart, BookOpen } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import './blog-article.css';
 
 // Articles de blog avec contenu complet (backup)
 const articles_old = {
@@ -288,50 +289,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </article>
 
-      <style jsx global>{`
-        .article-content h2 {
-          font-size: 1.875rem;
-          font-weight: 700;
-          color: #2c3e50;
-          margin-top: 2.5rem;
-          margin-bottom: 1rem;
-          font-family: serif;
-        }
-        
-        .article-content h3 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #2c3e50;
-          margin-top: 2rem;
-          margin-bottom: 0.75rem;
-          font-family: serif;
-        }
-        
-        .article-content p {
-          color: #2c3e50;
-          opacity: 0.8;
-          line-height: 1.8;
-          margin-bottom: 1.5rem;
-        }
-        
-        .article-content ul,
-        .article-content ol {
-          color: #2c3e50;
-          opacity: 0.8;
-          margin-bottom: 1.5rem;
-          padding-left: 1.5rem;
-        }
-        
-        .article-content li {
-          margin-bottom: 0.5rem;
-          line-height: 1.6;
-        }
-        
-        .article-content strong {
-          color: #2c3e50;
-          font-weight: 600;
-        }
-      `}</style>
     </div>
   );
 }
