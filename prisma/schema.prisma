@@ -126,3 +126,24 @@ model LoyaltyHistory {
   
   createdAt     DateTime @default(now())
 }
+
+model BlogPost {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  title             String
+  excerpt           String
+  content           String
+  category          String
+  author            String   @default("LAIA SKIN Institut")
+  readTime          String   @default("5 min")
+  featured          Boolean  @default(false)
+  published         Boolean  @default(true)
+  mainImage         String?
+  gallery           String?  // JSON array of image URLs
+  tags              String?  // JSON array of tags
+  metaTitle         String?
+  metaDescription   String?
+  publishedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

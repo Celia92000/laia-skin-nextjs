@@ -233,7 +233,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
                     {service.promoPrice ? (
                       <div>
                         <span className="text-[#2c3e50]/40 line-through mr-2">{service.price}€</span>
-                        <span className="text-xl font-bold text-green-600">{service.promoPrice}€</span>
+                        <span className="text-xl font-bold text-[#d4b5a0]">{service.promoPrice}€</span>
                       </div>
                     ) : (
                       <p className="text-xl font-bold text-[#2c3e50]">{service.price}€</p>
@@ -296,7 +296,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
                       </div>
                     )}
                     <div className="p-6">
-                      <h3 className="text-xl font-bold text-[#2c3e50] mb-2 group-hover:text-[#d4b5a0] transition-colors">
+                      <h3 className="text-xl font-serif font-bold text-[#2c3e50] mb-2 group-hover:text-[#d4b5a0] transition-colors">
                         {otherService.name}
                       </h3>
                       <p className="text-[#2c3e50]/70 text-sm mb-4 line-clamp-2">

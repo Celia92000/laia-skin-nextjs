@@ -8,6 +8,7 @@ import AdminCalendarEnhanced from "@/components/AdminCalendarEnhanced";
 import AdminServicesTab from "@/components/AdminServicesTab";
 import AdminDisponibilitesTab from "@/components/AdminDisponibilitesTab";
 import AdminDashboardOptimized from "@/components/AdminDashboardOptimized";
+import AdminBlogTab from "@/components/AdminBlogTab";
 import { InvoiceButton } from "@/components/InvoiceGenerator";
 import PaymentSection from "@/components/PaymentSection";
 import { logout } from "@/lib/auth-client";
@@ -581,6 +582,16 @@ export default function AdminDashboard() {
             }`}
           >
             Disponibilités
+          </button>
+          <button
+            onClick={() => setActiveTab("blog")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "blog"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Blog
           </button>
         </div>
 
@@ -1553,6 +1564,9 @@ export default function AdminDashboard() {
 
           {/* Onglet Disponibilités */}
           {activeTab === "disponibilites" && <AdminDisponibilitesTab />}
+
+          {/* Onglet Blog */}
+          {activeTab === "blog" && <AdminBlogTab />}
         </div>
       </div>
 

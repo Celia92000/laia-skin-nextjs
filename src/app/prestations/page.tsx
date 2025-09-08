@@ -21,7 +21,7 @@ export default async function Prestations() {
       {/* Hero Section */}
       <section className="pt-24 pb-12 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-6">
+          <h1 className="text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] mb-6">
             Mes Prestations
           </h1>
           <p className="text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
@@ -72,19 +72,11 @@ export default async function Prestations() {
                       </div>
                     </div>
 
-                    {/* Badge promo */}
-                    {service.promoPrice && (
-                      <div className="absolute top-4 right-4">
-                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                          -{Math.round((1 - service.promoPrice / service.price) * 100)}%
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Content */}
                   <div className="p-6 flex-1 flex flex-col">
-                    <h3 className="text-2xl font-bold text-[#2c3e50] mb-3 group-hover:text-[#d4b5a0] transition-colors">
+                    <h3 className="text-2xl font-serif font-bold text-[#2c3e50] mb-3 group-hover:text-[#d4b5a0] transition-colors">
                       {service.name}
                     </h3>
                     
@@ -118,7 +110,7 @@ export default async function Prestations() {
                             </span>
                           </div>
                           <div className="mt-1">
-                            <span className="text-xs text-green-600 font-semibold uppercase tracking-wider">
+                            <span className="text-xs text-[#d4b5a0] font-semibold uppercase tracking-wider">
                               Tarif de lancement
                             </span>
                           </div>
@@ -133,26 +125,33 @@ export default async function Prestations() {
                       
                       {/* Forfait si disponible */}
                       {(service.forfaitPrice || service.forfaitPromo) && (
-                        <div className="mt-3 pt-3 border-t border-[#d4b5a0]/20">
-                          <div className="text-xs text-[#2c3e50]/60 mb-1">Forfait 4 séances</div>
-                          <div className="flex items-baseline gap-2">
-                            {service.forfaitPromo ? (
-                              <>
-                                <span className="text-lg font-bold text-[#d4b5a0]">
+                        <div className="mt-4 pt-4 border-t border-[#d4b5a0]/20">
+                          <div className="text-sm text-[#2c3e50]/70 mb-2">Forfait 4 séances</div>
+                          {service.forfaitPromo ? (
+                            <div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-2xl font-bold text-[#d4b5a0]">
                                   {service.forfaitPromo}€
                                 </span>
                                 {service.forfaitPrice && (
-                                  <span className="text-sm line-through text-[#2c3e50]/40">
+                                  <span className="text-lg line-through text-[#2c3e50]/40">
                                     {service.forfaitPrice}€
                                   </span>
                                 )}
-                              </>
-                            ) : (
-                              <span className="text-lg font-bold text-[#2c3e50]">
+                              </div>
+                              <div className="mt-1">
+                                <span className="text-xs text-[#d4b5a0] font-semibold uppercase tracking-wider">
+                                  Offre spéciale
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-2xl font-bold text-[#2c3e50]">
                                 {service.forfaitPrice}€
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
