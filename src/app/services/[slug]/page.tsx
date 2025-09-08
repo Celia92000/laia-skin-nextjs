@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Clock, Euro, Check, AlertCircle, ArrowRight, Star, ChevronRight, Info, Sparkles } from 'lucide-react';
+import { Clock, Euro, Check, AlertCircle, ArrowRight, Star, ChevronRight, Info, Sparkles, ImageIcon } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 
 interface ServicePageProps {
@@ -30,11 +30,29 @@ export default async function ServicePage({ params }: ServicePageProps) {
     take: 3
   });
 
-  // Parser les données JSON
-  const benefits = service.benefits ? JSON.parse(service.benefits as string) : [];
-  const contraindications = service.contraindications ? JSON.parse(service.contraindications as string) : [];
-  const process = service.process ? JSON.parse(service.process as string) : [];
-  const recommendations = service.recommendations ? JSON.parse(service.recommendations as string) : [];
+  // Parser les données JSON ou texte simple
+  const parseJsonOrText = (data: any): string[] => {
+    if (!data) return [];
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [data];
+      } catch {
+        // Si ce n'est pas du JSON, traiter comme du texte simple
+        // Diviser par virgule ou retour à la ligne
+        return data.split(/[,\n]/).map(item => item.trim()).filter(item => item);
+      }
+    }
+    return Array.isArray(data) ? data : [];
+  };
+
+  const benefits = parseJsonOrText(service.benefits);
+  const contraindications = parseJsonOrText(service.contraindications);
+  const process = parseJsonOrText(service.process);
+  const recommendations = parseJsonOrText(service.recommendations);
+  
+  // Parser la galerie d'images
+  const gallery = service.gallery ? parseJsonOrText(service.gallery) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
@@ -109,6 +127,17 @@ export default async function ServicePage({ params }: ServicePageProps) {
           <div className="grid lg:grid-cols-3 gap-12">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-12">
+              {/* Image principale */}
+              {service.mainImage && (
+                <div className="bg-white rounded-2xl overflow-hidden shadow-lg">
+                  <img 
+                    src={service.mainImage} 
+                    alt={service.name}
+                    className="w-full h-[400px] object-cover"
+                  />
+                </div>
+              )}
+
               {/* Description */}
               <div className="bg-white rounded-2xl p-8 shadow-lg">
                 <h2 className="text-3xl font-bold text-[#2c3e50] mb-6 flex items-center gap-3">
@@ -153,6 +182,26 @@ export default async function ServicePage({ params }: ServicePageProps) {
                       </li>
                     ))}
                   </ol>
+                </div>
+              )}
+
+              {/* Galerie d'images */}
+              {gallery.length > 0 && (
+                <div className="bg-white rounded-2xl p-8 shadow-lg">
+                  <h2 className="text-3xl font-bold text-[#2c3e50] mb-6">
+                    Galerie
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {gallery.map((image: string, index: number) => (
+                      <div key={index} className="rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+                        <img 
+                          src={image} 
+                          alt={`${service.name} - Image ${index + 1}`}
+                          className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
