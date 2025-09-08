@@ -4,9 +4,10 @@ import jwt from 'jsonwebtoken';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
@@ -28,7 +29,7 @@ export async function POST(
 
     // Récupérer la réservation actuelle pour obtenir le prix total
     const currentReservation = await prisma.reservation.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!currentReservation) {
@@ -58,7 +59,7 @@ export async function POST(
               action: 'DISCOUNT_USED',
               points: -5,
               description: `Réduction de ${appliedDiscount.amount}€ utilisée (5 soins individuels)`,
-              reservationId: params.id
+              reservationId: id
             }
           });
         } else if (appliedDiscount.type === 'package' && loyaltyProfile.packagesCount >= 3) {
@@ -77,7 +78,7 @@ export async function POST(
               action: 'DISCOUNT_USED',
               points: -3,
               description: `Réduction de ${appliedDiscount.amount}€ utilisée (3 forfaits)`,
-              reservationId: params.id
+              reservationId: id
             }
           });
         }
@@ -86,7 +87,7 @@ export async function POST(
 
     // Mettre à jour la réservation avec les informations de paiement
     const reservation = await prisma.reservation.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         paymentStatus: amount >= currentReservation.totalPrice ? 'paid' : 'partial',
         paymentDate: new Date(),

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { CheckCircle, Calendar, Clock, MapPin, Phone, Mail, MessageCircle, Edit, X, Download, Instagram, ChevronRight } from "lucide-react";
 import { useSearchParams } from 'next/navigation';
 
-export default function Confirmation() {
+function ConfirmationContent() {
   const searchParams = useSearchParams();
   const [reservation, setReservation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -391,5 +391,15 @@ END:VCALENDAR`;
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Confirmation() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#d4b5a0]"></div>
+    </div>}>
+      <ConfirmationContent />
+    </Suspense>
   );
 }

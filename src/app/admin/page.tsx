@@ -390,7 +390,7 @@ export default function AdminDashboard() {
       .map(r => [
         new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
         r.userName || '',
-        JSON.parse(r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
+        (typeof r.services === 'string' ? JSON.parse(r.services) : r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
         `${r.paymentAmount}€`,
         r.paymentMethod === 'cash' ? 'Espèces' : r.paymentMethod === 'card' ? 'Carte' : 'Virement',
         r.invoiceNumber || '',
@@ -449,11 +449,7 @@ export default function AdminDashboard() {
   if (useOptimizedView) {
     return (
       <AuthGuard requireAdmin={true}>
-        <AdminDashboardOptimized 
-          reservations={reservations}
-          clients={clients}
-          services={services}
-        />
+        <AdminDashboardOptimized />
       </AuthGuard>
     );
   }
@@ -1093,13 +1089,16 @@ export default function AdminDashboard() {
                           Services: {(() => {
                             try {
                               // Essayer de parser si c'est du JSON
-                              const servicesList = JSON.parse(reservation.services);
+                              const servicesList = typeof reservation.services === 'string' ? JSON.parse(reservation.services) : reservation.services;
                               return Array.isArray(servicesList) 
                                 ? servicesList.map((s: string) => services[s as keyof typeof services] || s).join(', ')
                                 : reservation.services;
                             } catch {
                               // Si ce n'est pas du JSON, c'est probablement une chaîne simple
-                              return services[reservation.services as keyof typeof services] || reservation.services;
+                              if (typeof reservation.services === 'string' && reservation.services in services) {
+                                return services[reservation.services as keyof typeof services];
+                              }
+                              return reservation.services;
                             }
                           })()}
                         </p>
@@ -1408,7 +1407,7 @@ export default function AdminDashboard() {
                             <div className="flex gap-4 text-sm text-[#2c3e50]/70">
                               <span>📧 {client.email}</span>
                               <span>📱 {client.phone || 'Non renseigné'}</span>
-                              <span>🎂 {client.birthDate || 'Non renseigné'}</span>
+                              <span>🎂 {client.birthdate || 'Non renseigné'}</span>
                             </div>
                           </div>
                           <button

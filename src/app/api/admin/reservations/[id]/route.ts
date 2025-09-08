@@ -30,8 +30,9 @@ async function verifyAdmin(request: NextRequest) {
 // PATCH - Mettre à jour le statut d'une réservation
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json(
@@ -43,7 +44,7 @@ export async function PATCH(
   try {
     const body = await request.json();
     const { status } = body;
-    const reservationId = params.id;
+    const reservationId = id;
 
     // Récupérer la réservation actuelle
     const reservation = await prisma.reservation.findUnique({
@@ -61,9 +62,14 @@ export async function PATCH(
     // Si on passe au statut "completed" et que ce n'était pas déjà le cas
     if (status === 'completed' && reservation.status !== 'completed') {
       // Déterminer si c'est un soin individuel ou un forfait
-      const isPackage = reservation.services.some((service: string) => 
-        service.includes('forfait') || service.includes('package')
-      );
+      const servicesArray = typeof reservation.services === 'string' 
+        ? JSON.parse(reservation.services) 
+        : reservation.services;
+      const isPackage = Array.isArray(servicesArray) 
+        ? servicesArray.some((service: string) => 
+            service.includes('forfait') || service.includes('package')
+          )
+        : false;
 
       // Récupérer ou créer le profil de fidélité du client
       let loyaltyProfile = await prisma.loyaltyProfile.findUnique({
@@ -76,8 +82,7 @@ export async function PATCH(
             userId: reservation.userId,
             individualServicesCount: 0,
             packagesCount: 0,
-            totalSpent: 0,
-            availableDiscounts: []
+            totalSpent: 0
           }
         });
       }
@@ -93,32 +98,8 @@ export async function PATCH(
 
       const newTotalSpent = loyaltyProfile.totalSpent + (reservation.totalPrice || 0);
 
-      // Vérifier si des réductions sont débloquées
-      const availableDiscounts = [];
-      
-      // 5 soins individuels = -30€
-      if (newIndividualCount >= 5) {
-        const discountCount = Math.floor(newIndividualCount / 5);
-        for (let i = 0; i < discountCount; i++) {
-          availableDiscounts.push({
-            type: 'individual',
-            amount: 30,
-            reason: '5 soins individuels effectués'
-          });
-        }
-      }
-
-      // 3 forfaits = -50€
-      if (newPackagesCount >= 3) {
-        const discountCount = Math.floor(newPackagesCount / 3);
-        for (let i = 0; i < discountCount; i++) {
-          availableDiscounts.push({
-            type: 'package',
-            amount: 50,
-            reason: '3 forfaits effectués'
-          });
-        }
-      }
+      // Les réductions sont calculées automatiquement lors du paiement
+      // basées sur les compteurs individualServicesCount et packagesCount
 
       // Mettre à jour le profil de fidélité
       await prisma.loyaltyProfile.update({
@@ -127,7 +108,6 @@ export async function PATCH(
           individualServicesCount: newIndividualCount,
           packagesCount: newPackagesCount,
           totalSpent: newTotalSpent,
-          availableDiscounts: availableDiscounts,
           lastVisit: new Date()
         }
       });
@@ -138,7 +118,7 @@ export async function PATCH(
           userId: reservation.userId,
           action: isPackage ? 'PACKAGE_COMPLETED' : 'SERVICE_COMPLETED',
           points: isPackage ? 1 : 1,
-          description: `${isPackage ? 'Forfait' : 'Soin'} complété: ${reservation.services.join(', ')}`,
+          description: `${isPackage ? 'Forfait' : 'Soin'} complété: ${Array.isArray(servicesArray) ? servicesArray.join(', ') : reservation.services}`,
           reservationId: reservationId
         }
       });
@@ -166,8 +146,9 @@ export async function PATCH(
 // DELETE - Supprimer une réservation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json(
@@ -178,7 +159,7 @@ export async function DELETE(
 
   try {
     await prisma.reservation.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ success: true });
