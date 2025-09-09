@@ -124,13 +124,24 @@ export async function PATCH(
       });
     }
 
+    // Préparer les données de mise à jour
+    const updateData: any = { 
+      status,
+      updatedAt: new Date()
+    };
+
+    // Si on marque comme complété, marquer aussi comme payé
+    if (status === 'completed') {
+      updateData.paymentStatus = 'paid';
+      updateData.paymentDate = new Date();
+      updateData.paymentAmount = reservation.totalPrice;
+      updateData.paymentMethod = 'cash'; // Par défaut, peut être modifié après
+    }
+
     // Mettre à jour le statut de la réservation
     const updatedReservation = await prisma.reservation.update({
       where: { id: reservationId },
-      data: { 
-        status,
-        updatedAt: new Date()
-      }
+      data: updateData
     });
 
     return NextResponse.json(updatedReservation);

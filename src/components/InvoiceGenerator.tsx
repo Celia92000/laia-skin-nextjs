@@ -242,15 +242,15 @@ export function generateInvoiceHTML(data: InvoiceData): string {
             </div>
           </div>
           <div class="party">
-            <div class="party-title">Informations de paiement</div>
+            <div class="party-title">Informations</div>
             <div class="party-details">
-              <p><strong>Statut:</strong> ${
-                data.paymentStatus === 'paid' ? '✅ Payé' : 
-                data.paymentStatus === 'partial' ? '⚠️ Paiement partiel' : 
-                '❌ En attente de paiement'
-              }</p>
-              ${data.paymentMethod ? `<p><strong>Mode:</strong> ${data.paymentMethod}</p>` : ''}
-              ${data.paymentAmount ? `<p><strong>Montant payé:</strong> ${data.paymentAmount.toFixed(2)}€</p>` : ''}
+              <p>Date du soin: ${new Date(data.date).toLocaleDateString('fr-FR')}</p>
+              ${data.paymentMethod ? `<p>Mode de paiement: ${
+                data.paymentMethod === 'cash' ? 'Espèces' :
+                data.paymentMethod === 'card' ? 'Carte bancaire' :
+                data.paymentMethod === 'transfer' ? 'Virement' :
+                data.paymentMethod
+              }</p>` : ''}
             </div>
           </div>
         </div>
@@ -291,14 +291,11 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           </div>
         </div>
 
-        ${data.paymentStatus !== 'paid' ? `
         <div class="payment-info">
           <h3>Modalités de paiement</h3>
-          <p>Paiement à réception de facture</p>
-          <p>Modes de paiement acceptés: Espèces, Carte bancaire, Virement</p>
-          <p>IBAN: FR76 1234 5678 9012 3456 7890 123</p>
+          <p>Paiement sur place</p>
+          <p>Modes de paiement acceptés: Espèces, Carte bancaire</p>
         </div>
-        ` : ''}
 
         <div class="footer">
           <p>Merci pour votre confiance !</p>

@@ -65,11 +65,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [paymentDateFilter, setPaymentDateFilter] = useState("");
+  const [paymentDateStart, setPaymentDateStart] = useState("");
+  const [paymentDateEnd, setPaymentDateEnd] = useState("");
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [editingReservation, setEditingReservation] = useState<any>(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [lastCheckedReservations, setLastCheckedReservations] = useState<string[]>([]);
+  const [newReservationCount, setNewReservationCount] = useState(0);
   const [newReservation, setNewReservation] = useState({
     client: '',
     email: '',
@@ -110,6 +115,13 @@ export default function AdminDashboard() {
     };
 
     checkAuth();
+    
+    // Rafraîchir les réservations toutes les 30 secondes pour vérifier les nouvelles
+    const interval = setInterval(() => {
+      fetchReservations();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [router]);
 
   const fetchReservations = async () => {
@@ -124,6 +136,26 @@ export default function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         setReservations(data);
+        
+        // Vérifier les nouvelles réservations en attente
+        const pendingReservations = data.filter((r: Reservation) => r.status === 'pending');
+        const storedLastChecked = localStorage.getItem('lastCheckedReservations');
+        const lastChecked = storedLastChecked ? JSON.parse(storedLastChecked) : [];
+        
+        const newPendingReservations = pendingReservations.filter((r: Reservation) => 
+          !lastChecked.includes(r.id)
+        );
+        
+        if (newPendingReservations.length > 0) {
+          setNewReservationCount(newPendingReservations.length);
+          setShowNotification(true);
+          
+          // Jouer un son de notification
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(() => {
+            // Gérer silencieusement si le son ne peut pas être joué
+          });
+        }
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des réservations:', error);
@@ -351,7 +383,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const recordPayment = async (reservationId: string, appliedDiscount?: { type: string, amount: number }) => {
+  const recordPayment = async (reservationId: string, appliedDiscount?: { type: string, amount: number }, paymentDetails?: any) => {
     const amountInput = document.getElementById(`amount-${reservationId}`) as HTMLInputElement;
     const methodSelect = document.getElementById(`method-${reservationId}`) as HTMLSelectElement;
     const invoiceInput = document.getElementById(`invoice-${reservationId}`) as HTMLInputElement;
@@ -359,6 +391,36 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Générer automatiquement un numéro de facture unique si non fourni
+      let invoiceNumber = invoiceInput?.value || '';
+      if (!invoiceNumber) {
+        const year = new Date().getFullYear();
+        const month = String(new Date().getMonth() + 1).padStart(2, '0');
+        const count = reservations.filter(r => r.invoiceNumber && r.invoiceNumber.startsWith(`${year}-${month}`)).length + 1;
+        invoiceNumber = `${year}-${month}-${String(count).padStart(3, '0')}`;
+      }
+      
+      // Déterminer le montant et la méthode de paiement
+      let paymentAmount = 0;
+      let paymentMethod = '';
+      let paymentNotes = notesInput?.value || '';
+      
+      if (paymentDetails) {
+        // Paiement mixte
+        paymentAmount = paymentDetails.total;
+        const methods = [];
+        if (paymentDetails.cash > 0) methods.push(`Espèces: ${paymentDetails.cash}€`);
+        if (paymentDetails.card > 0) methods.push(`Carte: ${paymentDetails.card}€`);
+        if (paymentDetails.transfer > 0) methods.push(`Virement: ${paymentDetails.transfer}€`);
+        paymentMethod = 'mixed';
+        paymentNotes = `Paiement mixte - ${methods.join(', ')}${paymentNotes ? ' | ' + paymentNotes : ''}`;
+      } else {
+        // Paiement simple
+        paymentAmount = parseFloat(amountInput?.value || '0');
+        paymentMethod = methodSelect?.value || 'cash';
+      }
+      
       const response = await fetch(`/api/admin/reservations/${reservationId}/payment`, {
         method: 'POST',
         headers: {
@@ -366,47 +428,126 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          amount: parseFloat(amountInput.value),
-          method: methodSelect.value,
-          invoiceNumber: invoiceInput.value,
-          notes: notesInput.value,
-          appliedDiscount: appliedDiscount
+          amount: paymentAmount,
+          method: paymentMethod,
+          invoiceNumber: invoiceNumber,
+          notes: paymentNotes,
+          appliedDiscount: appliedDiscount,
+          paymentDetails: paymentDetails
         })
       });
 
       if (response.ok) {
         fetchReservations();
         fetchLoyaltyProfiles();
-        alert('Paiement enregistré avec succès !');
+        alert(`Paiement enregistré avec succès !\nFacture n°${invoiceNumber}`);
       }
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement du paiement:', error);
     }
   };
 
-  const exportPayments = () => {
-    const headers = ['Date', 'Client', 'Services', 'Montant', 'Méthode', 'Facture', 'Notes'];
-    const rows = reservations
-      .filter(r => r.paymentStatus === 'paid')
-      .map(r => [
-        new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
-        r.userName || '',
-        (typeof r.services === 'string' ? JSON.parse(r.services) : r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
-        `${r.paymentAmount}€`,
-        r.paymentMethod === 'cash' ? 'Espèces' : r.paymentMethod === 'card' ? 'Carte' : 'Virement',
-        r.invoiceNumber || '',
-        r.paymentNotes || ''
+  const exportPayments = (format: 'csv' | 'detailed' = 'csv') => {
+    const paidReservations = reservations.filter(r => r.paymentStatus === 'paid');
+    
+    if (format === 'detailed') {
+      // Export détaillé pour le livre de recettes
+      const headers = [
+        'Date Soin', 'Heure', 'Date Paiement', 'N° Facture', 
+        'Client', 'Email', 'Téléphone',
+        'Prestations', 'Prix HT', 'TVA (20%)', 'Prix TTC',
+        'Mode de Paiement', 'Détails Paiement', 'Notes'
+      ];
+      
+      const rows = paidReservations
+        .sort((a, b) => new Date(a.paymentDate || a.date).getTime() - new Date(b.paymentDate || b.date).getTime())
+        .map(r => {
+          const servicesStr = (typeof r.services === 'string' ? JSON.parse(r.services) : r.services)
+            .map((s: string) => services[s as keyof typeof services] || s).join(', ');
+          const ht = (r.paymentAmount || r.totalPrice) / 1.2;
+          const tva = (r.paymentAmount || r.totalPrice) - ht;
+          
+          let paymentMethodStr = '';
+          if (r.paymentMethod === 'mixed' && r.paymentNotes?.includes('Paiement mixte')) {
+            paymentMethodStr = 'Mixte';
+          } else {
+            paymentMethodStr = r.paymentMethod === 'cash' ? 'Espèces' : 
+                             r.paymentMethod === 'card' ? 'Carte bancaire' : 
+                             r.paymentMethod === 'transfer' ? 'Virement' : r.paymentMethod || '';
+          }
+          
+          return [
+            new Date(r.date).toLocaleDateString('fr-FR'),
+            r.time,
+            r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('fr-FR') : '',
+            r.invoiceNumber || '',
+            r.userName || '',
+            r.userEmail || '',
+            r.phone || '',
+            servicesStr,
+            ht.toFixed(2) + '€',
+            tva.toFixed(2) + '€',
+            (r.paymentAmount || r.totalPrice) + '€',
+            paymentMethodStr,
+            r.paymentNotes?.replace('Paiement mixte - ', '') || '',
+            r.notes || ''
+          ];
+        });
+      
+      // Ajouter une ligne de total à la fin
+      const totalHT = paidReservations.reduce((sum, r) => sum + ((r.paymentAmount || r.totalPrice) / 1.2), 0);
+      const totalTVA = paidReservations.reduce((sum, r) => sum + ((r.paymentAmount || r.totalPrice) - (r.paymentAmount || r.totalPrice) / 1.2), 0);
+      const totalTTC = paidReservations.reduce((sum, r) => sum + (r.paymentAmount || r.totalPrice), 0);
+      
+      rows.push([
+        '', '', '', '',
+        'TOTAL', '', '',
+        `${paidReservations.length} prestations`,
+        totalHT.toFixed(2) + '€',
+        totalTVA.toFixed(2) + '€',
+        totalTTC.toFixed(2) + '€',
+        '', '', ''
       ]);
+      
+      const csvContent = '\uFEFF' + [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(';'))
+        .join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const dateRange = paymentDateStart && paymentDateEnd 
+        ? `${paymentDateStart}_${paymentDateEnd}`
+        : new Date().toISOString().split('T')[0];
+      link.download = `livre_recettes_${dateRange}.csv`;
+      link.click();
+      
+    } else {
+      // Export simple existant
+      const headers = ['Date', 'Client', 'Services', 'Montant TTC', 'Méthode', 'Facture', 'Notes'];
+      const rows = paidReservations
+        .map(r => [
+          new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
+          r.userName || '',
+          (typeof r.services === 'string' ? JSON.parse(r.services) : r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
+          `${r.paymentAmount || r.totalPrice}€`,
+          r.paymentMethod === 'cash' ? 'Espèces' : 
+          r.paymentMethod === 'card' ? 'Carte' : 
+          r.paymentMethod === 'mixed' ? 'Mixte' : 'Virement',
+          r.invoiceNumber || '',
+          r.paymentNotes || ''
+        ]);
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+      const csvContent = '\uFEFF' + [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(';'))
+        .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    }
   };
 
   const getLoyaltyLevel = (points: number, totalSpent: number) => {
@@ -460,6 +601,39 @@ export default function AdminDashboard() {
     <AuthGuard requireAdmin={true}>
       <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pt-32 pb-20">
         <div className="max-w-7xl mx-auto px-4">
+        
+        {/* Notification de nouvelles réservations */}
+        {showNotification && (
+          <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-4 shadow-xl animate-pulse">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-6 h-6" />
+                <div>
+                  <p className="font-bold text-lg">
+                    {newReservationCount} nouvelle{newReservationCount > 1 ? 's' : ''} réservation{newReservationCount > 1 ? 's' : ''} !
+                  </p>
+                  <p className="text-white/90 text-sm">
+                    En attente de validation dans l'onglet "Validation Soins"
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowNotification(false);
+                  setActiveTab('validation');
+                  const pendingIds = reservations
+                    .filter(r => r.status === 'pending')
+                    .map(r => r.id);
+                  localStorage.setItem('lastCheckedReservations', JSON.stringify(pendingIds));
+                }}
+                className="px-4 py-2 bg-white text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+              >
+                Voir les réservations
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -612,6 +786,69 @@ export default function AdminDashboard() {
                 </button>
               </div>
               
+              {/* Section nouvelles réservations en attente */}
+              {reservations.filter(r => r.status === 'pending').length > 0 && (
+                <div className="mb-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-500" />
+                    Nouvelles réservations à valider ({reservations.filter(r => r.status === 'pending').length})
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {reservations
+                      .filter(r => r.status === 'pending')
+                      .slice(0, 4)
+                      .map((reservation) => (
+                        <div key={reservation.id} className="bg-white rounded-lg p-4 border border-yellow-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-semibold text-[#2c3e50]">{reservation.userName}</p>
+                              <p className="text-sm text-[#2c3e50]/60">{reservation.userEmail}</p>
+                            </div>
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                              En attente
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-[#2c3e50]/70">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {reservation.time}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-2 font-medium text-[#d4b5a0]">
+                            {reservation.services.map((s: string) => services[s as keyof typeof services] || s).join(', ')}
+                          </p>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={() => updateReservationStatus(reservation.id, 'confirmed')}
+                              className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+                            >
+                              Confirmer
+                            </button>
+                            <button
+                              onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                              className="flex-1 px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                            >
+                              Refuser
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  {reservations.filter(r => r.status === 'pending').length > 4 && (
+                    <button
+                      onClick={() => setActiveTab('validation')}
+                      className="mt-4 w-full py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      Voir toutes les réservations en attente ({reservations.filter(r => r.status === 'pending').length})
+                    </button>
+                  )}
+                </div>
+              )}
+
               <AdminCalendarEnhanced 
                 reservations={reservations
                   .filter(r => r.status !== 'cancelled') // Ne pas afficher les réservations annulées dans le calendrier
@@ -889,14 +1126,34 @@ export default function AdminDashboard() {
           {activeTab === "validation" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
-                Validation des Soins
+                Validation des Soins Effectués
               </h2>
               <p className="text-[#2c3e50]/70 mb-6">
-                Validez les soins une fois effectués pour que les clients reçoivent leurs points de fidélité
+                Confirmez la présence des clients après leur rendez-vous pour attribuer les points de fidélité
               </p>
 
               <div className="space-y-4">
-                {reservations.filter(r => r.status !== 'cancelled').map((reservation) => (
+                {(() => {
+                  const validationReservations = reservations.filter(r => {
+                    // Ne montrer que les réservations confirmées dont la date/heure est passée
+                    if (r.status !== 'confirmed') return false;
+                    const reservationDateTime = new Date(`${r.date.split('T')[0]}T${r.time}`);
+                    return reservationDateTime < new Date();
+                  });
+
+                  if (validationReservations.length === 0) {
+                    return (
+                      <div className="text-center py-12 bg-gray-50 rounded-xl">
+                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                        <p className="text-lg font-medium text-[#2c3e50]">Aucun soin à valider</p>
+                        <p className="text-[#2c3e50]/60 mt-2">
+                          Les soins confirmés apparaîtront ici après l'heure du rendez-vous
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return validationReservations.map((reservation) => (
                   <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -928,41 +1185,19 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="flex gap-2">
-                      {reservation.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => updateReservationStatus(reservation.id, 'completed')}
-                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            Valider (Client venu)
-                          </button>
-                          <button
-                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
-                            className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                          >
-                            Client pas venu
-                          </button>
-                          <button
-                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
-                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                          >
-                            Annuler
-                          </button>
-                        </>
-                      )}
                       {reservation.status === 'confirmed' && (
                         <>
                           <button
                             onClick={() => updateReservationStatus(reservation.id, 'completed')}
                             className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                           >
-                            Valider (Client venu)
+                            ✓ Client venu - Valider
                           </button>
                           <button
-                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            onClick={() => updateReservationStatus(reservation.id, 'no_show')}
                             className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                           >
-                            Client pas venu
+                            ✗ Client absent
                           </button>
                         </>
                       )}
@@ -971,14 +1206,15 @@ export default function AdminDashboard() {
                           ✓ Soin effectué - Points attribués
                         </div>
                       )}
-                      {reservation.status === 'cancelled' && (
-                        <div className="flex-1 text-center py-2 bg-red-100 text-red-600 rounded-lg font-medium">
-                          ✗ Annulé
+                      {reservation.status === 'no_show' && (
+                        <div className="flex-1 text-center py-2 bg-orange-100 text-orange-600 rounded-lg font-medium">
+                          ✗ Client absent
                         </div>
                       )}
                     </div>
                   </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           )}
@@ -987,40 +1223,133 @@ export default function AdminDashboard() {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
-                  Gestion des Paiements
+                  Gestion des Paiements & Livre de Recettes
                 </h2>
-                <button
-                  onClick={() => exportPayments()}
-                  className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Exporter CSV
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => exportPayments('csv')}
+                    className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Simple
+                  </button>
+                  <button
+                    onClick={() => exportPayments('detailed')}
+                    className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Livre de Recettes
+                  </button>
+                </div>
               </div>
 
               {/* Filtres */}
-              <div className="mb-6 flex gap-4">
-                <select
-                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
-                  onChange={(e) => setPaymentFilter(e.target.value)}
-                >
-                  <option value="all">Tous les paiements</option>
-                  <option value="unpaid">Non payés</option>
-                  <option value="paid">Payés</option>
-                  <option value="today">Aujourd'hui</option>
-                  <option value="week">Cette semaine</option>
-                  <option value="month">Ce mois</option>
-                </select>
+              <div className="mb-6 space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <select
+                    className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                    onChange={(e) => setPaymentFilter(e.target.value)}
+                  >
+                    <option value="all">Tous les paiements</option>
+                    <option value="unpaid">Non payés</option>
+                    <option value="paid">Payés</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="lastMonth">Mois dernier</option>
+                    <option value="year">Cette année</option>
+                  </select>
+                  
+                  <select
+                    className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === 'custom') return;
+                      
+                      const today = new Date();
+                      let start = new Date();
+                      let end = new Date();
+                      
+                      switch(value) {
+                        case 'today':
+                          setPaymentDateStart(today.toISOString().split('T')[0]);
+                          setPaymentDateEnd(today.toISOString().split('T')[0]);
+                          break;
+                        case 'yesterday':
+                          start.setDate(today.getDate() - 1);
+                          setPaymentDateStart(start.toISOString().split('T')[0]);
+                          setPaymentDateEnd(start.toISOString().split('T')[0]);
+                          break;
+                        case 'week':
+                          start.setDate(today.getDate() - 7);
+                          setPaymentDateStart(start.toISOString().split('T')[0]);
+                          setPaymentDateEnd(today.toISOString().split('T')[0]);
+                          break;
+                        case 'month':
+                          start.setMonth(today.getMonth() - 1);
+                          setPaymentDateStart(start.toISOString().split('T')[0]);
+                          setPaymentDateEnd(today.toISOString().split('T')[0]);
+                          break;
+                        case 'quarter':
+                          start.setMonth(today.getMonth() - 3);
+                          setPaymentDateStart(start.toISOString().split('T')[0]);
+                          setPaymentDateEnd(today.toISOString().split('T')[0]);
+                          break;
+                        case 'year':
+                          start.setFullYear(today.getFullYear() - 1);
+                          setPaymentDateStart(start.toISOString().split('T')[0]);
+                          setPaymentDateEnd(today.toISOString().split('T')[0]);
+                          break;
+                      }
+                    }}
+                  >
+                    <option value="">Période rapide</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="yesterday">Hier</option>
+                    <option value="week">7 derniers jours</option>
+                    <option value="month">30 derniers jours</option>
+                    <option value="quarter">3 derniers mois</option>
+                    <option value="year">Cette année</option>
+                    <option value="custom">Personnalisé...</option>
+                  </select>
+                </div>
                 
-                <input
-                  type="date"
-                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
-                  onChange={(e) => setPaymentDateFilter(e.target.value)}
-                />
+                {/* Sélection de période personnalisée */}
+                <div className="flex flex-wrap items-center gap-4 p-4 bg-[#fdfbf7] rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-[#2c3e50]/70">Du :</label>
+                    <input
+                      type="date"
+                      value={paymentDateStart}
+                      className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                      onChange={(e) => setPaymentDateStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-[#2c3e50]/70">Au :</label>
+                    <input
+                      type="date"
+                      value={paymentDateEnd}
+                      className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                      onChange={(e) => setPaymentDateEnd(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPaymentDateStart('');
+                      setPaymentDateEnd('');
+                      setPaymentFilter('all');
+                    }}
+                    className="px-4 py-2 text-sm text-[#d4b5a0] hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
+                  >
+                    Réinitialiser
+                  </button>
+                </div>
               </div>
 
-              {/* Statistiques */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {/* Statistiques avec totaux HT/TVA/TTC */}
+              <div className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-[#2c3e50]/60">CA du jour</span>
@@ -1068,6 +1397,51 @@ export default function AdminDashboard() {
                       .length}
                   </p>
                 </div>
+                
+                {/* Résumé pour livre de recettes */}
+                {(() => {
+                  const filteredReservations = reservations.filter(r => {
+                    if (r.paymentStatus !== 'paid') return false;
+                    if (!r.paymentDate) return false;
+                    
+                    const paymentDate = new Date(r.paymentDate);
+                    if (paymentDateStart && new Date(paymentDateStart) > paymentDate) return false;
+                    if (paymentDateEnd && new Date(paymentDateEnd) < paymentDate) return false;
+                    
+                    return true;
+                  });
+                  
+                  const totalTTC = filteredReservations.reduce((sum, r) => sum + (r.paymentAmount || r.totalPrice), 0);
+                  const totalHT = totalTTC / 1.2;
+                  const totalTVA = totalTTC - totalHT;
+                  
+                  return (
+                    <div className="bg-gradient-to-r from-[#fdfbf7] to-[#f8f6f0] p-4 rounded-xl border border-[#d4b5a0]/20">
+                      <h3 className="text-sm font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Résumé pour la période sélectionnée
+                      </h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs text-[#2c3e50]/60">Total HT</p>
+                          <p className="text-lg font-bold text-[#2c3e50]">{totalHT.toFixed(2)}€</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#2c3e50]/60">TVA (20%)</p>
+                          <p className="text-lg font-bold text-orange-600">{totalTVA.toFixed(2)}€</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#2c3e50]/60">Total TTC</p>
+                          <p className="text-lg font-bold text-green-600">{totalTTC.toFixed(2)}€</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[#2c3e50]/50 mt-2">
+                        {filteredReservations.length} prestations payées
+                      </p>
+                    </div>
+                  );
+                })()}
+                </div>
               </div>
 
               {/* Liste des réservations à facturer */}
@@ -1076,7 +1450,7 @@ export default function AdminDashboard() {
                   .filter(r => r.status === 'completed')
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .map((reservation) => (
-                  <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -1085,12 +1459,9 @@ export default function AdminDashboard() {
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             reservation.paymentStatus === 'paid' 
                               ? 'bg-green-100 text-green-600'
-                              : reservation.paymentStatus === 'partial'
-                              ? 'bg-yellow-100 text-yellow-600'
                               : 'bg-red-100 text-red-600'
                           }`}>
-                            {reservation.paymentStatus === 'paid' ? '✓ Payé' : 
-                             reservation.paymentStatus === 'partial' ? 'Partiel' : 'Non payé'}
+                            {reservation.paymentStatus === 'paid' ? '✓ Payé' : 'Non payé'}
                           </span>
                         </div>
                         <p className="text-sm text-[#2c3e50]/60 mb-1">
@@ -1568,7 +1939,6 @@ export default function AdminDashboard() {
           {/* Onglet Blog */}
           {activeTab === "blog" && <AdminBlogTab />}
         </div>
-      </div>
 
       {/* Modal Nouvelle Réservation */}
       {showNewReservationModal && (
@@ -1877,6 +2247,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      </div>
     </div>
     </AuthGuard>
   );

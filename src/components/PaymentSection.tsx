@@ -1,17 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Gift, CreditCard, Euro } from 'lucide-react';
+import { Gift, CreditCard, Euro, Banknote, Building2 } from 'lucide-react';
 import { InvoiceButton } from './InvoiceGenerator';
 
 interface PaymentSectionProps {
   reservation: any;
   loyaltyProfiles: any[];
-  recordPayment: (reservationId: string, appliedDiscount?: { type: string, amount: number }) => void;
+  recordPayment: (reservationId: string, appliedDiscount?: { type: string, amount: number }, paymentDetails?: any) => void;
 }
 
 export default function PaymentSection({ reservation, loyaltyProfiles, recordPayment }: PaymentSectionProps) {
   const [appliedDiscount, setAppliedDiscount] = useState<{ type: string, amount: number } | null>(null);
+  const [paymentMode, setPaymentMode] = useState<'simple' | 'mixed'>('simple');
+  const [cashAmount, setCashAmount] = useState(0);
+  const [cardAmount, setCardAmount] = useState(0);
+  const [transferAmount, setTransferAmount] = useState(0);
   
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
@@ -101,48 +105,159 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
       )}
       
       <h4 className="font-medium text-[#2c3e50] mb-3">Enregistrer le paiement</h4>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-        <div>
-          <label className="text-sm text-[#2c3e50]/60 mb-1 block">Montant payé</label>
-          <input
-            type="number"
-            placeholder="Montant payé"
-            defaultValue={reservation.totalPrice}
-            id={`amount-${reservation.id}`}
-            className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="text-sm text-[#2c3e50]/60 mb-1 block">Mode de paiement</label>
-          <select
-            id={`method-${reservation.id}`}
-            className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+      
+      {/* Sélection du mode de paiement */}
+      <div className="mb-4">
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => setPaymentMode('simple')}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              paymentMode === 'simple'
+                ? 'bg-[#d4b5a0] text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
           >
-            <option value="cash">Espèces</option>
-            <option value="card">Carte bancaire</option>
-            <option value="transfer">Virement</option>
-          </select>
+            Paiement simple
+          </button>
+          <button
+            onClick={() => setPaymentMode('mixed')}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              paymentMode === 'mixed'
+                ? 'bg-[#d4b5a0] text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            Paiement mixte
+          </button>
         </div>
-        <div>
-          <label className="text-sm text-[#2c3e50]/60 mb-1 block">N° Facture</label>
-          <input
-            type="text"
-            placeholder="ex: 2024-001"
-            id={`invoice-${reservation.id}`}
-            className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
-          />
-        </div>
+
+        {paymentMode === 'simple' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-sm text-[#2c3e50]/60 mb-1 block">Montant payé</label>
+              <input
+                type="number"
+                placeholder="Montant payé"
+                defaultValue={appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice}
+                id={`amount-${reservation.id}`}
+                className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[#2c3e50]/60 mb-1 block">Mode de paiement</label>
+              <select
+                id={`method-${reservation.id}`}
+                className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+              >
+                <option value="cash">Espèces</option>
+                <option value="card">Carte bancaire</option>
+                <option value="transfer">Virement</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-[#2c3e50]/60 mb-1 block">N° Facture</label>
+              <input
+                type="text"
+                placeholder="ex: 2024-001"
+                id={`invoice-${reservation.id}`}
+                className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium text-[#2c3e50] mb-3">
+                Total à payer : {appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice}€
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-green-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Espèces</label>
+                  <input
+                    type="number"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Carte</label>
+                  <input
+                    type="number"
+                    value={cardAmount}
+                    onChange={(e) => setCardAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Virement</label>
+                  <input
+                    type="number"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total payé :</span>
+                  <span className={`font-bold ${
+                    cashAmount + cardAmount + transferAmount === (appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice)
+                      ? 'text-green-600'
+                      : 'text-orange-600'
+                  }`}>
+                    {cashAmount + cardAmount + transferAmount}€
+                  </span>
+                </div>
+                {cashAmount + cardAmount + transferAmount !== (appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice) && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    Reste : {(appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice) - (cashAmount + cardAmount + transferAmount)}€
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="N° Facture (ex: 2024-001)"
+                id={`invoice-${reservation.id}`}
+                className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Notes (optionnel)"
+                id={`notes-${reservation.id}`}
+                className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input
-          type="text"
-          placeholder="Notes (optionnel)"
-          id={`notes-${reservation.id}`}
-          className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
-        />
+
+      <div className="flex gap-3">
         <button
-          onClick={() => recordPayment(reservation.id, appliedDiscount || undefined)}
-          className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          onClick={() => {
+            const paymentDetails = paymentMode === 'mixed' 
+              ? { 
+                  cash: cashAmount, 
+                  card: cardAmount, 
+                  transfer: transferAmount,
+                  total: cashAmount + cardAmount + transferAmount
+                }
+              : null;
+            recordPayment(reservation.id, appliedDiscount || undefined, paymentDetails);
+          }}
+          className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
         >
           <CreditCard className="w-4 h-4" />
           Valider le paiement

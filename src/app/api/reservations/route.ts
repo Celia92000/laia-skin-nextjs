@@ -19,7 +19,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { services, packages, date, time, notes, totalPrice } = body;
 
-    // IMPORTANT: Vérifier la disponibilité du créneau avant de créer la réservation
+    // Désactivé car vous êtes seule - pas de blocage de double réservation
+    // Si vous voulez réactiver cette vérification plus tard, décommentez ces lignes
+    /*
     const existingReservation = await prisma.reservation.findFirst({
       where: {
         date: new Date(date),
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
         error: 'Ce créneau est déjà réservé. Veuillez choisir un autre horaire.' 
       }, { status: 409 }); // 409 Conflict
     }
+    */
 
     // Créer la réservation si le créneau est disponible
     const reservation = await prisma.reservation.create({

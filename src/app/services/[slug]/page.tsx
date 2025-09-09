@@ -30,6 +30,23 @@ export default async function ServicePage({ params }: ServicePageProps) {
     take: 3
   });
 
+  // Récupérer les services qui peuvent être ajoutés en option
+  let optionServices = await prisma.service.findMany({
+    where: {
+      active: true,
+      canBeOption: true
+    }
+  });
+
+  // Déterminer si ce service peut avoir des options (Hydro'Naissance, Hydro'Cleaning, Renaissance)
+  const canHaveOptions = ['hydro-naissance', 'hydro-cleaning', 'renaissance'].includes(slug);
+  
+  // Exclure LED Thérapie des options si elle est déjà incluse dans le protocole
+  // Hydro'Cleaning, Renaissance et Hydro'Naissance incluent déjà la LED
+  if (['hydro-cleaning', 'renaissance', 'hydro-naissance'].includes(slug)) {
+    optionServices = optionServices.filter(option => option.slug !== 'led-therapie');
+  }
+
   // Parser les données JSON ou texte simple
   const parseJsonOrText = (data: any): string[] => {
     if (!data) return [];
@@ -110,6 +127,30 @@ export default async function ServicePage({ params }: ServicePageProps) {
               </p>
             </div>
 
+            {/* CTA de réservation rapide */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link 
+                href="/reservation"
+                className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              >
+                <Calendar className="w-5 h-5" />
+                Réserver ce soin
+              </Link>
+              <div className="flex items-center justify-center gap-3 text-[#2c3e50]/70">
+                <Clock className="w-5 h-5 text-[#d4b5a0]" />
+                <span className="font-medium">{service.duration} minutes</span>
+                <span className="mx-2">•</span>
+                {service.promoPrice ? (
+                  <>
+                    <span className="line-through text-[#2c3e50]/40">{service.price}€</span>
+                    <span className="font-bold text-[#d4b5a0] text-xl">{service.promoPrice}€</span>
+                  </>
+                ) : (
+                  <span className="font-bold text-[#2c3e50] text-xl">{service.price}€</span>
+                )}
+              </div>
+            </div>
+
             {/* Bénéfices - Section mise en avant */}
             {benefits.length > 0 && (
               <div className="mt-12 bg-gradient-to-r from-[#fdfbf7] to-[#f8f6f0] rounded-2xl p-8">
@@ -133,21 +174,21 @@ export default async function ServicePage({ params }: ServicePageProps) {
 
           {/* Déroulement du soin */}
           {process.length > 0 && (
-            <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 mb-12">
-              <h2 className="text-3xl font-serif font-bold text-[#2c3e50] mb-8 flex items-center gap-3">
-                <Sparkles className="w-8 h-8 text-[#d4b5a0]" />
+            <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-12">
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6 flex items-center gap-3">
+                <Sparkles className="w-6 h-6 text-[#d4b5a0]" />
                 Comment se déroule la séance ?
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {process.map((step: string, index: number) => (
-                  <div key={index} className="flex gap-6 items-start">
+                  <div key={index} className="flex gap-4 items-start">
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] text-white rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
+                      <div className="w-8 h-8 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
                         {index + 1}
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#2c3e50]/80 text-lg leading-relaxed">{step}</p>
+                      <p className="text-[#2c3e50]/80 text-base leading-relaxed">{step}</p>
                     </div>
                   </div>
                 ))}
@@ -243,6 +284,63 @@ export default async function ServicePage({ params }: ServicePageProps) {
               </div>
             </div>
           </div>
+
+          {/* Options complémentaires */}
+          {canHaveOptions && optionServices.length > 0 && (
+            <div className="bg-white rounded-3xl shadow-xl p-8 md:p-12 mb-12">
+              <h2 className="text-3xl font-serif font-bold text-[#2c3e50] mb-4">
+                Personnalisez votre soin
+              </h2>
+              <p className="text-[#2c3e50]/70 mb-8">
+                Ajoutez ces options pour une expérience encore plus complète
+              </p>
+              <div className="grid md:grid-cols-2 gap-6">
+                {optionServices.map((option) => (
+                  <Link
+                    key={option.id}
+                    href={`/reservation?service=${slug}&option=${option.slug}`}
+                    className="block border-2 border-[#d4b5a0]/30 rounded-2xl p-6 hover:border-[#d4b5a0] transition-all duration-300 hover:shadow-lg cursor-pointer group"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-[#2c3e50] mb-2 group-hover:text-[#d4b5a0] transition-colors">
+                          + {option.name}
+                        </h3>
+                        <p className="text-sm text-[#2c3e50]/70">
+                          {option.shortDescription}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {option.promoPrice ? (
+                          <>
+                            <span className="text-sm line-through text-[#2c3e50]/40 block">{option.price}€</span>
+                            <span className="text-xl font-bold text-[#d4b5a0]">+{option.promoPrice}€</span>
+                          </>
+                        ) : (
+                          <span className="text-xl font-bold text-[#d4b5a0]">+{option.price}€</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-[#2c3e50]/60">
+                        <Clock className="w-4 h-4" />
+                        <span>+{option.duration} min</span>
+                      </div>
+                      <span className="text-sm text-[#d4b5a0] font-medium group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        Ajouter cette option
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-[#d4b5a0]/10 rounded-xl">
+                <p className="text-sm text-[#2c3e50]/80 text-center">
+                  💡 Ces options peuvent être ajoutées lors de votre réservation ou sur place le jour de votre rendez-vous
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* CTA de réservation */}
           <div className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] rounded-3xl p-8 md:p-12 mb-12 text-center shadow-2xl">

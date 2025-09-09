@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from 'next/navigation';
 import { Calendar, Clock, User, Phone, Mail, ChevronLeft, ChevronRight, Sparkles, CheckCircle, MapPin, Shield, AlertCircle, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function Reservation() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<{[key: string]: string}>({});
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
@@ -87,6 +90,19 @@ export default function Reservation() {
     "10:00", "10:30", "11:00", "11:30", "12:00", "14:00", 
     "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
   ];
+
+  // Gérer les paramètres d'URL pour pré-sélectionner services et options
+  useEffect(() => {
+    const service = searchParams.get('service');
+    const option = searchParams.get('option');
+    
+    if (service) {
+      setSelectedServices([service]);
+    }
+    if (option) {
+      setSelectedOptions([option]);
+    }
+  }, [searchParams]);
 
   // Vérifier si l'utilisateur est déjà connecté
   useEffect(() => {
@@ -531,6 +547,78 @@ export default function Reservation() {
                     </div>
                   ))}
                 </div>
+
+                {/* Section Options complémentaires */}
+                {selectedServices.length > 0 && (
+                  <div className="mt-8 p-6 bg-gradient-to-br from-[#fdfbf7] to-white rounded-2xl border border-[#d4b5a0]/20">
+                    <h3 className="text-xl font-serif font-bold text-[#2c3e50] mb-4">
+                      Options complémentaires
+                    </h3>
+                    <p className="text-sm text-[#2c3e50]/70 mb-4">
+                      Ajoutez ces soins pour compléter votre expérience
+                    </p>
+                    <div className="space-y-3">
+                      {/* BB Glow en option (sauf si déjà sélectionné comme soin principal) */}
+                      {!selectedServices.includes("bbglow") && (
+                        <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          selectedOptions.includes("bbglow")
+                            ? "border-[#d4b5a0] bg-[#d4b5a0]/5"
+                            : "border-gray-200 hover:border-[#d4b5a0]/50"
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedOptions.includes("bbglow")}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedOptions([...selectedOptions, "bbglow"]);
+                                } else {
+                                  setSelectedOptions(selectedOptions.filter(id => id !== "bbglow"));
+                                }
+                              }}
+                              className="w-5 h-5 text-[#d4b5a0] focus:ring-[#d4b5a0] focus:ring-offset-0 rounded"
+                            />
+                            <div>
+                              <h4 className="font-medium text-[#2c3e50]">BB Glow 🌟</h4>
+                              <p className="text-xs text-[#2c3e50]/60">Teint lumineux semi-permanent (+30 min)</p>
+                            </div>
+                          </div>
+                          <span className="font-bold text-[#d4b5a0]">+50€</span>
+                        </label>
+                      )}
+                      
+                      {/* LED Thérapie en option (sauf si déjà dans le soin ou sélectionnée comme principale) */}
+                      {!selectedServices.includes("led") && 
+                       !["hydro-naissance", "hydro", "renaissance"].some(id => selectedServices.includes(id)) && (
+                        <label className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          selectedOptions.includes("led")
+                            ? "border-[#d4b5a0] bg-[#d4b5a0]/5"
+                            : "border-gray-200 hover:border-[#d4b5a0]/50"
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedOptions.includes("led")}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedOptions([...selectedOptions, "led"]);
+                                } else {
+                                  setSelectedOptions(selectedOptions.filter(id => id !== "led"));
+                                }
+                              }}
+                              className="w-5 h-5 text-[#d4b5a0] focus:ring-[#d4b5a0] focus:ring-offset-0 rounded"
+                            />
+                            <div>
+                              <h4 className="font-medium text-[#2c3e50]">LED Thérapie 💡</h4>
+                              <p className="text-xs text-[#2c3e50]/60">Régénération cellulaire (+30 min)</p>
+                            </div>
+                          </div>
+                          <span className="font-bold text-[#d4b5a0]">+50€</span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Total Price Display */}
                 {selectedServices.length > 0 && (
@@ -538,21 +626,34 @@ export default function Reservation() {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-lg">Total estimé :</span>
                       <span className="text-2xl font-bold">
-                        {selectedServices.reduce((total, serviceId) => {
-                          const service = services.find(s => s.id === serviceId);
-                          if (!service) return total;
+                        {(() => {
+                          // Calcul du prix des services
+                          const servicesTotal = selectedServices.reduce((total, serviceId) => {
+                            const service = services.find(s => s.id === serviceId);
+                            if (!service) return total;
+                            
+                            const isPackage = selectedPackages[serviceId] === "forfait";
+                            let price = 0;
+                            
+                            if (isPackage && service.forfait) {
+                              price = parseInt(service.forfaitPromo.replace('€', ''));
+                            } else {
+                              price = parseInt((service.promo || service.price).replace('€', ''));
+                            }
+                            
+                            return total + price;
+                          }, 0);
                           
-                          const isPackage = selectedPackages[serviceId] === "forfait";
-                          let price = 0;
+                          // Calcul du prix des options
+                          const optionsTotal = selectedOptions.reduce((total, optionId) => {
+                            if (optionId === "bbglow" || optionId === "led") {
+                              return total + 50; // Prix promo pour les options
+                            }
+                            return total;
+                          }, 0);
                           
-                          if (isPackage && service.forfait) {
-                            price = parseInt(service.forfaitPromo.replace('€', ''));
-                          } else {
-                            price = parseInt((service.promo || service.price).replace('€', ''));
-                          }
-                          
-                          return total + price;
-                        }, 0)}€
+                          return servicesTotal + optionsTotal;
+                        })()}€
                       </span>
                     </div>
                     <p className="text-sm text-white/80 mt-1">Tarifs de lancement appliqués</p>

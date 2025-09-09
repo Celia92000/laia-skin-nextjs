@@ -53,32 +53,6 @@ export const staticServices = [
     order: 2
   },
   {
-    id: 'led-therapie',
-    name: 'LED Thérapie',
-    slug: 'led-therapie',
-    description: 'La LED thérapie utilise différentes longueurs d\'onde de lumière pour traiter divers problèmes de peau et stimuler la régénération cellulaire.',
-    longDescription: 'La LED thérapie est une technique non invasive qui utilise différentes couleurs de lumière LED pour traiter divers problèmes cutanés. Chaque couleur a des propriétés spécifiques : rouge pour l\'anti-âge, bleue pour l\'acné, verte pour les taches pigmentaires.',
-    image: '/images/led-therapie.jpg',
-    duration: 45,
-    price: 80,
-    priceRange: '80€',
-    benefits: [
-      'Stimulation du collagène',
-      'Réduction de l\'acné',
-      'Amélioration du teint',
-      'Effet anti-âge'
-    ],
-    indications: [
-      'Rides et ridules',
-      'Acné',
-      'Taches pigmentaires',
-      'Relâchement cutané'
-    ],
-    featured: false,
-    active: true,
-    order: 3
-  },
-  {
     id: 'renaissance',
     name: 'Renaissance',
     slug: 'renaissance',
@@ -101,6 +75,32 @@ export const staticServices = [
       'Teint fatigué'
     ],
     featured: true,
+    active: true,
+    order: 3
+  },
+  {
+    id: 'led-therapie',
+    name: 'LED Thérapie',
+    slug: 'led-therapie',
+    description: 'La LED thérapie utilise différentes longueurs d\'onde de lumière pour traiter divers problèmes de peau et stimuler la régénération cellulaire.',
+    longDescription: 'La LED thérapie est une technique non invasive qui utilise différentes couleurs de lumière LED pour traiter divers problèmes cutanés. Chaque couleur a des propriétés spécifiques : rouge pour l\'anti-âge, bleue pour l\'acné, verte pour les taches pigmentaires.',
+    image: '/images/led-therapie.jpg',
+    duration: 45,
+    price: 80,
+    priceRange: '80€',
+    benefits: [
+      'Stimulation du collagène',
+      'Réduction de l\'acné',
+      'Amélioration du teint',
+      'Effet anti-âge'
+    ],
+    indications: [
+      'Rides et ridules',
+      'Acné',
+      'Taches pigmentaires',
+      'Relâchement cutané'
+    ],
+    featured: false,
     active: true,
     order: 4
   }
