@@ -87,8 +87,11 @@ export default function Reservation() {
   ];
 
   const timeSlots = [
-    "10:00", "10:30", "11:00", "11:30", "12:00", "14:00", 
-    "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+    "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
+    "21:00", "21:30", "22:00", "22:30", "23:00"
   ];
 
   // Gérer les paramètres d'URL pour pré-sélectionner services et options
@@ -238,23 +241,37 @@ export default function Reservation() {
       }
       
       // Créer la réservation
-      console.log('Création de la réservation avec token:', token);
+      console.log('Création de la réservation');
       const reservationData = {
         services: selectedServices,
         packages: selectedPackages,
         date: selectedDate,
         time: selectedTime,
         notes: formData.notes,
-        totalPrice: calculateTotal()
+        totalPrice: calculateTotal(),
+        // Ajouter les infos client si pas de token
+        ...(!token ? {
+          clientInfo: {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone
+          }
+        } : {})
       };
       console.log('Données de réservation:', reservationData);
       
+      const headers: any = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Ajouter le token seulement s'il existe
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch('/api/reservations', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify(reservationData)
       });
       

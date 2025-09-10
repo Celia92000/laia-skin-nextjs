@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon, Star } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import AdminCalendarEnhanced from "@/components/AdminCalendarEnhanced";
 import AdminServicesTab from "@/components/AdminServicesTab";
-import AdminDisponibilitesTab from "@/components/AdminDisponibilitesTab";
 import AdminDashboardOptimized from "@/components/AdminDashboardOptimized";
+import UnifiedCRMTab from "@/components/UnifiedCRMTab";
 import AdminBlogTab from "@/components/AdminBlogTab";
+import PlanningCalendar from "@/components/PlanningCalendar";
+import AvailabilityManager from "@/components/AvailabilityManager";
+import QuickBlockManager from "@/components/QuickBlockManager";
 import { InvoiceButton } from "@/components/InvoiceGenerator";
 import PaymentSection from "@/components/PaymentSection";
 import { logout } from "@/lib/auth-client";
@@ -75,6 +78,7 @@ export default function AdminDashboard() {
   const [showNotification, setShowNotification] = useState(false);
   const [lastCheckedReservations, setLastCheckedReservations] = useState<string[]>([]);
   const [newReservationCount, setNewReservationCount] = useState(0);
+  const [planningSubTab, setPlanningSubTab] = useState<'calendar' | 'availability' | 'list'>('calendar');
   const [newReservation, setNewReservation] = useState({
     client: '',
     email: '',
@@ -344,6 +348,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const validateReservation = async (reservationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'confirmed'
+        })
+      });
+
+      if (response.ok) {
+        fetchReservations();
+        alert('Réservation validée avec succès !');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+    }
+  };
+
   const createNewReservation = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -392,6 +420,24 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       
+      // Gestion de l'annulation de paiement
+      if (paymentDetails?.reset) {
+        const response = await fetch(`/api/admin/reservations/${reservationId}/payment`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          fetchReservations();
+          fetchLoyaltyProfiles();
+          alert('Paiement annulé avec succès');
+        }
+        return;
+      }
+      
       // Générer automatiquement un numéro de facture unique si non fourni
       let invoiceNumber = invoiceInput?.value || '';
       if (!invoiceNumber) {
@@ -406,7 +452,7 @@ export default function AdminDashboard() {
       let paymentMethod = '';
       let paymentNotes = notesInput?.value || '';
       
-      if (paymentDetails) {
+      if (paymentDetails && !paymentDetails.reset) {
         // Paiement mixte
         paymentAmount = paymentDetails.total;
         const methods = [];
@@ -679,13 +725,18 @@ export default function AdminDashboard() {
         <div className="flex gap-4 mb-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab("planning")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap relative ${
               activeTab === "planning"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
             }`}
           >
             Planning du jour
+            {reservations.filter(r => r.status === 'pending').length > 0 && (
+              <span className="absolute -top-2 -right-2 px-2 py-1 bg-yellow-500 text-white text-xs rounded-full animate-pulse">
+                {reservations.filter(r => r.status === 'pending').length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("validation")}
@@ -709,23 +760,35 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("fidelite")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap relative ${
               activeTab === "fidelite"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
             }`}
           >
             Gestion Fidélité
-          </button>
-          <button
-            onClick={() => setActiveTab("clients")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
-              activeTab === "clients"
-                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                : "bg-white text-[#2c3e50] hover:shadow-md"
-            }`}
-          >
-            Tous les Clients
+            {(() => {
+              const clientsWithRewards = clients.filter(client => {
+                const clientReservations = reservations.filter(r => 
+                  r.userEmail === client.email && r.status !== 'cancelled'
+                );
+                const sessionCount = clientReservations.length;
+                const has6Sessions = sessionCount > 0 && sessionCount % 6 === 0;
+                const currentMonth = new Date().getMonth();
+                const hasBirthday = client.birthdate && 
+                  new Date(client.birthdate).getMonth() === currentMonth;
+                return has6Sessions || hasBirthday;
+              });
+              
+              if (clientsWithRewards.length > 0) {
+                return (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold animate-pulse">
+                    {clientsWithRewards.length}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </button>
           <button
             onClick={() => setActiveTab("crm")}
@@ -748,16 +811,6 @@ export default function AdminDashboard() {
             Gestion Services
           </button>
           <button
-            onClick={() => setActiveTab("disponibilites")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
-              activeTab === "disponibilites"
-                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                : "bg-white text-[#2c3e50] hover:shadow-md"
-            }`}
-          >
-            Disponibilités
-          </button>
-          <button
             onClick={() => setActiveTab("blog")}
             className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
               activeTab === "blog"
@@ -773,17 +826,47 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {activeTab === "planning" && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
-                  Planning & Calendrier
+              <div className="mb-6">
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-4">
+                  Planning & Disponibilités
                 </h2>
-                <button
-                  onClick={() => setShowNewReservationModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Nouvelle réservation
-                </button>
+                
+                {/* Sous-onglets */}
+                <div className="flex gap-2 mb-6 border-b border-[#d4b5a0]/20 pb-4">
+                  <button
+                    onClick={() => setPlanningSubTab('calendar')}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      planningSubTab === 'calendar'
+                        ? 'bg-[#d4b5a0] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Calendar className="w-4 h-4 inline mr-2" />
+                    Vue calendrier
+                  </button>
+                  <button
+                    onClick={() => setPlanningSubTab('availability')}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      planningSubTab === 'availability'
+                        ? 'bg-[#d4b5a0] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Gérer mes disponibilités
+                  </button>
+                  <button
+                    onClick={() => setPlanningSubTab('list')}
+                    className={`px-4 py-2 rounded-lg transition-all ${
+                      planningSubTab === 'list'
+                        ? 'bg-[#d4b5a0] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <List className="w-4 h-4 inline mr-2" />
+                    Liste des réservations
+                  </button>
+                </div>
               </div>
               
               {/* Section nouvelles réservations en attente */}
@@ -839,28 +922,74 @@ export default function AdminDashboard() {
                       ))}
                   </div>
                   {reservations.filter(r => r.status === 'pending').length > 4 && (
-                    <button
-                      onClick={() => setActiveTab('validation')}
-                      className="mt-4 w-full py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
-                    >
-                      Voir toutes les réservations en attente ({reservations.filter(r => r.status === 'pending').length})
-                    </button>
+                    <div className="mt-4 text-center text-sm text-[#2c3e50]/60">
+                      Affichez uniquement les 4 premières réservations en attente.
+                      <br />Total : {reservations.filter(r => r.status === 'pending').length} réservations à valider
+                    </div>
                   )}
                 </div>
               )}
 
-              <AdminCalendarEnhanced 
-                reservations={reservations
-                  .filter(r => r.status !== 'cancelled') // Ne pas afficher les réservations annulées dans le calendrier
-                  .map(r => ({
-                    ...r,
-                    userName: r.userName || 'Client',
-                  }))}
-                onDateSelect={(date) => setSelectedDate(date)}
-              />
-
-              {/* Tableau des réservations avec toutes les infos */}
-              <div className="mt-8">
+              {/* Afficher le contenu selon le sous-onglet */}
+              {planningSubTab === 'calendar' && (
+                <PlanningCalendar 
+                  reservations={reservations
+                    .filter(r => r.status !== 'cancelled')
+                    .map(r => ({
+                      ...r,
+                      userName: r.userName || 'Client',
+                    }))}
+                  onNewReservation={() => setShowNewReservationModal(true)}
+                />
+              )}
+              
+              {planningSubTab === 'availability' && (
+                <div className="space-y-6">
+                  {/* Gestionnaire de blocages ponctuels */}
+                  <QuickBlockManager />
+                  
+                  {/* Gestionnaire de récurrences */}
+                  <AvailabilityManager />
+                  
+                  {/* Instructions */}
+                  <div className="bg-[#fdfbf7] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">
+                      Guide rapide
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-medium text-[#2c3e50] mb-2">Blocages récurrents</h4>
+                        <ul className="text-sm text-[#2c3e50]/70 space-y-1">
+                          <li>• Pause déjeuner quotidienne</li>
+                          <li>• Jour de fermeture hebdomadaire</li>
+                          <li>• Réunion mensuelle</li>
+                        </ul>
+                      </div>
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-medium text-[#2c3e50] mb-2">Blocages ponctuels</h4>
+                        <ul className="text-sm text-[#2c3e50]/70 space-y-1">
+                          <li>• Utilisez la vue calendrier</li>
+                          <li>• Cliquez sur le jour/créneau</li>
+                          <li>• Blocage immédiat</li>
+                        </ul>
+                      </div>
+                      <div className="bg-white rounded-lg p-4">
+                        <h4 className="font-medium text-[#2c3e50] mb-2">Application automatique</h4>
+                        <ul className="text-sm text-[#2c3e50]/70 space-y-1">
+                          <li>• 3 mois à l'avance</li>
+                          <li>• Mise à jour instantanée</li>
+                          <li>• Clients informés en temps réel</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {planningSubTab === 'list' && (
+                <div>
+                  {/* Tableau des réservations avec toutes les infos */}
+                  <div className="mt-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-[#2c3e50]">Toutes les réservations</h3>
                   <div className="flex gap-2">
@@ -1120,6 +1249,8 @@ export default function AdminDashboard() {
                 </div>
                 )}
               </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1515,6 +1646,25 @@ export default function AdminDashboard() {
                             {reservation.paymentNotes && <p>Notes: {reservation.paymentNotes}</p>}
                           </div>
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => openEditModal(reservation)}
+                              className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all text-sm"
+                            >
+                              <Edit2 className="w-4 h-4 inline mr-1" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Êtes-vous sûr de vouloir annuler ce paiement ?')) {
+                                  // Réinitialiser le statut de paiement
+                                  recordPayment(reservation.id, undefined, { reset: true });
+                                }
+                              }}
+                              className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-sm"
+                            >
+                              <X className="w-4 h-4 inline mr-1" />
+                              Annuler paiement
+                            </button>
                             <InvoiceButton reservation={{
                               ...reservation,
                               client: reservation.userName || 'Client',
@@ -1536,22 +1686,149 @@ export default function AdminDashboard() {
                 Gestion de la Fidélité & Anniversaires
               </h2>
 
+              {/* ALERTES - Clients avec réductions disponibles */}
+              {(() => {
+                const clientsWithRewards = clients.filter(client => {
+                  const clientReservations = reservations.filter(r => 
+                    r.userEmail === client.email && r.status !== 'cancelled'
+                  );
+                  
+                  const individualSessions = clientReservations.length;
+                  const hasIndividualReward = individualSessions > 0 && individualSessions % 6 === 0;
+                  
+                  // Vérifier anniversaire ce mois
+                  const currentMonth = new Date().getMonth();
+                  const hasBirthday = client.birthdate && 
+                    new Date(client.birthdate).getMonth() === currentMonth;
+                  
+                  return hasIndividualReward || hasBirthday;
+                });
+
+                if (clientsWithRewards.length > 0) {
+                  return (
+                    <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="relative">
+                          <AlertCircle className="w-6 h-6 text-green-600 animate-pulse" />
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                            {clientsWithRewards.length}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-bold text-[#2c3e50]">
+                          Réductions à appliquer ! 🎉
+                        </h3>
+                      </div>
+                      
+                      <div className="grid gap-3">
+                        {clientsWithRewards.map(client => {
+                          const clientReservations = reservations.filter(r => 
+                            r.userEmail === client.email && r.status !== 'cancelled'
+                          );
+                          const sessionCount = clientReservations.length;
+                          const has6Sessions = sessionCount > 0 && sessionCount % 6 === 0;
+                          const currentMonth = new Date().getMonth();
+                          const hasBirthday = client.birthdate && 
+                            new Date(client.birthdate).getMonth() === currentMonth;
+                          
+                          return (
+                            <div key={client.id} className="bg-white rounded-lg p-4 flex justify-between items-center border border-green-200">
+                              <div className="flex-1">
+                                <p className="font-semibold text-[#2c3e50]">{client.name}</p>
+                                <p className="text-sm text-[#2c3e50]/60">{client.email}</p>
+                                <div className="flex gap-2 mt-2">
+                                  {has6Sessions && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                                      ✓ 6 séances atteintes
+                                    </span>
+                                  )}
+                                  {hasBirthday && (
+                                    <span className="px-2 py-1 bg-pink-100 text-pink-700 rounded-full text-xs font-bold">
+                                      🎂 Anniversaire ce mois
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                {has6Sessions && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Appliquer -30€ pour ${client.name} (6 séances) ?`)) {
+                                        alert(`Réduction de 30€ appliquée pour ${client.name}`);
+                                        // TODO: Enregistrer la réduction appliquée
+                                      }
+                                    }}
+                                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                                  >
+                                    <Euro className="w-4 h-4" />
+                                    -30€
+                                  </button>
+                                )}
+                                {hasBirthday && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Appliquer -10€ pour ${client.name} (anniversaire) ?`)) {
+                                        alert(`Réduction anniversaire de 10€ appliquée pour ${client.name}`);
+                                        // TODO: Enregistrer la réduction appliquée
+                                      }
+                                    }}
+                                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                                  >
+                                    <Cake className="w-4 h-4" />
+                                    -10€
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Rappel des règles simplifiées */}
+              <div className="mb-6 grid md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4">
+                  <User className="w-8 h-8 text-gray-600 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Nouveau</h3>
+                  <p className="text-sm text-[#2c3e50]/70">0-4 séances</p>
+                </div>
+                <div className="bg-gradient-to-r from-green-100 to-green-200 rounded-xl p-4">
+                  <Heart className="w-8 h-8 text-green-600 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Fidèle ❤️</h3>
+                  <p className="text-sm text-[#2c3e50]/70">5-9 séances</p>
+                </div>
+                <div className="bg-gradient-to-r from-blue-100 to-blue-200 rounded-xl p-4">
+                  <Award className="w-8 h-8 text-blue-600 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Premium 💎</h3>
+                  <p className="text-sm text-[#2c3e50]/70">10-19 séances</p>
+                </div>
+                <div className="bg-gradient-to-r from-purple-100 to-purple-200 rounded-xl p-4">
+                  <Star className="w-8 h-8 text-purple-600 mb-2" />
+                  <h3 className="font-bold text-[#2c3e50] mb-1">VIP ⭐</h3>
+                  <p className="text-sm text-[#2c3e50]/70">20+ séances</p>
+                </div>
+              </div>
+              
+              {/* Règles de réduction */}
               <div className="mb-6 grid md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-4">
                   <Gift className="w-8 h-8 text-[#d4b5a0] mb-2" />
                   <h3 className="font-bold text-[#2c3e50] mb-1">Soins Individuels</h3>
-                  <p className="text-sm text-[#2c3e50]/70">5 soins = -30€ sur le 6ème</p>
+                  <p className="text-sm text-[#2c3e50]/70">6 séances = -30€ sur la 7ème</p>
                 </div>
                 <div className="bg-gradient-to-r from-purple-100 to-purple-200 rounded-xl p-4">
                   <CardIcon className="w-8 h-8 text-purple-600 mb-2" />
-                  <h3 className="font-bold text-[#2c3e50] mb-1">Forfaits</h3>
-                  <p className="text-sm text-[#2c3e50]/70">3 forfaits = -50€ sur le 4ème</p>
+                  <h3 className="font-bold text-[#2c3e50] mb-1">Forfaits Premium</h3>
+                  <p className="text-sm text-[#2c3e50]/70">2 forfaits = -50€ sur le 3ème</p>
                 </div>
                 <div className="bg-gradient-to-r from-pink-100 to-red-100 rounded-xl p-4">
                   <Cake className="w-8 h-8 text-red-500 mb-2" />
                   <h3 className="font-bold text-[#2c3e50] mb-1">Anniversaires</h3>
-                  <p className="text-sm text-[#2c3e50]/70">-10% tout le mois</p>
+                  <p className="text-sm text-[#2c3e50]/70">-10€ le mois d'anniversaire</p>
                 </div>
               </div>
 
@@ -1592,7 +1869,7 @@ export default function AdminDashboard() {
                             <p className="text-xs text-[#2c3e50]/50">{client.phone || 'Pas de téléphone'}</p>
                           </div>
                           <div className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-sm font-bold">
-                            -10%
+                            -10€
                           </div>
                         </div>
                       );
@@ -1602,38 +1879,75 @@ export default function AdminDashboard() {
               </div>
 
               {/* Cartes de fidélité actives */}
-              <h3 className="text-lg font-bold text-[#2c3e50] mb-4">Cartes de fidélité en cours</h3>
+              <h3 className="text-lg font-bold text-[#2c3e50] mb-4">Progression des clients</h3>
               <div className="space-y-4">
-                {loyaltyProfiles.map((profile) => {
-                  // Utiliser les vraies données de fidélité (le premier compte aussi!)
-                  const soinsCount = profile.individualServicesCount;
-                  const forfaitsCount = profile.packagesCount;
-                  const soinsProgress = soinsCount % 5 || (soinsCount > 0 && soinsCount % 5 === 0 ? 5 : 0);
-                  const forfaitsProgress = forfaitsCount % 3 || (forfaitsCount > 0 && forfaitsCount % 3 === 0 ? 3 : 0);
-                  const hasIndividualDiscount = profile.individualServicesCount >= 5 && Math.floor(profile.individualServicesCount / 5) > 0;
-                  const hasPackageDiscount = profile.packagesCount >= 3 && Math.floor(profile.packagesCount / 3) > 0;
-                  const hasDiscount = hasIndividualDiscount || hasPackageDiscount;
+                {clients.map((client) => {
+                  // Compter les séances du client
+                  const clientReservations = reservations.filter(r => 
+                    r.userEmail === client.email && r.status !== 'cancelled'
+                  );
+                  const sessionCount = clientReservations.length;
+                  
+                  // Compter séparément les soins individuels et les forfaits
+                  const individualSessions = clientReservations.filter(r => {
+                    try {
+                      const services = typeof r.services === 'string' ? JSON.parse(r.services || '[]') : r.services || [];
+                      return !services.some((s: any) => 
+                        typeof s === 'string' ? s.toLowerCase().includes('forfait') : 
+                        s.name?.toLowerCase().includes('forfait')
+                      );
+                    } catch {
+                      return true; // Compter comme session individuelle en cas d'erreur
+                    }
+                  }).length;
+                  
+                  const packages = clientReservations.filter(r => {
+                    try {
+                      const services = typeof r.services === 'string' ? JSON.parse(r.services || '[]') : r.services || [];
+                      return services.some((s: any) => 
+                        typeof s === 'string' ? s.toLowerCase().includes('forfait') : 
+                        s.name?.toLowerCase().includes('forfait')
+                      );
+                    } catch {
+                      return false; // Ne pas compter comme forfait en cas d'erreur
+                    }
+                  }).length;
+                  
+                  const progressTo6 = individualSessions % 6;
+                  const progressTo2 = packages % 2;
+                  const hasIndividualDiscount = individualSessions > 0 && individualSessions % 6 === 0;
+                  const hasPackageDiscount = packages > 0 && packages % 2 === 0;
+                  
+                  // Vérifier si le client a des réductions disponibles
+                  const isBirthday = client.birthDate && 
+                    new Date(client.birthDate).getMonth() === new Date().getMonth() &&
+                    new Date(client.birthDate).getDate() === new Date().getDate();
+                  
+                  const hasDiscount = hasIndividualDiscount || hasPackageDiscount || isBirthday;
+                  
+                  // Ne montrer que les clients qui ont au moins une séance
+                  if (sessionCount === 0) return null;
                   
                   return (
-                    <div key={profile.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div key={client.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <User className="w-5 h-5 text-[#d4b5a0]" />
-                            <span className="font-semibold text-lg text-[#2c3e50]">{profile.user.name}</span>
+                            <span className="font-semibold text-lg text-[#2c3e50]">{client.name}</span>
                             {hasDiscount && (
                               <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-sm font-bold animate-pulse">
                                 Réduction disponible !
                               </span>
                             )}
                           </div>
-                          <p className="text-[#2c3e50]/60">{profile.user.email}</p>
+                          <p className="text-[#2c3e50]/60">{client.email}</p>
                         </div>
                         
                         <div className="flex gap-2">
                           {hasIndividualDiscount && (
                             <button
-                              onClick={() => applyDiscount(profile.userId, 30, '5 soins individuels effectués')}
+                              onClick={() => applyDiscount(client.id, 30, '6 soins individuels effectués')}
                               className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all">
                               <Euro className="w-4 h-4 inline mr-2" />
                               -30€
@@ -1641,10 +1955,18 @@ export default function AdminDashboard() {
                           )}
                           {hasPackageDiscount && (
                             <button
-                              onClick={() => applyDiscount(profile.userId, 50, '3 forfaits effectués')}
+                              onClick={() => applyDiscount(client.id, 50, '2 forfaits effectués')}
                               className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
                               <Euro className="w-4 h-4 inline mr-2" />
                               -50€
+                            </button>
+                          )}
+                          {isBirthday && (
+                            <button
+                              onClick={() => applyDiscount(client.id, 10, 'Anniversaire')}
+                              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all">
+                              <Euro className="w-4 h-4 inline mr-2" />
+                              -10€
                             </button>
                           )}
                         </div>
@@ -1658,28 +1980,28 @@ export default function AdminDashboard() {
                             Soins individuels
                           </h4>
                           <div className="flex gap-2 mb-2">
-                            {[1, 2, 3, 4, 5].map((num) => (
+                            {[1, 2, 3, 4, 5, 6].map((num) => (
                               <div 
                                 key={num}
                                 className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
-                                  num <= soinsProgress ? 'bg-[#d4b5a0] text-white' : 'bg-white border border-[#d4b5a0]/30 text-[#d4b5a0]/50'
+                                  num <= progressTo6 ? 'bg-[#d4b5a0] text-white' : 'bg-white border border-[#d4b5a0]/30 text-[#d4b5a0]/50'
                                 }`}
                               >
-                                {num <= soinsProgress ? '✓' : num}
+                                {num <= progressTo6 ? '✓' : num}
                               </div>
                             ))}
                           </div>
                           <p className="text-sm text-[#2c3e50]/70">
                             {hasIndividualDiscount 
                               ? <span className="text-green-600 font-bold">Réduction de 30€ disponible !</span>
-                              : soinsProgress === 5
+                              : progressTo6 === 5
                               ? <span className="text-green-600 font-bold">Prochaine visite : -30€ !</span>
-                              : `${soinsProgress}/5 soins (dès le 1er soin)`
+                              : `${progressTo6}/6 soins`
                             }
                           </p>
-                          {soinsCount > 5 && (
+                          {individualSessions > 6 && (
                             <p className="text-xs text-[#2c3e50]/50 mt-1">
-                              Total: {soinsCount} soins effectués
+                              Total: {individualSessions} soins effectués
                             </p>
                           )}
                         </div>
@@ -1691,28 +2013,28 @@ export default function AdminDashboard() {
                             Forfaits
                           </h4>
                           <div className="flex gap-2 mb-2">
-                            {[1, 2, 3].map((num) => (
+                            {[1, 2].map((num) => (
                               <div 
                                 key={num}
                                 className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
-                                  num <= forfaitsProgress ? 'bg-purple-600 text-white' : 'bg-white border border-purple-300 text-purple-300'
+                                  num <= progressTo2 ? 'bg-purple-600 text-white' : 'bg-white border border-purple-300 text-purple-300'
                                 }`}
                               >
-                                {num <= forfaitsProgress ? '✓' : num}
+                                {num <= progressTo2 ? '✓' : num}
                               </div>
                             ))}
                           </div>
                           <p className="text-sm text-[#2c3e50]/70">
                             {hasPackageDiscount 
                               ? <span className="text-purple-600 font-bold">Réduction de 50€ disponible !</span>
-                              : forfaitsProgress === 3
+                              : progressTo2 === 1
                               ? <span className="text-purple-600 font-bold">Prochain forfait : -50€ !</span>
-                              : `${forfaitsProgress}/3 forfaits (dès le 1er forfait)`
+                              : `${progressTo2}/2 forfaits`
                             }
                           </p>
-                          {forfaitsCount > 3 && (
+                          {packages > 2 && (
                             <p className="text-xs text-[#2c3e50]/50 mt-1">
-                              Total: {forfaitsCount} forfaits effectués
+                              Total: {packages} forfaits effectués
                             </p>
                           )}
                         </div>
@@ -1724,7 +2046,16 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {activeTab === "clients" && (
+          {activeTab === "crm" && (
+            <UnifiedCRMTab 
+              clients={clients}
+              setClients={setClients}
+              loyaltyProfiles={loyaltyProfiles}
+              reservations={reservations}
+            />
+          )}
+
+          {false && activeTab === "OLD_CLIENTS" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
                 Base Clients ({clients.length})
@@ -1768,7 +2099,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {activeTab === "crm" && (
+          {false && activeTab === "OLD_CRM" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
                 CRM - Gestion Clients Détaillée
@@ -1932,9 +2263,6 @@ export default function AdminDashboard() {
 
           {/* Onglet Services */}
           {activeTab === "services" && <AdminServicesTab />}
-
-          {/* Onglet Disponibilités */}
-          {activeTab === "disponibilites" && <AdminDisponibilitesTab />}
 
           {/* Onglet Blog */}
           {activeTab === "blog" && <AdminBlogTab />}
@@ -2223,6 +2551,39 @@ export default function AdminDashboard() {
                     {editingReservation.totalPrice}€
                   </span>
                 </div>
+                {/* Afficher si la réservation est payée */}
+                {(() => {
+                  const currentReservation = reservations.find(r => r.id === editingReservation.id);
+                  if (currentReservation?.paymentStatus === 'paid') {
+                    const difference = editingReservation.totalPrice - (currentReservation.paymentAmount || currentReservation.totalPrice);
+                    return (
+                      <div className="mt-3 pt-3 border-t border-[#d4b5a0]/20">
+                        <p className="text-sm text-[#2c3e50]/70">
+                          Montant déjà payé: <span className="font-semibold">{currentReservation.paymentAmount || currentReservation.totalPrice}€</span>
+                        </p>
+                        {difference !== 0 && (
+                          <p className="text-sm mt-1">
+                            {difference > 0 ? (
+                              <span className="text-orange-600 font-semibold">
+                                Complément à payer: {difference}€
+                              </span>
+                            ) : (
+                              <span className="text-green-600 font-semibold">
+                                À rembourser: {Math.abs(difference)}€
+                              </span>
+                            )}
+                          </p>
+                        )}
+                        <div className="mt-2 p-2 bg-yellow-50 rounded-lg">
+                          <p className="text-xs text-yellow-800">
+                            ⚠️ La modification d'une réservation payée nécessitera un ajustement du paiement
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
 

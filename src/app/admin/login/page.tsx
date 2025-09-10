@@ -11,12 +11,40 @@ export default function AdminLogin() {
     email: "",
     password: ""
   });
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implémenter la logique d'authentification admin avec Supabase
-    // Pour le moment, redirection directe
-    router.push("/admin/dashboard");
+    setError("");
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Vérifier que c'est bien un admin
+        if (data.user.role === 'admin') {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          router.push('/admin');
+        } else {
+          setError('Accès réservé aux administrateurs');
+        }
+      } else {
+        setError('Email ou mot de passe incorrect');
+      }
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      setError('Erreur de connexion');
+    }
   };
 
   return (
@@ -72,6 +100,12 @@ export default function AdminLogin() {
                 </button>
               </div>
             </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"

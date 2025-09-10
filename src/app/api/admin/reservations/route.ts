@@ -52,6 +52,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Incrémenter le compteur de séances du client
+    await prisma.user.update({
+      where: { id: clientUser.id },
+      data: {
+        totalSessions: { increment: 1 },
+        totalSpent: { increment: totalPrice },
+        lastVisit: new Date()
+      }
+    });
+    
     // Créer la réservation
     const reservation = await prisma.reservation.create({
       data: {

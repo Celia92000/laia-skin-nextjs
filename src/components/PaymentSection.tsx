@@ -16,11 +16,17 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
   const [cashAmount, setCashAmount] = useState(0);
   const [cardAmount, setCardAmount] = useState(0);
   const [transferAmount, setTransferAmount] = useState(0);
+  const [showManualDiscount, setShowManualDiscount] = useState(false);
+  const [manualDiscountAmount, setManualDiscountAmount] = useState(0);
+  const [manualDiscountReason, setManualDiscountReason] = useState('');
   
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
-  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= 5 && Math.floor(userProfile.individualServicesCount / 5) > 0;
-  const hasPackageDiscount = userProfile && userProfile.packagesCount >= 3 && Math.floor(userProfile.packagesCount / 3) > 0;
+  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= 6 && userProfile.individualServicesCount % 6 === 0;
+  const hasPackageDiscount = userProfile && userProfile.packagesCount >= 2 && userProfile.packagesCount % 2 === 0;
+  const isBirthday = userProfile && userProfile.user.birthDate && 
+    new Date(userProfile.user.birthDate).getMonth() === new Date().getMonth() &&
+    new Date(userProfile.user.birthDate).getDate() === new Date().getDate();
   
   const applyLoyaltyDiscount = (type: string, amount: number) => {
     setAppliedDiscount({ type, amount });
@@ -41,7 +47,7 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
   return (
     <div className="border-t border-[#d4b5a0]/10 pt-4">
       {/* Affichage des réductions disponibles */}
-      {(hasIndividualDiscount || hasPackageDiscount) && (
+      {(hasIndividualDiscount || hasPackageDiscount || isBirthday) && (
         <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
           <h4 className="font-medium text-green-800 mb-3 flex items-center gap-2">
             <Gift className="w-5 h-5" />
@@ -59,7 +65,7 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 }`}
               >
                 {appliedDiscount?.type === 'individual' && '✓ '}
-                -30€ (5 soins effectués)
+                -30€ (6 soins)
               </button>
             )}
             {hasPackageDiscount && (
@@ -73,7 +79,21 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 }`}
               >
                 {appliedDiscount?.type === 'package' && '✓ '}
-                -50€ (3 forfaits effectués)
+                -50€ (3e forfait)
+              </button>
+            )}
+            {isBirthday && (
+              <button
+                onClick={() => applyLoyaltyDiscount('birthday', 10)}
+                disabled={appliedDiscount?.type === 'birthday'}
+                className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                  appliedDiscount?.type === 'birthday'
+                    ? 'bg-pink-600 text-white'
+                    : 'bg-white border border-pink-500 text-pink-700 hover:bg-pink-50'
+                }`}
+              >
+                {appliedDiscount?.type === 'birthday' && '✓ '}
+                -10€ (🎂 Anniversaire)
               </button>
             )}
             {appliedDiscount && (
@@ -103,6 +123,50 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
           )}
         </div>
       )}
+      
+      {/* Section réduction manuelle */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowManualDiscount(!showManualDiscount)}
+          className="text-sm text-blue-600 hover:text-blue-800 underline mb-2"
+        >
+          {showManualDiscount ? '▲ Masquer' : '▼ Appliquer une réduction manuelle'}
+        </button>
+        
+        {showManualDiscount && (
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-800 mb-3">Réduction manuelle</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                type="number"
+                placeholder="Montant de la réduction"
+                value={manualDiscountAmount}
+                onChange={(e) => setManualDiscountAmount(Number(e.target.value))}
+                className="px-3 py-2 border border-blue-200 rounded-lg focus:border-blue-400 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Raison (ex: Geste commercial)"
+                value={manualDiscountReason}
+                onChange={(e) => setManualDiscountReason(e.target.value)}
+                className="px-3 py-2 border border-blue-200 rounded-lg focus:border-blue-400 focus:outline-none"
+              />
+              <button
+                onClick={() => {
+                  if (manualDiscountAmount > 0) {
+                    applyLoyaltyDiscount('manual', manualDiscountAmount);
+                    setShowManualDiscount(false);
+                  }
+                }}
+                disabled={manualDiscountAmount <= 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
+              >
+                Appliquer -{manualDiscountAmount}€
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       
       <h4 className="font-medium text-[#2c3e50] mb-3">Enregistrer le paiement</h4>
       

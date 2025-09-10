@@ -28,6 +28,7 @@ model User {
   reservations  Reservation[]
   loyaltyProfile LoyaltyProfile?
   loyaltyHistory LoyaltyHistory[]
+  evolutions    ClientEvolution[]
 }
 
 model Reservation {
@@ -146,4 +147,41 @@ model BlogPost {
   publishedAt       DateTime @default(now())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model ClientEvolution {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  // Lien avec la séance
+  sessionNumber   Int      // Numéro de séance (1ère, 2ème, etc.)
+  serviceName     String   // Nom du service effectué
+  sessionDate     DateTime // Date de la séance
+  
+  // Photos/Vidéos
+  beforePhoto     String?  // Photo avant la séance
+  afterPhoto      String?  // Photo après la séance
+  videoUrl        String?  // Vidéo de l'évolution
+  
+  // Notes sur l'évolution
+  improvements    String?  // Améliorations observées (JSON array)
+  clientFeedback  String?  // Retour du client
+  adminNotes      String?  // Notes privées de l'admin
+  skinAnalysis    String?  // Analyse de peau (hydratation, élasticité, etc.)
+  
+  // Zones traitées
+  treatedAreas    String?  // JSON array des zones (front, joues, menton, etc.)
+  
+  // Produits utilisés
+  productsUsed    String?  // JSON array des produits
+  
+  // Résultats mesurables
+  hydrationLevel  Int?     // Niveau d'hydratation (0-100)
+  elasticity      Int?     // Élasticité (0-100)
+  pigmentation    Int?     // Uniformité du teint (0-100)
+  wrinkleDepth    Int?     // Profondeur des rides (0-100)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

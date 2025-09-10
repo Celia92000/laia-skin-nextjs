@@ -42,6 +42,37 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Date requise' }, { status: 400 });
     }
 
+    // Récupérer les créneaux bloqués par l'admin
+    const blockedSlotsResponse = await fetch(`${request.url.replace('/api/availability', '/api/admin/blocked-slots')}`);
+    let blockedSlots: any[] = [];
+    if (blockedSlotsResponse.ok) {
+      blockedSlots = await blockedSlotsResponse.json();
+    }
+
+    // Vérifier si toute la journée est bloquée
+    const dayBlocked = blockedSlots.some(slot => 
+      slot.date === date && slot.allDay
+    );
+
+    // Si toute la journée est bloquée, retourner tous les créneaux comme indisponibles
+    if (dayBlocked) {
+      const allSlots = [];
+      for (let hour = 9; hour <= 23; hour++) {
+        allSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+        if (hour < 23) {
+          allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
+      }
+      
+      return NextResponse.json(
+        allSlots.map(slot => ({
+          time: slot,
+          available: false,
+          reason: 'Journée bloquée'
+        }))
+      );
+    }
+
     // Récupérer toutes les réservations pour cette date
     const reservations = await prisma.reservation.findMany({
       where: {
@@ -81,11 +112,13 @@ export async function GET(request: Request) {
       };
     });
 
-    // Générer tous les créneaux de la journée (10h-18h par tranches de 30min)
+    // Générer tous les créneaux de la journée (9h-23h par tranches de 30min)
     const allSlots = [];
-    for (let hour = 10; hour < 18; hour++) {
+    for (let hour = 9; hour <= 23; hour++) {
       allSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-      allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+      if (hour < 23) {
+        allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+      }
     }
 
     // Marquer les créneaux comme disponibles ou non
@@ -103,11 +136,17 @@ export async function GET(request: Request) {
         return slotMinutes >= bookedStartMinutes && slotMinutes < bookedEndMinutes;
       });
       
+      // Vérifier si ce créneau est bloqué par l'admin
+      const isBlockedByAdmin = blockedSlots.some(blocked => 
+        blocked.date === date && blocked.time === slot
+      );
+      
       return {
         time: slot,
-        available: !isBooked,
+        available: !isBooked && !isBlockedByAdmin,
+        reason: isBlockedByAdmin ? 'Créneau bloqué' : isBooked ? 'Déjà réservé' : null,
         // Suggérer la pause déjeuner entre 12h et 14h si pas de réservation
-        suggestedBreak: (slotHour === 12 || slotHour === 13) && !isBooked
+        suggestedBreak: (slotHour === 12 || slotHour === 13) && !isBooked && !isBlockedByAdmin
       };
     });
 

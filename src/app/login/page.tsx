@@ -246,12 +246,9 @@ export default function Login() {
             {/* Admin Link */}
             <div className="text-center">
               <p className="text-sm text-muted mb-2">Vous êtes administrateur ?</p>
-              <Link
-                href="/admin/login"
-                className="text-primary hover:text-primary-dark font-medium"
-              >
-                Accéder à l'espace admin →
-              </Link>
+              <p className="text-xs text-muted mt-2">
+                Utilisez vos identifiants administrateur ci-dessus
+              </p>
             </div>
           </div>
 
