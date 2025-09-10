@@ -16,6 +16,8 @@ import { InvoiceButton } from "@/components/InvoiceGenerator";
 import PaymentSection from "@/components/PaymentSection";
 import WhatsAppManager from "@/components/WhatsAppManager";
 import WhatsAppSetup from "@/components/WhatsAppSetup";
+import WhatsAppTestPanel from "@/components/WhatsAppTestPanel";
+import AdminStats from "@/components/AdminStats";
 import { logout } from "@/lib/auth-client";
 import { servicePricing, getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 
@@ -62,7 +64,7 @@ interface Client {
 export default function AdminDashboard() {
   const router = useRouter();
   const [useOptimizedView, setUseOptimizedView] = useState(false); // Dashboard classique pour l'instant
-  const [activeTab, setActiveTab] = useState("planning");
+  const [activeTab, setActiveTab] = useState("stats");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loyaltyProfiles, setLoyaltyProfiles] = useState<any[]>([]);
@@ -726,6 +728,16 @@ export default function AdminDashboard() {
         {/* Tabs */}
         <div className="flex gap-4 mb-8 overflow-x-auto">
           <button
+            onClick={() => setActiveTab("stats")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "stats"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Statistiques
+          </button>
+          <button
             onClick={() => setActiveTab("planning")}
             className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap relative ${
               activeTab === "planning"
@@ -837,6 +849,15 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
+          {activeTab === "stats" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Tableau de bord et statistiques
+              </h2>
+              <AdminStats />
+            </div>
+          )}
+          
           {activeTab === "planning" && (
             <div>
               <div className="mb-6">
@@ -2282,6 +2303,10 @@ export default function AdminDashboard() {
           
           {activeTab === "whatsapp" && (
             <div className="space-y-6">
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Configuration WhatsApp Business
+              </h2>
+              <WhatsAppTestPanel />
               <WhatsAppManager />
               <WhatsAppSetup />
             </div>

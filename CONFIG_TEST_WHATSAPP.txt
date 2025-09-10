@@ -1,0 +1,35 @@
+===== CONFIGURATION WHATSAPP TEST =====
+
+1️⃣ SUR LA PAGE META AVEC LE NUMERO TEST :
+
+Cherchez et copiez :
+- Le numéro de test (ex: +1 555 025 3483)
+- Phone Number ID (sous le numéro)
+- Cliquez "Generate Token" et copiez le token EAA...
+
+2️⃣ COLLEZ CES LIGNES DANS .env.local :
+
+# Remplacez XXX par vos vraies valeurs
+WHATSAPP_ACCESS_TOKEN=XXX_COLLEZ_LE_TOKEN_ICI
+WHATSAPP_PHONE_NUMBER_ID=XXX_COLLEZ_ID_DU_NUMERO_TEST
+WHATSAPP_BUSINESS_ACCOUNT_ID=2020641678472536
+
+3️⃣ POUR TESTER :
+
+Le numéro de test peut envoyer des messages UNIQUEMENT aux numéros vérifiés.
+
+Pour ajouter votre numéro 0683717050 :
+- Cherchez "Add phone number" ou "Ajouter un destinataire"
+- Entrez : +33683717050
+- Vous recevrez un code par SMS
+- Entrez le code pour vérifier
+
+4️⃣ ENSUITE :
+
+- Allez sur http://localhost:3001/admin
+- Onglet WhatsApp
+- Testez l'envoi vers votre numéro vérifié
+
+===== IMPORTANT =====
+Le numéro de TEST est GRATUIT et parfait pour tester !
+Une fois que ça marche, on pourra passer au vrai numéro.
