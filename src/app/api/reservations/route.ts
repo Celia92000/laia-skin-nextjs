@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
 
 export async function POST(request: Request) {
   try {
@@ -139,6 +140,24 @@ export async function POST(request: Request) {
         status: 'pending' // Toujours en attente de validation admin
       }
     });
+    
+    // Envoyer une notification WhatsApp à l'admin
+    const adminPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+33683717050';
+    if (user) {
+      const adminMessage = `🔔 *Nouvelle réservation à valider*\n\n` +
+        `Client: ${user.name}\n` +
+        `Date: ${new Date(date).toLocaleDateString('fr-FR')}\n` +
+        `Heure: ${time}\n` +
+        `Services: ${services.join(', ')}\n` +
+        `Total: ${totalPrice}€\n\n` +
+        `Connectez-vous pour valider: https://laiaskin.fr/admin`;
+      
+      // Envoi asynchrone sans bloquer
+      sendWhatsAppMessage({
+        to: adminPhone,
+        message: adminMessage
+      }).catch(console.error);
+    }
 
     // Incrémenter le nombre de séances et le montant total dépensé
     await prisma.user.update({
