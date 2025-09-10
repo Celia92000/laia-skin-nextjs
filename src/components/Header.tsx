@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Shield, User, LogOut } from "lucide-react";
@@ -42,13 +43,19 @@ export default function Header() {
   return (
     <header className="fixed top-0 w-full bg-white/95 backdrop-blur-xl border-b border-[#d4b5a0]/20 z-50 shadow-lg">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-24">
+        <div className="flex justify-between items-center h-20 sm:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hover:rotate-6">
-              <span className="text-white text-2xl font-serif font-bold">LS</span>
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
+              <Image
+                src="/logo-laia-skin.png"
+                alt="LAIA SKIN Logo"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
-            <h1 className="text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">LAIA SKIN</h1>
+            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">LAIA SKIN</h1>
           </Link>
 
           {/* Desktop Navigation */}

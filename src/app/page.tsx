@@ -20,7 +20,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
-      <section className="pt-24 min-h-screen flex items-center justify-center relative overflow-hidden">
+      <section className="pt-20 sm:pt-24 min-h-screen flex items-center justify-center relative overflow-hidden px-4">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
@@ -28,17 +28,17 @@ export default async function Home() {
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h2 className="text-5xl md:text-7xl font-serif font-bold text-[#2c3e50] mb-6 animate-fade-in-up">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif font-bold text-[#2c3e50] mb-6 animate-fade-in-up">
             Une peau respectée,<br />une beauté révélée ✨
           </h2>
-          <p className="text-xl md:text-2xl text-[#2c3e50]/80 mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200">
+          <p className="text-lg sm:text-xl md:text-2xl text-[#2c3e50]/80 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200">
             Institut spécialisé dans les techniques esthétiques avancées.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
-            <Link href="/reservation" className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-10 py-4 rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link href="/reservation" className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
               Réserver un Soin
             </Link>
-            <Link href="/prestations" className="bg-white text-[#2c3e50] px-10 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link href="/prestations" className="bg-white text-[#2c3e50] px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
               Découvrir nos Soins
             </Link>
           </div>
@@ -46,8 +46,8 @@ export default async function Home() {
       </section>
 
       {/* Services Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="py-12 sm:py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#2c3e50] mb-4">
               Mes Prestations
@@ -57,19 +57,19 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {sortedServices.map((service) => (
               <Link 
                 key={service.id}
                 href={`/services/${service.slug}`}
                 className="group block h-full"
               >
-                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 h-full flex flex-col min-h-[550px]">
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 h-full flex flex-col min-h-[400px] sm:min-h-[500px] lg:min-h-[550px]">
                   {/* Image/Header */}
                   <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden flex-shrink-0">
                     {/* Badge Soin Signature pour Hydro'Naissance uniquement */}
                     {service.featured && (
-                      <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full shadow-lg">
+                      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full shadow-lg">
                         <Star className="w-4 h-4 fill-current" />
                         <span className="text-xs font-bold uppercase tracking-wider">Soin Signature</span>
                       </div>
@@ -78,7 +78,8 @@ export default async function Home() {
                       <img 
                         src={service.mainImage} 
                         alt={service.name} 
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover object-center ${service.slug === 'led-therapie' ? 'scale-[175%]' : service.slug === 'hydro-naissance' ? 'scale-110' : 'scale-100'}`}
+                        style={{ objectPosition: service.slug === 'hydro-naissance' ? '50% 65%' : service.slug === 'bb-glow' ? '50% 35%' : service.slug === 'led-therapie' ? '90% 40%' : service.slug === 'hydro-cleaning' ? '85% 40%' : '50% 40%' }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -96,14 +97,6 @@ export default async function Home() {
                       </div>
                     </div>
 
-                    {/* Badge promo */}
-                    {service.promoPrice && (
-                      <div className="absolute top-4 right-4">
-                        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                          -{Math.round((1 - service.promoPrice / service.price) * 100)}%
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Content */}
@@ -198,7 +191,7 @@ export default async function Home() {
 
       {/* Features Section */}
       <section className="py-24 bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2c3e50] mb-4">
               L'Excellence à votre Service
@@ -243,8 +236,8 @@ export default async function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
+      <section className="py-12 sm:py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2c3e50] mb-4">
               Témoignages Clients

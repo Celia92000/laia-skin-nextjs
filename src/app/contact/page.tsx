@@ -13,13 +13,13 @@ import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Send } from "lucide-re
 
 export default function Contact() {
   return (
-    <main className="pt-24 pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
-        <div className="max-w-6xl mx-auto px-4">
-          <h1 className="text-4xl font-serif text-center mb-12 text-primary">
+    <main className="pt-32 sm:pt-36 pb-12 sm:pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl sm:text-4xl font-serif text-center mb-8 sm:mb-12 text-primary">
             Contactez-nous
           </h1>
 
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
             {/* Contact Information */}
             <div>
               <h2 className="text-2xl font-serif mb-6">Informations de contact</h2>

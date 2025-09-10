@@ -320,7 +320,7 @@ export default function Reservation() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 relative overflow-hidden">
+      <section className="pt-36 pb-16 relative overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
@@ -345,8 +345,8 @@ export default function Reservation() {
         <div className="max-w-4xl mx-auto px-4">
 
           {/* Progress Steps */}
-          <div className="flex justify-center mb-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex justify-center mb-8 sm:mb-16">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {[
                 { num: 1, label: "Soin", icon: Sparkles },
                 { num: 2, label: "Date", icon: Calendar },
@@ -355,15 +355,15 @@ export default function Reservation() {
                 <div key={num} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-16 h-16 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-lg ${
+                      className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center font-semibold transition-all duration-300 shadow-lg ${
                         step >= num
                           ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-[#d4b5a0]/50"
                           : "bg-white border-2 border-gray-200 text-gray-500"
                       }`}
                     >
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <span className={`text-sm mt-2 font-medium ${
+                    <span className={`text-xs sm:text-sm mt-1 sm:mt-2 font-medium ${
                       step >= num ? "text-[#d4b5a0]" : "text-gray-400"
                     }`}>
                       {label}
@@ -371,7 +371,7 @@ export default function Reservation() {
                   </div>
                   {num < 3 && (
                     <div
-                      className={`w-24 h-1 mx-6 rounded-full transition-all duration-300 ${
+                      className={`w-12 sm:w-24 h-0.5 sm:h-1 mx-2 sm:mx-6 rounded-full transition-all duration-300 ${
                         step > num ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084]" : "bg-gray-200"
                       }`}
                     />
@@ -381,7 +381,7 @@ export default function Reservation() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-2xl p-8 border border-[#d4b5a0]/10">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 border border-[#d4b5a0]/10">
             {/* Step 1: Service Selection */}
             {step === 1 && (
               <div>
@@ -735,7 +735,7 @@ export default function Reservation() {
                       </div>
                     )}
                     
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {timeSlots.map((time) => {
                         const available = isSlotAvailable(time);
                         return (
@@ -743,7 +743,7 @@ export default function Reservation() {
                             key={time}
                             onClick={() => available && setSelectedTime(time)}
                             disabled={!available}
-                            className={`py-3 px-4 rounded-xl border-2 font-medium transition-all duration-300 ${
+                            className={`py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl border-2 font-medium text-sm sm:text-base transition-all duration-300 ${
                               !available 
                                 ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed line-through"
                                 : selectedTime === time

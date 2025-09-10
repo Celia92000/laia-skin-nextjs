@@ -1,9 +1,10 @@
 import { Heart, Award, Users, Sparkles, Shield, Star, CheckCircle, GraduationCap, Briefcase, Target } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function APropos() {
   return (
-    <main className="pt-24 pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
+    <main className="pt-36 pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
         {/* Hero Section avec présentation de Laïa */}
         <section className="max-w-6xl mx-auto px-4 mb-20">
           <div className="text-center mb-16">
@@ -41,21 +42,28 @@ export default function APropos() {
               <div className="relative">
                 <div className="aspect-square bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-3xl p-8 shadow-2xl">
                   <div className="h-full bg-white rounded-2xl flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#d4b5a0]/10 to-[#c9a084]/10"></div>
-                    <div className="relative z-10 text-center p-8">
-                      <Sparkles className="text-[#d4b5a0] w-16 h-16 mx-auto mb-4" />
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-[#2c3e50]/70">
-                          <GraduationCap className="w-4 h-4 text-[#d4b5a0]" />
+                    <Image
+                      src="/celia-portrait.png"
+                      alt="Fondatrice LAIA SKIN Institut"
+                      fill
+                      className="object-cover rounded-2xl"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#2c3e50]/60 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <h3 className="text-2xl font-serif mb-2">Fondatrice LAIA SKIN Institut</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4" />
                           <span>CAP & BTS Esthétique</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-[#2c3e50]/70">
-                          <Briefcase className="w-4 h-4 text-[#d4b5a0]" />
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
                           <span>Gestion de projets</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-[#2c3e50]/70">
-                          <Target className="w-4 h-4 text-[#d4b5a0]" />
-                          <span>Techniques avancées</span>
+                        <div className="flex items-center gap-2">
+                          <Heart className="w-4 h-4" />
+                          <span>Experte Beauté</span>
                         </div>
                       </div>
                     </div>

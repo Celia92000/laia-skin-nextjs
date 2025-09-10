@@ -103,15 +103,15 @@ export default function AdminStats() {
               {Number(monthGrowth) > 0 ? (
                 <>
                   <TrendingUp className="h-3 w-3 text-green-600 mr-1" />
-                  <span className="text-green-600">+{monthGrowth}%</span>
+                  <span className="text-green-600">Croissance</span>
                 </>
               ) : Number(monthGrowth) < 0 ? (
                 <>
                   <TrendingDown className="h-3 w-3 text-red-600 mr-1" />
-                  <span className="text-red-600">{monthGrowth}%</span>
+                  <span className="text-red-600">Baisse</span>
                 </>
               ) : (
-                <span>0%</span>
+                <span>Stable</span>
               )}
               <span className="ml-1">vs mois dernier</span>
             </p>

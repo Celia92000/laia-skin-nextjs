@@ -726,10 +726,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-8 overflow-x-auto">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
           <button
             onClick={() => setActiveTab("stats")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "stats"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -739,7 +739,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("planning")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap relative ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap relative flex-shrink-0 text-sm sm:text-base ${
               activeTab === "planning"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -754,7 +754,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("validation")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "validation"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -764,7 +764,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("paiements")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "paiements"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -774,7 +774,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("fidelite")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap relative ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap relative flex-shrink-0 text-sm sm:text-base ${
               activeTab === "fidelite"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -806,7 +806,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("crm")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "crm"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -816,7 +816,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("services")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "services"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -826,7 +826,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("blog")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "blog"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"
@@ -836,7 +836,7 @@ export default function AdminDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("whatsapp")}
-            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "whatsapp"
                 ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
                 : "bg-white text-[#2c3e50] hover:shadow-md"

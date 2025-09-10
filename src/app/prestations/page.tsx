@@ -19,33 +19,33 @@ export default async function Prestations() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fdfbf7] to-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-12 px-4">
+      <section className="pt-32 sm:pt-36 pb-8 sm:pb-12 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-[#2c3e50] mb-4 sm:mb-6">
             Mes Prestations
           </h1>
-          <p className="text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
             Découvrez nos soins d'exception pour sublimer votre peau
           </p>
         </div>
       </section>
 
       {/* Services Grid */}
-      <section className="py-12 px-4">
+      <section className="py-8 sm:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {sortedServices.map((service) => (
               <Link 
                 key={service.id}
                 href={`/services/${service.slug}`}
                 className="group block h-full"
               >
-                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 h-full flex flex-col min-h-[550px]">
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2 h-full flex flex-col min-h-[400px] sm:min-h-[500px] lg:min-h-[550px]">
                   {/* Image/Header */}
                   <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden flex-shrink-0">
                     {/* Badge Soin Signature pour Hydro'Naissance uniquement */}
                     {service.featured && (
-                      <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full shadow-lg">
+                      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full shadow-lg">
                         <Star className="w-4 h-4 fill-current" />
                         <span className="text-xs font-bold uppercase tracking-wider">Soin Signature</span>
                       </div>
@@ -54,7 +54,8 @@ export default async function Prestations() {
                       <img 
                         src={service.mainImage} 
                         alt={service.name} 
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover object-center ${service.slug === 'led-therapie' ? 'scale-[175%]' : service.slug === 'hydro-naissance' ? 'scale-110' : 'scale-100'}`}
+                        style={{ objectPosition: service.slug === 'hydro-naissance' ? '50% 65%' : service.slug === 'bb-glow' ? '50% 35%' : service.slug === 'led-therapie' ? '90% 40%' : service.slug === 'hydro-cleaning' ? '85% 40%' : '50% 40%' }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

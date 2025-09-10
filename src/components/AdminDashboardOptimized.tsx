@@ -240,7 +240,6 @@ export default function AdminDashboardOptimized() {
                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                       <Euro className="w-6 h-6 text-green-600" />
                     </div>
-                    <span className="text-xs text-green-600 font-medium">+12%</span>
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{stats.todayRevenue}€</p>
                   <p className="text-sm text-gray-500">Revenus du jour</p>

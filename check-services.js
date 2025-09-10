@@ -3,17 +3,14 @@ const prisma = new PrismaClient();
 
 async function checkServices() {
   try {
-    const services = await prisma.service.findMany();
-    console.log('Nombre de services dans la base:', services.length);
+    const services = await prisma.service.findMany({
+      select: { slug: true, name: true, mainImage: true }
+    });
     
-    if (services.length === 0) {
-      console.log('Aucun service trouvé. Les services existants vont être affichés statiquement dans l\'interface.');
-    } else {
-      console.log('\nServices trouvés:');
-      services.forEach(service => {
-        console.log(`- ${service.name}: ${service.shortDescription}`);
-      });
-    }
+    console.log('Services dans la base de données :');
+    services.forEach(s => {
+      console.log(`- slug: "${s.slug}" => ${s.name} (image: ${s.mainImage || 'aucune'})`);
+    });
   } catch (error) {
     console.error('Erreur:', error.message);
   } finally {

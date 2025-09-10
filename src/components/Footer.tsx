@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles } from "lucide-react";
 
 export default function Footer() {
@@ -6,12 +7,17 @@ export default function Footer() {
     <footer className="bg-accent text-white">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-full gradient-gold flex items-center justify-center">
-                <span className="text-white font-serif text-sm">LS</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 relative">
+                <Image
+                  src="/logo-laia-skin.png"
+                  alt="LAIA SKIN Logo"
+                  fill
+                  className="object-contain brightness-0 invert"
+                />
               </div>
               <h3 className="text-xl font-serif">LAIA SKIN</h3>
             </div>
@@ -121,15 +127,15 @@ export default function Footer() {
                 <p className="text-sm text-gray-400 font-light">Recevez nos offres et actualités</p>
               </div>
             </div>
-            <form className="flex gap-3 w-full md:w-auto">
+            <form className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               <input
                 type="email"
                 placeholder="Votre email"
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:border-primary w-full md:w-64"
+                className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:border-primary w-full sm:w-64"
               />
               <button
                 type="submit"
-                className="px-6 py-2 bg-primary text-accent rounded-full hover:bg-primary-light transition-colors text-sm font-light whitespace-nowrap"
+                className="px-6 py-2 bg-primary text-accent rounded-full hover:bg-primary-light transition-colors text-sm font-light whitespace-nowrap w-full sm:w-auto"
               >
                 S'inscrire
               </button>
