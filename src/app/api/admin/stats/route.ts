@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     // Clients récurrents
     const clientReservations = await prisma.reservation.groupBy({
-      by: ['userEmail'],
+      by: ['userId'],
       where: { status: { not: 'cancelled' } },
       _count: true
     });

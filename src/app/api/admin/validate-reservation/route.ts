@@ -112,6 +112,8 @@ async function scheduleReminder(reservation: any) {
   console.log(`Rappel programmé pour ${reservation.user.name} le ${reminderDate.toISOString()}`);
   
   // Pour l'instant, stocker dans la DB
+  // TODO: Créer le modèle Reminder dans le schéma Prisma
+  /*
   try {
     await prisma.reminder.create({
       data: {
@@ -125,4 +127,5 @@ async function scheduleReminder(reservation: any) {
     // La table reminder n'existe peut-être pas encore
     console.log('Table reminder à créer dans le schéma Prisma');
   }
+  */
 }

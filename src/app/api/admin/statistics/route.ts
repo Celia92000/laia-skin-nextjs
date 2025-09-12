@@ -193,7 +193,7 @@ export async function GET(request: Request) {
         },
         take: 10,
         include: {
-          client: true
+          user: true
         }
       }),
 
@@ -299,7 +299,7 @@ export async function GET(request: Request) {
         pending: pendingReservations,
         confirmed: confirmedReservations,
         cancelled: cancelledReservations,
-        conversionRate: parseFloat(conversionRate)
+        conversionRate: typeof conversionRate === 'number' ? conversionRate : parseFloat(conversionRate)
       },
       revenue: {
         total: totalRevenue,
@@ -307,33 +307,33 @@ export async function GET(request: Request) {
         lastMonth: previousRevenue,
         thisYear: thisYearRevenue,
         lastYear: lastYearRevenue,
-        growthRate: parseFloat(growthRate),
-        averageCartValue: parseFloat(averageCartValue)
+        growthRate: typeof growthRate === 'number' ? growthRate : parseFloat(growthRate),
+        averageCartValue: typeof averageCartValue === 'number' ? averageCartValue : parseFloat(averageCartValue)
       },
       clients: {
         total: totalClients,
         active: activeClients,
         new: newClients,
         returning: clientsWithMultipleVisits,
-        conversionRate: parseFloat(retentionRate)
+        conversionRate: typeof retentionRate === 'number' ? retentionRate : parseFloat(retentionRate)
       },
       services: {
         total: allServices.length,
         totalBookings: currentReservations.length,
         popularServices,
-        averageRating: parseFloat(averageRating)
+        averageRating: typeof averageRating === 'number' ? averageRating : parseFloat(averageRating)
       },
       performance: {
         occupancyRate: 75.5, // À calculer selon les créneaux disponibles
         peakHours,
         averageSessionTime: 90,
-        satisfactionScore: parseFloat(averageRating)
+        satisfactionScore: typeof averageRating === "number" ? averageRating : parseFloat(averageRating)
       },
       clientRetention: {
-        rate: parseFloat(retentionRate),
+        rate: typeof retentionRate === "number" ? retentionRate : parseFloat(retentionRate),
         newClients,
         lostClients,
-        averageVisitsPerClient: parseFloat(averageVisitsPerClient),
+        averageVisitsPerClient: typeof averageVisitsPerClient === 'number' ? averageVisitsPerClient : parseFloat(averageVisitsPerClient),
         timeBetweenVisits: 42 // À calculer
       }
     };

@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
     await prisma.user.update({
       where: { id: clientUser.id },
       data: {
-        totalSessions: { increment: 1 },
         totalSpent: { increment: totalPrice },
         lastVisit: new Date()
       }
@@ -67,7 +66,6 @@ export async function POST(request: NextRequest) {
       data: {
         userId: clientUser.id,
         services: JSON.stringify(services),
-        packages: JSON.stringify({}),
         date: new Date(date),
         time,
         totalPrice,
@@ -93,7 +91,6 @@ export async function POST(request: NextRequest) {
       userEmail: reservation.user.email,
       phone: reservation.user.phone,
       services: JSON.parse(reservation.services),
-      packages: JSON.parse(reservation.packages),
       date: reservation.date.toISOString(),
       time: reservation.time,
       totalPrice: reservation.totalPrice,
@@ -157,7 +154,6 @@ export async function GET(request: NextRequest) {
       userEmail: r.user.email,
       phone: r.user.phone, // Changé de userPhone à phone
       services: JSON.parse(r.services),
-      packages: JSON.parse(r.packages),
       date: r.date.toISOString(),
       time: r.time,
       totalPrice: r.totalPrice,

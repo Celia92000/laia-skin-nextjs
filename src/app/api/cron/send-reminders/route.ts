@@ -119,7 +119,7 @@ export async function GET(request: Request) {
     // 3. Messages d'anniversaire
     const todayBirthdays = await prisma.user.findMany({
       where: {
-        birthdate: {
+        birthDate: {
           not: null
         },
         role: 'client'
@@ -127,8 +127,8 @@ export async function GET(request: Request) {
     });
     
     for (const user of todayBirthdays) {
-      if (user.birthdate) {
-        const birthdate = new Date(user.birthdate);
+      if (user.birthDate) {
+        const birthdate = new Date(user.birthDate);
         if (birthdate.getDate() === now.getDate() && 
             birthdate.getMonth() === now.getMonth()) {
           

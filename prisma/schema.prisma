@@ -37,6 +37,7 @@ model Reservation {
   id            String    @id @default(cuid())
   userId        String
   serviceId     String?
+  services      String    @default("[]") @db.Text // JSON array of service IDs
   date          DateTime
   time          String
   totalPrice    Float
