@@ -1001,6 +1001,7 @@ export default function AdminDashboard() {
                     .map(r => ({
                       ...r,
                       userName: r.userName || 'Client',
+                      userEmail: r.userEmail || '',
                     }))}
                   onNewReservation={() => setShowNewReservationModal(true)}
                 />
