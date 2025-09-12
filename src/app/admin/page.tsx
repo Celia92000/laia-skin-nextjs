@@ -61,11 +61,12 @@ interface Client {
   phone?: string;
   loyaltyPoints: number;
   totalSpent: number;
-  reservations: number;
+  reservations: any[];
   lastVisit?: string;
   birthdate?: string;
   individualSoins?: number;
   forfaits?: number;
+  reservationCount?: number;
 }
 
 export default function AdminDashboard() {
