@@ -502,7 +502,7 @@ export default function EmailCampaigns() {
               <button
                 key={filter.id}
                 onClick={() => addFilter(filter)}
-                disabled={activeFilters.find(f => f.id === filter.id)}
+                disabled={!!activeFilters.find(f => f.id === filter.id)}
                 className="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 + {filter.name}

@@ -127,7 +127,7 @@ export default function UnifiedCRMTab({
     }).length,
     birthdaysThisMonth: getBirthdayClients().length,
     totalRevenue: clients.reduce((sum, c) => sum + c.totalSpent, 0),
-    totalSessions: reservations.filter(r => r.status !== 'cancelled').length
+    totalReservations: reservations.filter(r => r.status !== 'cancelled').length
   };
 
   // Sauvegarder les modifications client
@@ -160,7 +160,7 @@ export default function UnifiedCRMTab({
         c.phone || '',
         c.loyaltyPoints,
         c.totalSpent,
-        getLoyaltyLevel(c.loyaltyPoints, c.totalSpent).name,
+        getLoyaltyLevel(c.reservations || []).name,
         c.lastVisit || ''
       ])
     ].map(row => row.join(',')).join('\n');
@@ -246,7 +246,7 @@ export default function UnifiedCRMTab({
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center justify-between">
               <Calendar className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-[#2c3e50]">{stats.totalSessions}</span>
+              <span className="text-2xl font-bold text-[#2c3e50]">{stats.totalReservations}</span>
             </div>
             <p className="text-sm text-[#2c3e50]/60 mt-2">Séances totales</p>
           </div>

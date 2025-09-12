@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { templateId, clientIds, customMessage, filters } = body;
 
-    let recipients = [];
+    let recipients: any[] = [];
 
     // Si des IDs clients spécifiques sont fournis
     if (clientIds && clientIds.length > 0) {

@@ -152,7 +152,7 @@ export default function AdminReviewsManager() {
       document.body.removeChild(link);
     } else {
       // Pour les autres URLs, créer une image et la convertir en blob
-      const img = new Image();
+      const img = document.createElement('img');
       img.crossOrigin = 'anonymous';
       img.onload = function() {
         const canvas = document.createElement('canvas');

@@ -162,7 +162,6 @@ export async function POST(request: Request) {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        totalSessions: { increment: 1 },
         totalSpent: { increment: totalPrice },
         lastVisit: new Date()
       }
@@ -174,18 +173,7 @@ export async function POST(request: Request) {
     });
     
     let loyaltyMessage = '';
-    if (updatedUser) {
-      const sessionsCount = updatedUser.totalSessions || 0;
-      const packagesCount = updatedUser.totalPackages || 0;
-      
-      if (sessionsCount === 6) {
-        loyaltyMessage = ' Félicitations ! Vous avez atteint 6 séances, -30€ sur votre prochaine séance !';
-      } else if (packagesCount === 2) {
-        loyaltyMessage = ' Félicitations ! C\'est votre 3e forfait, -50€ de réduction !';
-      } else if (sessionsCount > 0 && sessionsCount % 6 === 0) {
-        loyaltyMessage = ` Carte de fidélité complète ! -30€ sur votre prochaine séance !`;
-      }
-    }
+    // TODO: Réactiver la logique de fidélité quand les champs seront disponibles
     
     return NextResponse.json({
       id: reservation.id,

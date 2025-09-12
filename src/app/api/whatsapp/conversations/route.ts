@@ -14,13 +14,13 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         phone: true,
-        lastMessageTime: true,
-        lastMessage: true,
-        unreadCount: true
+        // lastMessageTime: true, // TODO: Ajouter ces champs au modèle User
+        // lastMessage: true,
+        // unreadCount: true
       },
-      orderBy: {
-        lastMessageTime: 'desc'
-      }
+      // orderBy: {
+      //   lastMessageTime: 'desc'
+      // }
     });
 
     return NextResponse.json(conversations);
@@ -42,15 +42,25 @@ export async function POST(request: NextRequest) {
     // Ici, intégration avec l'API WhatsApp Business
     // Pour le moment, on simule l'envoi
     
-    // Enregistrer le message dans la base de données
-    const updatedUser = await prisma.user.update({
-      where: { phone },
-      data: {
-        lastMessage: message,
-        lastMessageTime: new Date(),
-        unreadCount: 0
-      }
+    // TODO: Enregistrer le message dans la base de données
+    // Note: Les champs lastMessage, lastMessageTime et unreadCount doivent être ajoutés au modèle User
+    // Et phone n'est pas un champ unique, il faut utiliser findFirst puis update par id
+    /*
+    const user = await prisma.user.findFirst({
+      where: { phone }
     });
+    
+    if (user) {
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastMessage: message,
+          lastMessageTime: new Date(),
+          unreadCount: 0
+        }
+      });
+    }
+    */
 
     // Simuler l'envoi WhatsApp
     const response = {
