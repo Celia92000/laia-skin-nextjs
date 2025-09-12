@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/send-reminders?secret=laia_skin_cron_secret_2025",
-      "schedule": "0 */1 * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
