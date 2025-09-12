@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     
     if (userId) {
       // Récupérer les évolutions d'un client spécifique
-      const evolutions = await prisma.clientEvolution.findMany({
+      const evolutions = await prisma.userEvolution.findMany({
         where: { userId },
         orderBy: { sessionDate: "desc" },
         include: {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     }
     
     // Récupérer toutes les évolutions
-    const evolutions = await prisma.clientEvolution.findMany({
+    const evolutions = await prisma.userEvolution.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const data = await request.json();
     
     // Créer une nouvelle évolution
-    const evolution = await prisma.clientEvolution.create({
+    const evolution = await prisma.userEvolution.create({
       data: {
         userId: data.userId,
         sessionNumber: data.sessionNumber,
@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
     const data = await request.json();
     
     // Mettre à jour une évolution existante
-    const evolution = await prisma.clientEvolution.update({
+    const evolution = await prisma.userEvolution.update({
       where: { id: data.id },
       data: {
         sessionNumber: data.sessionNumber,
@@ -136,7 +136,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID manquant" }, { status: 400 });
     }
     
-    await prisma.clientEvolution.delete({
+    await prisma.userEvolution.delete({
       where: { id }
     });
     
