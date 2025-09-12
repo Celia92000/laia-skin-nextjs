@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "./",
   "crons": [
     {
       "path": "/api/cron/send-reminders?secret=laia_skin_cron_secret_2025",
