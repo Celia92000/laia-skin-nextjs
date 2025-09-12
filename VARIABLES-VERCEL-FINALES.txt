@@ -1,0 +1,31 @@
+# Variables à ajouter dans Vercel Settings → Environment Variables
+
+DATABASE_URL = postgresql://postgres:%23SBxrx8kVc857Ed@db.zsxweurvtsrdgehtadwa.supabase.co:5432/postgres
+
+DIRECT_URL = postgresql://postgres:%23SBxrx8kVc857Ed@db.zsxweurvtsrdgehtadwa.supabase.co:5432/postgres
+
+NEXT_PUBLIC_SUPABASE_URL = https://zsxweurvtsrdgehtadwa.supabase.co
+
+NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzeHdldXJ2dHNyZGdlaHRhZHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2Mzg0MjMsImV4cCI6MjA3MzIxNDQyM30.u-k1rK9n-ld0VIDVaSB8OnnvCMxTQVMzUNbrJFqcqrg
+
+NEXT_PUBLIC_WHATSAPP_NUMBER = +33683717050
+
+WHATSAPP_ACCESS_TOKEN = EAFWQV0qPjVQBPVbuyZAUDXzNy4nbeugYZBGrukyblA0AuA5L3zw5yGULmGJtbZCiRxI4a58h09M1IcbfyJ456TljbhpeTZBYAPdEv9o0ZAr4ZCr3fZC6pUf6e3ZAZC2FZCfgLBlvOJRtMdcFazy0UPZBHhIUlOOC1Md0CZCMAn81uhLMRi7tQYmgibBcfnUxyZA1n6O9xXQZDZD
+
+WHATSAPP_PHONE_NUMBER_ID = 672520675954185
+
+WHATSAPP_BUSINESS_ACCOUNT_ID = 1741901383229296
+
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = laia_skin_webhook_2025
+
+WHATSAPP_API_VERSION = v18.0
+
+JWT_SECRET = laia_skin_jwt_secret_production_2025_secure_key
+
+NEXT_PUBLIC_API_URL = https://laia-skin-institut-as92.vercel.app
+
+CRON_SECRET = laia_skin_cron_secret_2025
+
+EMAIL_API_KEY = your_email_api_key_here
+
+EMAIL_FROM = noreply@laiaskin.fr
