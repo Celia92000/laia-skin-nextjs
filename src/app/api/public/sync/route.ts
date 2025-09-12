@@ -140,7 +140,7 @@ export async function GET() {
         price: service.price,
         launchPrice: service.launchPrice,
         benefits: service.benefits,
-        image: service.image
+        image: service.mainImage
       });
       return acc;
     }, {} as Record<string, any[]>);

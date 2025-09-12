@@ -132,7 +132,6 @@ export async function POST(request: Request) {
       data: {
         userId: userId,
         services: JSON.stringify(services),
-        packages: JSON.stringify(packages),
         date: new Date(date),
         time,
         notes,
@@ -221,7 +220,6 @@ export async function GET(request: Request) {
     return NextResponse.json(reservations.map(r => ({
       ...r,
       services: JSON.parse(r.services),
-      packages: JSON.parse(r.packages)
     })));
   } catch (error) {
     console.error('Error fetching reservations:', error);

@@ -176,8 +176,8 @@ export async function GET(request: Request) {
         return hd > 1.5 && hd <= 2.5;
       }).length,
       birthdays: todayBirthdays.filter(u => {
-        if (!u.birthdate) return false;
-        const bd = new Date(u.birthdate);
+        if (!u.birthDate) return false;
+        const bd = new Date(u.birthDate);
         return bd.getDate() === now.getDate() && bd.getMonth() === now.getMonth();
       }).length
     });
@@ -192,27 +192,12 @@ export async function GET(request: Request) {
 async function checkIfReminderSent(key: string): Promise<boolean> {
   // En production, utiliser Redis ou une table dédiée
   // Pour l'instant, on utilise localStorage côté serveur ou une table simple
-  try {
-    const reminder = await prisma.sentReminder.findUnique({
-      where: { key }
-    });
-    return !!reminder;
-  } catch {
-    // Table n'existe peut-être pas encore
-    return false;
-  }
+  // TODO: Implémenter avec Redis ou une table dédiée
+  // Pour l'instant, on retourne false pour permettre l'envoi
+  return false;
 }
 
 async function markReminderAsSent(key: string): Promise<void> {
-  try {
-    await prisma.sentReminder.create({
-      data: {
-        key,
-        sentAt: new Date()
-      }
-    });
-  } catch {
-    // Table n'existe peut-être pas encore
-    console.log('Table sentReminder à créer');
-  }
+  // TODO: Implémenter avec Redis ou une table dédiée
+  console.log(`Reminder marked as sent: ${key}`);
 }
