@@ -142,7 +142,7 @@ export async function GET() {
         },
         take: 5,
         include: {
-          client: true
+          user: true
         }
       }),
 
