@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Vérifier le token de vérification
-    const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
+    const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     
     // Log pour debug
     console.log('WhatsApp webhook reçu:', JSON.stringify(body, null, 2));
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
   
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'laia_skin_verify_token';
+  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'laia_skin_webhook_2025';
   
   if (mode === 'subscribe' && token === verifyToken) {
     console.log('Webhook WhatsApp vérifié avec succès');
