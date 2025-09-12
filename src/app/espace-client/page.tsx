@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Calendar, Clock, CheckCircle, XCircle, Gift, Star, RefreshCw, User, Award, TrendingUp, LogOut, Share2, Heart, History, Check, Edit2, X, CalendarDays } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, Star, RefreshCw, User, Award, TrendingUp, LogOut, Share2, Heart, History, Check, Edit2, X, CalendarDays, MessageSquare, ThumbsUp, Send, Camera } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import { logout } from "@/lib/auth-client";
 
@@ -31,6 +31,13 @@ export default function EspaceClient() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [satisfaction, setSatisfaction] = useState(5);
+  const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
 
   const services = {
     "hydro-naissance": "Hydro'Naissance",
@@ -354,6 +361,16 @@ export default function EspaceClient() {
           >
             Mon Profil
           </button>
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "reviews"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Mes Avis
+          </button>
         </div>
 
         {/* Content */}
@@ -621,13 +638,25 @@ export default function EspaceClient() {
                           )}
                           
                           {reservation.status === 'completed' && (
-                            <button
-                              onClick={() => handleRebook(reservation)}
-                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full text-sm font-medium hover:shadow-lg transition-all"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                              Reprendre ce soin
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedReservation(reservation);
+                                  setShowReviewModal(true);
+                                }}
+                                className="flex items-center gap-1 px-3 py-2 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 transition-all"
+                              >
+                                <Star className="w-4 h-4" />
+                                Donner un avis
+                              </button>
+                              <button
+                                onClick={() => handleRebook(reservation)}
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full text-sm font-medium hover:shadow-lg transition-all"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                                Reprendre ce soin
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -894,6 +923,140 @@ export default function EspaceClient() {
             </div>
           )}
           
+          {activeTab === "reviews" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Mes Avis & Satisfaction
+              </h2>
+              
+              {/* Statistiques de satisfaction */}
+              <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#2c3e50]">Votre niveau de satisfaction</h3>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Star
+                        key={star}
+                        className={`w-6 h-6 ${
+                          star <= 4.5 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                    <span className="ml-2 text-xl font-bold text-[#2c3e50]">4.5/5</span>
+                  </div>
+                </div>
+                <p className="text-[#2c3e50]/70">
+                  Merci pour votre fidélité ! Vos avis nous aident à améliorer constamment nos services.
+                </p>
+              </div>
+
+              {/* Soins à évaluer */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Soins en attente d'évaluation</h3>
+                {reservations
+                  .filter(r => r.status === 'completed')
+                  .slice(0, 2)
+                  .map(reservation => (
+                    <div key={reservation.id} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-[#2c3e50]">
+                            {reservation.services.map(s => services[s as keyof typeof services]).join(', ')}
+                          </p>
+                          <p className="text-sm text-[#2c3e50]/60">
+                            Effectué le {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedReservation(reservation);
+                            setShowReviewModal(true);
+                          }}
+                          className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
+                        >
+                          <Star className="w-4 h-4" />
+                          Évaluer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Historique des avis */}
+              <div>
+                <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Mes avis précédents</h3>
+                <div className="space-y-4">
+                  {/* Avis exemple 1 */}
+                  <div className="border border-[#d4b5a0]/20 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-[#2c3e50]">HydraFacial Premium</p>
+                        <p className="text-sm text-[#2c3e50]/60">Évalué le 15 novembre 2024</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            className={`w-4 h-4 ${
+                              star <= 5 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[#2c3e50]/80 italic">
+                      "Excellent soin ! Ma peau n'a jamais été aussi éclatante. Laïa est très professionnelle et à l'écoute."
+                    </p>
+                    <div className="mt-3 flex items-center gap-4 text-sm text-[#2c3e50]/60">
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" />
+                        Utile (3)
+                      </span>
+                      <span>Niveau de satisfaction : Très satisfait</span>
+                    </div>
+                  </div>
+
+                  {/* Avis exemple 2 */}
+                  <div className="border border-[#d4b5a0]/20 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium text-[#2c3e50]">BB Glow - Forfait 4 séances</p>
+                        <p className="text-sm text-[#2c3e50]/60">Évalué le 2 octobre 2024</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            className={`w-4 h-4 ${
+                              star <= 4 ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[#2c3e50]/80 italic">
+                      "Très bon résultat après 3 séances. Le teint est unifié et lumineux. Je recommande !"
+                    </p>
+                    <div className="mt-3 flex items-center gap-4 text-sm text-[#2c3e50]/60">
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" />
+                        Utile (5)
+                      </span>
+                      <span>Niveau de satisfaction : Satisfait</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bouton pour voir plus */}
+              <div className="mt-6 text-center">
+                <button className="px-6 py-3 border-2 border-[#d4b5a0] text-[#d4b5a0] rounded-full hover:bg-[#d4b5a0] hover:text-white transition-colors">
+                  Voir tous mes avis
+                </button>
+              </div>
+            </div>
+          )}
+          
           {activeTab === "profile" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
@@ -946,6 +1109,234 @@ export default function EspaceClient() {
           )}
         </div>
       </div>
+
+      {/* Modal d'évaluation */}
+      {showReviewModal && selectedReservation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-[#2c3e50] mb-4">
+              Évaluer votre soin
+            </h3>
+            
+            <div className="mb-4">
+              <p className="font-medium text-[#2c3e50]">
+                {selectedReservation.services.map(s => services[s as keyof typeof services]).join(', ')}
+              </p>
+              <p className="text-sm text-[#2c3e50]/60">
+                Effectué le {new Date(selectedReservation.date).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+
+            {/* Note globale */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                Note globale
+              </label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className="p-1 hover:scale-110 transition-transform"
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        star <= rating
+                          ? 'text-yellow-500 fill-yellow-500'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+                <span className="ml-2 text-[#2c3e50]">
+                  {rating === 5 ? 'Excellent !' :
+                   rating === 4 ? 'Très bien' :
+                   rating === 3 ? 'Bien' :
+                   rating === 2 ? 'Moyen' : 'Décevant'}
+                </span>
+              </div>
+            </div>
+
+            {/* Niveau de satisfaction */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                Niveau de satisfaction
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 2, 3, 4, 5].map(level => (
+                  <button
+                    key={level}
+                    onClick={() => setSatisfaction(level)}
+                    className={`p-2 rounded-lg text-center transition-all ${
+                      satisfaction === level
+                        ? 'bg-[#d4b5a0] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {level === 1 && '😞'}
+                    {level === 2 && '😐'}
+                    {level === 3 && '🙂'}
+                    {level === 4 && '😊'}
+                    {level === 5 && '😍'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Commentaire */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                Votre commentaire (optionnel)
+              </label>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                placeholder="Partagez votre expérience..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0]"
+                rows={4}
+              />
+            </div>
+
+            {/* Questions spécifiques */}
+            <div className="mb-6 space-y-3">
+              <p className="text-sm font-medium text-[#2c3e50]">Questions rapides</p>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="w-4 h-4 text-[#d4b5a0]" />
+                <span className="text-sm text-[#2c3e50]/70">Je recommande ce soin</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="w-4 h-4 text-[#d4b5a0]" />
+                <span className="text-sm text-[#2c3e50]/70">Les résultats correspondent à mes attentes</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="w-4 h-4 text-[#d4b5a0]" />
+                <span className="text-sm text-[#2c3e50]/70">Je reprendrai ce soin</span>
+              </label>
+            </div>
+
+            {/* Photo (optionnel) */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                Ajouter des photos (optionnel) - Max 3 photos
+              </label>
+              
+              {/* Photos uploadées */}
+              {reviewPhotos.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {reviewPhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={photo} 
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => {
+                          setReviewPhotos(reviewPhotos.filter((_, i) => i !== index));
+                          setUploadedPhotos(uploadedPhotos.filter((_, i) => i !== index));
+                        }}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {reviewPhotos.length < 3 && (
+                <label className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const remainingSlots = 3 - reviewPhotos.length;
+                      const filesToAdd = files.slice(0, remainingSlots);
+                      
+                      filesToAdd.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setReviewPhotos(prev => [...prev, reader.result as string]);
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                      
+                      setUploadedPhotos(prev => [...prev, ...filesToAdd]);
+                    }}
+                  />
+                  <div className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] transition-colors flex items-center gap-2 w-full justify-center cursor-pointer">
+                    <Camera className="w-5 h-5 text-gray-400" />
+                    <span className="text-gray-600">
+                      Ajouter {reviewPhotos.length > 0 ? 'd\'autres photos' : 'des photos'} ({3 - reviewPhotos.length} restantes)
+                    </span>
+                  </div>
+                </label>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Les photos seront visibles après validation par l'institut
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowReviewModal(false);
+                  setSelectedReservation(null);
+                  setRating(5);
+                  setSatisfaction(5);
+                  setReviewText('');
+                  setReviewPhotos([]);
+                  setUploadedPhotos([]);
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  // Préparer les données de l'avis
+                  const reviewData = {
+                    reservationId: selectedReservation?.id,
+                    service: selectedReservation?.services.map(s => services[s as keyof typeof services]).join(', '),
+                    date: selectedReservation?.date,
+                    rating,
+                    satisfaction,
+                    comment: reviewText,
+                    photos: reviewPhotos,
+                    timestamp: new Date().toISOString(),
+                    clientName: userData?.name,
+                    clientEmail: userData?.email
+                  };
+                  
+                  // Sauvegarder localement (simulation)
+                  const existingReviews = JSON.parse(localStorage.getItem('clientReviews') || '[]');
+                  existingReviews.push(reviewData);
+                  localStorage.setItem('clientReviews', JSON.stringify(existingReviews));
+                  
+                  alert(`Merci pour votre avis ! ${reviewPhotos.length > 0 ? `\n${reviewPhotos.length} photo(s) ajoutée(s)` : ''}\nIl sera publié après validation.`);
+                  
+                  // Réinitialiser
+                  setShowReviewModal(false);
+                  setSelectedReservation(null);
+                  setRating(5);
+                  setSatisfaction(5);
+                  setReviewText('');
+                  setReviewPhotos([]);
+                  setUploadedPhotos([]);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Envoyer mon avis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </AuthGuard>
   );

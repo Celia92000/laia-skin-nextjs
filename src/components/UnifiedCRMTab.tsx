@@ -5,7 +5,7 @@ import {
   User, Phone, Mail, Calendar, Heart, TrendingUp, Award, Edit2, Save, X,
   ChevronDown, ChevronUp, Search, Filter, Download, Plus, Gift, Cake,
   CreditCard, FileText, AlertCircle, Star, Eye, History, UserCheck, Settings,
-  Camera, Video, Image, Upload, Trash2, PlayCircle
+  Camera, Video, Image, Upload, Trash2, PlayCircle, Send, Paperclip
 } from "lucide-react";
 
 interface Client {
@@ -69,6 +69,13 @@ export default function UnifiedCRMTab({
   const [beforePhotoPreview, setBeforePhotoPreview] = useState<string>('');
   const [afterPhotoPreview, setAfterPhotoPreview] = useState<string>('');
   const [videoPreview, setVideoPreview] = useState<string>('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<Client | null>(null);
+  const [emailForm, setEmailForm] = useState({
+    subject: '',
+    content: '',
+    template: 'custom'
+  });
 
   // Fonction pour déterminer le niveau de fidélité basé sur le nombre de séances
   const getLoyaltyLevel = (reservations: any[]) => {
@@ -398,6 +405,21 @@ export default function UnifiedCRMTab({
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => {
+                              setEmailRecipient(client);
+                              setShowEmailModal(true);
+                              setEmailForm({
+                                subject: '',
+                                content: '',
+                                template: 'custom'
+                              });
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Envoyer un email"
+                          >
+                            <Mail className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => setExpandedClient(isExpanded ? null : client.id)}
                             className="p-2 text-[#d4b5a0] hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
@@ -1101,6 +1123,160 @@ export default function UnifiedCRMTab({
                   Sauvegarder l'évolution
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Email Individuel */}
+      {showEmailModal && emailRecipient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Envoyer un email à {emailRecipient.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailRecipient(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Templates rapides */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Template rapide
+                </label>
+                <select
+                  value={emailForm.template}
+                  onChange={(e) => {
+                    const template = e.target.value;
+                    setEmailForm({ ...emailForm, template });
+                    
+                    // Pré-remplir selon le template
+                    switch (template) {
+                      case 'reminder':
+                        setEmailForm({
+                          ...emailForm,
+                          template,
+                          subject: '📅 Rappel : Prenez soin de votre peau',
+                          content: `Bonjour ${emailRecipient.name},\n\nCela fait un moment qu'on ne s'est pas vues !\n\nVotre peau mérite une attention régulière pour conserver son éclat.\n\n✨ Profitez de -10% sur votre prochain soin cette semaine\n\n📅 Réservez dès maintenant : laiaskin.com\n\nÀ très bientôt,\nLaïa`
+                        });
+                        break;
+                      case 'birthday':
+                        setEmailForm({
+                          ...emailForm,
+                          template,
+                          subject: '🎂 Joyeux anniversaire !',
+                          content: `Chère ${emailRecipient.name},\n\nToute l'équipe de LAIA SKIN vous souhaite un merveilleux anniversaire !\n\n🎁 Pour célébrer, profitez de -20% sur le soin de votre choix ce mois-ci.\n\n📅 Réservez votre moment détente : laiaskin.com\n\nBelle journée,\nLaïa`
+                        });
+                        break;
+                      case 'followup':
+                        setEmailForm({
+                          ...emailForm,
+                          template,
+                          subject: 'Comment se porte votre peau ?',
+                          content: `Bonjour ${emailRecipient.name},\n\nJ'espère que vous êtes satisfaite de votre dernier soin.\n\nN'hésitez pas à me faire part de vos impressions ou si vous avez des questions sur votre routine.\n\n💡 Conseil : Pour maintenir les résultats, je recommande une séance toutes les 3-4 semaines.\n\nÀ bientôt,\nLaïa`
+                        });
+                        break;
+                      case 'promo':
+                        setEmailForm({
+                          ...emailForm,
+                          template,
+                          subject: '✨ Offre exclusive pour vous',
+                          content: `Bonjour ${emailRecipient.name},\n\nEn tant que cliente fidèle, j'ai le plaisir de vous offrir :\n\n🎁 -15% sur tous les soins cette semaine\n✨ Un diagnostic de peau offert\n\n📅 Réservez vite : laiaskin.com\n\nOffre valable jusqu'au [date]\n\nÀ très vite,\nLaïa`
+                        });
+                        break;
+                      default:
+                        setEmailForm({ ...emailForm, template, subject: '', content: '' });
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="custom">Personnalisé</option>
+                  <option value="reminder">Rappel de visite</option>
+                  <option value="birthday">Anniversaire</option>
+                  <option value="followup">Suivi post-soin</option>
+                  <option value="promo">Offre promotionnelle</option>
+                </select>
+              </div>
+
+              {/* Destinataire */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Destinataire
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg">
+                  <Mail className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-700">{emailRecipient.email}</span>
+                </div>
+              </div>
+
+              {/* Objet */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Objet
+                </label>
+                <input
+                  type="text"
+                  value={emailForm.subject}
+                  onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                  placeholder="Objet de l'email..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Contenu */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message
+                </label>
+                <textarea
+                  value={emailForm.content}
+                  onChange={(e) => setEmailForm({ ...emailForm, content: e.target.value })}
+                  placeholder="Écrivez votre message..."
+                  rows={10}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Variables disponibles */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-700 font-medium mb-1">Variables disponibles :</p>
+                <p className="text-xs text-blue-600">
+                  {'{clientName}'} • {'{appointmentDate}'} • {'{serviceName}'} • {'{loyaltyPoints}'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setEmailRecipient(null);
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  // Ici, implémenter l'envoi réel de l'email
+                  alert(`Email envoyé à ${emailRecipient.email} !`);
+                  setShowEmailModal(false);
+                  setEmailRecipient(null);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Envoyer l'email
+              </button>
             </div>
           </div>
         </div>

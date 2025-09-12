@@ -15,32 +15,32 @@ export default async function Blog() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 relative overflow-hidden">
+      <section className="pt-28 sm:pt-32 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#d4b5a0]/10 to-[#c9a084]/10">
           <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute w-96 h-96 -bottom-48 -left-48 bg-gradient-to-tr from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse delay-700"></div>
         </div>
         
         <div className="max-w-6xl mx-auto px-4 text-center relative">
-          <h1 className="text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] mb-4">
             Le Blog LAIA SKIN
           </h1>
-          <p className="text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
             Découvrez nos conseils d'experte, les dernières innovations en soins esthétiques et nos astuces beauté pour une peau rayonnante.
           </p>
           
-          <div className="flex justify-center gap-8 mt-12">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mt-8">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-[#d4b5a0]" />
-              <span className="text-[#2c3e50] font-medium">{posts.length} Articles</span>
+              <BookOpen className="w-5 h-5 text-[#d4b5a0]" />
+              <span className="text-[#2c3e50] font-medium text-sm sm:text-base">{posts.length} Articles</span>
             </div>
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-[#d4b5a0]" />
-              <span className="text-[#2c3e50] font-medium">Conseils d'experte</span>
+              <TrendingUp className="w-5 h-5 text-[#d4b5a0]" />
+              <span className="text-[#2c3e50] font-medium text-sm sm:text-base">Conseils d'experte</span>
             </div>
             <div className="flex items-center gap-2">
-              <Award className="w-6 h-6 text-[#d4b5a0]" />
-              <span className="text-[#2c3e50] font-medium">Technologies avancées</span>
+              <Award className="w-5 h-5 text-[#d4b5a0]" />
+              <span className="text-[#2c3e50] font-medium text-sm sm:text-base">Technologies avancées</span>
             </div>
           </div>
         </div>
@@ -48,46 +48,58 @@ export default async function Blog() {
 
       {/* Articles vedettes */}
       {featuredPosts.length > 0 && (
-        <section className="py-16 px-4 relative">
+        <section className="py-8 px-4 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/50"></div>
           <div className="max-w-7xl mx-auto relative">
-            <h2 className="text-3xl font-serif font-bold text-[#2c3e50] mb-8 text-center">Articles Vedettes</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredPosts.map((article) => (
-                <Link 
-                  key={article.id}
-                  href={`/blog/${article.slug}`}
-                  className="group cursor-pointer"
-                >
-                  <article className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full">
-                    {article.mainImage && (
-                      <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2c3e50] mb-6 text-center">Article Vedette</h2>
+            {featuredPosts.slice(0, 1).map((article) => (
+              <Link 
+                key={article.id}
+                href={`/blog/${article.slug}`}
+                className="group cursor-pointer block"
+              >
+                <article className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                  <div className="grid md:grid-cols-2 gap-0">
+                    {/* Image à gauche */}
+                    <div className="h-56 sm:h-64 md:h-80 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden">
+                      {article.mainImage ? (
                         <img 
                           src={article.mainImage} 
                           alt={article.title}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      ) : (
+                        <img 
+                          src="/services/hydro-naissance.jpg" 
+                          alt="LAIA SKIN"
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="absolute top-4 left-4 px-3 py-1 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-full text-xs font-bold uppercase tracking-wider">
+                        À la une
                       </div>
-                    )}
+                    </div>
                     
-                    <div className="p-6">
-                      <span className="text-xs font-medium text-[#d4b5a0] uppercase tracking-wider">
+                    {/* Contenu à droite */}
+                    <div className="p-6 sm:p-8 md:p-10 flex flex-col justify-center">
+                      <span className="text-xs sm:text-sm font-medium text-[#d4b5a0] uppercase tracking-wider">
                         {article.category}
                       </span>
-                      <h3 className="text-xl font-serif font-semibold text-[#2c3e50] mt-2 mb-3 line-clamp-2">
+                      <h3 className="text-xl sm:text-2xl md:text-3xl font-serif font-semibold text-[#2c3e50] mt-2 mb-3">
                         {article.title}
                       </h3>
-                      <p className="text-[#2c3e50]/70 mb-4 line-clamp-3">
+                      <p className="text-[#2c3e50]/70 mb-4 text-base sm:text-lg line-clamp-3 md:line-clamp-4">
                         {article.excerpt}
                       </p>
-                      <div className="flex items-center justify-between text-sm text-[#2c3e50]/60">
-                        <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 text-xs sm:text-sm text-[#2c3e50]/60">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {new Date(article.publishedAt).toLocaleDateString('fr-FR', { 
                               day: 'numeric', 
-                              month: 'short' 
+                              month: 'long',
+                              year: 'numeric'
                             })}
                           </span>
                           <span className="flex items-center gap-1">
@@ -95,13 +107,70 @@ export default async function Blog() {
                             {article.readTime}
                           </span>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-[#d4b5a0] transform group-hover:translate-x-2 transition-transform" />
+                        <div className="flex items-center gap-2 text-[#d4b5a0] font-semibold text-sm sm:text-base">
+                          Lire l'article
+                          <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transform group-hover:translate-x-2 transition-transform" />
+                        </div>
                       </div>
                     </div>
-                  </article>
-                </Link>
-              ))}
-            </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+            
+            {/* Autres articles vedettes s'il y en a plus d'un */}
+            {featuredPosts.length > 1 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                {featuredPosts.slice(1).map((article) => (
+                  <Link 
+                    key={article.id}
+                    href={`/blog/${article.slug}`}
+                    className="group cursor-pointer"
+                  >
+                    <article className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full">
+                      {article.mainImage && (
+                        <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden">
+                          <img 
+                            src={article.mainImage} 
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                      )}
+                      
+                      <div className="p-6">
+                        <span className="text-xs font-medium text-[#d4b5a0] uppercase tracking-wider">
+                          {article.category}
+                        </span>
+                        <h3 className="text-xl font-serif font-semibold text-[#2c3e50] mt-2 mb-3 line-clamp-2">
+                          {article.title}
+                        </h3>
+                        <p className="text-[#2c3e50]/70 mb-4 line-clamp-3">
+                          {article.excerpt}
+                        </p>
+                        <div className="flex items-center justify-between text-sm text-[#2c3e50]/60">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(article.publishedAt).toLocaleDateString('fr-FR', { 
+                                day: 'numeric', 
+                                month: 'short' 
+                              })}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {article.readTime}
+                            </span>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-[#d4b5a0] transform group-hover:translate-x-2 transition-transform" />
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon, Star, MessageCircle } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon, Star, MessageCircle, Send, X } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import AdminCalendarEnhanced from "@/components/AdminCalendarEnhanced";
 import AdminServicesTab from "@/components/AdminServicesTab";
@@ -17,7 +17,14 @@ import PaymentSection from "@/components/PaymentSection";
 import WhatsAppManager from "@/components/WhatsAppManager";
 import WhatsAppSetup from "@/components/WhatsAppSetup";
 import WhatsAppTestPanel from "@/components/WhatsAppTestPanel";
-import AdminStats from "@/components/AdminStats";
+import WhatsAppInterface from "@/components/WhatsAppInterface";
+import WhatsAppHub from "@/components/WhatsAppHub";
+import WhatsAppHistory from "@/components/WhatsAppHistory";
+import AdminStatsEnhanced from "@/components/AdminStatsEnhanced";
+import AdminReviewsManager from "@/components/AdminReviewsManager";
+import ClientSegmentation from "@/components/ClientSegmentation";
+import EmailAutomations from "@/components/EmailAutomations";
+import EmailingHub from "@/components/EmailingHub";
 import { logout } from "@/lib/auth-client";
 import { servicePricing, getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 
@@ -835,6 +842,17 @@ export default function AdminDashboard() {
             Blog
           </button>
           <button
+            onClick={() => setActiveTab("emailing")}
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+              activeTab === "emailing"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            <Mail className="w-4 h-4 inline mr-2" />
+            Emailing
+          </button>
+          <button
             onClick={() => setActiveTab("whatsapp")}
             className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
               activeTab === "whatsapp"
@@ -845,6 +863,17 @@ export default function AdminDashboard() {
             <MessageCircle className="w-4 h-4 inline mr-2" />
             WhatsApp
           </button>
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+              activeTab === "reviews"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            <Star className="w-4 h-4 inline mr-2" />
+            Avis & Photos
+          </button>
         </div>
 
         {/* Content */}
@@ -854,7 +883,7 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
                 Tableau de bord et statistiques
               </h2>
-              <AdminStats />
+              <AdminStatsEnhanced />
             </div>
           )}
           
@@ -2089,6 +2118,10 @@ export default function AdminDashboard() {
             />
           )}
 
+          {activeTab === "emailing" && (
+            <EmailingHub />
+          )}
+
           {false && activeTab === "OLD_CLIENTS" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
@@ -2301,16 +2334,9 @@ export default function AdminDashboard() {
           {/* Onglet Blog */}
           {activeTab === "blog" && <AdminBlogTab />}
           
-          {activeTab === "whatsapp" && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
-                Configuration WhatsApp Business
-              </h2>
-              <WhatsAppTestPanel />
-              <WhatsAppManager />
-              <WhatsAppSetup />
-            </div>
-          )}
+          {activeTab === "whatsapp" && <WhatsAppHub />}
+          
+          {activeTab === "reviews" && <AdminReviewsManager />}
         </div>
 
       {/* Modal Nouvelle Réservation */}
