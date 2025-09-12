@@ -467,7 +467,7 @@ export default function WhatsAppInterface() {
                           setSearchQuery(e.target.value);
                           // Compter les résultats
                           const results = messages.filter(m => 
-                            m.message.toLowerCase().includes(e.target.value.toLowerCase())
+                            m.content.toLowerCase().includes(e.target.value.toLowerCase())
                           ).length;
                           setSearchResults(results);
                         }}

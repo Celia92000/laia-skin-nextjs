@@ -140,7 +140,6 @@ async function main() {
     data: {
       userId: client1.id,
       services: JSON.stringify(['hydro']),
-      packages: JSON.stringify({ hydro: 'single' }),
       date: today,
       time: '10:00',
       totalPrice: 70,
@@ -154,7 +153,6 @@ async function main() {
     data: {
       userId: client2.id,
       services: JSON.stringify(['renaissance']),
-      packages: JSON.stringify({ renaissance: 'single' }),
       date: today,
       time: '14:00',
       totalPrice: 70,
@@ -168,7 +166,6 @@ async function main() {
     data: {
       userId: client3.id,
       services: JSON.stringify(['bbglow']),
-      packages: JSON.stringify({ bbglow: 'single' }),
       date: tomorrow,
       time: '11:00',
       totalPrice: 70,
@@ -181,7 +178,6 @@ async function main() {
     data: {
       userId: client1.id,
       services: JSON.stringify(['hydro-naissance']),
-      packages: JSON.stringify({ 'hydro-naissance': 'single' }),
       date: tomorrow,
       time: '15:30',
       totalPrice: 90,
@@ -199,7 +195,6 @@ async function main() {
     data: {
       userId: client2.id,
       services: JSON.stringify(['hydro']),
-      packages: JSON.stringify({ hydro: 'single' }),
       date: lastWeek,
       time: '10:00',
       totalPrice: 70,
@@ -212,7 +207,6 @@ async function main() {
     data: {
       userId: client2.id,
       services: JSON.stringify(['led']),
-      packages: JSON.stringify({ led: 'forfait' }),
       date: lastWeek,
       time: '14:00',
       totalPrice: 199,

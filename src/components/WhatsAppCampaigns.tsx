@@ -519,7 +519,7 @@ export default function WhatsAppCampaigns() {
                         ...campaign.stats,
                         sent: 0,
                         delivered: 0,
-                        opened: 0,
+                        read: 0,
                         clicked: 0,
                         replied: 0
                       }

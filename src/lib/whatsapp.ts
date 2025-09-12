@@ -95,7 +95,7 @@ Réservez vite :
 
 Bonjour ${data.clientName},
 
-J'espère que vous allez bien suite à votre ${serviceName} d'hier ! 
+J'espère que vous allez bien suite à votre soin d'hier ! 
 
 Comment vous sentez-vous ? 😊
 
