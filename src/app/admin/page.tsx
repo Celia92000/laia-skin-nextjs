@@ -1983,9 +1983,9 @@ export default function AdminDashboard() {
                   const hasPackageDiscount = packages > 0 && packages % 2 === 0;
                   
                   // Vérifier si le client a des réductions disponibles
-                  const isBirthday = client.birthDate && 
-                    new Date(client.birthDate).getMonth() === new Date().getMonth() &&
-                    new Date(client.birthDate).getDate() === new Date().getDate();
+                  const isBirthday = client.birthdate && 
+                    new Date(client.birthdate).getMonth() === new Date().getMonth() &&
+                    new Date(client.birthdate).getDate() === new Date().getDate();
                   
                   const hasDiscount = hasIndividualDiscount || hasPackageDiscount || isBirthday;
                   
