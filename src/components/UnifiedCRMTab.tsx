@@ -8,12 +8,13 @@ import {
   Camera, Video, Image, Upload, Trash2, PlayCircle, Send, Paperclip
 } from "lucide-react";
 
-interface Client {
+export interface Client {
   id: string;
   name: string;
   email: string;
   phone?: string;
   birthDate?: string;
+  birthdate?: string;
   loyaltyPoints: number;
   totalSpent: number;
   lastVisit?: string;
@@ -26,6 +27,9 @@ interface Client {
   packagesCount?: number;
   reservations?: any[];
   loyaltyHistory?: any[];
+  individualSoins?: number;
+  forfaits?: number;
+  reservationCount?: number;
 }
 
 interface UnifiedCRMTabProps {

@@ -7,7 +7,7 @@ import AuthGuard from "@/components/AuthGuard";
 import AdminCalendarEnhanced from "@/components/AdminCalendarEnhanced";
 import AdminServicesTab from "@/components/AdminServicesTab";
 import AdminDashboardOptimized from "@/components/AdminDashboardOptimized";
-import UnifiedCRMTab from "@/components/UnifiedCRMTab";
+import UnifiedCRMTab, { type Client } from "@/components/UnifiedCRMTab";
 import AdminBlogTab from "@/components/AdminBlogTab";
 import PlanningCalendar from "@/components/PlanningCalendar";
 import AvailabilityManager from "@/components/AvailabilityManager";
@@ -54,29 +54,6 @@ interface Reservation {
   cancelReason?: string;
 }
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  birthDate?: string;
-  birthdate?: string;
-  loyaltyPoints: number;
-  totalSpent: number;
-  lastVisit?: string;
-  skinType?: string;
-  allergies?: string;
-  medicalNotes?: string;
-  preferences?: string;
-  adminNotes?: string;
-  individualServicesCount?: number;
-  packagesCount?: number;
-  reservations?: any[];
-  loyaltyHistory?: any[];
-  individualSoins?: number;
-  forfaits?: number;
-  reservationCount?: number;
-}
 
 export default function AdminDashboard() {
   const router = useRouter();
