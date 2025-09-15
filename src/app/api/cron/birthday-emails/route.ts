@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       where: {
         AND: [
-          { birthday: { not: null } },
+          { birthDate: { not: null } },
           { email: { not: null } }
         ]
       }
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
     // Filtrer les utilisateurs dont c'est l'anniversaire
     const birthdayUsers = users.filter(user => {
-      if (!user.birthday) return false;
-      const birthday = new Date(user.birthday);
+      if (!user.birthDate) return false;
+      const birthday = new Date(user.birthDate);
       return birthday.getMonth() + 1 === todayMonth && birthday.getDate() === todayDay;
     });
 
