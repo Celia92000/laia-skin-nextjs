@@ -42,7 +42,7 @@ async function main() {
       ]),
       metaTitle: "Hydro'Naissance : Soin Signature Anti-Âge | LAIA SKIN",
       metaDescription: "Soin signature combinant hydratation profonde et stimulation cellulaire. 150€ au lieu de 180€.",
-      keywords: ["soin signature", "anti-âge", "hydratation", "collagène", "rajeunissement"]
+      keywords: "soin signature, anti-âge, hydratation, collagène, rajeunissement"
     }
   })
   console.log("✅ 1. Hydro'Naissance créé")
@@ -77,7 +77,7 @@ async function main() {
       ],
       metaTitle: "Renaissance Dermapen : Régénération Cellulaire | LAIA SKIN",
       metaDescription: "Traitement Dermapen pour stimuler le collagène et réduire cicatrices et rides. 120€ la séance.",
-      keywords: ["dermapen", "régénération", "collagène", "cicatrices", "anti-âge"]
+      keywords: "dermapen, régénération, collagène, cicatrices, anti-âge"
     }
   })
   console.log("✅ 2. Renaissance créé")
@@ -115,7 +115,7 @@ async function main() {
       ],
       metaTitle: "Hydro'Cleaning : Alternative HydraFacial Paris | LAIA SKIN",
       metaDescription: "Hydradermabrasion professionnelle, alternative française à l'HydraFacial. Seulement 80€ pour un teint éclatant.",
-      keywords: ["hydrafacial", "hydradermabrasion", "nettoyage", "pores", "éclat", "alternative hydrafacial"]
+      keywords: "hydrafacial, hydradermabrasion, nettoyage, pores, éclat, alternative hydrafacial"
     }
   })
   console.log("✅ 3. Hydro'Cleaning créé")
@@ -151,7 +151,7 @@ async function main() {
       ],
       metaTitle: "BB Glow : Teint Parfait Semi-Permanent | LAIA SKIN",
       metaDescription: "BB Glow pour un teint unifié pendant 4-8 semaines. Technique coréenne à 90€.",
-      keywords: ["bb glow", "teint parfait", "semi-permanent", "no makeup", "coréen"]
+      keywords: "bb glow, teint parfait, semi-permanent, no makeup, coréen"
     }
   })
   console.log("✅ 4. BB Glow créé")
@@ -187,7 +187,7 @@ async function main() {
       ],
       metaTitle: "LED Thérapie : Photobiomodulation | LAIA SKIN",
       metaDescription: "LED thérapie complète avec préparation. Traite acné, rides et rougeurs. 45€ la séance.",
-      keywords: ["LED thérapie", "photothérapie", "anti-acné", "anti-âge", "lumière"]
+      keywords: "LED thérapie, photothérapie, anti-acné, anti-âge, lumière"
     }
   })
   console.log("✅ 5. LED Thérapie créé")
