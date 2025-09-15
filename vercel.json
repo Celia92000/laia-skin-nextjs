@@ -2,13 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/reminder-emails",
-      "schedule": "0 18 * * *",
-      "comment": "Rappels de rendez-vous - tous les jours à 18h"
+      "schedule": "0 18 * * *"
     },
     {
       "path": "/api/cron/send-review-requests",
-      "schedule": "0 15 * * *",
-      "comment": "Demandes d'avis clients - tous les jours à 15h"
+      "schedule": "0 15 * * *"
     }
   ]
 }
