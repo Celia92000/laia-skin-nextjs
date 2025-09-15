@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { Clock, Euro, Check, AlertCircle, ArrowRight, Star, ChevronRight, Info, Sparkles, ImageIcon, Heart, Shield, Calendar } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering to avoid build-time database queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface ServicePageProps {
   params: Promise<{ slug: string }>;
 }
@@ -10,33 +14,42 @@ interface ServicePageProps {
 export default async function ServicePage({ params }: ServicePageProps) {
   const { slug } = await params;
   
-  const service = await prisma.service.findUnique({
-    where: { 
-      slug,
-      active: true 
-    }
-  });
+  let service: any = null;
+  let otherServices: any[] = [];
+  let optionServices: any[] = [];
 
-  if (!service) {
+  try {
+    service = await prisma.service.findUnique({
+      where: { 
+        slug,
+        active: true 
+      }
+    });
+
+    if (!service) {
+      notFound();
+    }
+
+    // Récupérer les autres services pour la section "Découvrir aussi"
+    otherServices = await prisma.service.findMany({
+      where: {
+        active: true,
+        NOT: { slug }
+      },
+      take: 3
+    });
+
+    // Récupérer les services qui peuvent être ajoutés en option
+    optionServices = await prisma.service.findMany({
+      where: {
+        active: true,
+        canBeOption: true
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching service:', error);
     notFound();
   }
-
-  // Récupérer les autres services pour la section "Découvrir aussi"
-  const otherServices = await prisma.service.findMany({
-    where: {
-      active: true,
-      NOT: { slug }
-    },
-    take: 3
-  });
-
-  // Récupérer les services qui peuvent être ajoutés en option
-  let optionServices = await prisma.service.findMany({
-    where: {
-      active: true,
-      canBeOption: true
-    }
-  });
 
   // Déterminer si ce service peut avoir des options (Hydro'Naissance, Hydro'Cleaning, Renaissance)
   const canHaveOptions = ['hydro-naissance', 'hydro-cleaning', 'renaissance'].includes(slug);

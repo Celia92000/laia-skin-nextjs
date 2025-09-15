@@ -2,15 +2,28 @@ import Link from "next/link";
 import { Calendar, Clock, ArrowRight, BookOpen, TrendingUp, Award } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
-export default async function Blog() {
-  // Récupérer les articles depuis la base de données
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: 'desc' }
-  });
+// Force dynamic rendering to avoid build-time database queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-  const featuredPosts = posts.filter(p => p.featured);
-  const recentPosts = posts.filter(p => !p.featured);
+export default async function Blog() {
+  let posts: any[] = [];
+  let featuredPosts: any[] = [];
+  let recentPosts: any[] = [];
+
+  try {
+    // Récupérer les articles depuis la base de données
+    posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: 'desc' }
+    });
+
+    featuredPosts = posts.filter(p => p.featured);
+    recentPosts = posts.filter(p => !p.featured);
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    // En cas d'erreur, on continue avec des tableaux vides
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">

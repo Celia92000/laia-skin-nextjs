@@ -178,6 +178,10 @@ const articles_old = {
   }
 };
 
+// Force dynamic rendering to avoid build-time database queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
 }
@@ -185,13 +189,20 @@ interface ArticlePageProps {
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
   
-  // Récupérer l'article depuis la base de données
-  const article = await prisma.blogPost.findFirst({
-    where: { 
-      slug,
-      published: true 
-    }
-  });
+  let article: any = null;
+  
+  try {
+    // Récupérer l'article depuis la base de données
+    article = await prisma.blogPost.findFirst({
+      where: { 
+        slug,
+        published: true 
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching blog post:', error);
+    notFound();
+  }
 
   if (!article) {
     notFound();

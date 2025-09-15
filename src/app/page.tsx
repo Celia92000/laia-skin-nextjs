@@ -2,11 +2,22 @@ import Link from "next/link";
 import { prisma } from '@/lib/prisma';
 import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 
+// Force dynamic rendering to avoid build-time database queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function Home() {
-  // Récupérer les services depuis la base de données
-  const services = await prisma.service.findMany({
-    where: { active: true }
-  });
+  let services: any[] = [];
+  
+  try {
+    // Récupérer les services depuis la base de données
+    services = await prisma.service.findMany({
+      where: { active: true }
+    });
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    // En cas d'erreur, on continue avec un tableau vide
+  }
   
   // Trier pour mettre les services featured en premier, puis par ordre
   const sortedServices = [...services].sort((a, b) => {
