@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
-import { sendEmail, emailTemplates } from '@/lib/email';
+import { Resend } from 'resend';
+
+// Initialiser Resend avec une clé dummy pour le build
+const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
 // Cette API doit être appelée régulièrement (toutes les heures par exemple)
 // Via Vercel Cron, GitHub Actions, ou un service externe
@@ -42,33 +44,88 @@ export async function GET(request: Request) {
       const alreadySent = await checkIfReminderSent(reminderKey);
       
       if (!alreadySent) {
-        const services = JSON.parse(reservation.services);
+        const services = JSON.parse(reservation.services as string);
         
-        // Envoyer WhatsApp si le numéro existe
-        if (reservation.user.phone) {
-          const message = whatsappTemplates.appointmentReminder({
-            clientName: reservation.user.name,
-            time: reservation.time,
-            services: services
-          });
-          
-          await sendWhatsAppMessage({
-            to: reservation.user.phone,
-            message
-          });
+        // Vérifier que Resend est configuré
+        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
+          console.log('Resend non configuré - emails non envoyés');
+          continue;
         }
         
-        // Envoyer email
-        const emailTemplate = emailTemplates.reservationReminder({
-          clientName: reservation.user.name,
-          date: reservation.date.toLocaleDateString('fr-FR'),
-          time: reservation.time,
-          services: services
+        // Envoyer email de rappel 24h
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .content { padding: 30px; }
+    .appointment-box { background: #e8f4f8; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; }
+    .footer { background: #f9f9f9; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📅 Rappel de votre rendez-vous demain</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${reservation.user.name},</p>
+      
+      <p>Je vous rappelle votre rendez-vous <strong>demain</strong> chez LAIA SKIN Institut.</p>
+      
+      <div class="appointment-box">
+        <h3>📍 Détails de votre rendez-vous :</h3>
+        <p><strong>Date :</strong> ${reservation.date.toLocaleDateString('fr-FR', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })}<br>
+        <strong>Heure :</strong> ${reservation.time}<br>
+        <strong>Prix :</strong> ${reservation.totalPrice}€</p>
+      </div>
+      
+      <p>Si vous avez besoin de modifier ou annuler votre rendez-vous, merci de me prévenir au plus vite.</p>
+      
+      <p>📞 WhatsApp : 06 83 71 70 50</p>
+      
+      <p>J'ai hâte de vous retrouver demain !</p>
+      
+      <p>À très bientôt,<br>
+      <strong>Laïa</strong><br>
+      LAIA SKIN Institut</p>
+    </div>
+    <div class="footer">
+      <p>📍 23 rue de la Beauté, 75001 Paris<br>
+      🌐 laiaskininstitut.fr</p>
+    </div>
+  </div>
+</body>
+</html>`;
+        
+        await resend!.emails.send({
+          from: 'LAIA SKIN Institut <onboarding@resend.dev>',
+          to: [reservation.user.email],
+          subject: `📅 Rappel : Votre rendez-vous demain à ${reservation.time}`,
+          html: htmlContent,
+          text: `Rappel : Vous avez rendez-vous demain à ${reservation.time}.`
         });
         
-        await sendEmail({
-          to: reservation.user.email,
-          ...emailTemplate
+        // Enregistrer dans l'historique
+        await prisma.emailHistory.create({
+          data: {
+            from: 'contact@laiaskininstitut.fr',
+            to: reservation.user.email,
+            subject: `📅 Rappel de rendez-vous`,
+            content: `Rappel automatique pour le rendez-vous du ${reservation.date.toLocaleDateString('fr-FR')}`,
+            template: 'reminder',
+            status: 'sent',
+            direction: 'outgoing',
+            userId: reservation.userId
+          }
         });
         
         // Marquer comme envoyé
@@ -103,12 +160,61 @@ export async function GET(request: Request) {
         const reminderKey = `reminder_2h_${reservation.id}`;
         const alreadySent = await checkIfReminderSent(reminderKey);
         
-        if (!alreadySent && reservation.user.phone) {
-          const message = `⏰ Rappel: Votre RDV est dans 2h à ${reservation.time}\nLAIA SKIN Institut 💕`;
+        if (!alreadySent) {
+          // Vérifier que Resend est configuré
+          if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
+            console.log('Resend non configuré - rappel 2h non envoyé');
+            continue;
+          }
           
-          await sendWhatsAppMessage({
-            to: reservation.user.phone,
-            message
+          // Envoyer email de rappel 2h
+          const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .content { padding: 30px; }
+    .urgent-box { background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
+    .footer { background: #f9f9f9; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⏰ Rappel : Votre rendez-vous dans 2 heures</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${reservation.user.name},</p>
+      
+      <div class="urgent-box">
+        <h3>⏰ Votre rendez-vous est dans 2 heures !</h3>
+        <p><strong>Heure :</strong> ${reservation.time}<br>
+        <strong>Prix :</strong> ${reservation.totalPrice}€</p>
+      </div>
+      
+      <p>J'ai hâte de vous retrouver tout à l'heure !</p>
+      
+      <p>À tout de suite,<br>
+      <strong>Laïa</strong><br>
+      LAIA SKIN Institut</p>
+    </div>
+    <div class="footer">
+      <p>📍 23 rue de la Beauté, 75001 Paris<br>
+      📞 06 83 71 70 50</p>
+    </div>
+  </div>
+</body>
+</html>`;
+          
+          await resend!.emails.send({
+            from: 'LAIA SKIN Institut <onboarding@resend.dev>',
+            to: [reservation.user.email],
+            subject: `⏰ Rappel urgent : Votre rendez-vous dans 2 heures`,
+            html: htmlContent,
+            text: `Rappel : Votre rendez-vous est dans 2 heures à ${reservation.time}.`
           });
           
           await markReminderAsSent(reminderKey);
@@ -136,26 +242,86 @@ export async function GET(request: Request) {
           const alreadySent = await checkIfReminderSent(reminderKey);
           
           if (!alreadySent) {
-            // WhatsApp
-            if (user.phone) {
-              const message = whatsappTemplates.birthdayMessage({
-                clientName: user.name
-              });
-              
-              await sendWhatsAppMessage({
-                to: user.phone,
-                message
-              });
+            // Vérifier que Resend est configuré
+            if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
+              console.log('Resend non configuré - email anniversaire non envoyé');
+              continue;
             }
             
-            // Email
-            const emailTemplate = emailTemplates.birthdayWish({
-              clientName: user.name
+            // Envoyer email d'anniversaire
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .content { padding: 30px; }
+    .birthday-box { background: #fff3cd; border: 2px solid #ffc107; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center; }
+    .code { background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; font-size: 20px; font-weight: bold; margin: 10px 0; }
+    .footer { background: #f9f9f9; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎂 Joyeux Anniversaire ${user.name} ! 🎉</h1>
+    </div>
+    <div class="content">
+      <p>Bonjour ${user.name},</p>
+      
+      <div class="birthday-box">
+        <h2>C'est votre jour spécial !</h2>
+        <p>Toute l'équipe de LAIA SKIN Institut vous souhaite un merveilleux anniversaire !</p>
+        
+        <p><strong>Notre cadeau pour vous :</strong></p>
+        <div class="code">-30% SUR TOUS LES SOINS</div>
+        <p><em>Valable tout le mois de votre anniversaire</em></p>
+      </div>
+      
+      <p>Profitez de cette offre exceptionnelle pour vous faire plaisir avec le soin de votre choix.</p>
+      
+      <p>Pour réserver, contactez-nous :</p>
+      <ul>
+        <li>📞 WhatsApp : 06 83 71 70 50</li>
+        <li>✉️ Email : contact@laiaskininstitut.fr</li>
+      </ul>
+      
+      <p>Nous avons hâte de célébrer avec vous !</p>
+      
+      <p>Très belle journée à vous,<br>
+      <strong>Laïa</strong><br>
+      LAIA SKIN Institut</p>
+    </div>
+    <div class="footer">
+      <p>📍 23 rue de la Beauté, 75001 Paris<br>
+      🌐 laiaskininstitut.fr</p>
+    </div>
+  </div>
+</body>
+</html>`;
+            
+            await resend!.emails.send({
+              from: 'LAIA SKIN Institut <onboarding@resend.dev>',
+              to: [user.email],
+              subject: `🎂 Joyeux anniversaire ${user.name} ! Une surprise vous attend`,
+              html: htmlContent,
+              text: `Joyeux anniversaire ${user.name} ! Profitez de -30% sur tous nos soins ce mois-ci.`
             });
             
-            await sendEmail({
-              to: user.email,
-              ...emailTemplate
+            // Enregistrer dans l'historique
+            await prisma.emailHistory.create({
+              data: {
+                from: 'contact@laiaskininstitut.fr',
+                to: user.email,
+                subject: `🎂 Joyeux anniversaire ${user.name} !`,
+                content: 'Email d\'anniversaire automatique',
+                template: 'birthday',
+                status: 'sent',
+                direction: 'outgoing',
+                userId: user.id
+              }
             });
             
             await markReminderAsSent(reminderKey);

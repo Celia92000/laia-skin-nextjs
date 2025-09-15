@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 
+// Initialiser Resend avec une clé dummy pour le build
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
 export async function GET(request: NextRequest) {
@@ -10,6 +11,15 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Vérifier que Resend est bien configuré
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
+      console.log('Resend API key not configured, skipping email send');
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Resend non configuré - emails non envoyés' 
+      });
     }
 
     // Obtenir la date d'aujourd'hui
@@ -93,7 +103,7 @@ export async function GET(request: NextRequest) {
 </body>
 </html>`;
 
-        await resend.emails.send({
+        await resend!.emails.send({
           from: 'LAIA SKIN Institut <onboarding@resend.dev>',
           to: [user.email!],
           subject: `🎂 Joyeux anniversaire ${user.name} ! Une surprise vous attend`,
