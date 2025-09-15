@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from 'next/navigation';
 import { Calendar, Clock, User, Phone, Mail, ChevronLeft, ChevronRight, Sparkles, CheckCircle, MapPin, Shield, AlertCircle, Lock, Eye, EyeOff } from "lucide-react";
 
-export default function Reservation() {
+function ReservationContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -1169,5 +1169,20 @@ export default function Reservation() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Reservation() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <ReservationContent />
+    </Suspense>
   );
 }

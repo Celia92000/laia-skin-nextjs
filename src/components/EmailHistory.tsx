@@ -290,7 +290,9 @@ export default function EmailHistory() {
                 <div className="flex items-center gap-4 flex-shrink-0">
                   {getStatusIcon(email.status)}
                   {email.openedAt && (
-                    <Eye className="w-4 h-4 text-green-500" title="Email ouvert" />
+                    <span title="Email ouvert">
+                      <Eye className="w-4 h-4 text-green-500" />
+                    </span>
                   )}
                   <span className="text-sm text-gray-500">
                     {formatDate(email.createdAt)}

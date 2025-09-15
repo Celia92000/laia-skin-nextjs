@@ -1,7 +1,7 @@
 // Service d'envoi d'email simple avec template HTML
 // Utilise l'API Web native (nécessite un serveur SMTP configuré ou un service tiers)
 
-interface EmailData {
+export interface EmailData {
   to: string;
   name: string;
   date: string;
