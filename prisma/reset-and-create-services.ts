@@ -63,18 +63,18 @@ async function main() {
       featured: false,
       order: 2,
       active: true,
-      benefits: [
+      benefits: JSON.stringify([
         "Stimulation du collagène",
         "Réduction des cicatrices",
         "Pores resserrés",
         "Texture affinée",
         "Rides atténuées"
-      ],
-      process: [
+      ]),
+      process: JSON.stringify([
         { title: "Préparation", description: "Nettoyage et anesthésiant léger", duration: "15 min" },
         { title: "Traitement Dermapen", description: "Micro-perforation 0.5mm", duration: "30 min" },
         { title: "Apaisement", description: "Masque calmant et LED", duration: "15 min" }
-      ],
+      ]),
       metaTitle: "Renaissance Dermapen : Régénération Cellulaire | LAIA SKIN",
       metaDescription: "Traitement Dermapen pour stimuler le collagène et réduire cicatrices et rides. 120€ la séance.",
       keywords: "dermapen, régénération, collagène, cicatrices, anti-âge"
@@ -98,21 +98,21 @@ async function main() {
       featured: false,
       order: 3,
       active: true,
-      benefits: [
+      benefits: JSON.stringify([
         "Nettoyage profond des pores",
         "Exfoliation douce",
         "Hydratation intense",
         "Éclat immédiat",
         "Extraction des impuretés"
-      ],
-      process: [
+      ]),
+      process: JSON.stringify([
         { title: "Analyse", description: "Diagnostic de peau", duration: "5 min" },
         { title: "Nettoyage", description: "Double nettoyage", duration: "10 min" },
         { title: "Hydradermabrasion", description: "Exfoliation aqua", duration: "15 min" },
         { title: "Extraction", description: "Aspiration douce", duration: "10 min" },
         { title: "Infusion", description: "Sérums actifs", duration: "15 min" },
         { title: "Protection", description: "SPF et conseils", duration: "5 min" }
-      ],
+      ]),
       metaTitle: "Hydro'Cleaning : Alternative HydraFacial Paris | LAIA SKIN",
       metaDescription: "Hydradermabrasion professionnelle, alternative française à l'HydraFacial. Seulement 80€ pour un teint éclatant.",
       keywords: "hydrafacial, hydradermabrasion, nettoyage, pores, éclat, alternative hydrafacial"
@@ -136,19 +136,19 @@ async function main() {
       featured: false,
       order: 4,
       active: true,
-      benefits: [
+      benefits: JSON.stringify([
         "Teint unifié 4-8 semaines",
         "Effet bonne mine permanent",
         "Camouflage des imperfections",
         "Hydratation profonde",
         "Gain de temps maquillage"
-      ],
-      process: [
+      ]),
+      process: JSON.stringify([
         { title: "Consultation teint", description: "Choix de la teinte", duration: "10 min" },
         { title: "Préparation", description: "Nettoyage et exfoliation", duration: "15 min" },
         { title: "Application BB", description: "Micro-perforation 0.5mm", duration: "25 min" },
         { title: "Finalisation", description: "Masque et protection", duration: "10 min" }
-      ],
+      ]),
       metaTitle: "BB Glow : Teint Parfait Semi-Permanent | LAIA SKIN",
       metaDescription: "BB Glow pour un teint unifié pendant 4-8 semaines. Technique coréenne à 90€.",
       keywords: "bb glow, teint parfait, semi-permanent, no makeup, coréen"
@@ -172,19 +172,19 @@ async function main() {
       featured: false,
       order: 5,
       active: true,
-      benefits: [
+      benefits: JSON.stringify([
         "Réduit l'acné",
         "Stimule le collagène",
         "Apaise les rougeurs",
         "Unifie le teint",
         "Régénère les cellules"
-      ],
-      process: [
+      ]),
+      process: JSON.stringify([
         { title: "Diagnostic", description: "Choix des longueurs d'onde", duration: "5 min" },
         { title: "Préparation", description: "Nettoyage et gommage", duration: "10 min" },
         { title: "Séance LED", description: "Exposition personnalisée", duration: "20 min" },
         { title: "Masque booster", description: "Masque sous LED", duration: "10 min" }
-      ],
+      ]),
       metaTitle: "LED Thérapie : Photobiomodulation | LAIA SKIN",
       metaDescription: "LED thérapie complète avec préparation. Traite acné, rides et rougeurs. 45€ la séance.",
       keywords: "LED thérapie, photothérapie, anti-acné, anti-âge, lumière"
