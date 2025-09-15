@@ -48,19 +48,19 @@ export default async function ServicePage({ params }: ServicePageProps) {
   }
 
   // Parser les données JSON ou texte simple
-  const parseJsonOrText = (data: any): string[] => {
+  const parseJsonOrText = (data: any): any => {
     if (!data) return [];
     if (typeof data === 'string') {
       try {
         const parsed = JSON.parse(data);
-        return Array.isArray(parsed) ? parsed : [data];
+        return parsed;
       } catch {
         // Si ce n'est pas du JSON, traiter comme du texte simple
         // Diviser par virgule ou retour à la ligne
         return data.split(/[,\n]/).map(item => item.trim()).filter(item => item);
       }
     }
-    return Array.isArray(data) ? data : [];
+    return data;
   };
 
   const benefits = parseJsonOrText(service.benefits);
@@ -180,15 +180,25 @@ export default async function ServicePage({ params }: ServicePageProps) {
                 Comment se déroule la séance ?
               </h2>
               <div className="space-y-3">
-                {process.map((step: string, index: number) => (
+                {Array.isArray(process) && process.map((step: any, index: number) => (
                   <div key={index} className="flex gap-4 items-start">
                     <div className="flex-shrink-0">
                       <div className="w-8 h-8 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] text-white rounded-full flex items-center justify-center font-bold text-sm shadow">
-                        {index + 1}
+                        {typeof step === 'object' && step.step ? step.step : index + 1}
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[#2c3e50]/80 text-base leading-relaxed">{step}</p>
+                      {typeof step === 'object' ? (
+                        <div>
+                          <h4 className="font-semibold text-[#2c3e50] mb-1">{step.title}</h4>
+                          <p className="text-[#2c3e50]/80 text-sm leading-relaxed">{step.description}</p>
+                          {step.duration && (
+                            <span className="text-xs text-[#d4b5a0] mt-1 inline-block">{step.duration}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[#2c3e50]/80 text-base leading-relaxed">{step}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -220,20 +230,24 @@ export default async function ServicePage({ params }: ServicePageProps) {
           {/* Informations pratiques */}
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {/* Recommandations */}
-            {recommendations.length > 0 && (
+            {(Array.isArray(recommendations) ? recommendations.length > 0 : recommendations) && (
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 shadow-lg">
                 <h3 className="text-xl font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
                   <Shield className="w-6 h-6 text-green-600" />
                   Conseils avant le soin
                 </h3>
-                <ul className="space-y-3">
-                  {recommendations.map((rec: string, index: number) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-[#2c3e50]/80">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
+                {Array.isArray(recommendations) ? (
+                  <ul className="space-y-3">
+                    {recommendations.map((rec: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <ChevronRight className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-[#2c3e50]/80">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-[#2c3e50]/80">{recommendations}</p>
+                )}
               </div>
             )}
 

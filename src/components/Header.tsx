@@ -55,16 +55,16 @@ export default function Header() {
                 priority
               />
             </div>
-            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">LAIA SKIN</h1>
+            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">LAIA SKIN INSTITUT</h1>
           </Link>
 
           {/* Desktop Navigation */}
-          <ul className="hidden lg:flex items-center gap-4 xl:gap-6">
+          <ul className="hidden lg:flex items-center gap-2">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link 
                   href={item.href} 
-                  className={`text-[#2c3e50] font-medium px-4 py-2 rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-[#d4b5a0] hover:to-[#c9a084] hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm ${
+                  className={`font-inter inline-flex items-center justify-center min-w-[100px] text-center text-[#2c3e50] font-medium px-4 py-2 rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-[#d4b5a0] hover:to-[#c9a084] hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm tracking-normal whitespace-nowrap ${
                     pathname === item.href ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white" : ""
                   }`}
                 >

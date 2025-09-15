@@ -293,15 +293,36 @@ END:VCALENDAR`;
           <h3 className="text-xl font-serif font-bold text-[#2c3e50] mb-4">
             Informations importantes
           </h3>
-          <div className="space-y-3 text-[#2c3e50]/80">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-[#d4b5a0] mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Adresse de l'institut :</p>
-                <p className="text-sm">5 allée Jean de la Fontaine<br/>
-                92000 Nanterre<br/>
-                <strong>Bâtiment 5, 2ème étage, Porte 523</strong><br/>
-                <span className="text-xs text-[#2c3e50]/60 mt-1">🚇 À 6 minutes à pied de la gare de Nanterre Université</span></p>
+          <div className="space-y-4 text-[#2c3e50]/80">
+            <div className="p-5 bg-gradient-to-r from-[#d4b5a0]/15 to-[#c9a084]/15 rounded-xl border-2 border-[#d4b5a0]/40">
+              <div className="flex items-start gap-4">
+                <MapPin className="w-8 h-8 text-[#d4b5a0] mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-bold text-lg text-[#2c3e50] mb-2">📍 Adresse de l'institut</p>
+                  <div className="bg-white p-3 rounded-lg shadow-sm">
+                    <p className="text-base font-medium text-[#2c3e50]">
+                      5 allée Jean de la Fontaine<br/>
+                      92000 Nanterre
+                    </p>
+                    <div className="mt-2 p-2 bg-[#d4b5a0]/10 rounded border-l-4 border-[#d4b5a0]">
+                      <p className="text-sm font-semibold text-[#2c3e50]">
+                        🏢 Bâtiment 5<br/>
+                        🔢 2ème étage<br/>
+                        🚪 Porte 523
+                      </p>
+                    </div>
+                    <p className="text-sm text-[#2c3e50]/70 mt-2 flex items-center gap-2">
+                      <span className="text-base">🚇</span>
+                      <strong>6 min à pied</strong> de la gare Nanterre Université
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => window.open('https://maps.google.com/?q=5+allée+Jean+de+la+Fontaine+92000+Nanterre', '_blank')}
+                    className="mt-3 text-sm text-[#d4b5a0] hover:text-[#c9a084] font-medium flex items-center gap-1"
+                  >
+                    📍 Voir sur Google Maps →
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex items-start gap-3">

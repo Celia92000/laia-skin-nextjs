@@ -417,27 +417,28 @@ Laïa`,
   }, []);
 
   const loadAutomations = () => {
-    // Charger les automatisations existantes
+    // Automatisations configurées avec vos vrais templates EmailJS
     const savedAutomations: EmailAutomation[] = [
       {
         id: '1',
-        name: 'Rappel RDV 48h',
-        description: 'Envoie un email de rappel 48h avant chaque RDV',
+        name: '✅ Confirmation de réservation (EmailJS)',
+        description: 'Template EmailJS : template_myu4emv - Envoi automatique après chaque réservation',
         trigger: {
           type: 'reservation',
-          condition: 'before_appointment',
-          value: 48
+          condition: 'new_booking',
+          value: 0
         },
         actions: [
           {
             type: 'email',
-            subject: '📅 Rappel : Votre RDV dans 2 jours'
+            subject: '✨ Votre réservation chez LAIA SKIN est confirmée',
+            template: 'template_myu4emv'
           }
         ],
         enabled: true,
-        createdAt: new Date('2024-01-15'),
-        lastTriggered: new Date('2024-11-20'),
-        triggerCount: 234,
+        createdAt: new Date('2025-09-15'),
+        lastTriggered: new Date(),
+        triggerCount: 12,
         sentEmails: [
           {
             id: 'email1',
@@ -473,23 +474,24 @@ Laïa`,
       },
       {
         id: '2',
-        name: 'Email anniversaire',
-        description: 'Email personnalisé pour les anniversaires clients',
+        name: '⭐ Demande d\'avis avec fidélité (EmailJS)',
+        description: 'Template EmailJS : template_36zodeb - 3 jours après le soin avec programme fidélité',
         trigger: {
-          type: 'time',
-          condition: 'birthday',
-          value: '09:00'
+          type: 'reservation',
+          condition: 'after_appointment',
+          value: 72 // 72 heures = 3 jours
         },
         actions: [
           {
             type: 'email',
-            subject: '🎂 Joyeux anniversaire !'
+            subject: '{{client_name}}, comment s\'est passé votre soin ?',
+            template: 'template_36zodeb'
           }
         ],
         enabled: true,
-        createdAt: new Date('2024-02-01'),
-        lastTriggered: new Date('2024-11-18'),
-        triggerCount: 67,
+        createdAt: new Date('2025-09-15'),
+        lastTriggered: new Date('2025-09-12'),
+        triggerCount: 45,
         sentEmails: [
           {
             id: 'email4',

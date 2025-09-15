@@ -22,11 +22,11 @@ export default async function Blog() {
         </div>
         
         <div className="max-w-6xl mx-auto px-4 text-center relative">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-playfair font-normal text-[#2c3e50] mb-4 tracking-normal">
             Le Blog LAIA SKIN
           </h1>
-          <p className="text-lg sm:text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
-            Découvrez nos conseils d'experte, les dernières innovations en soins esthétiques et nos astuces beauté pour une peau rayonnante.
+          <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 max-w-3xl mx-auto tracking-normal">
+            Découvrez mes conseils d'experte, les dernières innovations en soins esthétiques et mes astuces beauté pour une peau rayonnante.
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mt-8">
@@ -51,7 +51,7 @@ export default async function Blog() {
         <section className="py-8 px-4 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/50"></div>
           <div className="max-w-7xl mx-auto relative">
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2c3e50] mb-6 text-center">Article Vedette</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-normal text-[#2c3e50] mb-6 text-center tracking-normal">Article Vedette</h2>
             {featuredPosts.slice(0, 1).map((article) => (
               <Link 
                 key={article.id}
@@ -178,8 +178,8 @@ export default async function Blog() {
       {/* Tous les articles */}
       <section className="py-16 px-4 bg-white/70">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-serif font-bold text-[#2c3e50] mb-8 text-center">
-            {featuredPosts.length > 0 ? 'Tous nos Articles' : 'Nos Articles'}
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-normal text-[#2c3e50] mb-8 text-center tracking-normal">
+            {featuredPosts.length > 0 ? 'Tous mes Articles' : 'Mes Articles'}
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -2,27 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
+import { isSlotAvailable } from '@/lib/availability-service';
+import { sendConfirmationEmail } from '@/lib/email-service';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { services, packages, date, time, notes, totalPrice, clientInfo } = body;
     
-    // Vérifier si le créneau est bloqué
-    const blockedSlotsResponse = await fetch(`${request.url.replace('/api/reservations', '/api/admin/blocked-slots')}`);
-    if (blockedSlotsResponse.ok) {
-      const blockedSlots = await blockedSlotsResponse.json();
-      const dateStr = new Date(date).toISOString().split('T')[0];
-      
-      const isBlocked = blockedSlots.some((slot: any) => 
-        slot.date === dateStr && (slot.allDay || slot.time === time)
-      );
-      
-      if (isBlocked) {
-        return NextResponse.json({ 
-          error: 'Ce créneau n\'est pas disponible. Veuillez choisir un autre horaire.' 
-        }, { status: 409 });
-      }
+    // Vérifier si le créneau est disponible (horaires de travail et dates bloquées)
+    const reservationDate = new Date(date);
+    const available = await isSlotAvailable(reservationDate, time);
+    
+    if (!available) {
+      return NextResponse.json({ 
+        error: 'Ce créneau n\'est pas disponible. Veuillez choisir un autre horaire.' 
+      }, { status: 409 });
     }
     
     let userId: string;
@@ -155,7 +150,50 @@ export async function POST(request: Request) {
       sendWhatsAppMessage({
         to: adminPhone,
         message: adminMessage
-      }).catch(console.error);
+      }, 'meta').catch(console.error);
+    }
+
+    // Envoyer l'email de confirmation au client
+    if (user?.email) {
+      const serviceNames = services.map((s: string) => {
+        const serviceMap: any = {
+          'hydronaissance': "Hydro'Naissance",
+          'hydro-naissance': "Hydro'Naissance",
+          'hydrocleaning': "Hydro'Cleaning",
+          'hydro': "Hydro'Cleaning", 
+          'renaissance': 'Renaissance',
+          'bbglow': 'BB Glow',
+          'led': 'LED Thérapie',
+          'ledtherapy': 'LED Thérapie'
+        };
+        return serviceMap[s] || s;
+      });
+
+      try {
+        const emailSent = await sendConfirmationEmail({
+          to: user.email,
+          name: user.name || 'Cliente',
+          date: new Date(date).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }),
+          time: time,
+          services: serviceNames,
+          totalPrice: totalPrice,
+          reservationId: reservation.id
+        });
+        
+        if (emailSent) {
+          console.log('✅ Email de confirmation envoyé à:', user.email);
+        } else {
+          console.log('⚠️ Email non envoyé (service non configuré)');
+        }
+      } catch (error) {
+        console.error('Erreur envoi email:', error);
+        // Ne pas bloquer la réservation si l'email échoue
+      }
     }
 
     // Incrémenter le nombre de séances et le montant total dépensé

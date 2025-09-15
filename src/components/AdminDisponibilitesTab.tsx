@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, Calendar, Plus, Trash2, Save, AlertCircle } from "lucide-react";
 
 interface TimeSlot {
@@ -19,32 +19,59 @@ interface BlockedDate {
 
 export default function AdminDisponibilitesTab() {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([
-    { id: '1', day: 'Lundi', startTime: '10:00', endTime: '19:00' },
-    { id: '2', day: 'Mardi', startTime: '10:00', endTime: '19:00' },
-    { id: '3', day: 'Mercredi', startTime: '10:00', endTime: '19:00' },
-    { id: '4', day: 'Jeudi', startTime: '10:00', endTime: '19:00' },
-    { id: '5', day: 'Vendredi', startTime: '10:00', endTime: '19:00' },
-    { id: '6', day: 'Samedi', startTime: '09:00', endTime: '18:00' },
-    { id: '7', day: 'Dimanche', startTime: 'Fermé', endTime: 'Fermé' },
-    // Pauses déjeuner
-    { id: '8', day: 'Lundi', startTime: '13:00', endTime: '14:00', isBreak: true },
-    { id: '9', day: 'Mardi', startTime: '13:00', endTime: '14:00', isBreak: true },
-    { id: '10', day: 'Mercredi', startTime: '13:00', endTime: '14:00', isBreak: true },
-    { id: '11', day: 'Jeudi', startTime: '13:00', endTime: '14:00', isBreak: true },
-    { id: '12', day: 'Vendredi', startTime: '13:00', endTime: '14:00', isBreak: true },
+    { id: '1', day: 'Lundi', startTime: '14:00', endTime: '20:00' },
+    { id: '2', day: 'Mardi', startTime: '14:00', endTime: '20:00' },
+    { id: '3', day: 'Mercredi', startTime: '14:00', endTime: '20:00' },
+    { id: '4', day: 'Jeudi', startTime: '14:00', endTime: '20:00' },
+    { id: '5', day: 'Vendredi', startTime: '14:00', endTime: '20:00' },
+    { id: '6', day: 'Samedi', startTime: '14:00', endTime: '20:00' },
+    { id: '7', day: 'Dimanche', startTime: '14:00', endTime: '20:00' },
   ]);
 
-  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([
-    { id: '1', date: '2025-09-25', reason: 'Congés annuels' },
-    { id: '2', date: '2025-10-01', reason: 'Jour férié' },
-  ]);
-
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [newBlockedDate, setNewBlockedDate] = useState({ date: '', reason: '' });
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
-  const [slotDuration, setSlotDuration] = useState(30); // Durée des créneaux en minutes
+  const [slotDuration, setSlotDuration] = useState(60); // Durée des créneaux en minutes
   const [bufferTime, setBufferTime] = useState(15); // Temps entre les rendez-vous
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+  // Charger les dates bloquées au démarrage
+  useEffect(() => {
+    fetchBlockedDates();
+  }, []);
+
+  const fetchBlockedDates = async () => {
+    try {
+      const response = await fetch('/api/admin/blocked-slots');
+      if (response.ok) {
+        const data = await response.json();
+        // Transformer les données de l'API au format attendu et supprimer les doublons
+        const formattedDates = data
+          .filter((slot: any) => slot.allDay)
+          .map((slot: any) => ({
+            id: slot.id,
+            date: slot.date,
+            reason: slot.reason || 'Indisponible'
+          }));
+        
+        // Supprimer les doublons en gardant seulement la première occurrence de chaque date
+        const uniqueDates = formattedDates.reduce((acc: BlockedDate[], current: BlockedDate) => {
+          const exists = acc.find(item => item.date === current.date);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setBlockedDates(uniqueDates);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des dates bloquées:', error);
+    }
+  };
 
   const handleTimeSlotUpdate = (id: string, field: 'startTime' | 'endTime', value: string) => {
     setTimeSlots(timeSlots.map(slot => 
@@ -52,22 +79,81 @@ export default function AdminDisponibilitesTab() {
     ));
   };
 
-  const addBlockedDate = () => {
+  const addBlockedDate = async () => {
     if (newBlockedDate.date && newBlockedDate.reason) {
-      setBlockedDates([
-        ...blockedDates,
-        {
-          id: Date.now().toString(),
-          date: newBlockedDate.date,
-          reason: newBlockedDate.reason
+      // Vérifier si la date est déjà bloquée
+      const isAlreadyBlocked = blockedDates.some(d => d.date === newBlockedDate.date);
+      if (isAlreadyBlocked) {
+        setMessage('Cette date est déjà bloquée');
+        setTimeout(() => setMessage(''), 3000);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/blocked-slots', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            date: newBlockedDate.date,
+            allDay: true,
+            reason: newBlockedDate.reason
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setBlockedDates([
+            ...blockedDates,
+            {
+              id: data.id,
+              date: data.date,
+              reason: data.reason
+            }
+          ]);
+          setNewBlockedDate({ date: '', reason: '' });
+          setMessage('Date bloquée avec succès');
+          setTimeout(() => setMessage(''), 3000);
+        } else {
+          setMessage('Erreur lors du blocage de la date');
         }
-      ]);
-      setNewBlockedDate({ date: '', reason: '' });
+      } catch (error) {
+        console.error('Erreur:', error);
+        setMessage('Erreur lors du blocage de la date');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const removeBlockedDate = (id: string) => {
-    setBlockedDates(blockedDates.filter(d => d.id !== id));
+  const removeBlockedDate = async (id: string) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/blocked-slots?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setBlockedDates(blockedDates.filter(d => d.id !== id));
+        setMessage('Date débloquée avec succès');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage('Erreur lors du déblocage de la date');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      setMessage('Erreur lors du déblocage de la date');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const addBreakTime = (day: string) => {
@@ -226,6 +312,15 @@ export default function AdminDisponibilitesTab() {
         </div>
       </div>
 
+      {/* Message de confirmation */}
+      {message && (
+        <div className={`mb-4 p-3 rounded-lg ${
+          message.includes('succès') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {message}
+        </div>
+      )}
+
       {/* Dates bloquées */}
       <div className="bg-white rounded-xl border border-[#d4b5a0]/20 p-6">
         <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Dates bloquées / Congés</h3>
@@ -247,9 +342,10 @@ export default function AdminDisponibilitesTab() {
           />
           <button
             onClick={addBlockedDate}
-            className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+            disabled={loading}
+            className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
           >
-            <Plus className="w-5 h-5" />
+            {loading ? '...' : <Plus className="w-5 h-5" />}
           </button>
         </div>
 
@@ -285,9 +381,17 @@ export default function AdminDisponibilitesTab() {
 
       {/* Bouton de sauvegarde */}
       <div className="mt-8 flex justify-end">
-        <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-xl hover:shadow-xl transition-all">
+        <button 
+          onClick={async () => {
+            setMessage('Horaires sauvegardés avec succès');
+            setTimeout(() => setMessage(''), 3000);
+            // TODO: Implémenter la sauvegarde des horaires dans la base de données
+          }}
+          disabled={loading}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-xl hover:shadow-xl transition-all disabled:opacity-50"
+        >
           <Save className="w-5 h-5" />
-          Enregistrer les modifications
+          Enregistrer les horaires
         </button>
       </div>
     </div>

@@ -28,11 +28,12 @@ export default async function Home() {
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif font-bold text-[#2c3e50] mb-6 animate-fade-in-up">
-            Une peau respectée,<br />une beauté révélée ✨
-          </h2>
-          <p className="text-lg sm:text-xl md:text-2xl text-[#2c3e50]/80 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200">
-            Institut spécialisé dans les techniques esthétiques avancées.
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up text-[#2c3e50] leading-tight tracking-normal">
+            <span className="block font-normal">Une peau respectée,</span>
+            <span className="block font-semibold text-[#d4b5a0] mt-1">une beauté révélée</span>
+          </h1>
+          <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal">
+            Institut spécialisé dans les techniques esthétiques avancées
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
             <Link href="/reservation" className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
@@ -49,10 +50,10 @@ export default async function Home() {
       <section className="py-12 sm:py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#2c3e50] mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-playfair font-normal text-[#2c3e50] mb-4 tracking-normal">
               Mes Prestations
             </h2>
-            <p className="text-lg text-[#2c3e50]/70 max-w-2xl mx-auto">
+            <p className="font-inter text-base md:text-lg text-[#2c3e50]/60 max-w-2xl mx-auto tracking-normal">
               Découvrez notre gamme exclusive de soins innovants pour une peau éclatante et rajeunie
             </p>
           </div>
@@ -274,7 +275,6 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-[#2c3e50]">Sophie D.</p>
-                  <p className="text-sm text-[#2c3e50]/60">Cliente régulière</p>
                 </div>
               </div>
             </div>
@@ -296,7 +296,6 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-[#2c3e50]">Marie L.</p>
-                  <p className="text-sm text-[#2c3e50]/60">Nouvelle cliente</p>
                 </div>
               </div>
             </div>
@@ -318,7 +317,6 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="font-semibold text-[#2c3e50]">Catherine M.</p>
-                  <p className="text-sm text-[#2c3e50]/60">Cliente fidèle</p>
                 </div>
               </div>
             </div>

@@ -21,10 +21,10 @@ export default async function Prestations() {
       {/* Hero Section */}
       <section className="pt-32 sm:pt-36 pb-8 sm:pb-12 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-[#2c3e50] mb-4 sm:mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-playfair font-normal text-[#2c3e50] mb-4 sm:mb-6 tracking-normal">
             Mes Prestations
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-[#2c3e50]/70 max-w-3xl mx-auto">
+          <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 max-w-3xl mx-auto tracking-normal">
             Découvrez nos soins d'exception pour sublimer votre peau
           </p>
         </div>

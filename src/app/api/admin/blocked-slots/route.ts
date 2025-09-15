@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { date, time, allDay, reason } = body;
 
+    // Vérifier si la date est déjà bloquée (pour les blocages journée complète)
+    if (allDay) {
+      const existingBlock = blockedSlots.find(slot => slot.date === date && slot.allDay);
+      if (existingBlock) {
+        return NextResponse.json({ error: 'Cette date est déjà bloquée' }, { status: 400 });
+      }
+    }
+
     // Ajouter le créneau bloqué
     const newBlock = {
       id: Date.now().toString(),

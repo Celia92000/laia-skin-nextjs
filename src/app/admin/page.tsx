@@ -10,8 +10,7 @@ import AdminDashboardOptimized from "@/components/AdminDashboardOptimized";
 import UnifiedCRMTab, { type Client } from "@/components/UnifiedCRMTab";
 import AdminBlogTab from "@/components/AdminBlogTab";
 import PlanningCalendar from "@/components/PlanningCalendar";
-import AvailabilityManager from "@/components/AvailabilityManager";
-import QuickBlockManager from "@/components/QuickBlockManager";
+import AdminDisponibilitesTabSync from "@/components/AdminDisponibilitesTabSync";
 import { InvoiceButton } from "@/components/InvoiceGenerator";
 import PaymentSection from "@/components/PaymentSection";
 import WhatsAppManager from "@/components/WhatsAppManager";
@@ -23,8 +22,7 @@ import WhatsAppHistory from "@/components/WhatsAppHistory";
 import AdminStatsEnhanced from "@/components/AdminStatsEnhanced";
 import AdminReviewsManager from "@/components/AdminReviewsManager";
 import ClientSegmentation from "@/components/ClientSegmentation";
-import EmailAutomations from "@/components/EmailAutomations";
-import EmailingHub from "@/components/EmailingHub";
+import EmailDashboard from "@/components/EmailDashboard";
 import { logout } from "@/lib/auth-client";
 import { servicePricing, getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 
@@ -996,11 +994,8 @@ export default function AdminDashboard() {
               
               {planningSubTab === 'availability' && (
                 <div className="space-y-6">
-                  {/* Gestionnaire de blocages ponctuels */}
-                  <QuickBlockManager />
-                  
-                  {/* Gestionnaire de récurrences */}
-                  <AvailabilityManager />
+                  {/* Gestionnaire complet des disponibilités */}
+                  <AdminDisponibilitesTabSync />
                   
                   {/* Instructions */}
                   <div className="bg-[#fdfbf7] rounded-xl p-6">
@@ -2107,7 +2102,7 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === "emailing" && (
-            <EmailingHub />
+            <EmailDashboard />
           )}
 
           {false && activeTab === "OLD_CLIENTS" && (

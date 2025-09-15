@@ -236,8 +236,8 @@ export async function sendWhatsAppMessage(
   
   // Option 2: WhatsApp Business API (Meta)
   if (provider === 'meta') {
-    const WHATSAPP_TOKEN = process.env.WHATSAPP_BUSINESS_TOKEN;
-    const PHONE_NUMBER_ID = process.env.WHATSAPP_BUSINESS_PHONE_ID;
+    const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
+    const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
     
     if (!WHATSAPP_TOKEN || !PHONE_NUMBER_ID) {
       console.error('Configuration WhatsApp Business manquante');

@@ -31,12 +31,12 @@ export default function Reservation() {
     { 
       id: "hydro-naissance", 
       name: "Hydro'Naissance", 
-      description: "Soin combiné d'exception : Hydro'Cleaning + Renaissance",
-      duration: "1h30", 
+      description: "Le soin signature qui redonne vie à votre peau",
+      duration: "75 min", 
       price: "120€",
       promo: "90€",
       forfait: "360€",
-      forfaitPromo: "360€",
+      forfaitPromo: "340€",
       icon: "👑",
       recommended: true
     },
@@ -44,33 +44,33 @@ export default function Reservation() {
       id: "hydro", 
       name: "Hydro'Cleaning", 
       description: "Nettoyage en profondeur et hydratation intensive",
-      duration: "1h", 
-      price: "90€",
+      duration: "60 min", 
+      price: "85€",
       promo: "70€",
-      forfait: "340€",
-      forfaitPromo: "280€",
+      forfait: "280€",
+      forfaitPromo: "260€",
       icon: "💧"
     },
     { 
       id: "renaissance", 
       name: "Renaissance", 
-      description: "Soin anti-âge révolutionnaire pour une peau rajeunie",
-      duration: "1h", 
+      description: "Soin anti-âge global pour une peau visiblement rajeunie",
+      duration: "60 min", 
       price: "90€",
       promo: "70€",
-      forfait: "340€",
-      forfaitPromo: "280€",
+      forfait: "280€",
+      forfaitPromo: "260€",
       icon: "✨"
     },
     { 
       id: "bbglow", 
       name: "BB Glow", 
       description: "Teint unifié et lumineux avec effet semi-permanent",
-      duration: "30 min", 
-      price: "90€",
-      promo: "70€",
-      forfait: "340€",
-      forfaitPromo: "280€",
+      duration: "60 min", 
+      price: "95€",
+      promo: "80€",
+      forfait: "320€",
+      forfaitPromo: "300€",
       icon: "🌟"
     },
     { 
@@ -79,9 +79,10 @@ export default function Reservation() {
       description: "Traitement par lumière LED pour régénérer la peau",
       duration: "30 min", 
       price: "60€",
-      promo: "50€",
-      forfait: "199€",
-      forfaitPromo: "199€",
+      promo: "45€",
+      forfait: "450€",
+      forfaitPromo: "400€",
+      forfaitSessions: "10 séances",
       icon: "💡"
     }
   ];
@@ -100,7 +101,10 @@ export default function Reservation() {
     const option = searchParams.get('option');
     
     if (service) {
+      // Les services arrivent déjà avec les bons IDs depuis les pages de prestations
       setSelectedServices([service]);
+      // Initialiser le package par défaut à 'single' (séance unique)
+      setSelectedPackages({[service]: 'single'});
     }
     if (option) {
       setSelectedOptions([option]);
@@ -133,10 +137,10 @@ export default function Reservation() {
 
   const fetchAvailableSlots = async () => {
     try {
-      const response = await fetch(`/api/availability?date=${selectedDate}`);
+      const response = await fetch(`/api/public/availability?action=slots&date=${selectedDate}`);
       if (response.ok) {
         const data = await response.json();
-        setAvailableSlots(data);
+        setAvailableSlots(data.slots || []);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des créneaux:', error);

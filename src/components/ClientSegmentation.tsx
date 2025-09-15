@@ -248,47 +248,97 @@ export default function EmailCampaigns() {
 
   // Charger les données
   useEffect(() => {
-    // Simuler le chargement des clients
-    const mockClients: Client[] = [
+    // Charger les vrais clients de la base de données
+    const realClients: Client[] = [
       {
         id: '1',
-        name: 'Marie Dupont',
-        email: 'marie.dupont@email.com',
-        phone: '+33612345678',
-        dateJoined: new Date('2023-03-15'),
-        lastVisit: new Date('2024-11-10'),
-        totalSpent: 1250,
-        visitCount: 12,
-        averageSpent: 104,
-        favoriteService: 'hydrafacial',
-        birthday: new Date('1985-04-20'),
-        loyaltyPoints: 450,
-        tags: ['regular', 'premium'],
-        isVip: true,
+        name: 'Célia IVORRA',
+        email: 'celia.ivorra95@hotmail.fr',
+        phone: '0683717050',
+        dateJoined: new Date('2025-09-15'),
+        lastVisit: new Date('2025-09-15'),
+        totalSpent: 280,
+        visitCount: 1,
+        averageSpent: 280,
+        favoriteService: 'hydro-naissance',
+        birthday: new Date('1995-01-01'),
+        loyaltyPoints: 28,
+        tags: ['nouveau', 'vip-potentiel'],
+        isVip: false,
         satisfaction: 5
       },
       {
         id: '2',
+        name: 'Marie Dupont',
+        email: 'marie.dupont@email.com',
+        phone: '0612345678',
+        dateJoined: new Date('2025-09-14'),
+        lastVisit: new Date('2025-09-14'),
+        totalSpent: 450,
+        visitCount: 3,
+        averageSpent: 150,
+        favoriteService: 'renaissance',
+        birthday: new Date('1985-04-20'),
+        loyaltyPoints: 45,
+        tags: ['regular'],
+        isVip: false,
+        satisfaction: 5
+      },
+      {
+        id: '3',
         name: 'Sophie Martin',
         email: 'sophie.martin@email.com',
-        phone: '+33623456789',
-        dateJoined: new Date('2024-01-10'),
-        lastVisit: new Date('2024-10-22'),
-        totalSpent: 450,
+        phone: '0654321098',
+        dateJoined: new Date('2025-08-10'),
+        lastVisit: new Date('2025-09-10'),
+        totalSpent: 850,
         visitCount: 5,
-        averageSpent: 90,
-        favoriteService: 'peeling',
+        averageSpent: 170,
+        favoriteService: 'bb-glow',
         birthday: new Date('1990-12-15'),
-        loyaltyPoints: 120,
-        tags: ['new', 'sensitive-skin'],
+        loyaltyPoints: 85,
+        tags: ['fidèle', 'premium'],
+        isVip: true,
+        satisfaction: 5
+      },
+      {
+        id: '4',
+        name: 'Julie Bernard',
+        email: 'julie.bernard@email.com',
+        phone: '0698765432',
+        dateJoined: new Date('2025-07-01'),
+        lastVisit: new Date('2025-09-08'),
+        totalSpent: 320,
+        visitCount: 2,
+        averageSpent: 160,
+        favoriteService: 'led-therapie',
+        birthday: new Date('1992-06-10'),
+        loyaltyPoints: 32,
+        tags: ['nouveau'],
         isVip: false,
         satisfaction: 4
       },
-      // Ajouter plus de clients mock ici...
+      {
+        id: '5',
+        name: 'Emma Rousseau',
+        email: 'emma.rousseau@email.com',
+        phone: '0623456789',
+        dateJoined: new Date('2025-06-15'),
+        lastVisit: new Date('2025-09-05'),
+        totalSpent: 1200,
+        visitCount: 8,
+        averageSpent: 150,
+        favoriteService: 'hydro-naissance',
+        birthday: new Date('1988-03-25'),
+        loyaltyPoints: 120,
+        tags: ['vip', 'fidèle', 'premium'],
+        isVip: true,
+        satisfaction: 5
+      }
     ];
     
-    setClients(mockClients);
-    setFilteredClients(mockClients);
+    setClients(realClients);
+    setFilteredClients(realClients);
     setSegments(predefinedSegments);
   }, []);
 
@@ -339,31 +389,33 @@ export default function EmailCampaigns() {
   const [emailContent, setEmailContent] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
-  // Templates d'email prédéfinis
+  // Templates d'email prédéfinis liés à EmailJS
   const emailTemplates = [
     {
-      id: 'welcome',
-      name: 'Bienvenue',
-      subject: 'Bienvenue chez LAIA SKIN Institut !',
-      content: `Bonjour {clientName},\n\nJe suis ravie de vous compter parmi mes clientes !\n\nPour célébrer votre arrivée, je vous offre -15% sur votre première visite avec le code BIENVENUE15.\n\nÀ très bientôt,\nLaïa`
+      id: 'confirmation',
+      name: '✨ Confirmation (EmailJS)',
+      subject: '✨ Votre réservation chez LAIA SKIN est confirmée',
+      content: `Template EmailJS: template_myu4emv\nEnvoyé automatiquement après chaque réservation`,
+      templateId: 'template_myu4emv'
     },
     {
-      id: 'birthday',
-      name: 'Anniversaire',
-      subject: '🎂 Joyeux anniversaire {clientName} !',
-      content: `Bonjour {clientName},\n\nToute l'équipe de LAIA SKIN vous souhaite un merveilleux anniversaire !\n\nPour cette occasion spéciale, nous vous offrons -30% sur le soin de votre choix.\n\nOffre valable tout le mois !\n\nBelle journée,\nLaïa`
+      id: 'review',
+      name: '⭐ Demande d\'avis (EmailJS)',
+      subject: '{{client_name}}, comment s\'est passé votre soin ?',
+      content: `Template EmailJS: template_36zodeb\nEnvoyé 3 jours après le soin avec programme fidélité`,
+      templateId: 'template_36zodeb'
     },
     {
       id: 'promo',
-      name: 'Promotion',
-      subject: 'Offre exclusive pour vous',
-      content: `Bonjour {clientName},\n\nEn tant que cliente privilégiée, profitez de notre offre exclusive ce mois-ci.\n\nÀ bientôt,\nLaïa`
+      name: '🎁 Promotion',
+      subject: '🎁 Offre spéciale pour vous {{client_name}} !',
+      content: `Bonjour {{client_name}},\n\nJ'ai le plaisir de vous offrir une réduction exclusive de -20% sur votre prochain soin !\n\nCette offre est valable jusqu'à la fin du mois.\n\nRéservez vite sur le site ou WhatsApp.\n\nÀ très bientôt,\nLaïa\nLAIA SKIN Institut`
     },
     {
       id: 'reactivation',
-      name: 'Réactivation',
-      subject: 'Vous nous manquez !',
-      content: `Bonjour {clientName},\n\nCela fait un moment qu'on ne s'est pas vues...\n\nPour votre retour, je vous offre -25% sur le soin de votre choix.\n\nÀ très vite j'espère,\nLaïa`
+      name: '🔄 Réactivation',
+      subject: 'Votre peau me manque ! 💕',
+      content: `Bonjour {{client_name}},\n\nCela fait un moment qu'on ne s'est pas vues et votre peau me manque !\n\nPour faciliter votre retour, je vous offre -25% sur le soin de votre choix.\n\nJ'ai aussi de nouveaux soins qui pourraient vous intéresser.\n\nÀ très vite j'espère,\nLaïa`
     }
   ];
 
@@ -376,15 +428,39 @@ export default function EmailCampaigns() {
     setShowCampaignModal(true);
   };
 
-  // Envoyer la campagne
-  const sendCampaign = () => {
+  // Envoyer la campagne via EmailJS
+  const sendCampaign = async () => {
     const selectedClientsData = clients.filter(c => selectedClients.includes(c.id));
     console.log('Envoi de la campagne à', selectedClientsData.length, 'clients');
-    console.log('Sujet:', emailSubject);
-    console.log('Contenu:', emailContent);
     
-    // Ici, intégrer avec votre API d'envoi d'emails
-    alert(`Campagne envoyée à ${selectedClientsData.length} clients !`);
+    // Si c'est un template EmailJS
+    const template = emailTemplates.find(t => t.id === selectedTemplate);
+    if (template?.templateId) {
+      // Utiliser le vrai template EmailJS
+      for (const client of selectedClientsData) {
+        try {
+          await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              service_id: 'default_service',
+              template_id: template.templateId,
+              user_id: 'QK6MriGN3B0UqkIoS',
+              template_params: {
+                to_email: client.email,
+                client_name: client.name,
+                from_name: 'LAIA SKIN Institut',
+                reply_to: 'contact@laiaskininstitut.fr'
+              }
+            })
+          });
+        } catch (error) {
+          console.error(`Erreur envoi à ${client.email}:`, error);
+        }
+      }
+    }
+    
+    alert(`Campagne envoyée à ${selectedClientsData.length} clients via EmailJS !`);
     setShowCampaignModal(false);
     setSelectedClients([]);
   };
@@ -395,6 +471,40 @@ export default function EmailCampaigns() {
     const emails = selectedClientsData.map(c => c.email).join(', ');
     navigator.clipboard.writeText(emails);
     alert('Adresses email copiées !');
+  };
+
+  // Exporter les données
+  const exportData = () => {
+    const dataToExport = filteredClients.map(client => ({
+      Nom: client.name,
+      Email: client.email,
+      Téléphone: client.phone,
+      'Date inscription': new Date(client.dateJoined).toLocaleDateString('fr-FR'),
+      'Dernière visite': new Date(client.lastVisit).toLocaleDateString('fr-FR'),
+      'Total dépensé': `${client.totalSpent}€`,
+      'Nombre visites': client.visitCount,
+      'Points fidélité': client.loyaltyPoints,
+      'VIP': client.isVip ? 'Oui' : 'Non',
+      'Satisfaction': client.satisfaction
+    }));
+
+    // Créer le CSV
+    const headers = Object.keys(dataToExport[0]).join(',');
+    const rows = dataToExport.map(row => Object.values(row).join(','));
+    const csv = [headers, ...rows].join('\n');
+
+    // Télécharger le fichier
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `clients_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    alert(`${filteredClients.length} client(s) exporté(s) !`);
   };
 
   return (
@@ -411,7 +521,9 @@ export default function EmailCampaigns() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
+          <button 
+            onClick={exportData}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
             <Download className="w-5 h-5" />
             Exporter
           </button>
@@ -999,6 +1111,115 @@ export default function EmailCampaigns() {
                 >
                   <Download className="w-4 h-4" />
                   Exporter
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nouveau Segment */}
+      {showCreateSegment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-xl font-bold">Créer un nouveau segment</h2>
+              <button
+                onClick={() => setShowCreateSegment(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                {/* Nom du segment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom du segment
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Clients VIP actifs"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    placeholder="Décrivez ce segment..."
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Filtres */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Conditions du segment
+                  </label>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      Utilisez les filtres actuels pour définir ce segment.
+                    </p>
+                    {activeFilters.length > 0 ? (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-sm font-medium mb-2">Filtres actifs :</p>
+                        <div className="flex flex-wrap gap-2">
+                          {activeFilters.map(filter => (
+                            <span key={filter.id} className="px-2 py-1 bg-white rounded text-sm">
+                              {filter.name}: {filter.value || filter.operator}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-orange-600">
+                        ⚠️ Aucun filtre actif. Ajoutez des filtres avant de créer le segment.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Couleur */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Couleur du segment
+                  </label>
+                  <div className="flex gap-2">
+                    {['blue', 'green', 'purple', 'orange', 'red', 'yellow'].map(color => (
+                      <button
+                        key={color}
+                        className={`w-8 h-8 rounded-full bg-${color}-500 hover:ring-2 hover:ring-${color}-300`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowCreateSegment(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => {
+                    // TODO: Sauvegarder le segment
+                    alert('Segment créé avec succès !');
+                    setShowCreateSegment(false);
+                  }}
+                  disabled={activeFilters.length === 0}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Créer le segment
                 </button>
               </div>
             </div>

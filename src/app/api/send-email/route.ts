@@ -1,128 +1,190 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Resend } from 'resend';
+import { prisma } from '@/lib/prisma';
+
+// Initialiser Resend avec la clé API
+const resend = new Resend(process.env.RESEND_API_KEY || 're_123456789');
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, subject, reservation } = await request.json();
+    const { to, subject, message, clientName } = await request.json();
 
-    const services = {
-      "hydro-naissance": "Hydro'Naissance",
-      "hydro": "Hydro'Cleaning",
-      "renaissance": "Renaissance",
-      "bbglow": "BB Glow",
-      "led": "LED Thérapie"
-    };
-
-    const date = new Date(reservation.date).toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-
-    const servicesList = JSON.parse(reservation.services)
-      .map((s: string) => services[s as keyof typeof services])
-      .join(', ');
-
-    // Template d'email HTML
+    // Template HTML professionnel
     const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #2c3e50; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #d4b5a0 0%, #c9a084 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px; }
-            .info-box { background: #fdfbf7; padding: 20px; border-left: 4px solid #d4b5a0; margin: 20px 0; }
-            .button { display: inline-block; padding: 12px 30px; background: #d4b5a0; color: white; text-decoration: none; border-radius: 25px; margin: 10px 5px; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-            .address { background: #f8f6f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>✨ Réservation Confirmée !</h1>
-                <p style="margin: 0;">Laia Skin Institut</p>
-            </div>
-            
-            <div class="content">
-                <p>Bonjour ${reservation.user.name},</p>
-                
-                <p>Nous avons le plaisir de vous confirmer votre réservation chez <strong>Laia Skin Institut</strong>.</p>
-                
-                <div class="info-box">
-                    <h3 style="margin-top: 0;">📅 Détails de votre rendez-vous</h3>
-                    <p><strong>Date :</strong> ${date}</p>
-                    <p><strong>Heure :</strong> ${reservation.time}</p>
-                    <p><strong>Soins réservés :</strong> ${servicesList}</p>
-                    <p><strong>Durée estimée :</strong> 1h30</p>
-                    <p><strong>Prix total :</strong> ${reservation.totalPrice}€</p>
-                    <p style="color: #666; font-size: 14px;">💶 Paiement en espèces sur place</p>
-                </div>
-                
-                <div class="address">
-                    <h3 style="margin-top: 0;">📍 Adresse de l'institut</h3>
-                    <p style="margin: 5px 0;"><strong>Laia Skin Institut</strong></p>
-                    <p style="margin: 5px 0;">5 allée Jean de la Fontaine</p>
-                    <p style="margin: 5px 0;">92000 Nanterre</p>
-                    <p style="margin: 5px 0;"><strong>Bâtiment 5, 2ème étage, Porte 523</strong></p>
-                    <p style="margin: 10px 0; color: #666;">🚇 À 6 minutes à pied de la gare de Nanterre Université</p>
-                </div>
-                
-                <div style="text-align: center; margin: 30px 0;">
-                    <h3>Besoin de modifier votre rendez-vous ?</h3>
-                    <a href="https://wa.me/33612345678" class="button" style="background: #25D366;">💬 WhatsApp</a>
-                    <a href="https://www.instagram.com/laiaskin" class="button" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);">📷 Instagram</a>
-                </div>
-                
-                <div style="background: #fef5e7; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                    <p style="margin: 0;"><strong>⚠️ Politique d'annulation :</strong></p>
-                    <p style="margin: 5px 0;">Annulation gratuite jusqu'à 24h avant le rendez-vous. Passé ce délai, 50% du montant sera retenu.</p>
-                </div>
-                
-                <p style="margin-top: 30px;">Nous avons hâte de vous accueillir et de prendre soin de vous !</p>
-                
-                <p>À très bientôt,<br>
-                <strong>Laia</strong><br>
-                Laia Skin Institut</p>
-            </div>
-            
-            <div class="footer">
-                <p>Laia Skin Institut - Institut de beauté premium</p>
-                <p>5 allée Jean de la Fontaine, 92000 Nanterre</p>
-                <p>Suivez-nous sur Instagram : @laiaskin</p>
-            </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .wrapper { padding: 20px; }
+    .container { 
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { 
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content { 
+      padding: 30px;
+    }
+    .content p {
+      margin: 0 0 15px 0;
+    }
+    .message {
+      white-space: pre-wrap;
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .signature {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .footer { 
+      background: #f9f9f9;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    .footer a { 
+      color: #667eea;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>LAIA SKIN Institut</h1>
+      </div>
+      <div class="content">
+        <p>Bonjour ${clientName},</p>
+        <div class="message">${message.replace(/\n/g, '<br>')}</div>
+        <div class="signature">
+          <p>À très bientôt,<br>
+          <strong>Laïa</strong><br>
+          LAIA SKIN Institut</p>
         </div>
-    </body>
-    </html>
+      </div>
+      <div class="footer">
+        <p>
+          📍 23 rue de la Beauté, 75001 Paris<br>
+          📞 06 12 34 56 78<br>
+          ✉️ <a href="mailto:contact@laiaskininstitut.fr">contact@laiaskininstitut.fr</a><br>
+          🌐 <a href="https://laiaskininstitut.fr">laiaskininstitut.fr</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
     `;
 
-    // Ici, vous devriez intégrer un service d'envoi d'email comme SendGrid, Mailgun, etc.
-    // Pour l'instant, on simule l'envoi
-    console.log('Email envoyé à:', to);
-    console.log('Sujet:', subject);
-    console.log('Contenu HTML généré');
+    // Vérifier si Resend est configuré
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_123456789') {
+      return NextResponse.json({ 
+        success: false,
+        message: 'Resend non configuré. Suivez les instructions ci-dessous.',
+        instructions: [
+          '1. Allez sur https://resend.com et créez un compte gratuit',
+          '2. Dans le dashboard, obtenez votre clé API',
+          '3. Ajoutez dans .env.local : RESEND_API_KEY=re_votreclé',
+          '4. Redémarrez le serveur avec npm run dev',
+          'Resend offre 100 emails gratuits par jour !'
+        ]
+      }, { status: 400 });
+    }
 
-    // Dans un environnement de production, vous utiliseriez quelque chose comme :
-    // await sendgrid.send({
-    //   to,
-    //   from: 'noreply@laiaskin.com',
-    //   subject,
-    //   html: htmlContent
-    // });
+    try {
+      // Envoyer l'email avec Resend
+      const data = await resend.emails.send({
+        from: 'LAIA SKIN Institut <onboarding@resend.dev>', // Domaine de test gratuit de Resend
+        to: [to],
+        subject: subject,
+        html: htmlContent,
+        text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\nLaïa\nLAIA SKIN Institut`
+      });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Email de confirmation envoyé',
-      preview: 'Pour activer l\'envoi réel, configurez un service d\'email (SendGrid, Mailgun, etc.)'
-    });
+      // Enregistrer dans l'historique
+      try {
+        await prisma.emailHistory.create({
+          data: {
+            from: 'contact@laiaskininstitut.fr',
+            to: to,
+            subject: subject,
+            content: message,
+            template: 'custom',
+            status: 'sent',
+            direction: 'outgoing'
+          }
+        });
+      } catch (dbError) {
+        console.log('Erreur enregistrement historique:', dbError);
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Email envoyé avec succès !',
+        data 
+      });
+
+    } catch (resendError: any) {
+      console.error('Erreur Resend:', resendError);
+      
+      // Enregistrer l'échec dans l'historique
+      try {
+        await prisma.emailHistory.create({
+          data: {
+            from: 'contact@laiaskininstitut.fr',
+            to: to,
+            subject: subject,
+            content: message,
+            template: 'custom',
+            status: 'failed',
+            direction: 'outgoing',
+            errorMessage: resendError.message
+          }
+        });
+      } catch (dbError) {
+        console.log('Erreur enregistrement historique:', dbError);
+      }
+
+      return NextResponse.json({ 
+        success: false,
+        message: 'Erreur lors de l\'envoi',
+        error: resendError.message
+      }, { status: 500 });
+    }
+
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'email:', error);
-    return NextResponse.json(
-      { error: 'Erreur lors de l\'envoi de l\'email' },
-      { status: 500 }
-    );
+    console.error('Erreur générale:', error);
+    return NextResponse.json({ 
+      error: 'Erreur serveur',
+      details: error instanceof Error ? error.message : 'Erreur inconnue'
+    }, { status: 500 });
   }
 }

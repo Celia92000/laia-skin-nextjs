@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -18,12 +18,12 @@ model User {
   totalSpent     Float             @default(0)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
-  adminNotes     String?           @db.Text
-  allergies      String?           @db.Text
+  adminNotes     String?
+  allergies      String?
   birthDate      DateTime?
   lastVisit      DateTime?
-  medicalNotes   String?           @db.Text
-  preferences    String?           @db.Text
+  medicalNotes   String?
+  preferences    String?
   skinType       String?
   evolutions     ClientEvolution[]
   loyaltyHistory LoyaltyHistory[]
@@ -34,26 +34,27 @@ model User {
 }
 
 model Reservation {
-  id            String    @id @default(cuid())
-  userId        String
-  serviceId     String?
-  services      String    @default("[]") @db.Text // JSON array of service IDs
-  date          DateTime
-  time          String
-  totalPrice    Float
-  status        String    @default("pending")
-  source        String    @default("site")
-  notes         String?   @db.Text
-  paymentStatus String    @default("unpaid")
-  paymentDate   DateTime?
-  paymentAmount Float?
-  paymentMethod String?
-  invoiceNumber String?
-  paymentNotes  String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id])
-  service       Service?  @relation(fields: [serviceId], references: [id])
+  id              String    @id @default(cuid())
+  userId          String
+  serviceId       String?
+  services        String    @default("[]") // JSON array of service IDs
+  date            DateTime
+  time            String
+  totalPrice      Float
+  status          String    @default("pending")
+  source          String    @default("site")
+  notes           String?
+  paymentStatus   String    @default("unpaid")
+  paymentDate     DateTime?
+  paymentAmount   Float?
+  paymentMethod   String?
+  invoiceNumber   String?
+  paymentNotes    String?
+  reviewEmailSent Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  service         Service?  @relation(fields: [serviceId], references: [id])
 }
 
 model Service {
@@ -61,22 +62,22 @@ model Service {
   slug              String        @unique @default("")
   name              String
   shortDescription  String        @default("")
-  description       String        @db.Text
+  description       String
   metaTitle         String?
-  metaDescription   String?       @db.Text
-  keywords          String?       @db.Text
+  metaDescription   String?
+  keywords          String?
   price             Float
   launchPrice       Float?
   promoPrice        Float?
   forfaitPrice      Float?
   forfaitPromo      Float?
   duration          Int
-  benefits          String?       @db.Text // JSON
-  process           String?       @db.Text // JSON
-  recommendations   String?       @db.Text
-  contraindications String?       @db.Text
+  benefits          String? // JSON
+  process           String? // JSON
+  recommendations   String?
+  contraindications String?
   mainImage         String?
-  gallery           String?       @db.Text // JSON
+  gallery           String? // JSON
   videoUrl          String?
   canBeOption       Boolean       @default(false)
   category          String?
@@ -96,7 +97,7 @@ model LoyaltyProfile {
   individualServicesCount Int       @default(0)
   packagesCount           Int       @default(0)
   totalSpent              Float     @default(0)
-  availableDiscounts      String    @default("[]") @db.Text // JSON
+  availableDiscounts      String    @default("[]") // JSON
   lastVisit               DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -121,18 +122,18 @@ model BlogPost {
   id              String   @id @default(cuid())
   slug            String   @unique
   title           String
-  excerpt         String   @db.Text
-  content         String   @db.Text
+  excerpt         String
+  content         String
   category        String
   author          String   @default("LAIA SKIN Institut")
   readTime        String   @default("5 min")
   featured        Boolean  @default(false)
   published       Boolean  @default(true)
   mainImage       String?
-  gallery         String?  @db.Text // JSON
-  tags            String?  @db.Text // JSON
+  gallery         String? // JSON
+  tags            String? // JSON
   metaTitle       String?
-  metaDescription String?  @db.Text
+  metaDescription String?
   publishedAt     DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -147,12 +148,12 @@ model ClientEvolution {
   beforePhoto    String?
   afterPhoto     String?
   videoUrl       String?
-  improvements   String?  @db.Text // JSON
-  clientFeedback String?  @db.Text
-  adminNotes     String?  @db.Text
-  skinAnalysis   String?  @db.Text // JSON
-  treatedAreas   String?  @db.Text // JSON
-  productsUsed   String?  @db.Text // JSON
+  improvements   String? // JSON
+  clientFeedback String?
+  adminNotes     String?
+  skinAnalysis   String? // JSON
+  treatedAreas   String? // JSON
+  productsUsed   String? // JSON
   hydrationLevel Int?
   elasticity     Int?
   pigmentation   Int?
@@ -168,8 +169,8 @@ model Review {
   reservationId String?
   serviceName   String?
   rating        Int
-  comment       String   @db.Text
-  response      String?  @db.Text
+  comment       String
+  response      String?
   approved      Boolean  @default(true)
   featured      Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -182,7 +183,7 @@ model Notification {
   userId    String
   type      String   // reminder, promotion, loyalty, birthday, etc.
   title     String
-  message   String   @db.Text
+  message   String
   read      Boolean  @default(false)
   actionUrl String?
   createdAt DateTime @default(now())
@@ -192,7 +193,7 @@ model Notification {
 model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String   @db.Text
+  value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -200,20 +201,85 @@ model Setting {
 model BlockedSlot {
   id        String   @id @default(cuid())
   date      DateTime
-  time      String
-  reason    String?
+  time      String?  // Si null, toute la journée est bloquée
+  allDay    Boolean  @default(false)
+  reason    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@unique([date, time])
+}
+
+model WorkingHours {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0 = Dimanche, 1 = Lundi, etc.
+  startTime String   // Format: "14:00"
+  endTime   String   // Format: "20:00"
+  isOpen    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([dayOfWeek])
 }
 
 model Package {
   id          String   @id @default(cuid())
   name        String
-  description String   @db.Text
-  services    String   @db.Text // JSON array of service IDs
+  description String
+  services    String // JSON array of service IDs
   price       Float
   validDays   Int      @default(90)
   maxUses     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmailHistory {
+  id           String   @id @default(cuid())
+  from         String   @default("contact@laiaskininstitut.fr")
+  to           String   // Email ou liste d'emails séparés par virgule
+  subject      String
+  content      String   // Contenu du message
+  template     String?  // Template utilisé
+  status       String   @default("sent") // sent, failed, pending
+  direction    String   @default("outgoing") // outgoing, incoming
+  campaignId   String?
+  userId       String?  // Client associé
+  errorMessage String?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  createdAt    DateTime @default(now())
+  campaign     EmailCampaign? @relation(fields: [campaignId], references: [id])
+}
+
+model EmailCampaign {
+  id             String   @id @default(cuid())
+  name           String
+  subject        String
+  content        String
+  template       String?
+  recipients     String   // JSON array des destinataires
+  recipientCount Int      @default(0)
+  status         String   @default("draft") // draft, scheduled, sent, cancelled
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  openRate       Float    @default(0)
+  clickRate      Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  emails         EmailHistory[]
+}
+
+model EmailAutomation {
+  id          String   @id @default(cuid())
+  name        String
+  trigger     String   // birthday, appointment_reminder, review_request, etc.
+  template    String   // EmailJS template ID
+  enabled     Boolean  @default(true)
+  timing      String?  // JSON avec les infos de timing
+  conditions  String?  // JSON avec les conditions
+  lastRun     DateTime?
+  nextRun     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
