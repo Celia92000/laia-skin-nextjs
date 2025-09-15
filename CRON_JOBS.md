@@ -2,27 +2,29 @@
 
 ## Cron Jobs Actifs sur Vercel (Limite : 2)
 
-1. **Emails d'anniversaire** - `/api/cron/birthday-emails`
-   - Horaire : Tous les jours à 9h
-   - Envoie automatiquement des emails d'anniversaire avec code promo -30%
-
-2. **Rappels de rendez-vous** - `/api/cron/reminder-emails`
+1. **Rappels de rendez-vous** - `/api/cron/reminder-emails`
    - Horaire : Tous les jours à 18h
    - Envoie des rappels 24h avant les rendez-vous
+   - PRIORITÉ HAUTE : Réduit les no-shows et améliore l'expérience client
+
+2. **Demandes d'avis clients** - `/api/cron/send-review-requests`
+   - Horaire : Tous les jours à 15h
+   - Envoie des demandes d'avis 3 jours après les rendez-vous
+   - PRIORITÉ HAUTE : Collecte des témoignages et améliore la réputation
 
 ## Cron Jobs Additionnels (Déclenchement Manuel)
 
 Ces endpoints peuvent être déclenchés manuellement ou via un service externe :
 
-3. **Rappels 48h** - `/api/cron/send-48h-reminders`
+3. **Emails d'anniversaire** - `/api/cron/birthday-emails`
+   - URL : `https://votre-domaine.vercel.app/api/cron/birthday-emails`
+   - Recommandé : Tous les jours à 9h
+   - Envoie automatiquement des emails d'anniversaire avec code promo -30%
+
+4. **Rappels 48h** - `/api/cron/send-48h-reminders`
    - URL : `https://votre-domaine.vercel.app/api/cron/send-48h-reminders?secret=VOTRE_CRON_SECRET`
    - Recommandé : Tous les jours à 10h
    - Envoie des rappels 48h avant les rendez-vous
-
-4. **Demandes d'avis** - `/api/cron/send-review-requests`
-   - URL : `https://votre-domaine.vercel.app/api/cron/send-review-requests?secret=VOTRE_CRON_SECRET`
-   - Recommandé : Tous les jours à 15h
-   - Envoie des demandes d'avis 3 jours après les rendez-vous
 
 ## Options pour les Cron Jobs Additionnels
 

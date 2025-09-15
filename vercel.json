@@ -1,14 +1,14 @@
 {
   "crons": [
     {
-      "path": "/api/cron/birthday-emails",
-      "schedule": "0 9 * * *",
-      "comment": "Emails d'anniversaire - tous les jours à 9h"
-    },
-    {
       "path": "/api/cron/reminder-emails",
       "schedule": "0 18 * * *",
       "comment": "Rappels de rendez-vous - tous les jours à 18h"
+    },
+    {
+      "path": "/api/cron/send-review-requests",
+      "schedule": "0 15 * * *",
+      "comment": "Demandes d'avis clients - tous les jours à 15h"
     }
   ]
 }
