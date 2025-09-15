@@ -479,8 +479,8 @@ export default function EmailCampaigns() {
       Nom: client.name,
       Email: client.email,
       Téléphone: client.phone,
-      'Date inscription': new Date(client.dateJoined).toLocaleDateString('fr-FR'),
-      'Dernière visite': new Date(client.lastVisit).toLocaleDateString('fr-FR'),
+      'Date inscription': client.dateJoined ? new Date(client.dateJoined).toLocaleDateString('fr-FR') : '',
+      'Dernière visite': client.lastVisit ? new Date(client.lastVisit).toLocaleDateString('fr-FR') : '',
       'Total dépensé': `${client.totalSpent}€`,
       'Nombre visites': client.visitCount,
       'Points fidélité': client.loyaltyPoints,
@@ -1173,7 +1173,7 @@ export default function EmailCampaigns() {
                         <div className="flex flex-wrap gap-2">
                           {activeFilters.map(filter => (
                             <span key={filter.id} className="px-2 py-1 bg-white rounded text-sm">
-                              {filter.name}: {filter.value || filter.operator}
+                              {filter.name}: {filter.value || ''}
                             </span>
                           ))}
                         </div>

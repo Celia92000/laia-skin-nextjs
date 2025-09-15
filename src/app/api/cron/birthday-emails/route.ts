@@ -22,10 +22,8 @@ export async function GET(request: NextRequest) {
     // Récupérer les clients dont c'est l'anniversaire aujourd'hui
     const users = await prisma.user.findMany({
       where: {
-        AND: [
-          { birthDate: { not: null } },
-          { email: { not: null } }
-        ]
+        birthDate: { not: null },
+        email: { not: '' }
       }
     });
 

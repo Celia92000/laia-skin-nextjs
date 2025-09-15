@@ -80,8 +80,7 @@ export async function GET(request: NextRequest) {
           day: 'numeric' 
         })}<br>
         <strong>Heure :</strong> ${appointmentTime}<br>
-        <strong>Soin :</strong> ${reservation.service}<br>
-        <strong>Durée :</strong> ${reservation.duration} minutes</p>
+        <strong>Prix :</strong> ${reservation.totalPrice}€</p>
       </div>
       
       <p>Si vous avez besoin de modifier ou annuler votre rendez-vous, merci de me prévenir au plus vite.</p>
@@ -107,7 +106,7 @@ export async function GET(request: NextRequest) {
           to: [reservation.user.email],
           subject: `📅 Rappel : Votre rendez-vous demain à ${appointmentTime}`,
           html: htmlContent,
-          text: `Rappel : Vous avez rendez-vous demain à ${appointmentTime} pour votre soin ${reservation.service}.`
+          text: `Rappel : Vous avez rendez-vous demain à ${appointmentTime}.`
         });
 
         // Enregistrer dans l'historique
