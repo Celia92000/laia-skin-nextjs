@@ -155,8 +155,8 @@ async function main() {
         active: true,
         shortDescription: 'Soin complet avec nettoyage, gommage, masque et séance LED personnalisée',
         description: 'Séance complète de photobiomodulation avec préparation de la peau',
-        benefits: ['Réduit l\'acné', 'Stimule le collagène', 'Apaise les rougeurs', 'Unifie le teint'],
-        process: ['Nettoyage', 'Gommage doux', 'Séance LED personnalisée', 'Masque apaisant'],
+        benefits: 'Réduit l\'acné, stimule le collagène, apaise les rougeurs, unifie le teint',
+        process: 'Nettoyage, gommage doux, séance LED personnalisée, masque apaisant',
         metaTitle: 'LED Thérapie | LAIA SKIN Institut',
         metaDescription: 'Séance LED complète avec nettoyage et masque. Traite acné, rides et rougeurs.'
       }
