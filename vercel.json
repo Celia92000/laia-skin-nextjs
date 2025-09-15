@@ -2,19 +2,13 @@
   "crons": [
     {
       "path": "/api/cron/birthday-emails",
-      "schedule": "0 9 * * *"
+      "schedule": "0 9 * * *",
+      "comment": "Emails d'anniversaire - tous les jours à 9h"
     },
     {
       "path": "/api/cron/reminder-emails",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/cron/send-48h-reminders?secret=laia_skin_cron_secret_2025",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/send-review-requests?secret=laia_skin_cron_secret_2025",
-      "schedule": "0 15 * * *"
+      "schedule": "0 18 * * *",
+      "comment": "Rappels de rendez-vous - tous les jours à 18h"
     }
   ]
 }
