@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
 
 // Initialiser Resend avec une clé dummy pour le build
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
@@ -38,9 +39,10 @@ export async function GET(request: Request) {
       return birthDate.getMonth() + 1 === currentMonth && birthDate.getDate() === currentDay;
     });
 
-    console.log(`🎂 ${birthdayUsers.length} emails d'anniversaire à envoyer`);
+    console.log(`🎂 ${birthdayUsers.length} messages d'anniversaire à envoyer (email + WhatsApp)`);
 
-    let sentCount = 0;
+    let emailSentCount = 0;
+    let whatsappSentCount = 0;
     
     for (const user of birthdayUsers) {
       if (!user.email) continue;
@@ -144,8 +146,46 @@ export async function GET(request: Request) {
           }
         });
 
-        sentCount++;
+        emailSentCount++;
         console.log(`✅ Email anniversaire envoyé à: ${user.email}`);
+        
+        // Envoyer aussi par WhatsApp si le numéro est disponible
+        if (user.phone) {
+          // Générer le code promo du mois
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+          const currentMonthCode = monthNames[currentMonth - 1];
+          
+          const whatsappMessage = `🎂 *Joyeux Anniversaire ${user.name}!* 🎉
+
+Toute l'équipe de LAIA SKIN vous souhaite une merveilleuse journée !
+
+🎁 *Votre cadeau :*
+**-30% SUR TOUS LES SOINS**
+
+📱 Code promo : *${currentMonthCode}2025*
+_Valable tout le mois_
+
+Réservez dès maintenant :
+👉 https://laiaskin.fr/reservation
+👉 Ou répondez à ce message
+
+Avec toute notre affection,
+*LAIA SKIN Institut* 💕`;
+          
+          try {
+            const result = await sendWhatsAppMessage({
+              to: user.phone,
+              message: whatsappMessage
+            });
+            
+            if (result.success) {
+              whatsappSentCount++;
+              console.log(`📱 WhatsApp d'anniversaire envoyé à: ${user.phone}`);
+            }
+          } catch (whatsappError) {
+            console.error('Erreur WhatsApp anniversaire:', whatsappError);
+          }
+        }
       } catch (error) {
         console.error(`Erreur envoi anniversaire pour ${user.id}:`, error);
       }
@@ -153,7 +193,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ 
       success: true,
-      message: `${sentCount} emails d'anniversaire envoyés`,
+      message: `Anniversaires: ${emailSentCount} emails et ${whatsappSentCount} WhatsApp envoyés`,
+      emailsSent: emailSentCount,
+      whatsappSent: whatsappSentCount,
       total: birthdayUsers.length
     });
 

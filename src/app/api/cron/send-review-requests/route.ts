@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
 
 // Initialiser Resend avec une clé dummy pour le build
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
@@ -175,6 +176,37 @@ export async function GET(request: Request) {
           }
         });
 
+        // Envoyer aussi par WhatsApp si le numéro est disponible
+        if (reservation.user.phone) {
+          const whatsappMessage = `✨ *LAIA SKIN Institut* ✨
+
+Bonjour ${reservation.user.name} ! 💕
+
+J'espère que vous avez apprécié votre soin *${serviceNames}* d'il y a 3 jours.
+
+⭐ *Votre avis est précieux !*
+Pourriez-vous prendre quelques secondes pour partager votre expérience ?
+
+👉 Cliquez ici : https://laiaskin.fr/avis?id=${reservation.id}
+
+🎁 *Programme de fidélité*
+${loyaltyProgress}
+${nextReward}
+
+Merci infiniment ! 🙏
+*LAIA SKIN Institut*`;
+          
+          try {
+            await sendWhatsAppMessage({
+              to: reservation.user.phone,
+              message: whatsappMessage
+            });
+            console.log(`📱 WhatsApp avis envoyé à: ${reservation.user.phone}`);
+          } catch (whatsappError) {
+            console.error('Erreur WhatsApp:', whatsappError);
+          }
+        }
+        
         sentCount++;
         console.log(`✅ Avis envoyé à: ${reservation.user.email}`);
       } catch (error) {

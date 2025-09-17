@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
 
 export async function POST(request: Request) {
   try {
