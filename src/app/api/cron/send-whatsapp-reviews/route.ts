@@ -118,19 +118,23 @@ Merci infiniment ! 🙏
             data: { reviewWhatsAppSent: true }
           });
           
-          // Enregistrer dans l'historique de communication
-          await prisma.communicationHistory.create({
-            data: {
-              from: 'LAIA SKIN Institut',
-              to: reservation.user.phone,
-              subject: `Demande d'avis WhatsApp`,
-              content: `Demande d'avis automatique pour ${serviceNames}`,
-              template: 'review_request_whatsapp',
-              status: 'sent',
-              direction: 'outgoing',
-              userId: reservation.userId
-            }
-          });
+          // Enregistrer dans l'historique email (si la table existe)
+          try {
+            await prisma.emailHistory.create({
+              data: {
+                from: 'LAIA SKIN Institut',
+                to: reservation.user.phone,
+                subject: `Demande d'avis WhatsApp`,
+                content: `Demande d'avis automatique pour ${serviceNames}`,
+                template: 'review_request_whatsapp',
+                status: 'sent',
+                direction: 'outgoing',
+                userId: reservation.userId
+              }
+            });
+          } catch (e) {
+            // Table might not exist, continue
+          }
           
           sentCount++;
           console.log(`✅ Avis WhatsApp envoyé à ${reservation.user.name} (${reservation.user.phone})`);

@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       sendWhatsAppMessage({
         to: adminPhone,
         message: adminMessage
-      }, 'meta').catch(console.error);
+      }).catch(console.error);
     }
 
     // Envoyer l'email de confirmation au client

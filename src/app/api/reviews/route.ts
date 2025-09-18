@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
@@ -9,15 +9,10 @@ export async function GET(request: Request) {
     const reviews = await prisma.review.findMany({
       where: {
         approved: true,
-        ...(serviceId && { serviceId })
+        ...(serviceId && { serviceName: serviceId })
       },
       include: {
         user: {
-          select: {
-            name: true
-          }
-        },
-        service: {
           select: {
             name: true
           }
@@ -38,7 +33,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, serviceId, rating, comment, reservationId } = body;
+    const { userId, serviceName, rating, comment, reservationId } = body;
 
     // Vérifier que l'utilisateur a bien eu ce service
     const reservation = await prisma.reservation.findFirst({
@@ -56,7 +51,8 @@ export async function POST(request: Request) {
     const review = await prisma.review.create({
       data: {
         userId,
-        serviceId,
+        reservationId,
+        serviceName: serviceName || 'Service',
         rating,
         comment,
         approved: false // Les avis doivent être approuvés par l'admin
