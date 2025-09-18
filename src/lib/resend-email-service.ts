@@ -202,7 +202,7 @@ Instagram : @laia.skin`;
 
     // Envoyer l'email via Resend
     const { data: emailData, error } = await resend.emails.send({
-      from: 'LAIA SKIN Institut <onboarding@resend.dev>', // Remplacer par votre domaine vérifié
+      from: 'LAIA SKIN Institut <onboarding@resend.dev>', // Temporaire en attendant validation domaine
       to: [data.to],
       subject: `✨ Confirmation RDV - ${data.date} à ${data.time}`,
       html: htmlContent,
