@@ -31,11 +31,7 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
       url: getDatabaseUrl()
     }
   },
-  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-  // Configuration pour éviter les erreurs de prepared statements
-  ...(process.env.VERCEL && {
-    datasourceUrl: getDatabaseUrl()
-  })
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error']
 })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
