@@ -111,7 +111,7 @@ export async function sendConfirmationEmail(data: EmailData): Promise<boolean> {
     const textContent = `
 Confirmation de réservation - LAIA SKIN INSTITUT
 
-Bonjour ${data.name},
+Bonjour ${data.clientName},
 
 Votre rendez-vous est confirmé !
 

@@ -43,7 +43,7 @@ export async function sendEmailWithSendGrid(data: EmailData): Promise<boolean> {
     </div>
     
     <div class="content">
-      <h2>Bonjour ${data.name},</h2>
+      <h2>Bonjour ${data.clientName},</h2>
       <p>Votre rendez-vous est confirmé ! J'ai hâte de vous accueillir dans mon institut.</p>
       
       <div class="info-box">
@@ -103,7 +103,7 @@ export async function sendEmailWithSendGrid(data: EmailData): Promise<boolean> {
   const textContent = `
 Confirmation de réservation - LAIA SKIN INSTITUT
 
-Bonjour ${data.name},
+Bonjour ${data.clientName},
 
 Votre rendez-vous est confirmé !
 

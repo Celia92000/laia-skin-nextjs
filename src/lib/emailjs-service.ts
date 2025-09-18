@@ -2,11 +2,12 @@
 
 interface EmailJSData {
   to: string;
-  name: string;
+  clientName: string;
   date: string;
   time: string;
   services: string[];
   totalPrice: number;
+  reservationId?: string;
 }
 
 export async function sendEmailWithEmailJS(data: EmailJSData): Promise<boolean> {
@@ -19,12 +20,12 @@ export async function sendEmailWithEmailJS(data: EmailJSData): Promise<boolean> 
     // Préparer les données pour EmailJS
     const templateParams = {
       to_email: data.to,
-      to_name: data.name,
+      to_name: data.clientName,
       from_name: 'LAIA SKIN Institut',
       reply_to: 'contact@laiaskin.fr',
       
       // Détails de la réservation
-      client_name: data.name,
+      client_name: data.clientName,
       reservation_date: data.date,
       reservation_time: data.time,
       services_list: data.services.join(', '),
@@ -39,7 +40,7 @@ export async function sendEmailWithEmailJS(data: EmailJSData): Promise<boolean> 
       
       // Message complet formaté
       message: `
-Bonjour ${data.name},
+Bonjour ${data.clientName},
 
 Votre rendez-vous est confirmé !
 

@@ -172,7 +172,7 @@ export async function POST(request: Request) {
       try {
         const emailSent = await sendConfirmationEmail({
           to: user.email,
-          name: user.name || 'Cliente',
+          clientName: user.name || 'Cliente',
           date: new Date(date).toLocaleDateString('fr-FR', {
             weekday: 'long',
             day: 'numeric',
