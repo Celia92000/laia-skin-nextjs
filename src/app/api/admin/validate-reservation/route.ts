@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
+import { sendReservationConfirmationEmail } from '@/lib/resend-email-service';
 
 export async function POST(request: Request) {
   try {
@@ -31,19 +32,51 @@ export async function POST(request: Request) {
         data: { status: 'confirmed' }
       });
       
-      // Envoyer un message WhatsApp de confirmation au client
+      // Préparer les données pour les notifications
+      const services = JSON.parse(reservation.services);
+      const serviceNames = services.map((s: string) => {
+        const serviceMap: any = {
+          'hydro-naissance': "Hydro'Naissance",
+          'hydro': "Hydro'Cleaning",
+          'renaissance': 'Renaissance',
+          'bbglow': 'BB Glow',
+          'led': 'LED Thérapie'
+        };
+        return serviceMap[s] || s;
+      });
+      
+      const formattedDate = new Date(reservation.date).toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // 1. ENVOYER EMAIL DE CONFIRMATION (immédiatement)
+      if (reservation.user.email) {
+        try {
+          await sendReservationConfirmationEmail({
+            to: reservation.user.email,
+            clientName: reservation.user.name,
+            date: formattedDate,
+            time: reservation.time,
+            services: serviceNames,
+            totalPrice: reservation.totalPrice,
+            reservationId: reservation.id
+          });
+          console.log(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
+        } catch (emailError) {
+          console.error('Erreur envoi email:', emailError);
+        }
+      }
+      
+      // 2. ENVOYER WHATSAPP DE CONFIRMATION (immédiatement)
       if (reservation.user.phone) {
-        const services = JSON.parse(reservation.services);
         const confirmMessage = whatsappTemplates.reservationConfirmation({
           clientName: reservation.user.name,
-          date: new Date(reservation.date).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
+          date: formattedDate,
           time: reservation.time,
-          services: services,
+          services: serviceNames,
           totalPrice: reservation.totalPrice
         });
         
@@ -53,9 +86,11 @@ export async function POST(request: Request) {
           message: confirmMessage
         }).catch(console.error);
         
-        // Programmer le rappel 24h avant
-        scheduleReminder(reservation);
+        console.log(`📱 WhatsApp de confirmation envoyé à ${reservation.user.phone}`);
       }
+      
+      // 3. Programmer le rappel 24h avant (sera envoyé par le CRON)
+      scheduleReminder(reservation);
       
       return NextResponse.json({ 
         success: true, 

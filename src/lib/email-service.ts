@@ -3,7 +3,7 @@
 
 export interface EmailData {
   to: string;
-  name: string;
+  clientName: string;
   date: string;
   time: string;
   services: string[];
@@ -12,6 +12,7 @@ export interface EmailData {
 }
 
 export async function sendConfirmationEmail(data: EmailData): Promise<boolean> {
+  console.log('📧 Envoi email de confirmation à:', data.to);
   // Vérifier si EmailJS est configuré
   if (process.env.EMAILJS_PUBLIC_KEY) {
     const { sendEmailWithEmailJS } = await import('./emailjs-service');
@@ -50,7 +51,7 @@ export async function sendConfirmationEmail(data: EmailData): Promise<boolean> {
     </div>
     
     <div class="content">
-      <h2>Bonjour ${data.name},</h2>
+      <h2>Bonjour ${data.clientName},</h2>
       <p>Votre rendez-vous est confirmé ! J'ai hâte de vous accueillir dans mon institut.</p>
       
       <div class="info-box">
@@ -78,7 +79,7 @@ export async function sendConfirmationEmail(data: EmailData): Promise<boolean> {
         <a href="https://maps.google.com/?q=5+allée+Jean+de+la+Fontaine+92000+Nanterre" class="button">
           📍 Voir sur Google Maps
         </a>
-        <a href="https://wa.me/33612345678" class="button" style="background: #25D366;">
+        <a href="https://wa.me/33683717050" class="button" style="background: #25D366;">
           💬 WhatsApp
         </a>
       </div>
@@ -95,7 +96,7 @@ export async function sendConfirmationEmail(data: EmailData): Promise<boolean> {
     
     <div class="footer">
       <p>Une peau respectée, une beauté révélée</p>
-      <p>📱 WhatsApp : 06 12 34 56 78 | 📧 contact@laia-skin.fr</p>
+      <p>📱 WhatsApp : 06 83 71 70 50 | 📧 contact@laiaskin.fr</p>
       <p style="margin-top: 10px;">
         <a href="https://www.instagram.com/laia.skin/" style="color: #d4b5a0;">Instagram</a> | 
         <a href="https://www.facebook.com/profile.php?id=61578944046472" style="color: #d4b5a0;">Facebook</a> | 
