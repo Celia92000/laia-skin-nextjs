@@ -92,7 +92,71 @@ export default function AdminStats() {
         const response = await fetch('/api/admin/statistics');
         if (response.ok) {
           const data = await response.json();
-          setStats(data);
+          // Formater les données pour correspondre au type Stats
+          const formattedStats: Stats = {
+            reservations: data.reservations || {
+              total: 0,
+              today: 0,
+              thisWeek: 0,
+              thisMonth: 0,
+              pending: 0,
+              confirmed: 0,
+              cancelled: 0,
+              conversionRate: 0
+            },
+            revenue: {
+              total: data.revenue?.total || 0,
+              thisMonth: data.revenue?.thisMonth || 0,
+              lastMonth: data.revenue?.lastMonth || 0,
+              thisYear: data.revenue?.thisYear || 0,
+              lastYear: data.revenue?.lastYear || 0,
+              today: data.revenue?.today || 0,
+              yesterday: data.revenue?.yesterday || 0,
+              thisWeek: data.revenue?.thisWeek || 0,
+              lastWeek: data.revenue?.lastWeek || 0,
+              averagePerClient: data.revenue?.averageCartValue || 0,
+              averagePerService: 0,
+              byMonth: [],
+              byDay: [],
+              byService: []
+            },
+            satisfaction: {
+              average: data.services?.averageRating || 0,
+              total: 0,
+              distribution: {
+                '5': 0,
+                '4': 0,
+                '3': 0,
+                '2': 0,
+                '1': 0
+              },
+              recentFeedback: []
+            },
+            clients: data.clients || {
+              total: 0,
+              new: 0,
+              returning: 0,
+              vip: 0,
+              inactive: 0,
+              satisfactionRate: 0
+            },
+            topServices: data.services?.popularServices?.map((s: any) => ({
+              name: s.name,
+              count: s.count,
+              revenue: 0,
+              satisfaction: 0
+            })) || [],
+            dailyStats: [],
+            recurringClients: data.clients?.returning || 0,
+            marketingPerformance: {
+              emailOpenRate: 0,
+              emailClickRate: 0,
+              whatsappReadRate: 0,
+              whatsappResponseRate: 0,
+              campaignConversion: 0
+            }
+          };
+          setStats(formattedStats);
         } else {
           // Si erreur API, afficher des valeurs à zéro pour une entreprise qui démarre
           const initialStats: Stats = {

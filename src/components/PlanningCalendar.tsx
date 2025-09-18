@@ -31,12 +31,14 @@ type ViewMode = 'day' | 'week' | 'month' | 'year';
 interface PlanningCalendarProps {
   reservations: Reservation[];
   onNewReservation?: () => void;
+  onDateClick?: (date: Date) => void;
 }
 
-export default function PlanningCalendar({ reservations, onNewReservation }: PlanningCalendarProps) {
+export default function PlanningCalendar({ reservations, onNewReservation, onDateClick }: PlanningCalendarProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0); // Pour forcer le rafraîchissement des vues
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -45,6 +47,14 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
   const [dragStartTime, setDragStartTime] = useState<string | null>(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState<string[]>([]);
   const [dragDate, setDragDate] = useState<Date | null>(null);
+  const [showQuickReservation, setShowQuickReservation] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{date: Date, time: string, endTime?: string, slots?: string[]} | null>(null);
+  const [selectedService, setSelectedService] = useState<string>('');
+  const [clientName, setClientName] = useState<string>('');
+  const [clientEmail, setClientEmail] = useState<string>('');
+  const [clientPhone, setClientPhone] = useState<string>('');
+  const [services, setServices] = useState<any[]>([]);
+  const [isBlockMode, setIsBlockMode] = useState(false);
 
   useEffect(() => {
     fetchBlockedSlots();
@@ -69,6 +79,86 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     '18:00', '18:30', '19:00', '19:30', '20:00', '20:30',
     '21:00', '21:30', '22:00', '22:30', '23:00'
   ];
+
+  // Helper pour obtenir le prix d'un service
+  const getServicePrice = (serviceName: string): number => {
+    const prices: Record<string, number> = {
+      'BB Glow': 130,
+      'Hydrocleaning': 89,
+      'Microneedling': 110,
+      'Thérapie LED': 45,
+      'Renaissance': 180,
+      'Éclat Suprême': 150
+    };
+    return prices[serviceName] || 0;
+  };
+
+  // Helper pour obtenir la durée d'un service en minutes
+  const getServiceDuration = (serviceName: string): number => {
+    const durations: Record<string, number> = {
+      'BB Glow': 90,
+      'Hydrocleaning': 60,
+      'Microneedling': 75,
+      'Thérapie LED': 30,
+      'Renaissance': 120,
+      'Éclat Suprême': 90
+    };
+    return durations[serviceName] || 60;
+  };
+
+  // Vérifier si un créneau est disponible (pas de chevauchement)
+  const isSlotAvailable = (date: Date, startTime: string, duration: number): boolean => {
+    const dateStr = formatDateLocal(date);
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = startMinutes + duration + 15; // +15 min de préparation
+
+    // Vérifier les réservations existantes
+    const dayReservations = reservations.filter(r => 
+      r.date.split('T')[0] === dateStr && r.status === 'confirmed'
+    );
+
+    for (const reservation of dayReservations) {
+      const resStartMinutes = timeToMinutes(reservation.time);
+      // Estimer la durée de la réservation existante (par défaut 60 min)
+      const resEndMinutes = resStartMinutes + 60 + 15; // +15 min de préparation
+
+      // Vérifier le chevauchement
+      if ((startMinutes >= resStartMinutes && startMinutes < resEndMinutes) ||
+          (endMinutes > resStartMinutes && endMinutes <= resEndMinutes) ||
+          (startMinutes <= resStartMinutes && endMinutes >= resEndMinutes)) {
+        return false;
+      }
+    }
+
+    // Vérifier les créneaux bloqués
+    const blockedInRange = blockedSlots.filter(slot => 
+      slot.date === dateStr
+    );
+
+    for (const blocked of blockedInRange) {
+      if (blocked.time) {
+        const blockMinutes = timeToMinutes(blocked.time);
+        if (startMinutes <= blockMinutes && blockMinutes < endMinutes) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
+  // Convertir l'heure en minutes
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Convertir les minutes en heure
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  };
 
   // Navigation
   const navigatePeriod = (direction: 'prev' | 'next') => {
@@ -104,7 +194,13 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
     
-    return reservations.filter(r => 
+    // Récupérer les réservations à jour depuis le localStorage
+    const storedReservations = JSON.parse(localStorage.getItem('admin_reservations') || '[]');
+    const allReservations = [...reservations, ...storedReservations.filter((sr: any) => 
+      !reservations.some(r => r.id === sr.id)
+    )];
+    
+    return allReservations.filter(r => 
       r.date.split('T')[0] === dateStr && 
       r.status === 'confirmed' // Seulement les réservations confirmées dans le calendrier
     );
@@ -148,12 +244,20 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     const hasReservation = reservations.some(r => 
       r.date.split('T')[0] === dateStr && r.time === time && r.status === 'confirmed'
     );
+    const isBlocked = blockedSlots.some(slot => 
+      slot.date === dateStr && slot.time === time
+    );
     
+    // Ne permettre le drag que si pas de réservation
     if (!hasReservation && !isDateBlocked(date)) {
-      setIsDragging(true);
-      setDragStartTime(time);
-      setDragDate(date);
-      setSelectedTimeRange([time]);
+      // En mode blocage on peut sélectionner tous les créneaux
+      // En mode normal, seulement les créneaux non bloqués
+      if (isBlockMode || !isBlocked) {
+        setIsDragging(true);
+        setDragStartTime(time);
+        setDragDate(date);
+        setSelectedTimeRange([time]);
+      }
     }
   };
 
@@ -175,49 +279,48 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
 
   const handleMouseUp = async () => {
     if (isDragging && selectedTimeRange.length > 0 && dragDate) {
-      const dateStr = formatDateLocal(dragDate);
-      const dateFormatted = dragDate.toLocaleDateString('fr-FR', { 
-        weekday: 'long', 
-        day: 'numeric', 
-        month: 'long' 
-      });
-      
-      const action = confirm(
-        `Voulez-vous bloquer les créneaux de ${selectedTimeRange[0]} à ${selectedTimeRange[selectedTimeRange.length - 1]} ?\n` +
-        `Le ${dateFormatted}\n` +
-        `(${selectedTimeRange.length} créneaux sélectionnés)`
-      );
-      
-      if (action) {
-        try {
-          const token = localStorage.getItem('token');
-          
-          for (const time of selectedTimeRange) {
-            const existingBlock = blockedSlots.find(s => s.date === dateStr && s.time === time);
-            
-            if (!existingBlock) {
-              const response = await fetch('/api/admin/blocked-slots', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  date: dateStr,
-                  time: time,
-                  reason: 'Plage horaire bloquée'
-                })
-              });
-              
-              if (response.ok) {
-                const newBlock = await response.json();
-                setBlockedSlots(prev => [...prev, newBlock]);
+      if (isBlockMode) {
+        // En mode blocage, bloquer directement les créneaux
+        const dateStr = formatDateLocal(dragDate);
+        const unblockedSlots = selectedTimeRange.filter(time => 
+          !blockedSlots.some(s => s.date === dateStr && s.time === time)
+        );
+        
+        if (unblockedSlots.length > 0) {
+          try {
+              const token = localStorage.getItem('token');
+              for (const time of unblockedSlots) {
+                const response = await fetch('/api/admin/blocked-slots', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    date: dateStr,
+                    time: time,
+                    reason: 'Bloqué via calendrier'
+                  })
+                });
+                if (response.ok) {
+                  const newBlock = await response.json();
+                  setBlockedSlots(prev => [...prev, newBlock]);
+                  setRefreshKey(prev => prev + 1);
+                }
               }
+            } catch (error) {
+              console.error('Erreur lors du blocage:', error);
             }
-          }
-        } catch (error) {
-          console.error('Erreur lors du blocage:', error);
         }
+      } else {
+        // En mode normal, ouvrir le modal de création
+        setSelectedSlot({ 
+          date: dragDate, 
+          time: selectedTimeRange[0],
+          endTime: selectedTimeRange[selectedTimeRange.length - 1],
+          slots: selectedTimeRange
+        });
+        setShowQuickReservation(true);
       }
     }
     
@@ -247,6 +350,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
         
         if (response.ok) {
           setBlockedSlots(blockedSlots.filter(slot => slot.id !== dayBlocked.id));
+          setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
         }
       } catch (error) {
         console.error('Erreur lors du déblocage:', error);
@@ -271,6 +375,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
         if (response.ok) {
           const newBlock = await response.json();
           setBlockedSlots([...blockedSlots, newBlock]);
+          setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
         }
       } catch (error) {
         console.error('Erreur lors du blocage:', error);
@@ -294,17 +399,19 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
               year: 'numeric' 
             })}
           </h3>
-          <button
-            onClick={() => toggleDayBlock(currentDate)}
-            className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              dayBlocked 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Ban className="w-4 h-4" />
-            {dayBlocked ? 'Débloquer la journée' : 'Bloquer la journée'}
-          </button>
+          {isBlockMode && (
+            <button
+              onClick={() => toggleDayBlock(currentDate)}
+              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                dayBlocked 
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Ban className="w-4 h-4" />
+              {dayBlocked ? 'Débloquer la journée' : 'Bloquer la journée'}
+            </button>
+          )}
         </div>
 
         {dayBlocked ? (
@@ -325,20 +432,31 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 slot.time === time
               );
               const isSelected = selectedTimeRange.includes(time);
+              
+              // Vérifier si le créneau est dans une plage réservée (incluant temps de préparation)
+              const timeMin = timeToMinutes(time);
+              const isInReservedRange = dayReservations.some(r => {
+                const resStart = timeToMinutes(r.time);
+                const resDuration = r.services?.[0]?.duration || 60;
+                const resEnd = resStart + resDuration + 15; // +15 min préparation
+                return timeMin >= resStart && timeMin < resEnd;
+              });
 
               return (
                 <div
                   key={time}
-                  className={`p-3 rounded-lg border-2 transition-all cursor-pointer select-none ${
+                  className={`p-3 rounded-lg border-2 transition-all select-none ${
                     reservation 
-                      ? 'bg-blue-50 border-blue-200 hover:bg-blue-100' 
+                      ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' 
+                      : isInReservedRange
+                      ? 'bg-orange-50 border-orange-200 cursor-not-allowed opacity-75'
                       : isBlocked
-                      ? 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      ? 'bg-red-100 border-red-300 hover:bg-red-200 cursor-pointer'
                       : isSelected
-                      ? 'bg-yellow-100 border-yellow-400'
-                      : 'bg-green-50 border-green-200 hover:bg-green-100'
+                      ? 'bg-yellow-100 border-yellow-400 cursor-pointer'
+                      : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer'
                   }`}
-                  onMouseDown={() => !reservation && !isBlocked && handleMouseDown(time)}
+                  onMouseDown={() => !reservation && handleMouseDown(time)}
                   onMouseEnter={() => handleMouseEnter(time)}
                   onClick={async () => {
                     // Si on est en train de sélectionner, ne pas déclencher le click
@@ -348,57 +466,61 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                       // Afficher les détails de la réservation
                       setSelectedReservation(reservation);
                       setShowReservationDetail(true);
-                    } else if (!dayBlocked && selectedTimeRange.length === 0) {
-                      // Bloquer/débloquer le créneau
+                    } else if (isBlockMode) {
+                      // En mode blocage
                       const dateStr = formatDateLocal(currentDate);
                       const slot = blockedSlots.find(s => 
                         s.date === dateStr && s.time === time
                       );
                       
-                      if (slot) {
+                      if (isBlocked && slot) {
                         // Débloquer
                         try {
-                          const token = localStorage.getItem('token');
-                          const response = await fetch(`/api/admin/blocked-slots?id=${slot.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                              'Authorization': `Bearer ${token}`
-                            }
-                          });
-                          
-                          if (response.ok) {
-                            setBlockedSlots(blockedSlots.filter(s => s.id !== slot.id));
-                          }
-                        } catch (error) {
-                          console.error('Erreur lors du déblocage:', error);
-                        }
-                      } else {
-                        // Bloquer
-                        if (confirm(`Bloquer le créneau ${time} le ${currentDate.toLocaleDateString('fr-FR')} ?`)) {
-                          try {
                             const token = localStorage.getItem('token');
-                            const response = await fetch('/api/admin/blocked-slots', {
-                              method: 'POST',
+                            const response = await fetch(`/api/admin/blocked-slots?id=${slot.id}`, {
+                              method: 'DELETE',
                               headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                              },
-                              body: JSON.stringify({
-                                date: dateStr,
-                                time: time,
-                                reason: 'Bloqué via calendrier'
-                              })
+                                'Authorization': `Bearer ${token}`
+                              }
                             });
                             
                             if (response.ok) {
-                              const newBlock = await response.json();
-                              setBlockedSlots([...blockedSlots, newBlock]);
+                              setBlockedSlots(prev => prev.filter(s => s.id !== slot.id));
+                              setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
                             }
                           } catch (error) {
-                            console.error('Erreur lors du blocage:', error);
+                            console.error('Erreur lors du déblocage:', error);
                           }
+                      } else if (!isBlocked) {
+                        // Bloquer
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch('/api/admin/blocked-slots', {
+                            method: 'POST',
+                            headers: {
+                              'Authorization': `Bearer ${token}`,
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                              date: dateStr,
+                              time: time,
+                              reason: 'Bloqué via calendrier'
+                            })
+                          });
+                          
+                          if (response.ok) {
+                            const newBlock = await response.json();
+                            setBlockedSlots(prev => [...prev, newBlock]);
+                            setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
+                          }
+                        } catch (error) {
+                          console.error('Erreur lors du blocage:', error);
                         }
                       }
+                    } else if (!isBlocked && !dayBlocked && selectedTimeRange.length === 0) {
+                      // En mode normal, ouvrir le modal de création pour les créneaux disponibles
+                      setSelectedSlot({ date: currentDate, time, slots: [time] });
+                      setShowQuickReservation(true);
                     }
                   }}
                 >
@@ -411,8 +533,13 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                           {reservation.userName} - {reservation.totalPrice}€
                         </span>
                       </div>
+                    ) : isInReservedRange && !isBlocked ? (
+                      <span className="text-sm text-orange-600">Occupé</span>
                     ) : isBlocked ? (
-                      <span className="text-sm text-gray-600">Bloqué</span>
+                      <span className="text-sm text-red-700 font-medium flex items-center gap-1">
+                        <Ban className="w-3 h-3" />
+                        Bloqué
+                      </span>
                     ) : isSelected ? (
                       <span className="text-sm text-yellow-600">Sélectionné</span>
                     ) : (
@@ -435,6 +562,8 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     const [weekSelectedSlots, setWeekSelectedSlots] = useState<{date: string, time: string}[]>([]);
 
     const handleWeekMouseDown = (time: string, date: Date) => {
+      if (!isBlockMode) return; // Seulement en mode blocage
+      
       const dateStr = formatDateLocal(date);
       const hasReservation = reservations.some(r => 
         r.date.split('T')[0] === dateStr && r.time === time && r.status === 'confirmed'
@@ -449,7 +578,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     };
 
     const handleWeekMouseEnter = (time: string, date: Date) => {
-      if (isDragging && dragStartTime && dragDate) {
+      if (isDragging && dragStartTime && dragDate && isBlockMode) {
         const sameDateStr = formatDateLocal(dragDate);
         const currentDateStr = formatDateLocal(date);
         
@@ -471,7 +600,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     };
 
     const handleWeekMouseUp = async () => {
-      if (isDragging && weekSelectedSlots.length > 0) {
+      if (isDragging && weekSelectedSlots.length > 0 && isBlockMode) {
         const dateStr = weekSelectedSlots[0].date;
         const date = new Date(dateStr + 'T12:00:00');
         const dateFormatted = date.toLocaleDateString('fr-FR', { 
@@ -483,13 +612,8 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
         const startTime = weekSelectedSlots[0].time;
         const endTime = weekSelectedSlots[weekSelectedSlots.length - 1].time;
         
-        const action = confirm(
-          `Voulez-vous bloquer les créneaux de ${startTime} à ${endTime} ?\n` +
-          `Le ${dateFormatted}\n` +
-          `(${weekSelectedSlots.length} créneaux sélectionnés)`
-        );
-        
-        if (action) {
+        // Bloquer directement sans confirmation
+        if (true) {
           try {
             const token = localStorage.getItem('token');
             
@@ -513,6 +637,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 if (response.ok) {
                   const newBlock = await response.json();
                   setBlockedSlots(prev => [...prev, newBlock]);
+                  setRefreshKey(prev => prev + 1);
                 }
               }
             }
@@ -544,8 +669,18 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 key={dayOffset}
                 className={`font-semibold text-center p-2 cursor-pointer hover:bg-[#d4b5a0]/10 ${
                   isToday ? 'bg-[#d4b5a0]/20' : ''
-                } ${dayBlocked ? 'bg-gray-100' : ''}`}
-                onClick={() => toggleDayBlock(date)}
+                } ${dayBlocked ? 'bg-red-100 border-red-300' : ''}`}
+                onClick={() => {
+                  if (isBlockMode) {
+                    toggleDayBlock(date);
+                  } else if (onDateClick) {
+                    onDateClick(date);
+                  } else {
+                    // En mode normal, ouvrir le détail de la journée
+                    setSelectedDate(date);
+                    setShowDayDetail(true);
+                  }
+                }}
               >
                 <div className="text-[#2c3e50]">
                   {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
@@ -585,20 +720,22 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                       reservation 
                         ? 'bg-blue-100 hover:bg-blue-200' 
                         : isBlocked
-                        ? 'bg-gray-100 hover:bg-gray-200'
+                        ? 'bg-red-100 hover:bg-red-200 border-red-300'
                         : isSelected
                         ? 'bg-yellow-100 border-yellow-400'
                         : 'hover:bg-green-100'
                     }`}
-                    onMouseDown={() => !reservation && !isBlocked && handleWeekMouseDown(time, date)}
+                    onMouseDown={() => isBlockMode && !reservation && !isBlocked && handleWeekMouseDown(time, date)}
                     onMouseEnter={() => handleWeekMouseEnter(time, date)}
                     onClick={async () => {
                       if (isDragging) return;
+                      
                       if (reservation) {
                         // Afficher les détails de la réservation
                         setSelectedReservation(reservation);
                         setShowReservationDetail(true);
-                      } else {
+                      } else if (isBlockMode) {
+                        // En mode blocage
                         const slot = blockedSlots.find(s => 
                           s.date === dateStr && (s.allDay || s.time === time)
                         );
@@ -606,46 +743,57 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                         if (slot && !slot.allDay) {
                           // Débloquer le créneau
                           try {
-                            const token = localStorage.getItem('token');
-                            const response = await fetch(`/api/admin/blocked-slots?id=${slot.id}`, {
-                              method: 'DELETE',
-                              headers: {
-                                'Authorization': `Bearer ${token}`
-                              }
-                            });
-                            
-                            if (response.ok) {
-                              setBlockedSlots(blockedSlots.filter(s => s.id !== slot.id));
-                            }
-                          } catch (error) {
-                            console.error('Erreur lors du déblocage:', error);
-                          }
-                        } else if (!slot) {
-                          // Bloquer le créneau
-                          if (confirm(`Bloquer ${time} le ${date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} ?`)) {
-                            try {
                               const token = localStorage.getItem('token');
-                              const response = await fetch('/api/admin/blocked-slots', {
-                                method: 'POST',
+                              const response = await fetch(`/api/admin/blocked-slots?id=${slot.id}`, {
+                                method: 'DELETE',
                                 headers: {
-                                  'Authorization': `Bearer ${token}`,
-                                  'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                  date: dateStr,
-                                  time: time,
-                                  reason: 'Bloqué via calendrier'
-                                })
+                                  'Authorization': `Bearer ${token}`
+                                }
                               });
                               
                               if (response.ok) {
-                                const newBlock = await response.json();
-                                setBlockedSlots([...blockedSlots, newBlock]);
+                                setBlockedSlots(prev => prev.filter(s => s.id !== slot.id));
+                                setRefreshKey(prev => prev + 1);
                               }
                             } catch (error) {
-                              console.error('Erreur lors du blocage:', error);
+                              console.error('Erreur lors du déblocage:', error);
                             }
+                        } else if (!slot) {
+                          // Bloquer le créneau
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch('/api/admin/blocked-slots', {
+                              method: 'POST',
+                              headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                              },
+                              body: JSON.stringify({
+                                date: dateStr,
+                                time: time,
+                                reason: 'Bloqué via calendrier'
+                              })
+                            });
+                              
+                            if (response.ok) {
+                              const newBlock = await response.json();
+                              setBlockedSlots(prev => [...prev, newBlock]);
+                              setRefreshKey(prev => prev + 1);
+                            }
+                          } catch (error) {
+                            console.error('Erreur lors du blocage:', error);
                           }
+                        }
+                      } else {
+                        // En mode normal, ouvrir le formulaire de création
+                        // (même si le créneau est bloqué, on peut vouloir voir le détail)
+                        if (!isBlocked) {
+                          setSelectedSlot({ 
+                            date: date, 
+                            time: time,
+                            slots: [time]
+                          });
+                          setShowQuickReservation(true);
                         }
                       }
                     }}
@@ -690,7 +838,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
 
     const handleMonthMouseDown = (date: Date) => {
       const isCurrentMonth = date.getMonth() === month;
-      if (isCurrentMonth && !isDateBlocked(date)) {
+      if (isCurrentMonth && !isDateBlocked(date) && isBlockMode) {
         setMonthDragging(true);
         setDragStartDate(date);
         setSelectedDays([date]);
@@ -720,15 +868,12 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
     };
 
     const handleMonthMouseUp = async () => {
-      if (monthDragging && selectedDays.length > 0) {
+      if (monthDragging && selectedDays.length > 0 && isBlockMode) {
         const startDate = selectedDays[0];
         const endDate = selectedDays[selectedDays.length - 1];
         
-        const message = selectedDays.length === 1
-          ? `Voulez-vous bloquer le ${startDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} ?`
-          : `Voulez-vous bloquer ${selectedDays.length} jours ?\nDu ${startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au ${endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
-        
-        if (confirm(message)) {
+        // Bloquer directement en mode blocage
+        if (isBlockMode) {
           try {
             const token = localStorage.getItem('token');
             
@@ -753,6 +898,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 if (response.ok) {
                   const newBlock = await response.json();
                   setBlockedSlots(prev => [...prev, newBlock]);
+                  setRefreshKey(prev => prev + 1);
                 }
               }
             }
@@ -790,7 +936,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 className={`min-h-[80px] p-2 border rounded-lg cursor-pointer transition-all select-none ${
                   !isCurrentMonth ? 'bg-gray-50 text-gray-400' :
                   isToday ? 'bg-[#d4b5a0]/20 border-[#d4b5a0]' :
-                  dayBlocked ? 'bg-gray-100' :
+                  dayBlocked ? 'bg-red-100 border-red-300' :
                   isDaySelected ? 'bg-yellow-100 border-yellow-400' :
                   'bg-white hover:bg-[#fdfbf7]'
                 } ${dayReservations.length > 0 ? 'border-blue-200' : 'border-gray-200'}`}
@@ -798,8 +944,14 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 onMouseEnter={() => handleMonthMouseEnter(date)}
                 onClick={() => {
                   if (!monthDragging) {
-                    setSelectedDate(date);
-                    setShowDayDetail(true);
+                    if (isBlockMode) {
+                      // En mode blocage, bloquer/débloquer le jour
+                      toggleDayBlock(date);
+                    } else {
+                      // En mode normal, ouvrir le détail du jour
+                      setSelectedDate(date);
+                      setShowDayDetail(true);
+                    }
                   }
                 }}
               >
@@ -807,10 +959,16 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                   <span className={`text-sm font-medium ${isToday ? 'text-[#d4b5a0]' : ''}`}>
                     {date.getDate()}
                   </span>
-                  {dayBlocked && <Ban className="w-3 h-3 text-gray-500" />}
+                  {dayBlocked && <Ban className="w-4 h-4 text-red-600" />}
                 </div>
                 
-                {dayReservations.length > 0 && (
+                {dayBlocked ? (
+                  <div className="text-xs">
+                    <div className="bg-red-500 text-white px-1 py-0.5 rounded font-medium">
+                      BLOQUÉ
+                    </div>
+                  </div>
+                ) : dayReservations.length > 0 && (
                   <div className="text-xs space-y-1">
                     <div className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded">
                       {dayReservations.length} RDV
@@ -820,7 +978,7 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 
                 {blockedCount > 0 && !dayBlocked && (
                   <div className="text-xs mt-1">
-                    <div className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded">
+                    <div className="bg-red-100 text-red-600 px-1 py-0.5 rounded">
                       {blockedCount} bloqué{blockedCount > 1 ? 's' : ''}
                     </div>
                   </div>
@@ -837,6 +995,8 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
   const YearView = () => {
     const year = currentDate.getFullYear();
     const months = [];
+    let yearTotalReservations = 0;
+    let yearTotalBlocked = 0;
     
     for (let month = 0; month < 12; month++) {
       const monthDate = new Date(year, month, 1);
@@ -851,6 +1011,9 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
         if (isDateBlocked(date)) totalBlocked++;
       }
       
+      yearTotalReservations += totalReservations;
+      yearTotalBlocked += totalBlocked;
+      
       months.push({
         date: monthDate,
         reservations: totalReservations,
@@ -860,6 +1023,26 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
 
     return (
       <div className="bg-white rounded-xl p-6">
+        {/* Récapitulatif de l'année */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-lg">
+          <h3 className="text-lg font-bold text-[#2c3e50] mb-2">
+            Année {year}
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-600" />
+              <span className="text-[#2c3e50]">
+                <span className="font-semibold">{yearTotalReservations}</span> réservation{yearTotalReservations !== 1 ? 's' : ''} au total
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Ban className="w-5 h-5 text-red-500" />
+              <span className="text-[#2c3e50]">
+                <span className="font-semibold">{yearTotalBlocked}</span> jour{yearTotalBlocked !== 1 ? 's' : ''} bloqué{yearTotalBlocked !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
+        </div>
         <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
           {months.map((monthData, index) => {
             const isCurrentMonth = monthData.date.getMonth() === new Date().getMonth() && 
@@ -912,8 +1095,9 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
       {/* Barre d'outils */}
       <div className="bg-white rounded-xl border border-[#d4b5a0]/20 p-4 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* Sélecteur de vue */}
-          <div className="flex gap-2">
+          {/* Sélecteur de vue et mode blocage */}
+          <div className="flex gap-2 items-center">
+            <div className="flex gap-2">
             <button
               onClick={() => setViewMode('day')}
               className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
@@ -958,6 +1142,22 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
               <Calendar className="w-4 h-4" />
               Année
             </button>
+            </div>
+
+            {/* Bouton Mode Blocage */}
+            <div className="border-l pl-4 ml-2">
+              <button
+                onClick={() => setIsBlockMode(!isBlockMode)}
+                className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 font-medium ${
+                  isBlockMode 
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Ban className="w-4 h-4" />
+                {isBlockMode ? 'Mode Blocage Actif' : 'Mode Blocage'}
+              </button>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -1014,10 +1214,10 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
       </div>
 
       {/* Vue sélectionnée */}
-      {viewMode === 'day' && <DayView />}
-      {viewMode === 'week' && <WeekView />}
-      {viewMode === 'month' && <MonthView />}
-      {viewMode === 'year' && <YearView />}
+      {viewMode === 'day' && <DayView key={`day-${refreshKey}`} />}
+      {viewMode === 'week' && <WeekView key={`week-${refreshKey}`} />}
+      {viewMode === 'month' && <MonthView key={`month-${refreshKey}`} />}
+      {viewMode === 'year' && <YearView key={`year-${refreshKey}`} />}
 
       {/* Modal détail jour (depuis vue mois) */}
       {showDayDetail && selectedDate && (
@@ -1036,6 +1236,39 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Boutons d'action */}
+            <div className="mb-4 space-y-2">
+              <button
+                onClick={() => {
+                  // Ouvrir directement le modal de création pour cette date à 09h00
+                  setShowDayDetail(false);
+                  setSelectedSlot({ 
+                    date: selectedDate, 
+                    time: '09:00',
+                    slots: ['09:00']
+                  });
+                  setShowQuickReservation(true);
+                }}
+                className="w-full px-4 py-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Créer une nouvelle réservation
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowDayDetail(false);
+                  // Ouvrir la vue jour pour cette date
+                  setCurrentDate(selectedDate);
+                  setViewMode('day');
+                }}
+                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+              >
+                <CalendarDays className="w-4 h-4" />
+                Voir le détail de la journée
               </button>
             </div>
             
@@ -1202,6 +1435,252 @@ export default function PlanningCalendar({ reservations, onNewReservation }: Pla
           </div>
         </div>
       )}
+
+      {/* Modal de création rapide de réservation */}
+      {showQuickReservation && selectedSlot && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-bold text-[#2c3e50]">
+                Nouvelle réservation
+              </h3>
+              <button
+                onClick={() => {
+                  setShowQuickReservation(false);
+                  setSelectedSlot(null);
+                  setSelectedService('');
+                  setClientName('');
+                  setClientEmail('');
+                  setClientPhone('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Informations du créneau */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <CalendarDays className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-[#2c3e50]">
+                    {selectedSlot.date.toLocaleDateString('fr-FR', { 
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-[#2c3e50]">
+                    {selectedSlot.slots && selectedSlot.slots.length > 1 
+                      ? `${selectedSlot.time} - ${selectedSlot.endTime} (${selectedSlot.slots.length * 30} minutes)`
+                      : selectedSlot.time}
+                  </span>
+                </div>
+              </div>
+
+              {/* Sélection du service */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Prestation *
+                </label>
+                <select
+                  value={selectedService}
+                  onChange={(e) => setSelectedService(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                >
+                  <option value="">Sélectionner une prestation</option>
+                  <option value="BB Glow">BB Glow - 90 min - 130€</option>
+                  <option value="Hydrocleaning">Hydrocleaning - 60 min - 89€</option>
+                  <option value="Microneedling">Microneedling - 75 min - 110€</option>
+                  <option value="Thérapie LED">Thérapie LED - 30 min - 45€</option>
+                  <option value="Renaissance">Renaissance - 120 min - 180€</option>
+                  <option value="Éclat Suprême">Éclat Suprême - 90 min - 150€</option>
+                </select>
+                {selectedSlot.slots && selectedSlot.slots.length > 1 && selectedService && (
+                  <p className="text-sm text-amber-600 mt-2">
+                    ⚠️ Durée sélectionnée : {selectedSlot.slots.length * 30} minutes
+                  </p>
+                )}
+              </div>
+
+              {/* Informations client */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                    Nom du client *
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Marie Dupont"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="marie.dupont@email.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    placeholder="06 12 34 56 78"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="space-y-3 pt-4 border-t">
+                <button
+                  onClick={async () => {
+                    if (!selectedService || !clientName || !clientEmail) {
+                      alert('Veuillez remplir tous les champs obligatoires');
+                      return;
+                    }
+
+                    // Vérifier la disponibilité
+                    const serviceDuration = getServiceDuration(selectedService);
+                    const totalDuration = selectedSlot.slots ? selectedSlot.slots.length * 30 : serviceDuration;
+                    
+                    if (!isSlotAvailable(selectedSlot.date, selectedSlot.time, totalDuration)) {
+                      alert(`Ce créneau n'est pas disponible. Il y a un conflit avec une autre réservation ou le temps de préparation nécessaire (15 min).`);
+                      return;
+                    }
+
+                    // Vérifier que la durée sélectionnée correspond au service
+                    if (selectedSlot.slots && selectedSlot.slots.length > 1) {
+                      const selectedDuration = selectedSlot.slots.length * 30;
+                      if (Math.abs(selectedDuration - serviceDuration) > 30) {
+                        if (!confirm(`⚠️ Attention: Le service ${selectedService} dure normalement ${serviceDuration} minutes mais vous avez sélectionné ${selectedDuration} minutes. Continuer quand même?`)) {
+                          return;
+                        }
+                      }
+                    }
+
+                    try {
+                      const token = localStorage.getItem('token');
+                      const dateStr = formatDateLocal(selectedSlot.date);
+                      
+                      // Calculer l'heure de fin avec le temps de préparation
+                      const endMinutes = timeToMinutes(selectedSlot.time) + totalDuration;
+                      const endTime = minutesToTime(endMinutes);
+                      
+                      // Créer la réservation
+                      const reservationData = {
+                        date: dateStr,
+                        time: selectedSlot.time,
+                        endTime: endTime,
+                        service: selectedService,
+                        serviceDuration: totalDuration,
+                        clientName,
+                        clientEmail,
+                        clientPhone,
+                        status: 'confirmed',
+                        totalPrice: getServicePrice(selectedService)
+                      };
+
+                      // Sauvegarder dans le localStorage
+                      const existingReservations = JSON.parse(localStorage.getItem('admin_reservations') || '[]');
+                      const newReservation = {
+                        ...reservationData,
+                        id: `res_${Date.now()}`,
+                        userName: clientName,
+                        userEmail: clientEmail,
+                        services: [{ name: selectedService, price: getServicePrice(selectedService), duration: totalDuration }],
+                        createdAt: new Date().toISOString()
+                      };
+                      existingReservations.push(newReservation);
+                      localStorage.setItem('admin_reservations', JSON.stringify(existingReservations));
+
+                      // Bloquer automatiquement les 15 minutes après pour la préparation
+                      const prepStartMinutes = endMinutes;
+                      const prepEndMinutes = prepStartMinutes + 15;
+                      
+                      if (prepEndMinutes <= 23 * 60) { // Si on ne dépasse pas 23h00
+                        const prepTime = minutesToTime(prepStartMinutes);
+                        await fetch('/api/admin/blocked-slots', {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            date: dateStr,
+                            time: prepTime,
+                            reason: `Préparation après ${selectedService}`
+                          })
+                        });
+                      }
+
+                      // Rafraîchir les données sans recharger la page
+                      await fetchBlockedSlots();
+                      setShowQuickReservation(false);
+                      setSelectedSlot(null);
+                      setSelectedService('');
+                      setClientName('');
+                      setClientEmail('');
+                      setClientPhone('');
+                      setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement des vues
+                      alert('✅ Réservation créée avec succès!');
+                    } catch (error) {
+                      console.error('Erreur lors de la création:', error);
+                      alert('Erreur lors de la création de la réservation');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  disabled={!selectedService || !clientName || !clientEmail}
+                >
+                  <Check className="w-5 h-5" />
+                  Créer la réservation
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowQuickReservation(false);
+                    setSelectedSlot(null);
+                    setSelectedService('');
+                    setClientName('');
+                    setClientEmail('');
+                    setClientPhone('');
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper pour obtenir le format de date local
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

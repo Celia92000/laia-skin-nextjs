@@ -73,7 +73,12 @@ export function useStatistics(viewMode: string, selectedDate: string, selectedMo
           selectedYear
         });
         
-        const response = await fetch(`/api/admin/statistics?${params}`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/statistics-safe?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) throw new Error('Erreur lors de la récupération des statistiques');
         
         const data = await response.json();

@@ -141,11 +141,47 @@ export default function AdminStatsEnhanced() {
         selectedYear
       });
       
-      const response = await fetch(`/api/admin/statistics?${params}`);
-      if (!response.ok) throw new Error('Erreur lors de la récupération des statistiques');
-      
-      const data = await response.json();
-      setStats(data);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/statistics-safe?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Adapter les données reçues au format attendu par le composant
+        const formattedStats: Stats = {
+          ...data,
+          products: data.products || {
+            totalSold: 0,
+            revenue: 0,
+            topProducts: [],
+            stockAlert: 0
+          },
+          appointments: data.appointments || {
+            nextWeek: 0,
+            occupancyRate: 0,
+            averageDuration: 60,
+            noShow: 0,
+            lastMinuteBookings: 0,
+            peakHours: []
+          },
+          revenue: {
+            ...data.revenue,
+            byMonth: data.revenue?.byMonth || [],
+            byDay: data.revenue?.byDay || [],
+            byService: data.revenue?.byService || []
+          },
+          satisfaction: {
+            ...data.satisfaction,
+            recentFeedback: data.satisfaction?.recentFeedback || []
+          }
+        };
+        setStats(formattedStats);
+      } else {
+        // Si erreur API, logger mais ne pas lancer d'exception
+        console.warn('API statistiques non disponible, utilisation des données par défaut');
+      }
       setLoading(false);
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);

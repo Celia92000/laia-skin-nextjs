@@ -23,6 +23,10 @@ import AdminStatsEnhanced from "@/components/AdminStatsEnhanced";
 import AdminReviewsManager from "@/components/AdminReviewsManager";
 import ClientSegmentation from "@/components/ClientSegmentation";
 import EmailDashboard from "@/components/EmailDashboard";
+import SourceStats from "@/components/SourceStats";
+import RevenueAnalytics from "@/components/RevenueAnalytics";
+import ReservationTableAdvanced from "@/components/ReservationTableAdvanced";
+import QuickActionModal from "@/components/QuickActionModal";
 import { logout } from "@/lib/auth-client";
 import { servicePricing, getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 
@@ -68,6 +72,8 @@ export default function AdminDashboard() {
   const [paymentDateEnd, setPaymentDateEnd] = useState("");
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
+  const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
+  const [showQuickActionModal, setShowQuickActionModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [editingReservation, setEditingReservation] = useState<any>(null);
@@ -84,14 +90,21 @@ export default function AdminDashboard() {
     services: [] as string[],
     notes: ''
   });
+  const [dbServices, setDbServices] = useState<any[]>([]);
 
-  const services = {
+  // Services par défaut (au cas où la BDD est vide)
+  const defaultServices = {
     "hydro-naissance": "Hydro'Naissance",
     "hydro": "Hydro'Cleaning",
     "renaissance": "Renaissance",
     "bbglow": "BB Glow",
     "led": "LED Thérapie"
   };
+
+  // Utiliser les services de la BDD ou les services par défaut
+  const services = dbServices.length > 0 
+    ? Object.fromEntries(dbServices.map(s => [s.id, s.name]))
+    : defaultServices;
 
   useEffect(() => {
     const checkAuth = () => {
@@ -112,6 +125,7 @@ export default function AdminDashboard() {
       fetchReservations();
       fetchClients();
       fetchLoyaltyProfiles();
+      fetchServices();
     };
 
     checkAuth();
@@ -123,6 +137,23 @@ export default function AdminDashboard() {
     
     return () => clearInterval(interval);
   }, [router]);
+
+  const fetchServices = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/services', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDbServices(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des services:', error);
+    }
+  };
 
   const fetchReservations = async () => {
     try {
@@ -864,11 +895,28 @@ export default function AdminDashboard() {
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {activeTab === "stats" && (
-            <div>
+            <div className="space-y-8">
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
                 Tableau de bord et statistiques
               </h2>
+              
+              {/* Analyse du chiffre d'affaires en premier */}
+              <RevenueAnalytics 
+                reservations={reservations.map(r => ({
+                  ...r,
+                  totalPrice: r.totalPrice || 0,
+                  paymentStatus: r.paymentStatus || 'pending',
+                  paymentDate: r.paymentDate || null,
+                  services: r.services || []
+                }))} 
+                services={services}
+              />
+              
+              {/* Évolution des revenus */}
               <AdminStatsEnhanced />
+              
+              {/* Statistiques des sources */}
+              <SourceStats reservations={reservations} />
             </div>
           )}
           
@@ -980,16 +1028,36 @@ export default function AdminDashboard() {
 
               {/* Afficher le contenu selon le sous-onglet */}
               {planningSubTab === 'calendar' && (
-                <PlanningCalendar 
-                  reservations={reservations
-                    .filter(r => r.status !== 'cancelled')
-                    .map(r => ({
-                      ...r,
-                      userName: r.userName || 'Client',
-                      userEmail: r.userEmail || '',
-                    }))}
-                  onNewReservation={() => setShowNewReservationModal(true)}
-                />
+                <>
+                  <PlanningCalendar 
+                    reservations={reservations
+                      .filter(r => r.status !== 'cancelled')
+                      .map(r => ({
+                        ...r,
+                        userName: r.userName || 'Client',
+                        userEmail: r.userEmail || '',
+                      }))}
+                    onNewReservation={() => setShowNewReservationModal(true)}
+                    onDateClick={(date) => {
+                      setQuickActionDate(date);
+                      setShowQuickActionModal(true);
+                    }}
+                  />
+                  
+                  {/* Modal de création rapide */}
+                  {showQuickActionModal && quickActionDate && (
+                    <QuickActionModal
+                      date={quickActionDate}
+                      onClose={() => setShowQuickActionModal(false)}
+                      onReservationCreated={() => {
+                        fetchReservations();
+                        setShowQuickActionModal(false);
+                      }}
+                      services={services}
+                      clients={clients}
+                    />
+                  )}
+                </>
               )}
               
               {planningSubTab === 'availability' && (
@@ -1182,117 +1250,19 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#d4b5a0]/20">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Date/Heure</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Client</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Services</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Source</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Statut</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Prix</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-[#2c3e50]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reservations.map((reservation) => (
-                        <tr key={reservation.id} className="border-b border-gray-100 hover:bg-[#fdfbf7] transition-colors">
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="font-medium text-[#2c3e50]">
-                                {new Date(reservation.date).toLocaleDateString('fr-FR')}
-                              </div>
-                              <div className="text-sm text-[#2c3e50]/60">{reservation.time}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="font-medium text-[#2c3e50]">{reservation.userName || 'Client'}</div>
-                              <div className="text-sm text-[#2c3e50]/60">{reservation.userEmail}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {reservation.services.map((serviceId: string) => (
-                                <span key={serviceId} className="px-2 py-1 bg-[#d4b5a0]/10 rounded text-xs">
-                                  {services[serviceId as keyof typeof services]}
-                                  {reservation.packages[serviceId] === 'forfait' && ' (F)'}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              reservation.source === 'site' ? 'bg-green-100 text-green-600' :
-                              reservation.source === 'planity' ? 'bg-blue-100 text-blue-600' :
-                              reservation.source === 'treatwell' ? 'bg-purple-100 text-purple-600' :
-                              reservation.source === 'appel' ? 'bg-yellow-100 text-yellow-600' :
-                              reservation.source === 'reseaux' ? 'bg-pink-100 text-pink-600' :
-                              'bg-gray-100 text-gray-600'
-                            }`}>
-                              {reservation.source === 'site' && <Globe className="inline w-3 h-3 mr-1" />}
-                              {reservation.source === 'planity' && 'Planity'}
-                              {reservation.source === 'treatwell' && 'Treatwell'}
-                              {reservation.source === 'appel' && <Phone className="inline w-3 h-3 mr-1" />}
-                              {reservation.source === 'reseaux' && <Instagram className="inline w-3 h-3 mr-1" />}
-                              {reservation.source || 'Site'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              reservation.status === 'completed' ? 'bg-green-100 text-green-600' :
-                              reservation.status === 'confirmed' ? 'bg-blue-100 text-blue-600' :
-                              reservation.status === 'cancelled' ? 'bg-red-100 text-red-600' :
-                              reservation.status === 'modified' ? 'bg-orange-100 text-orange-600' :
-                              'bg-yellow-100 text-yellow-600'
-                            }`}>
-                              {reservation.status === 'completed' && <CheckCircle className="inline w-3 h-3 mr-1" />}
-                              {reservation.status === 'cancelled' && <XCircle className="inline w-3 h-3 mr-1" />}
-                              {reservation.status === 'modified' && <Edit2 className="inline w-3 h-3 mr-1" />}
-                              {reservation.status === 'completed' ? 'Terminé' :
-                               reservation.status === 'confirmed' ? 'Confirmé' :
-                               reservation.status === 'cancelled' ? 'Annulé' :
-                               reservation.status === 'modified' ? 'Modifié' :
-                               'En attente'}
-                            </span>
-                            {reservation.modifiedAt && (
-                              <div className="text-xs text-orange-600 mt-1">
-                                Modifié le {new Date(reservation.modifiedAt).toLocaleDateString('fr-FR')}
-                              </div>
-                            )}
-                            {reservation.cancelledAt && (
-                              <div className="text-xs text-red-600 mt-1">
-                                Annulé le {new Date(reservation.cancelledAt).toLocaleDateString('fr-FR')}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-[#d4b5a0]">{reservation.totalPrice}€</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex gap-2">
-                              <button 
-                                onClick={() => openEditModal(reservation)}
-                                className="text-blue-600 hover:underline text-sm"
-                              >
-                                Modifier
-                              </button>
-                              {reservation.status !== 'cancelled' && (
-                                <button 
-                                  onClick={() => cancelReservation(reservation.id)}
-                                  className="text-red-600 hover:underline text-sm"
-                                >
-                                  Annuler
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                  <ReservationTableAdvanced 
+                    reservations={reservations.map(r => ({
+                      ...r,
+                      totalPrice: r.totalPrice || 0,
+                      services: r.services.map((serviceId: string) => 
+                        services[serviceId as keyof typeof services] || serviceId
+                      ),
+                      paymentStatus: r.paymentStatus || 'pending'
+                    }))}
+                    onEdit={openEditModal}
+                    onCancel={cancelReservation}
+                    onStatusChange={(id, status) => updateReservationStatus(id, status as any)}
+                  />
                 )}
               </div>
                 </div>
