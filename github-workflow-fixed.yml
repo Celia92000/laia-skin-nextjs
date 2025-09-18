@@ -1,0 +1,113 @@
+# VERSION CORRIGÉE - À copier dans GitHub
+name: CRON Jobs WhatsApp et Email
+
+on:
+  schedule:
+    # Rappels WhatsApp 24h avant - Tous les jours à 18h (heure Paris)
+    - cron: '0 17 * * *'  # 17h UTC = 18h Paris
+    
+    # Demandes d'avis - Tous les jours à 10h (heure Paris)  
+    - cron: '0 9 * * *'   # 9h UTC = 10h Paris
+    
+    # Messages d'anniversaire - Tous les jours à 9h (heure Paris)
+    - cron: '0 8 * * *'   # 8h UTC = 9h Paris
+    
+  workflow_dispatch: # Permet de déclencher manuellement
+    inputs:
+      job_to_run:
+        description: 'Job à exécuter'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - rappels
+          - avis
+          - anniversaires
+
+jobs:
+  rappels-whatsapp:
+    name: Rappels WhatsApp 24h avant
+    runs-on: ubuntu-latest
+    if: |
+      github.event.schedule == '0 17 * * *' || 
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_to_run == 'rappels' || github.event.inputs.job_to_run == 'all'))
+    
+    steps:
+      - name: Envoyer rappels WhatsApp
+        run: |
+          echo "🔔 Envoi des rappels WhatsApp..."
+          curl -X GET "https://laia-skin-institut-as92.vercel.app/api/cron/send-whatsapp-reminders?secret=laia_skin_cron_secret_2025" \
+            -H "User-Agent: GitHub-Actions" \
+            --fail-with-body \
+            --max-time 300 || echo "⚠️ Pas de rappels à envoyer aujourd'hui"
+          echo "✅ Terminé"
+          
+  demandes-avis-email:
+    name: Demandes d'avis par Email
+    runs-on: ubuntu-latest
+    if: |
+      github.event.schedule == '0 9 * * *' || 
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_to_run == 'avis' || github.event.inputs.job_to_run == 'all'))
+    
+    steps:
+      - name: Envoyer demandes d'avis email
+        run: |
+          echo "📧 Envoi des demandes d'avis par email..."
+          curl -X GET "https://laia-skin-institut-as92.vercel.app/api/cron/send-review-requests?secret=laia_skin_cron_secret_2025" \
+            -H "User-Agent: GitHub-Actions" \
+            --fail-with-body \
+            --max-time 300 || echo "⚠️ Pas d'avis à demander aujourd'hui"
+          echo "✅ Terminé"
+            
+  demandes-avis-whatsapp:
+    name: Demandes d'avis par WhatsApp
+    runs-on: ubuntu-latest
+    if: |
+      github.event.schedule == '0 9 * * *' || 
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_to_run == 'avis' || github.event.inputs.job_to_run == 'all'))
+    needs: demandes-avis-email # Après les emails
+    
+    steps:
+      - name: Attendre 1 minute
+        run: |
+          echo "⏳ Attente de 1 minute avant WhatsApp..."
+          sleep 60
+        
+      - name: Envoyer demandes d'avis WhatsApp
+        run: |
+          echo "📱 Envoi des demandes d'avis par WhatsApp..."
+          curl -X GET "https://laia-skin-institut-as92.vercel.app/api/cron/send-whatsapp-reviews?secret=laia_skin_cron_secret_2025" \
+            -H "User-Agent: GitHub-Actions" \
+            --fail-with-body \
+            --max-time 300 || echo "⚠️ Pas d'avis WhatsApp à envoyer"
+          echo "✅ Terminé"
+
+  anniversaires:
+    name: Messages d'anniversaire Email + WhatsApp
+    runs-on: ubuntu-latest
+    if: |
+      github.event.schedule == '0 8 * * *' || 
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_to_run == 'anniversaires' || github.event.inputs.job_to_run == 'all'))
+    
+    steps:
+      - name: Envoyer messages d'anniversaire
+        run: |
+          echo "🎂 Envoi des messages d'anniversaire..."
+          curl -X GET "https://laia-skin-institut-as92.vercel.app/api/cron/send-birthday-emails?secret=laia_skin_cron_secret_2025" \
+            -H "User-Agent: GitHub-Actions" \
+            --fail-with-body \
+            --max-time 300 || echo "⚠️ Pas d'anniversaires aujourd'hui"
+          echo "✅ Terminé"
+          
+  test-connection:
+    name: Test de connexion
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Vérifier que le site est accessible
+        run: |
+          echo "🔌 Test de connexion au site..."
+          curl -I https://laia-skin-institut-as92.vercel.app || echo "❌ Site inaccessible"
+          echo "✅ Test terminé"
