@@ -117,24 +117,15 @@ export default function AdminStatsEnhanced() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [viewMode, setViewMode] = useState<'day' | 'month' | 'year'>('month');
 
-  // Générer des données selon la période
+  // Fonction pour période vide (entreprise qui n'a pas démarré)
   const generateDataForPeriod = (date: Date) => {
-    const day = date.getDate();
-    const month = date.getMonth();
-    const year = date.getFullYear();
-    
-    // Générer des revenus cohérents basés sur la date
-    const baseRevenue = 1000;
-    const dayVariation = (day * 23) % 500; // Variation basée sur le jour
-    const monthBonus = month * 100; // Bonus selon le mois
-    const yearMultiplier = year === 2024 ? 1.2 : year === 2023 ? 1.0 : 0.8;
-    
+    // Retourner des valeurs à zéro car l'activité n'a pas démarré
     return {
-      dayRevenue: Math.floor((baseRevenue + dayVariation) * yearMultiplier),
-      dayReservations: 3 + (day % 5),
-      monthRevenue: Math.floor((baseRevenue * 30 + monthBonus * 100) * yearMultiplier),
-      monthReservations: 80 + (month * 10),
-      yearRevenue: Math.floor((baseRevenue * 365 + year * 1000) * yearMultiplier)
+      dayRevenue: 0,
+      dayReservations: 0,
+      monthRevenue: 0,
+      monthReservations: 0,
+      yearRevenue: 0
     };
   };
 
@@ -168,160 +159,101 @@ export default function AdminStatsEnhanced() {
       
       const periodData = generateDataForPeriod(currentDate);
       
-      const mockStats: Stats = {
+      // Valeurs initiales pour une entreprise qui démarre
+      const initialStats: Stats = {
         reservations: {
-          total: 1247,
-          today: 8,
-          thisWeek: 42,
-          thisMonth: 186,
-          pending: 12,
-          confirmed: 168,
-          cancelled: 6,
-          conversionRate: 78.5
+          total: 0,
+          today: 0,
+          thisWeek: 0,
+          thisMonth: 0,
+          pending: 0,
+          confirmed: 0,
+          cancelled: 0,
+          conversionRate: 0
         },
         revenue: {
-          total: 125600,
-          thisMonth: 14280,
-          lastMonth: 12450,
-          thisYear: 125600,
-          lastYear: 98500,
-          today: 1140,
-          yesterday: 950,
-          thisWeek: 5130,
-          lastWeek: 4680,
-          averagePerClient: 95,
-          averagePerService: 120,
+          total: 0,
+          thisMonth: 0,
+          lastMonth: 0,
+          thisYear: 0,
+          lastYear: 0,
+          today: 0,
+          yesterday: 0,
+          thisWeek: 0,
+          lastWeek: 0,
+          averagePerClient: 0,
+          averagePerService: 0,
           byMonth: [
-            { month: 'Jan', revenue: 8900, year: 2024 },
-            { month: 'Fév', revenue: 9200, year: 2024 },
-            { month: 'Mar', revenue: 10100, year: 2024 },
-            { month: 'Avr', revenue: 9800, year: 2024 },
-            { month: 'Mai', revenue: 11200, year: 2024 },
-            { month: 'Jun', revenue: 10500, year: 2024 },
-            { month: 'Jul', revenue: 12100, year: 2024 },
-            { month: 'Aoû', revenue: 9500, year: 2024 },
-            { month: 'Sep', revenue: 11800, year: 2024 },
-            { month: 'Oct', revenue: 13120, year: 2024 },
-            { month: 'Nov', revenue: 14280, year: 2024 },
-            { month: 'Déc', revenue: 15100, year: 2024 }
+            { month: 'Jan', revenue: 0, year: 2025 },
+            { month: 'Fév', revenue: 0, year: 2025 },
+            { month: 'Mar', revenue: 0, year: 2025 },
+            { month: 'Avr', revenue: 0, year: 2025 },
+            { month: 'Mai', revenue: 0, year: 2025 },
+            { month: 'Jun', revenue: 0, year: 2025 },
+            { month: 'Jul', revenue: 0, year: 2025 },
+            { month: 'Aoû', revenue: 0, year: 2025 },
+            { month: 'Sep', revenue: 0, year: 2025 },
+            { month: 'Oct', revenue: 0, year: 2025 },
+            { month: 'Nov', revenue: 0, year: 2025 },
+            { month: 'Déc', revenue: 0, year: 2025 }
           ],
-          byDay: [
-            { date: '2024-11-18', revenue: 1140 },
-            { date: '2024-11-19', revenue: 760 },
-            { date: '2024-11-20', revenue: 950 },
-            { date: '2024-11-21', revenue: 1425 },
-            { date: '2024-11-22', revenue: 855 },
-            { date: '2024-11-23', revenue: 1280 },
-            { date: '2024-11-24', revenue: 980 }
-          ],
-          byService: [
-            { service: 'HydraFacial', revenue: 45000, percentage: 35.8 },
-            { service: 'Peeling', revenue: 28000, percentage: 22.3 },
-            { service: 'LED Therapy', revenue: 18500, percentage: 14.7 },
-            { service: 'Microneedling', revenue: 21000, percentage: 16.7 },
-            { service: 'Soins visage classiques', revenue: 13100, percentage: 10.4 }
-          ]
+          byDay: [],
+          byService: []
         },
         satisfaction: {
-          average: 4.7,
-          total: 892,
+          average: 0,
+          total: 0,
           distribution: {
-            '5': 612,
-            '4': 198,
-            '3': 56,
-            '2': 18,
-            '1': 8
+            '5': 0,
+            '4': 0,
+            '3': 0,
+            '2': 0,
+            '1': 0
           },
-          recentFeedback: [
-            {
-              clientName: 'Marie Dupont',
-              rating: 5,
-              comment: 'Service exceptionnel ! Ma peau n\'a jamais été aussi belle.',
-              date: new Date(),
-              service: 'HydraFacial'
-            },
-            {
-              clientName: 'Sophie Martin',
-              rating: 5,
-              comment: 'Laïa est une vraie professionnelle, je recommande vivement !',
-              date: new Date(Date.now() - 86400000),
-              service: 'Peeling'
-            },
-            {
-              clientName: 'Julie Bernard',
-              rating: 4,
-              comment: 'Très satisfaite du résultat, juste un peu d\'attente.',
-              date: new Date(Date.now() - 172800000),
-              service: 'LED Therapy'
-            }
-          ]
+          recentFeedback: []
         },
         clients: {
-          total: 456,
-          new: 23,
-          returning: 433,
-          vip: 67,
-          inactive: 89,
-          satisfactionRate: 94.2
+          total: 0,
+          new: 0,
+          returning: 0,
+          vip: 0,
+          inactive: 0,
+          satisfactionRate: 0
         },
-        topServices: [
-          { name: 'HydraFacial', count: 89, revenue: 8010, satisfaction: 4.8 },
-          { name: 'Peeling', count: 67, revenue: 4020, satisfaction: 4.6 },
-          { name: 'LED Therapy', count: 45, revenue: 2700, satisfaction: 4.9 },
-          { name: 'Microneedling', count: 34, revenue: 3060, satisfaction: 4.7 }
-        ],
-        dailyStats: [
-          { _id: '2024-11-18', count: 12, revenue: 1140 },
-          { _id: '2024-11-19', count: 8, revenue: 760 },
-          { _id: '2024-11-20', count: 10, revenue: 950 },
-          { _id: '2024-11-21', count: 15, revenue: 1425 },
-          { _id: '2024-11-22', count: 9, revenue: 855 }
-        ],
-        recurringClients: 78,
+        topServices: [],
+        dailyStats: [],
+        recurringClients: 0,
         marketingPerformance: {
-          emailOpenRate: 67.3,
-          emailClickRate: 23.8,
-          whatsappReadRate: 87.5,
-          whatsappResponseRate: 34.2,
-          campaignConversion: 12.6
+          emailOpenRate: 0,
+          emailClickRate: 0,
+          whatsappReadRate: 0,
+          whatsappResponseRate: 0,
+          campaignConversion: 0
         },
         products: {
-          totalSold: 156,
-          revenue: 8750,
-          topProducts: [
-            { name: 'Sérum Vitamine C', quantity: 45, revenue: 2250 },
-            { name: 'Crème Hydratante SPF30', quantity: 38, revenue: 1900 },
-            { name: 'Masque Éclat', quantity: 29, revenue: 1450 },
-            { name: 'Contour des Yeux', quantity: 23, revenue: 1610 },
-            { name: 'Huile Précieuse', quantity: 21, revenue: 1540 }
-          ],
-          stockAlert: 3
+          totalSold: 0,
+          revenue: 0,
+          topProducts: [],
+          stockAlert: 0
         },
         appointments: {
-          nextWeek: 42,
-          occupancyRate: 78.5,
-          averageDuration: 65,
-          noShow: 2,
-          lastMinuteBookings: 8,
-          peakHours: [
-            { hour: '10h', bookings: 18 },
-            { hour: '11h', bookings: 22 },
-            { hour: '14h', bookings: 25 },
-            { hour: '15h', bookings: 28 },
-            { hour: '16h', bookings: 24 },
-            { hour: '17h', bookings: 20 }
-          ]
+          nextWeek: 0,
+          occupancyRate: 0,
+          averageDuration: 60,
+          noShow: 0,
+          lastMinuteBookings: 0,
+          peakHours: []
         },
         clientRetention: {
-          rate: 85.3,
-          newClients: 23,
-          lostClients: 5,
-          averageVisitsPerClient: 6.8,
-          timeBetweenVisits: 42
+          rate: 0,
+          newClients: 0,
+          lostClients: 0,
+          averageVisitsPerClient: 0,
+          timeBetweenVisits: 0
         }
       };
       
-      setStats(mockStats);
+      setStats(initialStats);
       setLoading(false);
     }
   }, [viewMode, selectedDate, selectedMonth, selectedYear]);

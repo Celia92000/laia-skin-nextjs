@@ -87,130 +87,163 @@ export default function AdminStats() {
 
   const fetchStats = async () => {
     try {
-      // Simuler des données pour le développement
-      const mockStats: Stats = {
-        reservations: {
-          total: 1247,
-          today: 8,
-          thisWeek: 42,
-          thisMonth: 186,
-          pending: 12,
-          confirmed: 168,
-          cancelled: 6,
-          conversionRate: 78.5
-        },
-        revenue: {
-          total: 125600,
-          thisMonth: 14280,
-          lastMonth: 12450,
-          thisYear: 125600,
-          lastYear: 98500,
-          today: 1140,
-          yesterday: 950,
-          thisWeek: 5130,
-          lastWeek: 4680,
-          averagePerClient: 95,
-          averagePerService: 120,
-          byMonth: [
-            { month: 'Jan', revenue: 8900, year: 2024 },
-            { month: 'Fév', revenue: 9200, year: 2024 },
-            { month: 'Mar', revenue: 10100, year: 2024 },
-            { month: 'Avr', revenue: 9800, year: 2024 },
-            { month: 'Mai', revenue: 11200, year: 2024 },
-            { month: 'Jun', revenue: 10500, year: 2024 },
-            { month: 'Jul', revenue: 12100, year: 2024 },
-            { month: 'Aoû', revenue: 9500, year: 2024 },
-            { month: 'Sep', revenue: 11800, year: 2024 },
-            { month: 'Oct', revenue: 13120, year: 2024 },
-            { month: 'Nov', revenue: 14280, year: 2024 },
-            { month: 'Déc', revenue: 15100, year: 2024 }
-          ],
-          byDay: [
-            { date: '2024-11-18', revenue: 1140 },
-            { date: '2024-11-19', revenue: 760 },
-            { date: '2024-11-20', revenue: 950 },
-            { date: '2024-11-21', revenue: 1425 },
-            { date: '2024-11-22', revenue: 855 },
-            { date: '2024-11-23', revenue: 1280 },
-            { date: '2024-11-24', revenue: 980 }
-          ],
-          byService: [
-            { service: 'HydraFacial', revenue: 45000, percentage: 35.8 },
-            { service: 'Peeling', revenue: 28000, percentage: 22.3 },
-            { service: 'LED Therapy', revenue: 18500, percentage: 14.7 },
-            { service: 'Microneedling', revenue: 21000, percentage: 16.7 },
-            { service: 'Soins visage classiques', revenue: 13100, percentage: 10.4 }
-          ]
-        },
-        satisfaction: {
-          average: 4.7,
-          total: 892,
-          distribution: {
-            '5': 612,
-            '4': 198,
-            '3': 56,
-            '2': 18,
-            '1': 8
-          },
-          recentFeedback: [
-            {
-              clientName: 'Marie Dupont',
-              rating: 5,
-              comment: 'Service exceptionnel ! Ma peau n\'a jamais été aussi belle.',
-              date: new Date(),
-              service: 'HydraFacial'
+      // Récupération des données réelles depuis l'API
+      try {
+        const response = await fetch('/api/admin/statistics');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        } else {
+          // Si erreur API, afficher des valeurs à zéro pour une entreprise qui démarre
+          const initialStats: Stats = {
+            reservations: {
+              total: 0,
+              today: 0,
+              thisWeek: 0,
+              thisMonth: 0,
+              pending: 0,
+              confirmed: 0,
+              cancelled: 0,
+              conversionRate: 0
             },
-            {
-              clientName: 'Sophie Martin',
-              rating: 5,
-              comment: 'Laïa est une vraie professionnelle, je recommande vivement !',
-              date: new Date(Date.now() - 86400000),
-              service: 'Peeling'
+            revenue: {
+              total: 0,
+              thisMonth: 0,
+              lastMonth: 0,
+              thisYear: 0,
+              lastYear: 0,
+              today: 0,
+              yesterday: 0,
+              thisWeek: 0,
+              lastWeek: 0,
+              averagePerClient: 0,
+              averagePerService: 0,
+              byMonth: [
+                { month: 'Jan', revenue: 0, year: 2025 },
+                { month: 'Fév', revenue: 0, year: 2025 },
+                { month: 'Mar', revenue: 0, year: 2025 },
+                { month: 'Avr', revenue: 0, year: 2025 },
+                { month: 'Mai', revenue: 0, year: 2025 },
+                { month: 'Jun', revenue: 0, year: 2025 },
+                { month: 'Jul', revenue: 0, year: 2025 },
+                { month: 'Aoû', revenue: 0, year: 2025 },
+                { month: 'Sep', revenue: 0, year: 2025 },
+                { month: 'Oct', revenue: 0, year: 2025 },
+                { month: 'Nov', revenue: 0, year: 2025 },
+                { month: 'Déc', revenue: 0, year: 2025 }
+              ],
+              byDay: [],
+              byService: []
             },
-            {
-              clientName: 'Julie Bernard',
-              rating: 4,
-              comment: 'Très satisfaite du résultat, juste un peu d\'attente.',
-              date: new Date(Date.now() - 172800000),
-              service: 'LED Therapy'
+            satisfaction: {
+              average: 0,
+              total: 0,
+              distribution: {
+                '5': 0,
+                '4': 0,
+                '3': 0,
+                '2': 0,
+                '1': 0
+              },
+              recentFeedback: []
+            },
+            clients: {
+              total: 0,
+              new: 0,
+              returning: 0,
+              vip: 0,
+              inactive: 0,
+              satisfactionRate: 0
+            },
+            topServices: [],
+            dailyStats: [],
+            recurringClients: 0,
+            marketingPerformance: {
+              emailOpenRate: 0,
+              emailClickRate: 0,
+              whatsappReadRate: 0,
+              whatsappResponseRate: 0,
+              campaignConversion: 0
             }
-          ]
-        },
-        clients: {
-          total: 456,
-          new: 23,
-          returning: 433,
-          vip: 67,
-          inactive: 89,
-          satisfactionRate: 94.2
-        },
-        topServices: [
-          { name: 'HydraFacial', count: 89, revenue: 8010, satisfaction: 4.8 },
-          { name: 'Peeling', count: 67, revenue: 4020, satisfaction: 4.6 },
-          { name: 'LED Therapy', count: 45, revenue: 2700, satisfaction: 4.9 },
-          { name: 'Microneedling', count: 34, revenue: 3060, satisfaction: 4.7 }
-        ],
-        dailyStats: [
-          { _id: '2024-11-18', count: 12, revenue: 1140 },
-          { _id: '2024-11-19', count: 8, revenue: 760 },
-          { _id: '2024-11-20', count: 10, revenue: 950 },
-          { _id: '2024-11-21', count: 15, revenue: 1425 },
-          { _id: '2024-11-22', count: 9, revenue: 855 }
-        ],
-        recurringClients: 78,
-        marketingPerformance: {
-          emailOpenRate: 67.3,
-          emailClickRate: 23.8,
-          whatsappReadRate: 87.5,
-          whatsappResponseRate: 34.2,
-          campaignConversion: 12.6
+          };
+          setStats(initialStats);
         }
-      };
-      
-      setStats(mockStats);
-      setLoading(false);
-    } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
+      } catch (error) {
+        console.error('Erreur lors du chargement des statistiques:', error);
+        // En cas d'erreur, afficher des données vides
+        const emptyStats: Stats = {
+          reservations: {
+            total: 0,
+            today: 0,
+            thisWeek: 0,
+            thisMonth: 0,
+            pending: 0,
+            confirmed: 0,
+            cancelled: 0,
+            conversionRate: 0
+          },
+          revenue: {
+            total: 0,
+            thisMonth: 0,
+            lastMonth: 0,
+            thisYear: 0,
+            lastYear: 0,
+            today: 0,
+            yesterday: 0,
+            thisWeek: 0,
+            lastWeek: 0,
+            averagePerClient: 0,
+            averagePerService: 0,
+            byMonth: [
+              { month: 'Jan', revenue: 0, year: 2025 },
+              { month: 'Fév', revenue: 0, year: 2025 },
+              { month: 'Mar', revenue: 0, year: 2025 },
+              { month: 'Avr', revenue: 0, year: 2025 },
+              { month: 'Mai', revenue: 0, year: 2025 },
+              { month: 'Jun', revenue: 0, year: 2025 },
+              { month: 'Jul', revenue: 0, year: 2025 },
+              { month: 'Aoû', revenue: 0, year: 2025 },
+              { month: 'Sep', revenue: 0, year: 2025 },
+              { month: 'Oct', revenue: 0, year: 2025 },
+              { month: 'Nov', revenue: 0, year: 2025 },
+              { month: 'Déc', revenue: 0, year: 2025 }
+            ],
+            byDay: [],
+            byService: []
+          },
+          satisfaction: {
+            average: 0,
+            total: 0,
+            distribution: {
+              '5': 0,
+              '4': 0,
+              '3': 0,
+              '2': 0,
+              '1': 0
+            },
+            recentFeedback: []
+          },
+          clients: {
+            total: 0,
+            new: 0,
+            returning: 0,
+            vip: 0,
+            inactive: 0,
+            satisfactionRate: 0
+          },
+          topServices: [],
+          dailyStats: [],
+          recurringClients: 0,
+          marketingPerformance: {
+            emailOpenRate: 0,
+            emailClickRate: 0,
+            whatsappReadRate: 0,
+            whatsappResponseRate: 0,
+            campaignConversion: 0
+          }
+        };
+        setStats(emptyStats);
+      }
       setLoading(false);
     }
   };
