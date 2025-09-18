@@ -86,9 +86,9 @@ export default async function Home() {
                         <span className="text-xs font-bold uppercase tracking-wider">Soin Signature</span>
                       </div>
                     )}
-                    {service.mainImage ? (
+                    {service.image ? (
                       <img 
-                        src={service.mainImage} 
+                        src={service.image} 
                         alt={service.name} 
                         className={`w-full h-full object-cover object-center ${service.slug === 'led-therapie' ? 'scale-[175%]' : service.slug === 'hydro-naissance' ? 'scale-110' : 'scale-100'}`}
                         style={{ objectPosition: service.slug === 'hydro-naissance' ? '50% 65%' : service.slug === 'bb-glow' ? '50% 35%' : service.slug === 'led-therapie' ? '90% 40%' : service.slug === 'hydro-cleaning' ? '85% 40%' : '50% 40%' }}
@@ -118,7 +118,7 @@ export default async function Home() {
                     </h3>
                     
                     <p className="text-[#2c3e50]/70 mb-4 line-clamp-2">
-                      {service.shortDescription}
+                      {service.description}
                     </p>
 
                     <div className="flex items-center justify-between mb-4">
@@ -136,11 +136,11 @@ export default async function Home() {
 
                     {/* Prix */}
                     <div className="border-t pt-4 mt-auto">
-                      {service.promoPrice ? (
+                      {false ? (
                         <div>
                           <div className="flex items-baseline gap-3">
                             <span className="text-3xl font-bold text-[#d4b5a0]">
-                              {service.promoPrice}€
+                              {0}€
                             </span>
                             <span className="text-xl line-through text-[#2c3e50]/40">
                               {service.price}€
