@@ -8,8 +8,8 @@ export const staticServices = [
     longDescription: 'Le BB Glow est une technique révolutionnaire qui permet d\'obtenir un effet "bonne mine" durable. Cette méthode utilise la micro-perforation pour infuser un fond de teint semi-permanent dans les couches superficielles de la peau, créant ainsi un teint unifié et lumineux qui dure plusieurs mois.',
     image: '/images/bb-glow.jpg',
     duration: 90,
-    price: 150,
-    priceRange: '150€',
+    price: 60,
+    priceRange: '60€',
     benefits: [
       'Teint unifié et lumineux',
       'Réduction des imperfections',
@@ -34,8 +34,8 @@ export const staticServices = [
     longDescription: 'L\'Hydrocleaning est une technique de nettoyage en profondeur qui combine plusieurs technologies pour purifier et hydrater la peau. Ce soin utilise l\'aspiration douce, l\'exfoliation et l\'infusion de sérums pour éliminer les impuretés tout en nourrissant la peau.',
     image: '/images/hydro-cleaning.jpg',
     duration: 60,
-    price: 120,
-    priceRange: '120€',
+    price: 70,
+    priceRange: '70€',
     benefits: [
       'Nettoyage en profondeur',
       'Exfoliation douce',
@@ -60,8 +60,8 @@ export const staticServices = [
     longDescription: 'Le soin Renaissance est notre protocole le plus complet, combinant microneedling, LED thérapie et cocktails de vitamines pour une régénération totale de la peau. Ce traitement stimule la production naturelle de collagène et d\'élastine pour un effet rajeunissant visible.',
     image: '/images/renaissance.jpg',
     duration: 120,
-    price: 250,
-    priceRange: '250€',
+    price: 70,
+    priceRange: '70€',
     benefits: [
       'Régénération cellulaire',
       'Effet liftant',
@@ -86,8 +86,8 @@ export const staticServices = [
     longDescription: 'La LED thérapie est une technique non invasive qui utilise différentes couleurs de lumière LED pour traiter divers problèmes cutanés. Chaque couleur a des propriétés spécifiques : rouge pour l\'anti-âge, bleue pour l\'acné, verte pour les taches pigmentaires.',
     image: '/images/led-therapie.jpg',
     duration: 45,
-    price: 80,
-    priceRange: '80€',
+    price: 50,
+    priceRange: '50€',
     benefits: [
       'Stimulation du collagène',
       'Réduction de l\'acné',
