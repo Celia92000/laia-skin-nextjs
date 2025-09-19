@@ -9,15 +9,15 @@ import {
 interface Reservation {
   id: string;
   userId: string;
-  userName: string;
-  userEmail: string;
+  userName?: string;
+  userEmail?: string;
   userPhone?: string;
   services: string[];
   date: Date;
   time: string;
   totalPrice: number;
   status: string;
-  source: string;
+  source?: string;
   notes?: string;
   paymentStatus: string;
   createdAt: Date;
@@ -89,8 +89,8 @@ export default function ReservationTableAdvanced({
     // Filtre par recherche
     if (searchQuery) {
       filtered = filtered.filter(r => 
-        r.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.userEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.userEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.userPhone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.services.some(s => (services[s] || s).toLowerCase().includes(searchQuery.toLowerCase()))
       );
@@ -379,7 +379,7 @@ export default function ReservationTableAdvanced({
                 </tr>
               ) : (
                 filteredAndSortedReservations.map((reservation) => {
-                  const SourceIcon = sourceIcons[reservation.source] || Globe;
+                  const SourceIcon = sourceIcons[reservation.source || ''] || Globe;
                   return (
                     <tr key={reservation.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
@@ -398,8 +398,8 @@ export default function ReservationTableAdvanced({
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{reservation.userName}</p>
-                          <p className="text-xs text-gray-500">{reservation.userEmail}</p>
+                          <p className="text-sm font-medium text-gray-900">{reservation.userName || 'Client'}</p>
+                          <p className="text-xs text-gray-500">{reservation.userEmail || ''}</p>
                           {reservation.userPhone && (
                             <p className="text-xs text-gray-500">{reservation.userPhone}</p>
                           )}
@@ -424,7 +424,7 @@ export default function ReservationTableAdvanced({
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <SourceIcon className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">{sourceLabels[reservation.source] || reservation.source}</span>
+                          <span className="text-sm">{sourceLabels[reservation.source || ''] || reservation.source || 'Site'}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
