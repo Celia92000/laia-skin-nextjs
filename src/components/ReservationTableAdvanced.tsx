@@ -149,12 +149,14 @@ export default function ReservationTableAdvanced({
   // Statistiques
   const stats = useMemo(() => {
     const bySource = reservations.reduce((acc, r) => {
-      acc[r.source] = (acc[r.source] || 0) + 1;
+      const source = r.source || 'unknown';
+      acc[source] = (acc[source] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     const byStatus = reservations.reduce((acc, r) => {
-      acc[r.status] = (acc[r.status] || 0) + 1;
+      const status = r.status || 'pending';
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
@@ -176,8 +178,8 @@ export default function ReservationTableAdvanced({
       r.userPhone || '',
       r.services.map(s => services[s] || s).join(', '),
       `${r.totalPrice}€`,
-      statusLabels[r.status],
-      sourceLabels[r.source] || r.source,
+      statusLabels[r.status || 'pending'],
+      sourceLabels[r.source || 'site'] || r.source || 'site',
       r.paymentStatus === 'paid' ? 'Payé' : 'Non payé'
     ]);
 

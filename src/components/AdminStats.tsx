@@ -88,12 +88,11 @@ export default function AdminStats() {
   const fetchStats = async () => {
     try {
       // Récupération des données réelles depuis l'API
-      try {
-        const response = await fetch('/api/admin/statistics');
-        if (response.ok) {
-          const data = await response.json();
-          // Formater les données pour correspondre au type Stats
-          const formattedStats: Stats = {
+      const response = await fetch('/api/admin/statistics');
+      if (response.ok) {
+        const data = await response.json();
+        // Formater les données pour correspondre au type Stats
+        const formattedStats: Stats = {
             reservations: data.reservations || {
               total: 0,
               today: 0,
@@ -232,82 +231,9 @@ export default function AdminStats() {
           };
           setStats(initialStats);
         }
-      } catch (error) {
-        console.error('Erreur lors du chargement des statistiques:', error);
-        // En cas d'erreur, afficher des données vides
-        const emptyStats: Stats = {
-          reservations: {
-            total: 0,
-            today: 0,
-            thisWeek: 0,
-            thisMonth: 0,
-            pending: 0,
-            confirmed: 0,
-            cancelled: 0,
-            conversionRate: 0
-          },
-          revenue: {
-            total: 0,
-            thisMonth: 0,
-            lastMonth: 0,
-            thisYear: 0,
-            lastYear: 0,
-            today: 0,
-            yesterday: 0,
-            thisWeek: 0,
-            lastWeek: 0,
-            averagePerClient: 0,
-            averagePerService: 0,
-            byMonth: [
-              { month: 'Jan', revenue: 0, year: 2025 },
-              { month: 'Fév', revenue: 0, year: 2025 },
-              { month: 'Mar', revenue: 0, year: 2025 },
-              { month: 'Avr', revenue: 0, year: 2025 },
-              { month: 'Mai', revenue: 0, year: 2025 },
-              { month: 'Jun', revenue: 0, year: 2025 },
-              { month: 'Jul', revenue: 0, year: 2025 },
-              { month: 'Aoû', revenue: 0, year: 2025 },
-              { month: 'Sep', revenue: 0, year: 2025 },
-              { month: 'Oct', revenue: 0, year: 2025 },
-              { month: 'Nov', revenue: 0, year: 2025 },
-              { month: 'Déc', revenue: 0, year: 2025 }
-            ],
-            byDay: [],
-            byService: []
-          },
-          satisfaction: {
-            average: 0,
-            total: 0,
-            distribution: {
-              '5': 0,
-              '4': 0,
-              '3': 0,
-              '2': 0,
-              '1': 0
-            },
-            recentFeedback: []
-          },
-          clients: {
-            total: 0,
-            new: 0,
-            returning: 0,
-            vip: 0,
-            inactive: 0,
-            satisfactionRate: 0
-          },
-          topServices: [],
-          dailyStats: [],
-          recurringClients: 0,
-          marketingPerformance: {
-            emailOpenRate: 0,
-            emailClickRate: 0,
-            whatsappReadRate: 0,
-            whatsappResponseRate: 0,
-            campaignConversion: 0
-          }
-        };
-        setStats(emptyStats);
-      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+    } finally {
       setLoading(false);
     }
   };

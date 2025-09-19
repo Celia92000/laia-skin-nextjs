@@ -214,7 +214,7 @@ export default function WhatsAppReal() {
               </div>
 
               {/* Badge non-lu */}
-              {client.unread > 0 && (
+              {client.unread && client.unread > 0 && (
                 <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center ml-2">
                   <span className="text-xs text-white">{client.unread}</span>
                 </div>

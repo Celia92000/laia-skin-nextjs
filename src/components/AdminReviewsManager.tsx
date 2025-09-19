@@ -417,7 +417,7 @@ export default function AdminReviewsManager() {
                         }}
                       >
                         <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                        {idx === 2 && review.photos.length > 3 && (
+                        {idx === 2 && review.photos && review.photos.length > 3 && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <span className="text-white font-bold">+{review.photos.length - 3}</span>
                           </div>
