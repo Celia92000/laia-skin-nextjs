@@ -26,66 +26,36 @@ function ReservationContent() {
   const [hasAccount, setHasAccount] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
 
-  const services = [
-    { 
-      id: "hydro-naissance", 
-      name: "Hydro'Naissance", 
-      description: "Le soin signature qui redonne vie à votre peau",
-      duration: "75 min", 
-      price: "120€",
-      promo: "90€",
-      forfait: "360€",
-      forfaitPromo: "340€",
-      icon: "👑",
-      recommended: true
-    },
-    { 
-      id: "hydro", 
-      name: "Hydro'Cleaning", 
-      description: "Nettoyage en profondeur et hydratation intensive",
-      duration: "60 min", 
-      price: "85€",
-      promo: "70€",
-      forfait: "280€",
-      forfaitPromo: "260€",
-      icon: "💧"
-    },
-    { 
-      id: "renaissance", 
-      name: "Renaissance", 
-      description: "Soin anti-âge global pour une peau visiblement rajeunie",
-      duration: "60 min", 
-      price: "90€",
-      promo: "70€",
-      forfait: "280€",
-      forfaitPromo: "260€",
-      icon: "✨"
-    },
-    { 
-      id: "bbglow", 
-      name: "BB Glow", 
-      description: "Teint unifié et lumineux avec effet semi-permanent",
-      duration: "60 min", 
-      price: "95€",
-      promo: "80€",
-      forfait: "320€",
-      forfaitPromo: "300€",
-      icon: "🌟"
-    },
-    { 
-      id: "led", 
-      name: "LED Thérapie", 
-      description: "Traitement par lumière LED pour régénérer la peau",
-      duration: "30 min", 
-      price: "60€",
-      promo: "45€",
-      forfait: "450€",
-      forfaitPromo: "400€",
-      forfaitSessions: "10 séances",
-      icon: "💡"
-    }
-  ];
+  // Charger les services depuis la base de données
+  useEffect(() => {
+    fetch('/api/services')
+      .then(res => res.json())
+      .then(data => {
+        const formattedServices = data.map((service: any) => ({
+          id: service.slug,
+          name: service.name,
+          description: service.shortDescription || service.description,
+          duration: `${service.duration} min`,
+          price: `${service.price}€`,
+          promo: service.promoPrice ? `${service.promoPrice}€` : null,
+          forfait: service.forfaitPrice ? `${service.forfaitPrice}€` : null,
+          forfaitPromo: service.forfaitPromo ? `${service.forfaitPromo}€` : null,
+          icon: service.slug === 'hydro-naissance' ? "👑" : 
+                service.slug === 'hydro-cleaning' ? "💧" :
+                service.slug === 'renaissance' ? "✨" :
+                service.slug === 'bb-glow' ? "🌟" : "💡",
+          recommended: service.featured || false
+        }));
+        setServices(formattedServices);
+      })
+      .catch(err => {
+        console.error('Erreur lors du chargement des services:', err);
+        // Fallback aux données par défaut en cas d'erreur
+        setServices([]);
+      });
+  }, []);
 
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -309,12 +279,20 @@ function ReservationContent() {
       const service = services.find(s => s.id === serviceId);
       if (service) {
         const isPackage = selectedPackages[serviceId] === 'forfait';
-        if (isPackage && service.forfaitPromo) {
-          total += parseFloat(service.forfaitPromo.replace('€', ''));
-        } else if (service.promo) {
-          total += parseFloat(service.promo.replace('€', ''));
+        if (isPackage) {
+          // Si forfait sélectionné
+          if (service.forfaitPromo) {
+            total += parseFloat(service.forfaitPromo.replace('€', ''));
+          } else if (service.forfait) {
+            total += parseFloat(service.forfait.replace('€', ''));
+          }
         } else {
-          total += parseFloat(service.price.replace('€', ''));
+          // Si séance individuelle
+          if (service.promo) {
+            total += parseFloat(service.promo.replace('€', ''));
+          } else {
+            total += parseFloat(service.price.replace('€', ''));
+          }
         }
       }
     });

@@ -11,30 +11,33 @@ export default function APropos() {
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-playfair font-normal text-[#2c3e50] mb-6 animate-fade-in-up tracking-normal">
               Laïa, Experte Beauté
             </h1>
-            <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal">
-              Bienvenue dans mon univers ! Je suis Laïa, et j'ai créé ici plus qu'un institut : 
+            <p className="font-playfair text-lg sm:text-xl md:text-2xl text-[#2c3e50]/70 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-wide leading-relaxed">
+              Bienvenue dans mon univers ! Je suis Laïa, et j'ai créé ici plus qu'un institut :
+              <br className="hidden md:block" />
               un cocon bienveillant où retrouver confiance et sérénité.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="animate-fade-in-up animation-delay-400">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-normal text-[#2c3e50] mb-6 tracking-normal">Mon Parcours</h2>
-              <p className="font-inter text-base md:text-lg text-[#2c3e50]/70 mb-6 leading-relaxed tracking-normal">
-                Diplômée d'un CAP et BTS Esthétique, j'ai enrichi mon parcours en explorant l'univers 
-                commercial, puis l'administration et enfin la gestion de projets. Chaque compétence 
-                acquise nourrissait un rêve : celui de créer mon propre institut de beauté.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-playfair font-light text-[#2c3e50] mb-6 tracking-wide">Mon Parcours</h2>
+              <p className="font-playfair text-base md:text-lg text-[#2c3e50]/70 mb-6 leading-relaxed tracking-wide">
+                Titulaire d'un CAP et d'un BTS en Esthétique-Cosmétique, mon parcours professionnel 
+                s'est enrichi au fil d'expériences variées : du monde commercial à l'univers administratif, 
+                jusqu'à la gestion de projets d'envergure. Ces compétences plurielles ont progressivement 
+                façonné ma vision : celle d'un institut où l'excellence technique rencontre l'art du soin personnalisé.
               </p>
-              <p className="font-inter text-base md:text-lg text-[#2c3e50]/70 mb-6 leading-relaxed tracking-normal">
-                Lors de ces expériences enrichissantes, quelque chose me manquait — redonner de 
-                l'humanité à mon métier en faisant quelque chose qui donne une satisfaction immédiate 
-                aux clients et leur permet de retrouver confiance. C'est ainsi que j'ai parfait ma 
-                formation aux techniques avancées des soins du visage, retrouvant l'essence même de 
-                ma vocation.
+              <p className="font-playfair text-base md:text-lg text-[#2c3e50]/70 mb-6 leading-relaxed tracking-wide">
+                Au cœur de ces expériences professionnelles, une aspiration profonde demeurait : 
+                insuffler davantage d'humanité dans ma pratique, créer des instants où la transformation 
+                visible s'accompagne d'un regain de confiance intérieure. Cette quête m'a naturellement 
+                conduite à perfectionner ma maîtrise des protocoles avancés du visage, renouant ainsi 
+                avec l'essence première de ma vocation : sublimer et révéler.
               </p>
-              <p className="font-inter text-base md:text-lg text-[#2c3e50] mb-6 font-semibold leading-relaxed tracking-normal">
-                Aujourd'hui, ma mission est claire : vous offrir votre refuge bienveillant et vous 
-                accompagner vers une confiance rayonnante.
+              <p className="font-playfair text-base md:text-lg text-[#2c3e50] mb-6 font-medium leading-relaxed tracking-wide">
+                Aujourd'hui, mon engagement est simple et sincère : vous accueillir dans un espace 
+                où vous vous sentez écoutée, comprise et valorisée. Mon objectif ? Vous aider à 
+                retrouver confiance en votre beauté naturelle, avec des résultats visibles et durables.
               </p>
             </div>
             
@@ -79,7 +82,7 @@ export default function APropos() {
           {/* Citation de Laïa */}
           <div className="mt-16 bg-white rounded-2xl p-8 shadow-xl relative">
             <div className="absolute -top-6 left-8 text-6xl text-[#d4b5a0]/30 font-serif">"</div>
-            <p className="font-cormorant text-xl md:text-2xl text-[#2c3e50]/80 italic text-center px-8 leading-relaxed tracking-normal">
+            <p className="font-playfair text-xl md:text-2xl text-[#2c3e50]/80 italic text-center px-8 leading-relaxed tracking-wide">
               Chaque séance est une rencontre unique. J'aime prendre le temps de vraiment vous écouter, 
               comprendre vos besoins et adapter mes soins pour que vous repartiez non seulement avec 
               une peau transformée, mais aussi avec cette étincelle dans le regard qui dit 
@@ -95,7 +98,7 @@ export default function APropos() {
           <div className="max-w-6xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-playfair font-normal text-[#2c3e50] mb-6 tracking-normal">Mes Valeurs</h2>
-              <p className="font-inter text-base md:text-lg text-[#2c3e50]/60 max-w-2xl mx-auto tracking-normal">
+              <p className="font-serif text-base md:text-lg text-[#2c3e50]/60 max-w-2xl mx-auto tracking-wide leading-relaxed italic">
                 Les principes qui guident chacun de mes gestes et définissent l'expérience LAIA SKIN
               </p>
             </div>

@@ -50,29 +50,14 @@ export async function PUT(
   }
 }
 
-// DELETE - Supprimer un article
+// DELETE - Désactivé pour éviter la suppression accidentelle
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
-
-    const { id } = await params;
-    
-    await prisma.blogPost.delete({
-      where: { id }
-    });
-
-    return NextResponse.json({ message: 'Article supprimé' });
-  } catch (error) {
-    console.error('Erreur lors de la suppression de l\'article:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
-  }
+  // La suppression est désactivée pour protéger les articles
+  return NextResponse.json(
+    { error: 'La suppression d\'articles est désactivée pour des raisons de sécurité' }, 
+    { status: 403 }
+  );
 }

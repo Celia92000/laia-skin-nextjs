@@ -1,574 +1,719 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import {
-  Star, Camera, Download, Eye, Check, X, Search,
-  Filter, Calendar, MessageSquare, Image, ThumbsUp,
-  AlertCircle, Share2, Trash2, ChevronDown, ChevronUp,
-  Grid, List as ListIcon, Heart, TrendingUp, Award
-} from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Star, MessageSquare, Calendar, User, Mail, Phone, Check, X, Eye, ThumbsUp, MessageCircle, Camera, Grid, List, Filter, Search, Download, TrendingUp, Award, Package } from "lucide-react";
 
-interface ClientReview {
-  reservationId: string;
-  service: string;
-  date: string;
+interface Review {
+  id: string;
   rating: number;
-  satisfaction: number;
   comment: string;
-  photos: string[];
-  timestamp: string;
-  clientName: string;
-  clientEmail: string;
-  status?: 'pending' | 'approved' | 'rejected';
-  adminNotes?: string;
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  serviceName?: string;
+  source: 'website' | 'email' | 'whatsapp' | 'google';
+  createdAt: string;
+  published: boolean;
+  response?: string;
+  photos?: string[];
 }
 
 export default function AdminReviewsManager() {
-  const [reviews, setReviews] = useState<ClientReview[]>([]);
-  const [filteredReviews, setFilteredReviews] = useState<ClientReview[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [filterRating, setFilterRating] = useState<'all' | '5' | '4' | '3' | '2' | '1'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedReview, setSelectedReview] = useState<ClientReview | null>(null);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [response, setResponse] = useState("");
+  const [filter, setFilter] = useState<'all' | 'published' | 'pending'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'website' | 'email' | 'whatsapp' | 'google'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-  const [expandedReviews, setExpandedReviews] = useState<string[]>([]);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
-    // Charger les avis depuis le localStorage (simulation)
-    const savedReviews = JSON.parse(localStorage.getItem('clientReviews') || '[]');
-    
-    // Ajouter des avis de démonstration si vide
-    if (savedReviews.length === 0) {
-      const demoReviews: ClientReview[] = [
-        {
-          reservationId: '1',
-          service: 'HydraFacial Premium',
-          date: '2024-11-20',
-          rating: 5,
-          satisfaction: 5,
-          comment: 'Excellent soin ! Ma peau n\'a jamais été aussi éclatante. Laïa est très professionnelle.',
-          photos: [
-            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=',
-            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k='
-          ],
-          timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          clientName: 'Marie Dupont',
-          clientEmail: 'marie.dupont@email.com',
-          status: 'approved'
-        },
-        {
-          reservationId: '2',
-          service: 'BB Glow',
-          date: '2024-11-19',
-          rating: 4,
-          satisfaction: 4,
-          comment: 'Très bon résultat, teint unifié et lumineux.',
-          photos: ['data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k='],
-          timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          clientName: 'Sophie Martin',
-          clientEmail: 'sophie.martin@email.com',
-          status: 'pending'
-        },
-        {
-          reservationId: '3',
-          service: 'LED Therapy',
-          date: '2024-11-18',
-          rating: 5,
-          satisfaction: 5,
-          comment: 'Parfait ! Je vois déjà la différence après 3 séances.',
-          photos: [],
-          timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-          clientName: 'Julie Bernard',
-          clientEmail: 'julie.bernard@email.com',
-          status: 'approved'
-        }
-      ];
-      setReviews(demoReviews);
-      setFilteredReviews(demoReviews);
-    } else {
-      // Ajouter le statut par défaut si manquant
-      const reviewsWithStatus = savedReviews.map((r: ClientReview) => ({
-        ...r,
-        status: r.status || 'pending'
-      }));
-      setReviews(reviewsWithStatus);
-      setFilteredReviews(reviewsWithStatus);
-    }
+    fetchReviews();
   }, []);
 
-  useEffect(() => {
-    // Filtrer les avis
-    let filtered = [...reviews];
-
-    // Filtre par statut
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(r => r.status === filterStatus);
-    }
-
-    // Filtre par note
-    if (filterRating !== 'all') {
-      filtered = filtered.filter(r => r.rating === parseInt(filterRating));
-    }
-
-    // Filtre par recherche
-    if (searchTerm) {
-      filtered = filtered.filter(r => 
-        r.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.comment.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredReviews(filtered);
-  }, [reviews, filterStatus, filterRating, searchTerm]);
-
-  const handleStatusChange = (reviewId: string, newStatus: 'approved' | 'rejected') => {
-    const updatedReviews = reviews.map(r => 
-      r.reservationId === reviewId ? { ...r, status: newStatus } : r
-    );
-    setReviews(updatedReviews);
-    localStorage.setItem('clientReviews', JSON.stringify(updatedReviews));
-  };
-
-  const handleDeleteReview = (reviewId: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet avis ?')) {
-      const updatedReviews = reviews.filter(r => r.reservationId !== reviewId);
-      setReviews(updatedReviews);
-      localStorage.setItem('clientReviews', JSON.stringify(updatedReviews));
-    }
-  };
-
-  const downloadPhoto = (photoUrl: string, clientName: string, index: number) => {
-    // Si c'est une image base64 ou une URL d'image
-    if (photoUrl.startsWith('data:image') || photoUrl.startsWith('blob:')) {
-      // Pour les images base64, créer un lien de téléchargement direct
-      const link = document.createElement('a');
-      link.href = photoUrl;
-      link.download = `avis-${clientName.replace(/\s+/g, '-')}-photo-${index + 1}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      // Pour les autres URLs, créer une image et la convertir en blob
-      const img = document.createElement('img');
-      img.crossOrigin = 'anonymous';
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob(function(blob) {
-            if (blob) {
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = `avis-${clientName.replace(/\s+/g, '-')}-photo-${index + 1}.jpg`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }
-          }, 'image/jpeg');
+  const fetchReviews = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/reviews', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      };
-      img.src = photoUrl;
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des avis:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const downloadAllPhotos = () => {
-    const photosToDownload = filteredReviews.flatMap(review => 
-      review.photos.map((photo, index) => ({
-        url: photo,
-        clientName: review.clientName,
-        service: review.service,
-        index: index
-      }))
-    );
+  const handlePublishToggle = async (review: Review) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/reviews/${review.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ published: !review.published })
+      });
 
-    if (photosToDownload.length === 0) {
-      alert('Aucune photo à télécharger');
-      return;
-    }
-
-    // Télécharger toutes les photos une par une avec un délai
-    let downloadIndex = 0;
-    const downloadNext = () => {
-      if (downloadIndex < photosToDownload.length) {
-        const { url, clientName, service, index } = photosToDownload[downloadIndex];
-        downloadPhoto(url, `${clientName}-${service}`, index);
-        downloadIndex++;
-        setTimeout(downloadNext, 200); // Délai de 200ms entre chaque téléchargement
+      if (response.ok) {
+        await fetchReviews();
       }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'avis:', error);
+    }
+  };
+
+  const handleResponse = async () => {
+    if (!selectedReview || !response.trim()) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/reviews/${selectedReview.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ response: response })
+      });
+
+      if (res.ok) {
+        await fetchReviews();
+        setSelectedReview(null);
+        setResponse("");
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la réponse:', error);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Voulez-vous vraiment supprimer cet avis ?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/admin/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        await fetchReviews();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Impossible de supprimer cet avis');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+    }
+  };
+
+  const exportPhotos = () => {
+    const allPhotos: { clientName: string, date: string, service: string, photos: string[] }[] = [];
+    
+    reviews.forEach(review => {
+      if (review.photos && review.photos.length > 0) {
+        allPhotos.push({
+          clientName: review.clientName || 'Client',
+          date: new Date(review.createdAt).toLocaleDateString('fr-FR'),
+          service: review.serviceName || 'Service',
+          photos: review.photos
+        });
+      }
+    });
+
+    // Créer un fichier ZIP avec toutes les photos
+    const downloadAllPhotos = () => {
+      allPhotos.forEach((item, index) => {
+        item.photos.forEach((photo, photoIndex) => {
+          const link = document.createElement('a');
+          link.href = photo;
+          const fileName = `${item.clientName.replace(/[^a-z0-9]/gi, '_')}_${item.date.replace(/\//g, '-')}_photo${photoIndex + 1}.jpg`;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+      });
     };
 
-    alert(`Téléchargement de ${photosToDownload.length} photos en cours...`);
-    downloadNext();
+    // Option simple : télécharger toutes les photos
+    if (allPhotos.length > 0) {
+      setShowExportModal(true);
+    } else {
+      alert('Aucune photo à exporter');
+    }
   };
 
-  const exportReviewsCSV = () => {
-    const csvData = filteredReviews.map(review => ({
-      'Client': review.clientName,
-      'Email': review.clientEmail,
-      'Service': review.service,
-      'Date': new Date(review.date).toLocaleDateString('fr-FR'),
-      'Note': review.rating,
-      'Satisfaction': review.satisfaction,
-      'Commentaire': review.comment,
-      'Photos': review.photos.length,
-      'Statut': review.status || 'pending',
-      'Date avis': new Date(review.timestamp).toLocaleDateString('fr-FR')
-    }));
-
-    const headers = Object.keys(csvData[0]);
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => 
-        headers.map(header => 
-          `"${row[header as keyof typeof row] || ''}"`
-        ).join(',')
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `avis-clients-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const getSourceIcon = (source: string) => {
+    switch(source) {
+      case 'email':
+        return <Mail className="w-4 h-4" />;
+      case 'whatsapp':
+        return <MessageCircle className="w-4 h-4" />;
+      case 'google':
+        return <span className="text-xs font-bold">G</span>;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
+    }
   };
 
-  // Statistiques
+  const getSourceLabel = (source: string) => {
+    switch(source) {
+      case 'email':
+        return 'Email';
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'google':
+        return 'Google Business';
+      default:
+        return 'Site web';
+    }
+  };
+
+  const getSourceColor = (source: string) => {
+    switch(source) {
+      case 'email':
+        return 'bg-blue-100 text-blue-700';
+      case 'whatsapp':
+        return 'bg-green-100 text-green-700';
+      case 'google':
+        return 'bg-yellow-100 text-yellow-700';
+      default:
+        return 'bg-purple-100 text-purple-700';
+    }
+  };
+
+  const filteredReviews = reviews.filter(review => {
+    const statusMatch = filter === 'all' || 
+                       (filter === 'published' && review.published) ||
+                       (filter === 'pending' && !review.published);
+    const sourceMatch = sourceFilter === 'all' || review.source === sourceFilter;
+    return statusMatch && sourceMatch;
+  });
+
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : "0";
+
   const stats = {
     total: reviews.length,
-    pending: reviews.filter(r => r.status === 'pending').length,
-    approved: reviews.filter(r => r.status === 'approved').length,
-    averageRating: reviews.length > 0 
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : '0',
-    totalPhotos: reviews.reduce((sum, r) => sum + r.photos.length, 0),
-    satisfaction: reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.satisfaction, 0) / reviews.length).toFixed(1)
-      : '0'
+    published: reviews.filter(r => r.published).length,
+    pending: reviews.filter(r => !r.published).length,
+    withPhotos: reviews.filter(r => r.photos && r.photos.length > 0).length,
+    fiveStars: reviews.filter(r => r.rating === 5).length,
+    bySource: {
+      website: reviews.filter(r => r.source === 'website').length,
+      email: reviews.filter(r => r.source === 'email').length,
+      whatsapp: reviews.filter(r => r.source === 'whatsapp').length,
+      google: reviews.filter(r => r.source === 'google').length
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0]"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header avec statistiques */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Gestion des Avis Clients</h2>
-            <p className="text-gray-600 mt-1">Modérez et gérez les avis et photos de vos clients</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={downloadAllPhotos}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Télécharger toutes les photos
-            </button>
-            <button
-              onClick={exportReviewsCSV}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Exporter CSV
-            </button>
-          </div>
-        </div>
-
-        {/* Statistiques */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          <div className="bg-white rounded-lg p-3">
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-xs text-gray-600">Total avis</p>
-          </div>
-          <div className="bg-yellow-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            <p className="text-xs text-gray-600">En attente</p>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
-            <p className="text-xs text-gray-600">Approuvés</p>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-blue-600">⭐ {stats.averageRating}</p>
-            <p className="text-xs text-gray-600">Note moyenne</p>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-purple-600">{stats.totalPhotos}</p>
-            <p className="text-xs text-gray-600">Photos</p>
-          </div>
-          <div className="bg-pink-50 rounded-lg p-3">
-            <p className="text-2xl font-bold text-pink-600">😊 {stats.satisfaction}/5</p>
-            <p className="text-xs text-gray-600">Satisfaction</p>
-          </div>
-        </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Avis et photos</h2>
+        <p className="text-gray-600">Gérez les avis clients provenant de toutes les sources (site, email, WhatsApp, Google)</p>
       </div>
 
-      {/* Filtres et recherche */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher un avis..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      {/* Statistiques */}
+      <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-[#2c3e50]">{averageRating}</div>
+            <div className="flex justify-center my-2">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-5 h-5 ${i < Math.round(parseFloat(averageRating)) ? 'text-[#d4b5a0] fill-current' : 'text-gray-300'}`}
+                />
+              ))}
             </div>
+            <div className="text-sm text-[#2c3e50]/60">Note moyenne</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-[#2c3e50]">{stats.total}</div>
+            <div className="text-sm text-[#2c3e50]/60 mt-2">Total avis</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-600">{stats.published}</div>
+            <div className="text-sm text-[#2c3e50]/60 mt-2">Publiés</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600">{stats.pending}</div>
+            <div className="text-sm text-[#2c3e50]/60 mt-2">En attente</div>
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="pending">En attente</option>
-            <option value="approved">Approuvés</option>
-            <option value="rejected">Rejetés</option>
-          </select>
-
-          <select
-            value={filterRating}
-            onChange={(e) => setFilterRating(e.target.value as any)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Toutes les notes</option>
-            <option value="5">5 étoiles</option>
-            <option value="4">4 étoiles</option>
-            <option value="3">3 étoiles</option>
-            <option value="2">2 étoiles</option>
-            <option value="1">1 étoile</option>
-          </select>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid' 
-                  ? 'bg-blue-100 text-blue-600' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Grid className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list' 
-                  ? 'bg-blue-100 text-blue-600' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <ListIcon className="w-5 h-5" />
-            </button>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-600">{stats.withPhotos}</div>
+            <div className="flex justify-center mt-2">
+              <Camera className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="text-sm text-[#2c3e50]/60">Avec photos</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-[#d4b5a0]">{stats.fiveStars}</div>
+            <div className="flex justify-center mt-2">
+              <Award className="w-5 h-5 text-[#d4b5a0]" />
+            </div>
+            <div className="text-sm text-[#2c3e50]/60">5 étoiles</div>
           </div>
         </div>
       </div>
 
-      {/* Liste des avis */}
-      <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4'}>
-        {filteredReviews.map((review) => {
-          const isExpanded = expandedReviews.includes(review.reservationId);
+      {/* Sources */}
+      <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-6 text-sm">
+            <span className="text-[#2c3e50]/60">Sources :</span>
+            <span className="flex items-center gap-1">
+              <MessageSquare className="w-4 h-4 text-purple-600" />
+              Site web ({stats.bySource.website})
+            </span>
+            <span className="flex items-center gap-1">
+              <Mail className="w-4 h-4 text-blue-600" />
+              Email ({stats.bySource.email})
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle className="w-4 h-4 text-green-600" />
+              WhatsApp ({stats.bySource.whatsapp})
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 bg-yellow-600 text-white text-xs rounded flex items-center justify-center font-bold">G</span>
+              Google ({stats.bySource.google})
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtres et vue */}
+      <div className="flex justify-between items-center gap-4 mb-6">
+        <div className="flex gap-4">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as any)}
+            className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+          >
+            <option value="all">Tous les avis</option>
+            <option value="published">Publiés</option>
+            <option value="pending">En attente</option>
+          </select>
           
-          return (
-            <div
-              key={review.reservationId}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as any)}
+            className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+          >
+            <option value="all">Toutes les sources</option>
+            <option value="website">Site web</option>
+            <option value="email">Email</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="google">Google</option>
+          </select>
+        </div>
+
+        <div className="flex gap-2">
+          {stats.withPhotos > 0 && (
+            <button
+              onClick={exportPhotos}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              title="Exporter toutes les photos"
             >
-              {/* En-tête de l'avis */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-semibold text-gray-900">{review.clientName}</p>
-                    <p className="text-sm text-gray-500">{review.clientEmail}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    review.status === 'approved' 
-                      ? 'bg-green-100 text-green-700'
-                      : review.status === 'rejected'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {review.status === 'approved' ? 'Approuvé' :
-                     review.status === 'rejected' ? 'Rejeté' : 'En attente'}
-                  </span>
-                </div>
+              <Download className="w-4 h-4" />
+              <span className="hidden md:inline">Export photos</span>
+            </button>
+          )}
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-[#d4b5a0] text-white' : 'bg-gray-100 text-gray-600'}`}
+          >
+            <List className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-[#d4b5a0] text-white' : 'bg-gray-100 text-gray-600'}`}
+          >
+            <Grid className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
 
-                <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-700 mb-1">{review.service}</p>
-                  <p className="text-xs text-gray-500">
-                    Soin du {new Date(review.date).toLocaleDateString('fr-FR')}
-                  </p>
-                </div>
-
-                {/* Notes et satisfaction */}
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="flex items-center gap-1">
+      {/* Liste ou grille des avis */}
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}>
+        {filteredReviews.map((review) => (
+          <div key={review.id} className="bg-white rounded-xl shadow-sm border border-[#d4b5a0]/10 p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`w-4 h-4 ${
-                          i < review.rating
-                            ? 'text-yellow-500 fill-yellow-500'
-                            : 'text-gray-300'
-                        }`}
+                        className={`w-5 h-5 ${i < review.rating ? 'text-[#d4b5a0] fill-current' : 'text-gray-300'}`}
                       />
                     ))}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-2xl">
-                      {review.satisfaction === 1 && '😢'}
-                      {review.satisfaction === 2 && '😐'}
-                      {review.satisfaction === 3 && '🙂'}
-                      {review.satisfaction === 4 && '😊'}
-                      {review.satisfaction === 5 && '😍'}
+                  
+                  <span className={`px-2 py-1 text-xs rounded-full ${getSourceColor(review.source)}`}>
+                    <span className="flex items-center gap-1">
+                      {getSourceIcon(review.source)}
+                      {getSourceLabel(review.source)}
                     </span>
-                    <span className="text-sm text-gray-600">
-                      Satisfaction: {review.satisfaction}/5
+                  </span>
+                  
+                  {review.published ? (
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Publié
                     </span>
-                  </div>
+                  ) : (
+                    <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      En attente
+                    </span>
+                  )}
                 </div>
-
-                {/* Commentaire */}
-                {review.comment && (
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-700 italic">"{review.comment}"</p>
-                  </div>
-                )}
+                
+                <div className="text-[#2c3e50]/90 mb-3">
+                  "{review.comment}"
+                </div>
 
                 {/* Photos */}
-                {review.photos.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      Photos ({review.photos.length})
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {review.photos.slice(0, 3).map((photo, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={photo}
-                            alt={`Photo ${index + 1}`}
-                            className="w-full h-20 object-cover rounded-lg cursor-pointer"
-                            onClick={() => {
-                              setSelectedPhotos(review.photos);
-                              setShowPhotoModal(true);
-                            }}
-                          />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              downloadPhoto(photo, review.clientName, index);
-                            }}
-                            className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Download className="w-3 h-3 text-gray-700" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                {review.photos && review.photos.length > 0 && (
+                  <div className="flex gap-2 mb-3">
+                    {review.photos.slice(0, 3).map((photo, idx) => (
+                      <div
+                        key={idx}
+                        className="relative w-20 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => {
+                          setSelectedPhotos(review.photos || []);
+                          setShowPhotoModal(true);
+                        }}
+                      >
+                        <img src={photo} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        {idx === 2 && review.photos.length > 3 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <span className="text-white font-bold">+{review.photos.length - 3}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setSelectedPhotos(review.photos || []);
+                        setShowPhotoModal(true);
+                      }}
+                      className="flex items-center justify-center w-20 h-20 border-2 border-dashed border-[#d4b5a0]/30 rounded-lg hover:border-[#d4b5a0] transition-colors"
+                    >
+                      <Camera className="w-6 h-6 text-[#d4b5a0]/50" />
+                    </button>
                   </div>
                 )}
-
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <div className="flex gap-2">
-                    {review.status === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => handleStatusChange(review.reservationId, 'approved')}
-                          className="px-3 py-1 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors flex items-center gap-1"
-                        >
-                          <Check className="w-4 h-4" />
-                          Approuver
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(review.reservationId, 'rejected')}
-                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors flex items-center gap-1"
-                        >
-                          <X className="w-4 h-4" />
-                          Rejeter
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => handleDeleteReview(review.reservationId)}
-                      className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors flex items-center gap-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Supprimer
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Reçu le {new Date(review.timestamp).toLocaleDateString('fr-FR')}
-                  </p>
+                
+                <div className="flex flex-wrap gap-4 text-sm text-[#2c3e50]/60">
+                  {review.clientName && (
+                    <span className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      {review.clientName}
+                    </span>
+                  )}
+                  
+                  {review.clientEmail && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-4 h-4" />
+                      {review.clientEmail}
+                    </span>
+                  )}
+                  
+                  {review.serviceName && (
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-4 h-4" />
+                      {review.serviceName}
+                    </span>
+                  )}
+                  
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(review.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
                 </div>
+                
+                {review.response && (
+                  <div className="mt-4 p-3 bg-[#d4b5a0]/10 rounded-lg">
+                    <div className="text-xs text-[#d4b5a0] font-semibold mb-1">Votre réponse :</div>
+                    <div className="text-sm text-[#2c3e50]/80">{review.response}</div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handlePublishToggle(review)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    review.published 
+                      ? 'bg-red-50 hover:bg-red-100 text-red-600' 
+                      : 'bg-green-50 hover:bg-green-100 text-green-600'
+                  }`}
+                  title={review.published ? 'Retirer de la publication' : 'Publier'}
+                >
+                  {review.published ? <X className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+                </button>
+                
+                {!review.response && (
+                  <button
+                    onClick={() => {
+                      setSelectedReview(review);
+                      setResponse("");
+                    }}
+                    className="p-2 bg-[#d4b5a0]/10 hover:bg-[#d4b5a0]/20 rounded-lg text-[#2c3e50] transition-colors"
+                    title="Répondre"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </button>
+                )}
+
+                {review.source !== 'google' && (
+                  <button
+                    onClick={() => handleDeleteReview(review.id)}
+                    className="p-2 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+                    title="Supprimer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
-      {/* Modal photos */}
-      {showPhotoModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Photos de l'avis</h3>
-              <button
-                onClick={() => {
-                  setShowPhotoModal(false);
-                  setSelectedPhotos([]);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                {selectedPhotos.map((photo, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={photo}
-                      alt={`Photo ${index + 1}`}
-                      className="w-full rounded-lg"
-                    />
-                    <button
-                      onClick={() => downloadPhoto(photo, 'client', index)}
-                      className="absolute top-2 right-2 bg-white rounded-lg p-2 shadow-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <Download className="w-5 h-5 text-gray-700" />
-                    </button>
-                  </div>
+      {filteredReviews.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl">
+          <MessageSquare className="w-16 h-16 text-[#d4b5a0]/30 mx-auto mb-4" />
+          <p className="text-[#2c3e50]/60">Aucun avis trouvé avec ces filtres</p>
+        </div>
+      )}
+
+      {/* Modal de réponse */}
+      {selectedReview && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <h3 className="text-xl font-bold text-[#2c3e50] mb-4">
+              Répondre à l'avis de {selectedReview.clientName || 'Client'}
+            </h3>
+            
+            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              <div className="flex mb-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`w-4 h-4 ${i < selectedReview.rating ? 'text-[#d4b5a0] fill-current' : 'text-gray-300'}`}
+                  />
                 ))}
               </div>
+              <p className="text-[#2c3e50]/80 italic">"{selectedReview.comment}"</p>
+            </div>
+            
+            <textarea
+              value={response}
+              onChange={(e) => setResponse(e.target.value)}
+              placeholder="Votre réponse..."
+              className="w-full px-4 py-3 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] min-h-[120px]"
+            />
+            
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setSelectedReview(null);
+                  setResponse("");
+                }}
+                className="px-4 py-2 border border-[#d4b5a0]/20 text-[#2c3e50] rounded-lg hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleResponse}
+                className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590]"
+                disabled={!response.trim()}
+              >
+                Envoyer la réponse
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Message si aucun avis */}
-      {filteredReviews.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600">Aucun avis trouvé</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Les avis de vos clients apparaîtront ici
-          </p>
+      {/* Modal photos */}
+      {showPhotoModal && selectedPhotos.length > 0 && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowPhotoModal(false)}>
+          <div className="max-w-4xl w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {selectedPhotos.map((photo, idx) => (
+                <img 
+                  key={idx} 
+                  src={photo} 
+                  alt={`Photo ${idx + 1}`} 
+                  className="w-full h-auto rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/10 backdrop-blur rounded-full text-white hover:bg-white/20"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal export photos */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <h3 className="text-xl font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <Package className="w-6 h-6 text-purple-600" />
+              Exporter les photos clients
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="bg-purple-50 rounded-lg p-4">
+                <p className="text-sm text-[#2c3e50] mb-2">
+                  <strong>{stats.withPhotos}</strong> avis contiennent des photos
+                </p>
+                <p className="text-xs text-[#2c3e50]/60">
+                  Les photos seront téléchargées avec un nom formaté incluant le nom du client et la date
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    // Créer un JSON avec toutes les infos et photos
+                    const exportData = reviews
+                      .filter(r => r.photos && r.photos.length > 0)
+                      .map(r => ({
+                        id: r.id,
+                        clientName: r.clientName || 'Client',
+                        clientEmail: r.clientEmail || '',
+                        date: new Date(r.createdAt).toISOString(),
+                        service: r.serviceName || '',
+                        rating: r.rating,
+                        comment: r.comment,
+                        photos: r.photos
+                      }));
+                    
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', dataUri);
+                    link.setAttribute('download', `export_photos_avis_${new Date().toISOString().split('T')[0]}.json`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setShowExportModal(false);
+                  }}
+                  className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Exporter en JSON (avec métadonnées)
+                </button>
+
+                <button
+                  onClick={() => {
+                    // Télécharger toutes les photos individuellement
+                    let photoCount = 0;
+                    reviews.forEach(review => {
+                      if (review.photos && review.photos.length > 0) {
+                        const clientName = (review.clientName || 'Client').replace(/[^a-z0-9]/gi, '_');
+                        const date = new Date(review.createdAt).toLocaleDateString('fr-FR').replace(/\//g, '-');
+                        
+                        review.photos.forEach((photo, index) => {
+                          setTimeout(() => {
+                            const link = document.createElement('a');
+                            link.href = photo;
+                            link.download = `${clientName}_${date}_photo${index + 1}.jpg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }, photoCount * 200); // Délai pour éviter le blocage du navigateur
+                          photoCount++;
+                        });
+                      }
+                    });
+                    setShowExportModal(false);
+                    alert(`Téléchargement de ${photoCount} photos en cours...`);
+                  }}
+                  className="w-full py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] transition-colors flex items-center justify-center gap-2"
+                >
+                  <Camera className="w-5 h-5" />
+                  Télécharger toutes les photos
+                </button>
+
+                <button
+                  onClick={() => {
+                    // Créer un fichier CSV avec les liens des photos
+                    let csv = 'Client,Email,Date,Service,Note,Commentaire,Photos\n';
+                    reviews.forEach(review => {
+                      if (review.photos && review.photos.length > 0) {
+                        csv += `"${review.clientName || ''}","${review.clientEmail || ''}","${new Date(review.createdAt).toLocaleDateString('fr-FR')}","${review.serviceName || ''}","${review.rating}","${review.comment.replace(/"/g, '""')}","${review.photos.join(';')}"\n`;
+                      }
+                    });
+                    
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `export_avis_photos_${new Date().toISOString().split('T')[0]}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setShowExportModal(false);
+                  }}
+                  className="w-full py-3 border border-[#d4b5a0] text-[#2c3e50] rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <List className="w-5 h-5" />
+                  Exporter en CSV (liens photos)
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 border border-[#d4b5a0]/20 text-[#2c3e50] rounded-lg hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

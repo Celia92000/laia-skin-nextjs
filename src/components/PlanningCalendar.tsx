@@ -437,15 +437,44 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
               const timeMin = timeToMinutes(time);
               const isInReservedRange = dayReservations.some(r => {
                 const resStart = timeToMinutes(r.time);
-                const resDuration = r.services?.[0]?.duration || 60;
+                // Récupérer la durée du service ou utiliser la durée par défaut
+                const serviceName = r.services?.[0]?.name || r.service || '';
+                const resDuration = r.services?.[0]?.duration || r.serviceDuration || getServiceDuration(serviceName);
                 const resEnd = resStart + resDuration + 15; // +15 min préparation
                 return timeMin >= resStart && timeMin < resEnd;
               });
 
+              // Calculer si ce créneau est le début d'une réservation et sa durée
+              const isReservationStart = reservation !== undefined;
+              let reservationSpan = 1;
+              let showReservationBlock = false;
+              
+              if (isReservationStart && reservation) {
+                const serviceName = reservation.services?.[0]?.name || reservation.service || '';
+                const duration = reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(serviceName);
+                reservationSpan = Math.ceil((duration + 15) / 30); // Nombre de créneaux de 30 min (incluant préparation)
+                showReservationBlock = true;
+              }
+
+              // Ne pas afficher les créneaux qui sont dans la continuité d'une réservation
+              if (!showReservationBlock && isInReservedRange && !reservation) {
+                return (
+                  <div
+                    key={time}
+                    className="p-3 rounded-lg border-2 bg-orange-50 border-orange-200 cursor-not-allowed opacity-75 select-none"
+                  >
+                    <div className="flex items-center justify-between text-gray-500">
+                      <span className="text-sm font-medium">{time}</span>
+                      <span className="text-xs">Occupé</span>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={time}
-                  className={`p-3 rounded-lg border-2 transition-all select-none ${
+                  className={`relative ${showReservationBlock ? '' : 'p-3'} rounded-lg border-2 transition-all select-none ${
                     reservation 
                       ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' 
                       : isInReservedRange
@@ -455,7 +484,11 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                       : isSelected
                       ? 'bg-yellow-100 border-yellow-400 cursor-pointer'
                       : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer'
-                  }`}
+                  } ${showReservationBlock ? `row-span-${reservationSpan}` : ''}`}
+                  style={showReservationBlock ? {
+                    gridRow: `span ${reservationSpan}`,
+                    minHeight: `${reservationSpan * 60}px`
+                  } : {}}
                   onMouseDown={() => !reservation && handleMouseDown(time)}
                   onMouseEnter={() => handleMouseEnter(time)}
                   onClick={async () => {
@@ -524,28 +557,50 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                     }
                   }}
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-[#2c3e50]">{time}</span>
-                    {reservation ? (
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-blue-700">
-                          {reservation.userName} - {reservation.totalPrice}€
-                        </span>
+                  {showReservationBlock && reservation ? (
+                    // Affichage étendu pour les réservations
+                    <div className="p-3 h-full flex flex-col justify-between bg-gradient-to-b from-blue-100 to-blue-50">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-[#2c3e50]">{time}</span>
+                          <span className="text-xs text-blue-600">
+                            {Math.floor((reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) / 60)}h
+                            {((reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) % 60) > 0 ? 
+                              `${(reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) % 60}min` : ''}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-blue-700" />
+                            <span className="text-sm font-semibold text-blue-800">
+                              {reservation.userName}
+                            </span>
+                          </div>
+                          <div className="text-xs text-blue-700">
+                            {reservation.services?.[0]?.name || reservation.service || 'Service'}
+                          </div>
+                          <div className="text-sm font-semibold text-blue-900">
+                            {reservation.totalPrice}€
+                          </div>
+                        </div>
                       </div>
-                    ) : isInReservedRange && !isBlocked ? (
-                      <span className="text-sm text-orange-600">Occupé</span>
-                    ) : isBlocked ? (
-                      <span className="text-sm text-red-700 font-medium flex items-center gap-1">
-                        <Ban className="w-3 h-3" />
-                        Bloqué
-                      </span>
-                    ) : isSelected ? (
-                      <span className="text-sm text-yellow-600">Sélectionné</span>
-                    ) : (
-                      <span className="text-sm text-green-600">Disponible</span>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    // Affichage normal pour les créneaux sans réservation
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-[#2c3e50]">{time}</span>
+                      {isBlocked ? (
+                        <span className="text-sm text-red-700 font-medium flex items-center gap-1">
+                          <Ban className="w-3 h-3" />
+                          Bloqué
+                        </span>
+                      ) : isSelected ? (
+                        <span className="text-sm text-yellow-600">Sélectionné</span>
+                      ) : (
+                        <span className="text-sm text-green-600">Disponible</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

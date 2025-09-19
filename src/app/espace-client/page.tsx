@@ -683,12 +683,12 @@ export default function EspaceClient() {
                   <div className="text-center">
                     <Gift className="w-12 h-12 mx-auto mb-3 text-white/80" />
                     <h3 className="text-xl font-bold mb-2">Soins Individuels</h3>
-                    <p className="text-lg mb-4">5 soins = -30€</p>
+                    <p className="text-lg mb-4">5 soins = -20€ sur le 6ème</p>
                     
                     {/* Carte de fidélité visuelle */}
                     <div className="bg-white/20 rounded-xl p-4">
-                      <div className="grid grid-cols-5 gap-2 mb-3">
-                        {[1, 2, 3, 4, 5].map((num) => (
+                      <div className="grid grid-cols-6 gap-2 mb-3">
+                        {[1, 2, 3, 4, 5, 6].map((num) => (
                           <div 
                             key={num}
                             className={`w-full aspect-square rounded-lg flex items-center justify-center text-lg font-bold ${
@@ -699,8 +699,8 @@ export default function EspaceClient() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-sm">3 soins validés sur 5</p>
-                      <p className="text-xs mt-1 font-bold">Dès le 1er soin ! -30€ au 5ème soin</p>
+                      <p className="text-sm">3 soins validés sur 6</p>
+                      <p className="text-xs mt-1 font-bold">Dès le 1er soin ! -20€ au 6ème soin</p>
                     </div>
                   </div>
                 </div>
@@ -710,12 +710,12 @@ export default function EspaceClient() {
                   <div className="text-center">
                     <Star className="w-12 h-12 mx-auto mb-3 text-white/80" />
                     <h3 className="text-xl font-bold mb-2">Forfaits Premium</h3>
-                    <p className="text-lg mb-4">3 forfaits = -50€</p>
+                    <p className="text-lg mb-4">3 forfaits = -40€ sur le 4ème</p>
                     
                     {/* Carte de fidélité visuelle forfaits */}
                     <div className="bg-white/20 rounded-xl p-4">
-                      <div className="grid grid-cols-3 gap-3 mb-3">
-                        {[1, 2, 3].map((num) => (
+                      <div className="grid grid-cols-4 gap-3 mb-3">
+                        {[1, 2, 3, 4].map((num) => (
                           <div 
                             key={num}
                             className={`w-full aspect-square rounded-lg flex items-center justify-center text-xl font-bold ${
@@ -726,8 +726,8 @@ export default function EspaceClient() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-sm">1 forfait validé sur 3</p>
-                      <p className="text-xs mt-1 font-bold">Dès le 1er forfait ! -50€ au 3ème forfait</p>
+                      <p className="text-sm">1 forfait validé sur 4</p>
+                      <p className="text-xs mt-1 font-bold">Dès le 1er forfait ! -40€ au 4ème forfait</p>
                     </div>
                   </div>
                 </div>
@@ -744,7 +744,7 @@ export default function EspaceClient() {
                     </div>
                     <ul className="space-y-2 text-sm text-[#2c3e50]/70">
                       <li>• <strong>Dès le 1er soin</strong> = 1 tampon</li>
-                      <li>• Au 5ème soin = -30€ de réduction immédiate</li>
+                      <li>• Au 6ème soin = -20€ de réduction immédiate</li>
                       <li>• Valable sur tous les soins individuels</li>
                       <li>• Carte renouvelable à l'infini</li>
                     </ul>
@@ -756,7 +756,7 @@ export default function EspaceClient() {
                     </div>
                     <ul className="space-y-2 text-sm text-[#2c3e50]/70">
                       <li>• <strong>Dès le 1er forfait</strong> = 1 tampon</li>
-                      <li>• Au 3ème forfait = -50€ de réduction immédiate</li>
+                      <li>• Au 4ème forfait = -40€ de réduction immédiate</li>
                       <li>• Économies importantes garanties</li>
                       <li>• Avantages VIP inclus</li>
                     </ul>

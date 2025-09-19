@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { MessageCircle, Send, Zap, MessageSquare } from 'lucide-react';
 import WhatsAppCampaigns from './WhatsAppCampaigns';
 import WhatsAppAutomations from './WhatsAppAutomations';
-import WhatsAppInterface from './WhatsAppInterface';
+import WhatsAppReal from './WhatsAppReal';
 import WhatsAppHistory from './WhatsAppHistory';
 
 export default function WhatsAppHub() {
@@ -58,12 +58,7 @@ export default function WhatsAppHub() {
       </div>
 
       {/* Contenu des sous-onglets */}
-      {activeSubTab === 'conversations' && (
-        <div className="space-y-6">
-          <WhatsAppInterface />
-          <WhatsAppHistory />
-        </div>
-      )}
+      {activeSubTab === 'conversations' && <WhatsAppReal />}
       {activeSubTab === 'campaigns' && <WhatsAppCampaigns />}
       {activeSubTab === 'automations' && <WhatsAppAutomations />}
     </div>

@@ -18,8 +18,11 @@ export default async function Blog() {
       orderBy: { publishedAt: 'desc' }
     });
 
-    featuredPosts = posts.filter(p => p.featured);
-    recentPosts = posts.filter(p => !p.featured);
+    // Un seul article vedette
+    featuredPosts = posts.filter(p => p.featured).slice(0, 1);
+    // Tous les autres articles (y compris les autres vedettes)
+    const featuredIds = featuredPosts.map(p => p.id);
+    recentPosts = posts.filter(p => !featuredIds.includes(p.id));
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     // En cas d'erreur, on continue avec des tableaux vides
@@ -59,7 +62,7 @@ export default async function Blog() {
         </div>
       </section>
 
-      {/* Articles vedettes */}
+      {/* Article vedette - UN SEUL */}
       {featuredPosts.length > 0 && (
         <section className="py-8 px-4 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/50"></div>
@@ -130,60 +133,6 @@ export default async function Blog() {
                 </article>
               </Link>
             ))}
-            
-            {/* Autres articles vedettes s'il y en a plus d'un */}
-            {featuredPosts.length > 1 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-                {featuredPosts.slice(1).map((article) => (
-                  <Link 
-                    key={article.id}
-                    href={`/blog/${article.slug}`}
-                    className="group cursor-pointer"
-                  >
-                    <article className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full">
-                      {article.mainImage && (
-                        <div className="h-48 bg-gradient-to-br from-[#d4b5a0]/30 to-[#c9a084]/30 relative overflow-hidden">
-                          <img 
-                            src={article.mainImage} 
-                            alt={article.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                        </div>
-                      )}
-                      
-                      <div className="p-6">
-                        <span className="text-xs font-medium text-[#d4b5a0] uppercase tracking-wider">
-                          {article.category}
-                        </span>
-                        <h3 className="text-xl font-serif font-semibold text-[#2c3e50] mt-2 mb-3 line-clamp-2">
-                          {article.title}
-                        </h3>
-                        <p className="text-[#2c3e50]/70 mb-4 line-clamp-3">
-                          {article.excerpt}
-                        </p>
-                        <div className="flex items-center justify-between text-sm text-[#2c3e50]/60">
-                          <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              {new Date(article.publishedAt).toLocaleDateString('fr-FR', { 
-                                day: 'numeric', 
-                                month: 'short' 
-                              })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {article.readTime}
-                            </span>
-                          </div>
-                          <ArrowRight className="w-5 h-5 text-[#d4b5a0] transform group-hover:translate-x-2 transition-transform" />
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}

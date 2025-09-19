@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Plus, Edit2, Save, X, Trash2, Eye, EyeOff, 
+  Plus, Edit2, Save, X, Eye, EyeOff, 
   Clock, Calendar, Tag, Search, ChevronUp, ChevronDown,
-  Globe, FileText, Star, AlertCircle, CheckCircle, Image
+  Globe, FileText, Star, AlertCircle, CheckCircle, Image, Trash2
 } from "lucide-react";
 
 interface BlogPost {
@@ -92,24 +92,9 @@ export default function AdminBlogTab() {
     }
   };
 
+  // La suppression est désactivée pour protéger les articles
   const handleDeletePost = async (id: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/blog/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        await fetchPosts();
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression de l\'article:', error);
-    }
+    alert('La suppression d\'articles est désactivée pour des raisons de sécurité.');
   };
 
   const togglePostExpansion = (id: string) => {
@@ -690,14 +675,6 @@ export default function AdminBlogTab() {
                     title="Voir l'article"
                   >
                     <Eye className="w-5 h-5 text-[#2c3e50]" />
-                  </button>
-                  
-                  <button
-                    onClick={() => handleDeletePost(post.id)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-5 h-5 text-red-500" />
                   </button>
                 </div>
               </div>

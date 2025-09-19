@@ -136,34 +136,54 @@ export default async function Home() {
 
                     {/* Prix */}
                     <div className="border-t pt-4 mt-auto">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-3xl font-bold text-[#2c3e50]">
-                          {service.price}€
-                        </span>
-                      </div>
+                      {service.promoPrice ? (
+                        <div>
+                          <div className="flex items-baseline gap-3">
+                            <span className="text-3xl font-bold text-[#d4b5a0]">
+                              {service.promoPrice}€
+                            </span>
+                            <span className="text-xl line-through text-[#2c3e50]/40">
+                              {service.price}€
+                            </span>
+                          </div>
+                          <div className="mt-1">
+                            <span className="text-xs text-[#d4b5a0] font-semibold uppercase tracking-wider">
+                              Tarif de lancement
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-3xl font-bold text-[#2c3e50]">
+                            {service.price}€
+                          </span>
+                        </div>
+                      )}
                       
                       {/* Forfait si disponible */}
                       {(service.forfaitPrice || service.forfaitPromo) && (
-                        <div className="mt-3 pt-3 border-t border-[#d4b5a0]/20">
-                          <div className="text-xs text-[#2c3e50]/60 mb-1">Forfait 4 séances</div>
-                          <div className="flex items-baseline gap-2">
-                            {service.forfaitPromo ? (
-                              <>
-                                <span className="text-lg font-bold text-[#d4b5a0]">
+                        <div className="mt-4 pt-4 border-t border-[#d4b5a0]/20">
+                          <div className="text-sm text-[#2c3e50]/70 mb-2">Forfait 4 séances</div>
+                          {service.forfaitPromo ? (
+                            <div>
+                              <div className="flex items-baseline gap-3">
+                                <span className="text-2xl font-bold text-[#d4b5a0]">
                                   {service.forfaitPromo}€
                                 </span>
                                 {service.forfaitPrice && (
-                                  <span className="text-sm line-through text-[#2c3e50]/40">
+                                  <span className="text-lg line-through text-[#2c3e50]/40">
                                     {service.forfaitPrice}€
                                   </span>
                                 )}
-                              </>
-                            ) : (
-                              <span className="text-lg font-bold text-[#2c3e50]">
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-2xl font-bold text-[#2c3e50]">
                                 {service.forfaitPrice}€
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

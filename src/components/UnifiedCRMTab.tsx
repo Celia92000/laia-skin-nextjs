@@ -7,6 +7,7 @@ import {
   CreditCard, FileText, AlertCircle, Star, Eye, History, UserCheck, Settings,
   Camera, Video, Image, Upload, Trash2, PlayCircle, Send, Paperclip
 } from "lucide-react";
+import ClientDetailModal from "@/components/ClientDetailModal";
 
 export interface Client {
   id: string;
@@ -80,6 +81,8 @@ export default function UnifiedCRMTab({
     content: '',
     template: 'custom'
   });
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedClientForDetail, setSelectedClientForDetail] = useState<Client | null>(null);
 
   // Fonction pour déterminer le niveau de fidélité basé sur le nombre de séances
   const getLoyaltyLevel = (reservations: any[]) => {
@@ -425,11 +428,21 @@ export default function UnifiedCRMTab({
                             <Mail className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => setExpandedClient(isExpanded ? null : client.id)}
+                            onClick={() => {
+                              setSelectedClientForDetail(client);
+                              setShowDetailModal(true);
+                            }}
                             className="p-2 text-[#d4b5a0] hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
-                            title="Voir détails"
+                            title="Voir détails complets"
                           >
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setExpandedClient(isExpanded ? null : client.id)}
+                            className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Vue rapide"
+                          >
+                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
                           <button
                             onClick={() => {
@@ -553,11 +566,11 @@ export default function UnifiedCRMTab({
                                         </div>
                                         {has6Sessions ? (
                                           <p className="text-sm font-bold text-green-600">
-                                            ✨ -30€ disponible sur la prochaine séance !
+                                            ✨ -20€ disponible sur la prochaine séance !
                                           </p>
                                         ) : (
                                           <p className="text-xs text-[#2c3e50]/60">
-                                            {progressTo6}/6 séances ({6 - progressTo6} restantes pour -30€)
+                                            {progressTo6}/6 séances ({6 - progressTo6} restantes pour -20€)
                                           </p>
                                         )}
                                       </div>
@@ -1284,6 +1297,28 @@ export default function UnifiedCRMTab({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Modal de détail client */}
+      {showDetailModal && selectedClientForDetail && (
+        <ClientDetailModal
+          client={selectedClientForDetail}
+          reservations={reservations}
+          loyaltyProfile={loyaltyProfiles.find(p => p.user.email === selectedClientForDetail.email)}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedClientForDetail(null);
+          }}
+          onEdit={(clientId, data) => {
+            // Mettre à jour le client
+            const updatedClients = clients.map(c => 
+              c.id === clientId ? { ...c, ...data } : c
+            );
+            setClients(updatedClients);
+            // Sauvegarder en base
+            saveClientChanges(clientId);
+          }}
+        />
       )}
     </div>
   );

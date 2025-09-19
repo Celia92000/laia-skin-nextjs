@@ -73,18 +73,18 @@ export async function GET(request: Request) {
         let loyaltyProgress = '';
         let nextReward = '';
         
-        if (sessionsCount < 3) {
-          loyaltyProgress = `Vous avez ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''} sur 3`;
-          nextReward = `Plus que ${3 - sessionsCount} séance${3 - sessionsCount > 1 ? 's' : ''} pour obtenir -10% sur votre prochain soin !`;
-        } else if (sessionsCount < 5) {
-          loyaltyProgress = `Vous avez ${sessionsCount} séances`;
-          nextReward = `Plus que ${5 - sessionsCount} séance${5 - sessionsCount > 1 ? 's' : ''} pour obtenir -15% sur votre prochain soin !`;
-        } else if (packagesCount < 1) {
-          loyaltyProgress = `Vous avez ${sessionsCount} séances`;
-          nextReward = `Achetez votre premier forfait pour obtenir -20% !`;
-        } else if (packagesCount < 2) {
-          loyaltyProgress = `Vous avez ${sessionsCount} séances et ${packagesCount} forfait`;
-          nextReward = `Plus qu'1 forfait pour obtenir un soin OFFERT !`;
+        if (sessionsCount < 5) {
+          loyaltyProgress = `Vous avez ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''} sur 6`;
+          nextReward = `Plus que ${6 - sessionsCount} séance${6 - sessionsCount > 1 ? 's' : ''} pour obtenir 20€ de réduction sur votre 6ème soin !`;
+        } else if (sessionsCount === 5) {
+          loyaltyProgress = `Vous avez 5 séances`;
+          nextReward = `Votre prochain soin bénéficie de 20€ de réduction !`;
+        } else if (packagesCount < 3) {
+          loyaltyProgress = `Vous avez ${packagesCount} forfait${packagesCount > 1 ? 's' : ''} sur 4`;
+          nextReward = `Plus que ${4 - packagesCount} forfait${4 - packagesCount > 1 ? 's' : ''} pour obtenir 40€ de réduction sur votre 4ème forfait !`;
+        } else if (packagesCount === 3) {
+          loyaltyProgress = `Vous avez 3 forfaits`;
+          nextReward = `Votre prochain forfait bénéficie de 40€ de réduction !`;
         } else {
           loyaltyProgress = `Félicitations ! Vous êtes une cliente VIP avec ${sessionsCount} séances et ${packagesCount} forfaits`;
           nextReward = `Profitez de vos avantages exclusifs !`;
@@ -270,18 +270,18 @@ export async function POST(request: Request) {
     let loyaltyProgress = '';
     let nextReward = '';
     
-    if (sessionsCount < 3) {
-      loyaltyProgress = `Vous avez ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''} sur 3`;
-      nextReward = `Plus que ${3 - sessionsCount} séance${3 - sessionsCount > 1 ? 's' : ''} pour obtenir -10% sur votre prochain soin !`;
-    } else if (sessionsCount < 5) {
-      loyaltyProgress = `Vous avez ${sessionsCount} séances`;
-      nextReward = `Plus que ${5 - sessionsCount} séance${5 - sessionsCount > 1 ? 's' : ''} pour obtenir -15% sur votre prochain soin !`;
-    } else if (packagesCount < 1) {
-      loyaltyProgress = `Vous avez ${sessionsCount} séances`;
-      nextReward = `Achetez votre premier forfait pour obtenir -20% !`;
-    } else if (packagesCount < 2) {
-      loyaltyProgress = `Vous avez ${sessionsCount} séances et ${packagesCount} forfait`;
-      nextReward = `Plus qu'1 forfait pour obtenir un soin OFFERT !`;
+    if (sessionsCount < 5) {
+      loyaltyProgress = `Vous avez ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''} sur 6`;
+      nextReward = `Plus que ${6 - sessionsCount} séance${6 - sessionsCount > 1 ? 's' : ''} pour obtenir 10€ de réduction sur votre 6ème soin !`;
+    } else if (sessionsCount === 5) {
+      loyaltyProgress = `Vous avez 5 séances`;
+      nextReward = `Votre prochain soin bénéficie de 10€ de réduction !`;
+    } else if (packagesCount < 3) {
+      loyaltyProgress = `Vous avez ${packagesCount} forfait${packagesCount > 1 ? 's' : ''} sur 4`;
+      nextReward = `Plus que ${4 - packagesCount} forfait${4 - packagesCount > 1 ? 's' : ''} pour obtenir 20€ de réduction sur votre 4ème forfait !`;
+    } else if (packagesCount === 3) {
+      loyaltyProgress = `Vous avez 3 forfaits`;
+      nextReward = `Votre prochain forfait bénéficie de 20€ de réduction !`;
     } else {
       loyaltyProgress = `Félicitations ! Vous êtes une cliente VIP avec ${sessionsCount} séances et ${packagesCount} forfaits`;
       nextReward = `Profitez de vos avantages exclusifs !`;

@@ -22,8 +22,8 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
   
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
-  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= 6 && userProfile.individualServicesCount % 6 === 0;
-  const hasPackageDiscount = userProfile && userProfile.packagesCount >= 2 && userProfile.packagesCount % 2 === 0;
+  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= 5 && (userProfile.individualServicesCount + 1) % 6 === 0;
+  const hasPackageDiscount = userProfile && userProfile.packagesCount >= 3 && (userProfile.packagesCount + 1) % 4 === 0;
   const isBirthday = userProfile && userProfile.user.birthDate && 
     new Date(userProfile.user.birthDate).getMonth() === new Date().getMonth() &&
     new Date(userProfile.user.birthDate).getDate() === new Date().getDate();
@@ -56,7 +56,7 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
           <div className="flex gap-2 flex-wrap">
             {hasIndividualDiscount && (
               <button
-                onClick={() => applyLoyaltyDiscount('individual', 30)}
+                onClick={() => applyLoyaltyDiscount('individual', 10)}
                 disabled={appliedDiscount?.type === 'individual'}
                 className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
                   appliedDiscount?.type === 'individual'
@@ -65,12 +65,12 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 }`}
               >
                 {appliedDiscount?.type === 'individual' && '✓ '}
-                -30€ (6 soins)
+                -10€ (6ème soin)
               </button>
             )}
             {hasPackageDiscount && (
               <button
-                onClick={() => applyLoyaltyDiscount('package', 50)}
+                onClick={() => applyLoyaltyDiscount('package', 20)}
                 disabled={appliedDiscount?.type === 'package'}
                 className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
                   appliedDiscount?.type === 'package'
@@ -79,7 +79,7 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 }`}
               >
                 {appliedDiscount?.type === 'package' && '✓ '}
-                -50€ (3e forfait)
+                -20€ (4ème forfait)
               </button>
             )}
             {isBirthday && (

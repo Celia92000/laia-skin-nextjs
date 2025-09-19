@@ -32,6 +32,8 @@ model User {
   reservations   Reservation[]
   reviews        Review[]
   notifications  Notification[]
+  referralsMade  Referral[]        @relation("ReferralReferrer")
+  referredBy     Referral?         @relation("ReferralReferred")
 }
 
 model Reservation {
@@ -101,6 +103,9 @@ model LoyaltyProfile {
   packagesCount           Int       @default(0)
   totalSpent              Float     @default(0)
   availableDiscounts      String    @default("[]") // JSON
+  referralCode            String?   @unique // Code parrainage unique du client
+  referredBy              String?   // Code de parrainage utilisé lors de l'inscription
+  totalReferrals          Int       @default(0) // Nombre de parrainages effectués
   lastVisit               DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -119,6 +124,24 @@ model LoyaltyHistory {
   createdAt     DateTime       @default(now())
   user          User           @relation(fields: [userId], references: [id])
   profile       LoyaltyProfile? @relation(fields: [profileId], references: [id])
+}
+
+model Referral {
+  id                String         @id @default(cuid())
+  referrerUserId    String         // ID de l'utilisateur parrain
+  referralCode      String         @unique // Code unique de parrainage
+  referredEmail     String?        // Email du filleul avant inscription
+  referredName      String?        // Nom du filleul
+  referredUserId    String?        @unique // ID du filleul une fois inscrit
+  status            String         @default("pending") // pending, used, rewarded
+  rewardAmount      Float          @default(20) // Montant de la récompense en euros
+  rewardUsedAt      DateTime?      // Date d'utilisation de la récompense
+  firstServiceDate  DateTime?      // Date du premier soin du filleul
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  referrer          User           @relation("ReferralReferrer", fields: [referrerUserId], references: [id])
+  referred          User?          @relation("ReferralReferred", fields: [referredUserId], references: [id])
 }
 
 model BlogPost {

@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { 
   Plus, Edit2, Save, X, Trash2, Eye, EyeOff, Image, 
   Clock, Euro, Tag, Search, Upload, ChevronUp, ChevronDown,
-  Globe, FileText, Star, AlertCircle, CheckCircle
+  Globe, FileText, Star, AlertCircle, CheckCircle, BookOpen
 } from "lucide-react";
+import AdminBlogTab from "./AdminBlogTab";
 
 interface Service {
   id: string;
@@ -43,6 +44,7 @@ export default function AdminServicesTab() {
   const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'media' | 'details'>('general');
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [mainTab, setMainTab] = useState<'services' | 'blog'>('services');
 
   useEffect(() => {
     fetchServices();
@@ -773,22 +775,51 @@ export default function AdminServicesTab() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-[#2c3e50]">Gestion des Services</h2>
-          <p className="text-sm text-[#2c3e50]/60 mt-1">
-            Gérez tous vos services, leurs descriptions, tarifs et contenus SEO
-          </p>
-        </div>
+      {/* Main Tabs */}
+      <div className="flex gap-4 mb-6 border-b border-[#d4b5a0]/20">
         <button
-          onClick={() => setShowNewServiceForm(true)}
-          className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] flex items-center gap-2"
+          onClick={() => setMainTab('services')}
+          className={`px-4 py-3 font-medium transition-all flex items-center gap-2 ${
+            mainTab === 'services'
+              ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+              : 'text-[#2c3e50]/60 hover:text-[#2c3e50]'
+          }`}
         >
-          <Plus className="w-5 h-5" />
-          Nouveau Service
+          <FileText className="w-5 h-5" />
+          Prestations
+        </button>
+        <button
+          onClick={() => setMainTab('blog')}
+          className={`px-4 py-3 font-medium transition-all flex items-center gap-2 ${
+            mainTab === 'blog'
+              ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+              : 'text-[#2c3e50]/60 hover:text-[#2c3e50]'
+          }`}
+        >
+          <BookOpen className="w-5 h-5" />
+          Articles Blog
         </button>
       </div>
+
+      {/* Services Tab Content */}
+      {mainTab === 'services' ? (
+        <>
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-[#2c3e50]">Gestion des Prestations</h2>
+              <p className="text-sm text-[#2c3e50]/60 mt-1">
+                Gérez tous vos services, leurs descriptions, tarifs et contenus SEO
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNewServiceForm(true)}
+              className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle Prestation
+            </button>
+          </div>
 
       {/* Services List */}
       <div className="space-y-4">
@@ -969,13 +1000,18 @@ export default function AdminServicesTab() {
         ))}
       </div>
 
-      {/* Forms */}
-      {showNewServiceForm && (
-        <ServiceForm service={null} onClose={() => setShowNewServiceForm(false)} />
-      )}
-      
-      {editingService && (
-        <ServiceForm service={editingService} onClose={() => setEditingService(null)} />
+          {/* Forms */}
+          {showNewServiceForm && (
+            <ServiceForm service={null} onClose={() => setShowNewServiceForm(false)} />
+          )}
+          
+          {editingService && (
+            <ServiceForm service={editingService} onClose={() => setEditingService(null)} />
+          )}
+        </>
+      ) : (
+        /* Blog Tab Content */
+        <AdminBlogTab />
       )}
     </div>
   );
