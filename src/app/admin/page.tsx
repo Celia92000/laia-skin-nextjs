@@ -38,12 +38,12 @@ interface Reservation {
   phone?: string;
   services: string[];
   packages: {[key: string]: string};
-  date: string;
+  date: string | Date;
   time: string;
   totalPrice: number;
   status: string;
   notes?: string;
-  createdAt: string;
+  createdAt: string | Date;
   paymentStatus?: string;
   paymentDate?: string;
   paymentAmount?: number;
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
       client: reservation.userName || '',
       email: reservation.userEmail || '',
       phone: reservation.phone || '',
-      date: reservation.date.split('T')[0],
+      date: typeof reservation.date === 'string' ? reservation.date.split('T')[0] : reservation.date.toISOString().split('T')[0],
       time: reservation.time,
       services: reservation.services,
       notes: reservation.notes || '',
@@ -638,7 +638,7 @@ export default function AdminDashboard() {
 
   // Filtrer les réservations par date pour le planning
   const todayReservations = reservations.filter(r => 
-    r.date.split('T')[0] === selectedDate
+    (typeof r.date === 'string' ? r.date.split('T')[0] : r.date.toISOString().split('T')[0]) === selectedDate
   ).sort((a, b) => a.time.localeCompare(b.time));
 
   // Statistiques pour le dashboard
@@ -646,7 +646,7 @@ export default function AdminDashboard() {
     totalReservations: reservations.length,
     pendingReservations: reservations.filter(r => r.status === 'pending').length,
     completedToday: reservations.filter(r => 
-      r.status === 'completed' && r.date.split('T')[0] === new Date().toISOString().split('T')[0]
+      r.status === 'completed' && (typeof r.date === 'string' ? r.date.split('T')[0] : r.date.toISOString().split('T')[0]) === new Date().toISOString().split('T')[0]
     ).length,
     totalRevenue: reservations.filter(r => r.status === 'completed')
       .reduce((sum, r) => sum + r.totalPrice, 0)
@@ -1024,6 +1024,7 @@ export default function AdminDashboard() {
                       .filter(r => r.status !== 'cancelled')
                       .map(r => ({
                         ...r,
+                        date: typeof r.date === 'string' ? r.date : r.date.toISOString(),
                         userName: r.userName || 'Client',
                         userEmail: r.userEmail || '',
                       }))}
@@ -1296,7 +1297,8 @@ export default function AdminDashboard() {
                   const validationReservations = reservations.filter(r => {
                     // Ne montrer que les réservations confirmées dont la date/heure est passée
                     if (r.status !== 'confirmed') return false;
-                    const reservationDateTime = new Date(`${r.date.split('T')[0]}T${r.time}`);
+                    const dateStr = typeof r.date === 'string' ? r.date.split('T')[0] : r.date.toISOString().split('T')[0];
+                    const reservationDateTime = new Date(`${dateStr}T${r.time}`);
                     return reservationDateTime < new Date();
                   });
 

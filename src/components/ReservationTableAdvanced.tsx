@@ -11,22 +11,31 @@ interface Reservation {
   userId: string;
   userName?: string;
   userEmail?: string;
+  phone?: string;
   userPhone?: string;
   services: string[];
+  packages: {[key: string]: string};
   date: Date | string;
   time: string;
   totalPrice: number;
   status: string;
   source?: string;
   notes?: string;
-  paymentStatus: string;
+  paymentStatus?: string;
+  paymentDate?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
+  invoiceNumber?: string;
+  paymentNotes?: string;
   createdAt: Date | string;
+  cancelReason?: string;
 }
 
 interface ReservationTableProps {
   reservations: Reservation[];
   services: Record<string, string>;
   onEdit?: (reservation: Reservation) => void;
+  onCancel?: (reservation: Reservation) => void;
   onStatusChange?: (id: string, status: string) => void;
 }
 
@@ -429,11 +438,11 @@ export default function ReservationTableAdvanced({
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          reservation.paymentStatus === 'paid' 
+                          (reservation.paymentStatus || 'pending') === 'paid' 
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-red-100 text-red-700'
                         }`}>
-                          {reservation.paymentStatus === 'paid' ? 'Payé' : 'Non payé'}
+                          {(reservation.paymentStatus || 'pending') === 'paid' ? 'Payé' : 'Non payé'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
