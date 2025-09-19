@@ -304,7 +304,12 @@ export default async function ServicePage({ params }: ServicePageProps) {
                         <span className="text-xl font-bold text-[#d4b5a0]">{service.promoPrice}€</span>
                       </div>
                     ) : (
-                      <p className="text-xl font-bold text-[#2c3e50]">{service.price}€</p>
+                      <div>
+                        <p className="text-xl font-bold text-[#2c3e50]">{service.price}€</p>
+                        <p className="text-sm text-[#d4b5a0] mt-1">
+                          Forfait 4 séances : {(service.price * 4) - 20}€ <span className="text-xs text-[#2c3e50]/60">(-20€)</span>
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>

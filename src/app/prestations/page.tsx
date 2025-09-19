@@ -11,7 +11,10 @@ export default async function Prestations() {
   
   try {
     services = await prisma.service.findMany({
-      where: { active: true }
+      where: { 
+        active: true,
+        category: { not: 'forfaits' } // Ne pas afficher les forfaits comme services séparés
+      }
     });
   } catch (error) {
     console.error('Error fetching services:', error);
@@ -132,6 +135,9 @@ export default async function Prestations() {
                           <span className="text-3xl font-bold text-[#2c3e50]">
                             {service.price}€
                           </span>
+                          <p className="text-sm text-[#d4b5a0] mt-2">
+                            Forfait 4 séances : {(service.price * 4) - 20}€
+                          </p>
                         </div>
                       )}
                       
