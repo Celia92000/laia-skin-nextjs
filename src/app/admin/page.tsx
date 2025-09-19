@@ -1039,12 +1039,34 @@ export default function AdminDashboard() {
                     <QuickActionModal
                       date={quickActionDate}
                       onClose={() => setShowQuickActionModal(false)}
-                      onReservationCreated={() => {
+                      onCreateReservation={async (data) => {
+                        // Créer la réservation
+                        await fetch('/api/admin/reservations', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                          },
+                          body: JSON.stringify(data)
+                        });
+                        fetchReservations();
+                        setShowQuickActionModal(false);
+                      }}
+                      onBlockSlot={async (data) => {
+                        // Bloquer le créneau
+                        await fetch('/api/admin/blocked-slots', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                          },
+                          body: JSON.stringify(data)
+                        });
                         fetchReservations();
                         setShowQuickActionModal(false);
                       }}
                       services={services}
-                      clients={clients}
+                      existingClients={clients}
                     />
                   )}
                 </>

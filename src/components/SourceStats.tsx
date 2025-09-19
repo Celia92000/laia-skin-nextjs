@@ -5,7 +5,7 @@ import { Globe, Phone, Instagram, MessageCircle, Users, MapPin, MoreHorizontal, 
 
 interface Reservation {
   id: string;
-  source: string;
+  source?: string;
   status: string;
   totalPrice: number;
   date: Date | string;
