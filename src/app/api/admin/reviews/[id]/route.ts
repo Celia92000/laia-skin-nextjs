@@ -11,7 +11,7 @@ export async function PUT(
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
 
     const token = authHeader.substring(7);
@@ -20,11 +20,11 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
 
-    // Vérifier si c'est un avis Google ou normal
+    // VÃ©rifier si c'est un avis Google ou normal
     const isGoogleReview = id.startsWith('google_');
     
     if (isGoogleReview) {
-      // Pour les avis Google, on peut seulement ajouter une réponse
+      // Pour les avis Google, on peut seulement ajouter une rÃ©ponse
       if (data.response !== undefined) {
         const review = await prisma.googleReview.update({
           where: { id: id.replace('google_', '') },
@@ -49,7 +49,7 @@ export async function PUT(
 
     return NextResponse.json({ error: 'Aucune modification' }, { status: 400 });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'avis:', error);
+    console.error('Erreur lors de la mise Ã  jour de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -61,7 +61,7 @@ export async function DELETE(
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      return NextResponse.json({ error: 'Non autorisÃ©' }, { status: 401 });
     }
 
     const token = authHeader.substring(7);
@@ -78,7 +78,7 @@ export async function DELETE(
       where: { id }
     });
 
-    return NextResponse.json({ message: 'Avis supprimé' });
+    return NextResponse.json({ message: 'Avis supprimÃ©' });
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
