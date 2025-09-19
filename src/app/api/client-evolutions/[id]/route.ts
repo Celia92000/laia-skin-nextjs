@@ -44,7 +44,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -59,8 +59,9 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    const { id } = await params;
     const evolution = await prisma.clientEvolution.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         user: {
           select: {
