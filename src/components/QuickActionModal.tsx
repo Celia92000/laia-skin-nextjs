@@ -9,7 +9,7 @@ interface QuickActionModalProps {
   onCreateReservation: (data: any) => void;
   onBlockSlot: (data: any) => void;
   services: Record<string, string>;
-  existingClients?: Array<{ id: string; name: string; email: string; phone: string }>;
+  existingClients?: Array<{ id: string; name: string; email: string; phone?: string }>;
 }
 
 export default function QuickActionModal({
