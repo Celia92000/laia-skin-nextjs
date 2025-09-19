@@ -1,10 +1,36 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  return NextResponse.json({
-    DATABASE_URL: process.env.DATABASE_URL ? 'Set' : 'Not set',
-    DIRECT_URL: process.env.DIRECT_URL ? 'Set' : 'Not set',
-    DATABASE_URL_VALUE: process.env.DATABASE_URL?.substring(0, 30) + '...',
-    NODE_ENV: process.env.NODE_ENV
-  });
+  try {
+    const serviceCount = await prisma.service.count();
+    
+    const services = await prisma.service.findMany({
+      select: {
+        id: true,
+        name: true,
+        active: true
+      }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      database_url: process.env.DATABASE_URL ? 'Configured' : 'Missing',
+      is_vercel: process.env.VERCEL ? 'Yes' : 'No',
+      service_count: serviceCount,
+      services: services,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Database connection error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      database_url: process.env.DATABASE_URL ? 'Configured' : 'Missing',
+      is_vercel: process.env.VERCEL ? 'Yes' : 'No',
+      error_code: error.code,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
 }
