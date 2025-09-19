@@ -68,8 +68,8 @@ export default async function Prestations() {
                       <img 
                         src={service.mainImage} 
                         alt={service.name} 
-                        className={`w-full h-full object-cover object-center ${service.slug === 'led-therapie' ? 'scale-[175%]' : service.slug === 'hydro-naissance' ? 'scale-110' : 'scale-100'}`}
-                        style={{ objectPosition: service.slug === 'hydro-naissance' ? '50% 65%' : service.slug === 'bb-glow' ? '50% 35%' : service.slug === 'led-therapie' ? '90% 40%' : service.slug === 'hydro-cleaning' ? '85% 40%' : '50% 40%' }}
+                        className="w-full h-full object-cover object-center"
+                        style={{ objectPosition: '50% 50%' }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -140,38 +140,6 @@ export default async function Prestations() {
                           </p>
                         </div>
                       )}
-                      
-                      {/* Forfait si disponible */}
-                      {(service.forfaitPrice || service.forfaitPromo) && (
-                        <div className="mt-4 pt-4 border-t border-[#d4b5a0]/20">
-                          <div className="text-sm text-[#2c3e50]/70 mb-2">Forfait 4 séances</div>
-                          {service.forfaitPromo ? (
-                            <div>
-                              <div className="flex items-baseline gap-3">
-                                <span className="text-2xl font-bold text-[#d4b5a0]">
-                                  {service.forfaitPromo}€
-                                </span>
-                                {service.forfaitPrice && (
-                                  <span className="text-lg line-through text-[#2c3e50]/40">
-                                    {service.forfaitPrice}€
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-1">
-                                <span className="text-xs text-[#d4b5a0] font-semibold uppercase tracking-wider">
-                                  Offre spéciale
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <span className="text-2xl font-bold text-[#2c3e50]">
-                                {service.forfaitPrice}€
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* CTA */}
@@ -189,32 +157,21 @@ export default async function Prestations() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
+      {/* CTA Section */}
       <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-2xl p-12 border border-[#d4b5a0]/20">
-            <h2 className="text-3xl font-bold text-[#2c3e50] mb-4">
-              Prête à transformer votre peau ?
-            </h2>
-            <p className="text-lg text-[#2c3e50]/70 mb-8">
-              Profitez de nos tarifs de lancement exclusifs
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <Link
-                href="/reservation"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] transition-colors font-semibold shadow-lg"
-              >
-                Réserver maintenant
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <a
-                href="tel:0123456789"
-                className="inline-flex items-center gap-2 px-8 py-3 border-2 border-[#d4b5a0] text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/10 transition-colors font-semibold"
-              >
-                01 23 45 67 89
-              </a>
-            </div>
-          </div>
+        <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-3xl p-12">
+          <h2 className="text-3xl font-playfair font-bold text-[#2c3e50] mb-4">
+            Prête à révéler votre beauté naturelle ?
+          </h2>
+          <p className="text-lg text-[#2c3e50]/70 mb-8">
+            Réservez votre soin dès maintenant et bénéficiez de nos tarifs privilégiés
+          </p>
+          <Link 
+            href="/reservation" 
+            className="inline-block bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+          >
+            Réserver mon soin
+          </Link>
         </div>
       </section>
     </div>

@@ -93,8 +93,8 @@ export default async function Home() {
                       <img 
                         src={service.mainImage} 
                         alt={service.name} 
-                        className={`w-full h-full object-cover object-center ${service.slug === 'led-therapie' ? 'scale-[175%]' : service.slug === 'hydro-naissance' ? 'scale-110' : 'scale-100'}`}
-                        style={{ objectPosition: service.slug === 'hydro-naissance' ? '50% 65%' : service.slug === 'bb-glow' ? '50% 35%' : service.slug === 'led-therapie' ? '90% 40%' : service.slug === 'hydro-cleaning' ? '85% 40%' : '50% 40%' }}
+                        className="w-full h-full object-cover object-center"
+                        style={{ objectPosition: '50% 50%' }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -163,33 +163,6 @@ export default async function Home() {
                           <p className="text-sm text-[#d4b5a0] mt-2">
                             Forfait 4 séances : {(service.price * 4) - 20}€
                           </p>
-                        </div>
-                      )}
-                      
-                      {/* Forfait si disponible */}
-                      {(service.forfaitPrice || service.forfaitPromo) && (
-                        <div className="mt-4 pt-4 border-t border-[#d4b5a0]/20">
-                          <div className="text-sm text-[#2c3e50]/70 mb-2">Forfait 4 séances</div>
-                          {service.forfaitPromo ? (
-                            <div>
-                              <div className="flex items-baseline gap-3">
-                                <span className="text-2xl font-bold text-[#d4b5a0]">
-                                  {service.forfaitPromo}€
-                                </span>
-                                {service.forfaitPrice && (
-                                  <span className="text-lg line-through text-[#2c3e50]/40">
-                                    {service.forfaitPrice}€
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <span className="text-2xl font-bold text-[#2c3e50]">
-                                {service.forfaitPrice}€
-                              </span>
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
