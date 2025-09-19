@@ -13,14 +13,14 @@ interface Reservation {
   userEmail?: string;
   userPhone?: string;
   services: string[];
-  date: Date;
+  date: Date | string;
   time: string;
   totalPrice: number;
   status: string;
   source?: string;
   notes?: string;
   paymentStatus: string;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 interface ReservationTableProps {
