@@ -176,6 +176,9 @@ model Review {
   response      String?
   approved      Boolean  @default(true)
   featured      Boolean  @default(false)
+  source        String   @default("site") // site, email, whatsapp, google
+  googleReview  Boolean  @default(false)
+  googleUrl     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id])
@@ -285,4 +288,34 @@ model EmailAutomation {
   nextRun     DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model GoogleReview {
+  id           String   @id @default(cuid())
+  authorName   String
+  authorPhoto  String?
+  rating       Int
+  comment      String
+  reviewId     String   @unique // ID Google pour éviter les doublons
+  publishedAt  DateTime
+  replyText    String?
+  replyAt      DateTime?
+  helpful      Int      @default(0)
+  language     String   @default("fr")
+  syncedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model BusinessStats {
+  id                 String   @id @default(cuid())
+  googleRating       Float    @default(0)
+  googleReviewCount  Int      @default(0)
+  internalRating     Float    @default(0)
+  internalReviewCount Int     @default(0)
+  lastGoogleSync     DateTime?
+  googlePlaceId      String?
+  googleBusinessUrl  String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

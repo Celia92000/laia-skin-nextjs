@@ -131,6 +131,39 @@ export async function GET(request: NextRequest) {
       const pendingReservations = currentReservations.filter(r => r.status === 'pending').length;
       const cancelledReservations = currentReservations.filter(r => r.status === 'cancelled').length;
 
+      // Récupérer les vraies notes clients
+      const reviews = await prisma.review.findMany({
+        where: { approved: true },
+        include: {
+          user: {
+            select: { name: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      }).catch(() => []);
+
+      // Calculer les statistiques de satisfaction
+      const satisfactionStats = {
+        total: reviews.length,
+        average: reviews.length > 0 
+          ? parseFloat((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1))
+          : 0,
+        distribution: {
+          '5': reviews.filter(r => r.rating === 5).length,
+          '4': reviews.filter(r => r.rating === 4).length,
+          '3': reviews.filter(r => r.rating === 3).length,
+          '2': reviews.filter(r => r.rating === 2).length,
+          '1': reviews.filter(r => r.rating === 1).length,
+        },
+        recentFeedback: reviews.slice(0, 5).map(r => ({
+          clientName: r.user?.name || 'Anonyme',
+          rating: r.rating,
+          comment: r.comment,
+          date: r.createdAt,
+          service: r.serviceName || 'Service'
+        }))
+      };
+
       // Services populaires
       const serviceCount: Record<string, number> = {};
       currentReservations.forEach(r => {
@@ -167,9 +200,10 @@ export async function GET(request: NextRequest) {
         totalClients: 0,
         activeClients: 0,
         newClients: 0,
-        averageRating: 4.8,
+        averageRating: satisfactionStats.average,
         popularServices,
-        recentReviews: [],
+        recentReviews: satisfactionStats.recentFeedback,
+        satisfaction: satisfactionStats,
         clientRetentionData: {
           loyalClients: 0,
           newClients: 0,

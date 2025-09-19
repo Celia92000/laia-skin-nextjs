@@ -341,7 +341,7 @@ Votre satisfaction est ma priorité absolue et j'aimerais connaître votre expé
 Pourriez-vous prendre 2 minutes pour :
 
 ⭐ Laisser un avis Google : {googleReviewLink}
-📷 Partager votre expérience sur Instagram : @laiaskin_institut
+📷 Partager votre expérience sur Instagram : @laia.skin
 
 En remerciement, je vous offrirai 10% sur votre prochaine visite !
 
