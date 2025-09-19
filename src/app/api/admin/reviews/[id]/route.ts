@@ -28,7 +28,10 @@ export async function PUT(
       if (data.response !== undefined) {
         const review = await prisma.googleReview.update({
           where: { id: id.replace('google_', '') },
-          data: { response: data.response }
+          data: { 
+            replyText: data.response,
+            replyAt: new Date()
+          }
         });
         return NextResponse.json(review);
       }

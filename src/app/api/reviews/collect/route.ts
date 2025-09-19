@@ -42,40 +42,38 @@ export async function POST(request: Request) {
       });
     }
 
+    // Si pas de client, on ne peut pas créer l'avis
+    if (!client) {
+      // Créer un utilisateur anonyme temporaire
+      const anonymousUser = await prisma.user.create({
+        data: {
+          email: `anonymous_${Date.now()}@temp.com`,
+          name: data.clientName || 'Client anonyme',
+          password: 'not-used',
+          role: 'client'
+        }
+      });
+      client = anonymousUser;
+    }
+
     // Créer l'avis
     const review = await prisma.review.create({
       data: {
         rating: data.rating,
         comment: data.comment,
         source: data.source || 'email', // email, whatsapp, website
-        clientId: client?.id || null,
-        serviceId: service?.id || null,
-        published: false, // Les avis doivent être modérés
-        photos: data.photos ? JSON.stringify(data.photos) : null,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null
+        userId: client.id,
+        serviceName: service?.name || data.serviceName,
+        approved: false // Les avis doivent être modérés
       },
       include: {
-        client: true,
-        service: true
+        user: true
       }
     });
 
-    // Si des photos sont fournies en base64, les sauvegarder
-    if (data.photosBase64 && Array.isArray(data.photosBase64)) {
-      const photoUrls: string[] = [];
-      
-      for (const base64Photo of data.photosBase64) {
-        // Dans un cas réel, vous devriez uploader vers un service de stockage
-        // Ici on simule en gardant l'URL data
-        photoUrls.push(base64Photo);
-      }
-      
-      // Mettre à jour l'avis avec les URLs des photos
-      await prisma.review.update({
-        where: { id: review.id },
-        data: { photos: JSON.stringify(photoUrls) }
-      });
-    }
+    // Les photos ne sont plus supportées dans le modèle Review actuel
+    // Si des photos sont fournies, elles sont ignorées
+    // TODO: Créer une table séparée pour les photos si nécessaire
 
     return NextResponse.json({ 
       success: true,
@@ -105,17 +103,16 @@ export async function GET(request: Request) {
       const reservation = await prisma.reservation.findUnique({
         where: { id: reservationId },
         include: {
-          client: true,
-          service: true
+          user: true
         }
       });
       
       if (reservation) {
         reservationInfo = {
-          clientName: reservation.client?.name,
-          clientEmail: reservation.client?.email,
-          serviceName: reservation.service?.name,
-          serviceId: reservation.service?.id,
+          clientName: reservation.user?.name,
+          clientEmail: reservation.user?.email,
+          serviceName: null,
+          serviceId: reservation.serviceId,
           date: reservation.date
         };
       }

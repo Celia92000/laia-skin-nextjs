@@ -1272,8 +1272,9 @@ export default function AdminDashboard() {
                       ),
                       paymentStatus: r.paymentStatus || 'pending'
                     }))}
+                    services={services}
                     onEdit={openEditModal}
-                    onCancel={cancelReservation}
+                    onCancel={(reservation) => cancelReservation(reservation.id)}
                     onStatusChange={(id, status) => updateReservationStatus(id, status as any)}
                   />
                 )}
@@ -1717,7 +1718,8 @@ export default function AdminDashboard() {
               loyaltyProfiles={loyaltyProfiles}
               onPointsAdd={(clientId, points) => {
                 // Ajouter des points bonus
-                updateLoyaltyProfile(clientId, points);
+                // TODO: Implémenter updateLoyaltyProfile
+                console.log('Points à ajouter:', clientId, points);
               }}
             />
           )}
@@ -2407,7 +2409,7 @@ export default function AdminDashboard() {
                         }}
                         className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
                       />
-                      <span className="text-sm text-[#2c3e50]">{name}</span>
+                      <span className="text-sm text-[#2c3e50]">{String(name)}</span>
                       <span className="text-xs text-[#2c3e50]/60 ml-auto">
                         {key === 'hydro-naissance' && '99€ (lancement)'}
                         {key === 'hydro' && '70€ (lancement)'}
@@ -2566,7 +2568,7 @@ export default function AdminDashboard() {
                         }}
                         className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
                       />
-                      <span className="text-sm text-[#2c3e50]">{name}</span>
+                      <span className="text-sm text-[#2c3e50]">{String(name)}</span>
                       <span className="text-xs text-[#2c3e50]/60 ml-auto">
                         {key === 'hydro-naissance' && '99€ (lancement)'}
                         {key === 'hydro' && '70€ (lancement)'}

@@ -17,8 +17,7 @@ export async function GET(request: Request) {
     // Récupérer les avis de la base de données
     const reviews = await prisma.review.findMany({
       include: {
-        client: true,
-        service: true
+        user: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -34,18 +33,18 @@ export async function GET(request: Request) {
         id: r.id,
         rating: r.rating,
         comment: r.comment,
-        clientName: r.client?.name || 'Client anonyme',
-        clientEmail: r.client?.email,
-        clientPhone: r.client?.phone,
-        serviceName: r.service?.name,
+        clientName: r.user?.name || 'Client anonyme',
+        clientEmail: r.user?.email,
+        clientPhone: r.user?.phone,
+        serviceName: r.serviceName,
         source: r.source || 'website',
         createdAt: r.createdAt,
-        published: r.published,
+        published: r.approved,
         response: r.response,
-        photos: r.photos ? JSON.parse(r.photos) : []
+        photos: []
       })),
       ...googleReviews.map(g => ({
-        id: g.id,
+        id: 'google_' + g.id,
         rating: g.rating,
         comment: g.comment,
         clientName: g.authorName,
@@ -53,10 +52,10 @@ export async function GET(request: Request) {
         clientPhone: null,
         serviceName: null,
         source: 'google',
-        createdAt: g.createdAt,
+        createdAt: g.publishedAt,
         published: true,
-        response: g.response,
-        photos: g.photos ? JSON.parse(g.photos) : []
+        response: g.replyText,
+        photos: []
       }))
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -83,11 +82,10 @@ export async function POST(request: Request) {
       data: {
         rating: data.rating,
         comment: data.comment,
-        clientId: data.clientId,
-        serviceId: data.serviceId,
+        userId: data.clientId,
+        serviceName: data.serviceName,
         source: data.source || 'website',
-        published: data.published || false,
-        photos: data.photos ? JSON.stringify(data.photos) : null
+        approved: data.published || false
       }
     });
 
