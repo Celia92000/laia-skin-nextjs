@@ -3,18 +3,8 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Récupérer tous les messages WhatsApp avec les infos utilisateur
+    // Récupérer tous les messages WhatsApp
     const messages = await prisma.whatsAppHistory.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true
-          }
-        }
-      },
       orderBy: {
         createdAt: 'desc'
       },
@@ -28,8 +18,6 @@ export async function GET() {
       to: msg.to,
       direction: msg.direction,
       userId: msg.userId,
-      userName: (msg as any).user?.name,
-      userPhone: (msg as any).user?.phone,
       message: msg.message.substring(0, 50) + '...',
       sentAt: msg.createdAt
     }));
@@ -54,7 +42,6 @@ export async function GET() {
         to: msg.to,
         direction: msg.direction,
         userId: msg.userId,
-        userName: (msg as any).user?.name,
         sentAt: msg.createdAt
       });
     });
