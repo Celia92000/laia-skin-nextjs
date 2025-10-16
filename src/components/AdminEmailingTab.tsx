@@ -74,7 +74,7 @@ export default function AdminEmailingTab() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ [Campagnes] Templates reçus:', data.length, data.map(t => t.name));
+        console.log('✅ [Campagnes] Templates reçus:', data.length, data.map((t: any) => t.name));
         setTemplates(data);
       }
     } catch (error) {
