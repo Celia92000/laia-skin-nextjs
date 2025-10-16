@@ -1604,19 +1604,19 @@ export default function DragDropCalendar() {
               className="p-6 space-y-4"
             >
               {/* Notes si existantes */}
-              {editingPost.notes && (
+              {(editingPost as any).notes && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <h4 className="text-sm font-semibold text-[#8B6F5C] mb-2">💭 Notes sauvegardées</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{editingPost.notes}</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{(editingPost as any).notes}</p>
                 </div>
               )}
 
               {/* Links si existants */}
-              {editingPost.links && JSON.parse(editingPost.links).length > 0 && (
+              {(editingPost as any).links && JSON.parse((editingPost as any).links).length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="text-sm font-semibold text-[#8B6F5C] mb-2">🔗 Liens de référence</h4>
                   <div className="space-y-1">
-                    {JSON.parse(editingPost.links).map((link: string, idx: number) => (
+                    {JSON.parse((editingPost as any).links).map((link: string, idx: number) => (
                       <a
                         key={idx}
                         href={link}
@@ -1726,7 +1726,7 @@ export default function DragDropCalendar() {
                     <textarea
                       name="links"
                       rows={3}
-                      defaultValue={editingPost.links ? JSON.parse(editingPost.links).join('\n') : ''}
+                      defaultValue={(editingPost as any).links ? JSON.parse((editingPost as any).links).join('\n') : ''}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>

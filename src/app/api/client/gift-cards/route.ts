@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // Récupérer les cartes cadeaux achetées par le client
     const purchasedGiftCards = await prisma.giftCard.findMany({
       where: {
-        purchaserId: decoded.userId
+        purchasedBy: decoded.userId
       },
       include: {
         reservations: {
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         createdAt: card.createdAt.toISOString(),
         expiryDate: card.expiryDate?.toISOString(),
         usedDate: card.usedDate?.toISOString(),
-        reservations: card.reservations.map(res => ({
+        reservations: (card.reservations as any[]).map((res: any) => ({
           id: res.id,
           date: res.date.toISOString(),
           time: res.time,
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
         createdAt: card.createdAt.toISOString(),
         expiryDate: card.expiryDate?.toISOString(),
         usedDate: card.usedDate?.toISOString(),
-        reservations: card.reservations.map(res => ({
+        reservations: (card.reservations as any[]).map((res: any) => ({
           id: res.id,
           date: res.date.toISOString(),
           time: res.time,

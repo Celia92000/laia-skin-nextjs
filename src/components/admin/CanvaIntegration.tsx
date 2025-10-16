@@ -85,9 +85,9 @@ export default function CanvaIntegration({ platform, contentType, onDesignCreate
   // Filtrer les templates selon la plateforme et le type sélectionnés
   const filteredTemplates = canvaTemplates.filter(template => {
     if (!platform && !contentType) return true;
-    if (platform && !contentType) return template.platform.toLowerCase() === platform.toLowerCase();
+    if (platform && !contentType) return template.platform?.toLowerCase() === platform.toLowerCase();
     if (!platform && contentType) return template.type === contentType;
-    return template.platform.toLowerCase() === platform.toLowerCase() && template.type === contentType;
+    return template.platform?.toLowerCase() === platform.toLowerCase() && template.type === contentType;
   });
 
   const openCanva = (template?: CanvaTemplate) => {

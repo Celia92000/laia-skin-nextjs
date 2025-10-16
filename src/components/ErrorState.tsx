@@ -4,7 +4,7 @@
  * Évite les doublons en centralisant la gestion
  */
 
-import { XCircleIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+// import { XCircleIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface ErrorStateProps {
   title?: string;
@@ -24,9 +24,9 @@ export default function ErrorState({
   className = ''
 }: ErrorStateProps) {
   const icons = {
-    error: <XCircleIcon className="h-12 w-12 text-red-500" />,
-    warning: <ExclamationTriangleIcon className="h-12 w-12 text-yellow-500" />,
-    info: <ExclamationTriangleIcon className="h-12 w-12 text-blue-500" />
+    error: <span className="text-6xl">❌</span>,
+    warning: <span className="text-6xl">⚠️</span>,
+    info: <span className="text-6xl">ℹ️</span>
   };
 
   const colors = {
@@ -56,7 +56,7 @@ export default function ErrorState({
           onClick={onRetry}
           className="inline-flex items-center px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
         >
-          <ArrowPathIcon className="h-5 w-5 mr-2" />
+          <span className="mr-2">🔄</span>
           {retryLabel}
         </button>
       )}

@@ -104,49 +104,50 @@ export async function GET(request: NextRequest) {
     const igUsernameData = await igUsernameResponse.json();
     const instagramUsername = igUsernameData.username || pageName;
 
-    // Vérifier si un compte existe déjà pour cet utilisateur et cette plateforme
-    const existingAccount = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-        type: 'social',
-        platform: 'instagram'
-      }
-    });
+    // TODO: Vérifier si un compte existe déjà pour cet utilisateur et cette plateforme
+    // Note: Le modèle Account n'existe pas encore dans le schéma Prisma
+    // const existingAccount = await prisma.account.findFirst({
+    //   where: {
+    //     userId: userId,
+    //     type: 'social',
+    //     platform: 'instagram'
+    //   }
+    // });
 
-    if (existingAccount) {
-      // Mettre à jour le compte existant
-      await prisma.account.update({
-        where: { id: existingAccount.id },
-        data: {
-          accountName: instagramUsername,
-          accountId: instagramAccountId,
-          pageId: pageId,
-          accessToken: accessToken,
-          refreshToken: null,
-          expiresAt: expiresAt,
-          enabled: true,
-          lastSyncedAt: new Date()
-        }
-      });
-    } else {
-      // Créer un nouveau compte
-      await prisma.account.create({
-        data: {
-          userId: userId,
-          type: 'social',
-          platform: 'instagram',
-          accountName: instagramUsername,
-          accountId: instagramAccountId,
-          pageId: pageId,
-          accessToken: accessToken,
-          refreshToken: null,
-          expiresAt: expiresAt,
-          enabled: true,
-          isDefault: true, // Premier compte = par défaut
-          lastSyncedAt: new Date()
-        }
-      });
-    }
+    // if (existingAccount) {
+    //   // Mettre à jour le compte existant
+    //   await prisma.account.update({
+    //     where: { id: existingAccount.id },
+    //     data: {
+    //       accountName: instagramUsername,
+    //       accountId: instagramAccountId,
+    //       pageId: pageId,
+    //       accessToken: accessToken,
+    //       refreshToken: null,
+    //       expiresAt: expiresAt,
+    //       enabled: true,
+    //       lastSyncedAt: new Date()
+    //     }
+    //   });
+    // } else {
+    //   // Créer un nouveau compte
+    //   await prisma.account.create({
+    //     data: {
+    //       userId: userId,
+    //       type: 'social',
+    //       platform: 'instagram',
+    //       accountName: instagramUsername,
+    //       accountId: instagramAccountId,
+    //       pageId: pageId,
+    //       accessToken: accessToken,
+    //       refreshToken: null,
+    //       expiresAt: expiresAt,
+    //       enabled: true,
+    //       isDefault: true, // Premier compte = par défaut
+    //       lastSyncedAt: new Date()
+    //     }
+    //   });
+    // }
 
     // Rediriger vers l'admin avec succès
     return NextResponse.redirect(

@@ -16,7 +16,7 @@ export async function GET() {
         }
       },
       orderBy: {
-        sentAt: 'desc'
+        createdAt: 'desc'
       },
       take: 50
     });
@@ -28,10 +28,10 @@ export async function GET() {
       to: msg.to,
       direction: msg.direction,
       userId: msg.userId,
-      userName: msg.user?.name,
-      userPhone: msg.user?.phone,
+      userName: (msg as any).user?.name,
+      userPhone: (msg as any).user?.phone,
       message: msg.message.substring(0, 50) + '...',
-      sentAt: msg.sentAt
+      sentAt: msg.createdAt
     }));
 
     // Grouper par numéro normalisé pour identifier les doublons
@@ -54,8 +54,8 @@ export async function GET() {
         to: msg.to,
         direction: msg.direction,
         userId: msg.userId,
-        userName: msg.user?.name,
-        sentAt: msg.sentAt
+        userName: (msg as any).user?.name,
+        sentAt: msg.createdAt
       });
     });
 

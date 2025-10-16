@@ -614,7 +614,7 @@ export default function AdminEmailingTab() {
                           name: template.name,
                           subject: template.subject,
                           content: template.content,
-                          category: template.category || 'general'
+                          category: (template as any).category || 'general'
                         });
                         setShowTemplateModal(true);
                       }}

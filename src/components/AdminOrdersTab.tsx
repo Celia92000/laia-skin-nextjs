@@ -1327,8 +1327,8 @@ export default function AdminOrdersTab() {
                   {previewCard.purchaser.email && (
                     <p className="text-white/80 text-sm mt-1">📧 {previewCard.purchaser.email}</p>
                   )}
-                  {previewCard.purchaser.phone && (
-                    <p className="text-white/80 text-sm mt-1">📱 {previewCard.purchaser.phone}</p>
+                  {(previewCard.purchaser as any).phone && (
+                    <p className="text-white/80 text-sm mt-1">📱 {(previewCard.purchaser as any).phone}</p>
                   )}
                 </div>
               )}
