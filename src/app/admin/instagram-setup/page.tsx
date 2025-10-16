@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function InstagramSetupPage() {
   const [step, setStep] = useState(1);
@@ -14,6 +14,7 @@ export default function InstagramSetupPage() {
 
   // Fonction pour obtenir le token via OAuth
   const handleGetToken = () => {
+    if (typeof window === 'undefined') return;
     const redirectUri = encodeURIComponent(window.location.origin + '/admin/instagram-setup');
     const scope = 'pages_show_list,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish,business_management';
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=token`;
@@ -23,6 +24,7 @@ export default function InstagramSetupPage() {
 
   // Extraire le token de l'URL après redirection
   const extractTokenFromUrl = () => {
+    if (typeof window === 'undefined') return;
     const hash = window.location.hash;
     if (hash) {
       const params = new URLSearchParams(hash.substring(1));
@@ -101,9 +103,9 @@ export default function InstagramSetupPage() {
   };
 
   // Au chargement, vérifier si on revient de Facebook
-  useState(() => {
+  useEffect(() => {
     extractTokenFromUrl();
-  });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -239,6 +241,7 @@ INSTAGRAM_ACCOUNT_ID="${instagramId}"`}
 
             <button
               onClick={() => {
+                if (typeof window === 'undefined') return;
                 navigator.clipboard.writeText(`# Meta Social Media (Instagram + Facebook)
 META_APP_ID="${appId}"
 META_APP_SECRET="${appSecret}"
