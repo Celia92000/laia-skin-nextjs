@@ -28,3 +28,6 @@ Sentry.init({
   replaysSessionSampleRate: 0.1, // 10% des sessions normales
   replaysOnErrorSampleRate: 1.0, // 100% des sessions avec erreur
 });
+
+// Hook requis pour instrumenter les navigations avec Turbopack
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
