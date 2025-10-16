@@ -1717,7 +1717,7 @@ export default function DragDropCalendar() {
                     <textarea
                       name="notes"
                       rows={3}
-                      defaultValue={editingPost.notes || ''}
+                      defaultValue={(editingPost as any).notes || ''}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
@@ -1735,7 +1735,7 @@ export default function DragDropCalendar() {
                     <input
                       type="text"
                       name="hashtags"
-                      defaultValue={editingPost.hashtags || ''}
+                      defaultValue={(editingPost as any).hashtags || ''}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                     />
                   </div>
