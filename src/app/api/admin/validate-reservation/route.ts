@@ -2,8 +2,22 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
 import { sendReservationConfirmationEmail } from '@/lib/resend-email-service';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const { reservationId, action } = await request.json();
@@ -111,7 +125,7 @@ export async function POST(request: Request) {
           `Malheureusement, votre demande de réservation pour le ${new Date(reservation.date).toLocaleDateString('fr-FR')} à ${reservation.time} n'a pas pu être acceptée.\n\n` +
           `Nous vous invitons à choisir un autre créneau sur notre site : https://laiaskin.fr\n\n` +
           `Merci de votre compréhension.\n` +
-          `LAIA SKIN Institut`;
+          `${siteName}`;
         
         sendWhatsAppMessage({
           to: reservation.user.phone,

@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const token = request.cookies.get('token')?.value || 
@@ -68,13 +82,13 @@ export async function POST(request: NextRequest) {
 
     // Envoyer l'email de réponse
     const { data, error } = await getResend().emails.send({
-      from: 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+      from: `${siteName} <${email}>`,
       to: replyTo,
       subject: replySubject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 20px; border-radius: 10px 10px 0 0;">
-            <h2 style="color: white; margin: 0;">LAIA SKIN Institut</h2>
+          <div style="background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 20px; border-radius: 10px 10px 0 0;">
+            <h2 style="color: white; margin: 0;">${siteName}</h2>
           </div>
           <div style="padding: 20px; background: #f9f9f9;">
             ${finalContent}
@@ -89,7 +103,7 @@ export async function POST(request: NextRequest) {
           ` : ''}
         </div>
       `,
-      replyTo: 'contact@laiaskininstitut.fr'
+      replyTo: `${email}`
     });
 
     if (error) {
@@ -97,7 +111,7 @@ export async function POST(request: NextRequest) {
       await prisma.emailHistory.create({
         data: {
           to: replyTo,
-          from: 'contact@laiaskininstitut.fr',
+          from: `${email}`,
           subject: replySubject,
           content: finalContent,
           template: 'reply',
@@ -115,7 +129,7 @@ export async function POST(request: NextRequest) {
     await prisma.emailHistory.create({
       data: {
         to: replyTo,
-        from: 'contact@laiaskininstitut.fr',
+        from: `${email}`,
         subject: replySubject,
         content: finalContent,
         template: 'reply',

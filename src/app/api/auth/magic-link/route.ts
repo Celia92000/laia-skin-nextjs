@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     const { email } = await request.json();
 
@@ -46,9 +60,9 @@ export async function POST(request: NextRequest) {
     // Envoyer l'email avec Resend
     try {
       await getResend().emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+        from: process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`,
         to: user.email,
-        subject: '🔑 Votre lien de connexion - LAIA SKIN',
+        subject: '🔑 Votre lien de connexion - ${siteName}',
         html: `
           <!DOCTYPE html>
           <html>
@@ -65,7 +79,7 @@ export async function POST(request: NextRequest) {
                 <p style="font-size: 16px; margin-bottom: 20px;">Bonjour ${user.name},</p>
 
                 <p style="font-size: 16px; margin-bottom: 20px;">
-                  Cliquez sur le bouton ci-dessous pour vous connecter instantanément à votre espace client LAIA SKIN :
+                  Cliquez sur le bouton ci-dessous pour vous connecter instantanément à votre espace client ${siteName} :
                 </p>
 
                 <div style="text-align: center; margin: 30px 0;">
@@ -103,7 +117,7 @@ export async function POST(request: NextRequest) {
                 </p>
 
                 <p style="font-size: 12px; color: #999; text-align: center; margin-top: 20px;">
-                  © ${new Date().getFullYear()} LAIA SKIN Institut - Tous droits réservés
+                  © ${new Date().getFullYear()} ${siteName} - Tous droits réservés
                 </p>
               </div>
             </body>

@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const website = config.customDomain || process.env.NEXT_PUBLIC_URL || 'http://localhost:3001';
   
   try {
     // Vérifier l'authentification
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
 
         // Envoyer l'email via Resend
         const { data, error } = await getResend().emails.send({
-          from: 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+          from: `${siteName} <${email}>`,
           to: recipient.email,
           subject: personalizedSubject,
           html: `
@@ -97,25 +103,25 @@ export async function POST(request: NextRequest) {
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
+                .header { background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
                 .header h1 { color: white; margin: 0; }
                 .content { background: #ffffff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
                 .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px; }
-                .button { display: inline-block; padding: 12px 30px; background: #d4b5a0; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+                .button { display: inline-block; padding: 12px 30px; background: ${primaryColor}; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
               </style>
             </head>
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>LAIA SKIN Institut</h1>
+                  <h1>${siteName}</h1>
                 </div>
                 <div class="content">
                   ${personalizedContent}
                 </div>
                 <div class="footer">
-                  <p>LAIA SKIN Institut - Votre beauté, notre passion</p>
+                  <p>${siteName} - ${config.siteTagline || 'Votre beauté, notre passion'}</p>
                   <p style="margin-top: 10px;">
-                    <a href="${process.env.NEXT_PUBLIC_URL || 'http://localhost:3001'}/unsubscribe?email=${encodeURIComponent(recipient.email)}"
+                    <a href="${website}/unsubscribe?email=${encodeURIComponent(recipient.email)}"
                        style="color: #666; text-decoration: underline;">
                       Se désinscrire de la newsletter
                     </a>
@@ -134,7 +140,7 @@ export async function POST(request: NextRequest) {
           // Enregistrer l'échec dans l'historique
           await prisma.emailHistory.create({
             data: {
-              from: 'contact@laiaskininstitut.fr',
+              from: email,
               to: recipient.email,
               subject: personalizedSubject,
               content: personalizedContent,
@@ -151,7 +157,7 @@ export async function POST(request: NextRequest) {
           // Enregistrer le succès dans l'historique
           await prisma.emailHistory.create({
             data: {
-              from: 'contact@laiaskininstitut.fr',
+              from: email,
               to: recipient.email,
               subject: personalizedSubject,
               content: personalizedContent,

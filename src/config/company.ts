@@ -1,21 +1,22 @@
 // Configuration des informations légales de l'entreprise
-// IMPORTANT : Mettre à jour ces informations avec les vraies données de l'entreprise
+// DÉPRÉCIÉ : Utilisez plutôt la table SiteConfig en BDD
+// import { getSiteConfig } from '@/lib/config-service';
 
 export const companyInfo = {
   // Informations de base
-  name: "LAIA SKIN Institut",
-  legalName: "LAIA SKIN SARL", // Raison sociale
+  name: "Mon Institut de Beauté",
+  legalName: "Mon Institut SARL", // Raison sociale
   address: {
-    street: "123 Avenue de la Beauté",
-    zipCode: "75001",
+    street: "1 Rue de l'Institut",
+    zipCode: "75000",
     city: "Paris",
     country: "France"
   },
-  
+
   // Contact
-  phone: "01 23 45 67 89",
-  email: "contact@laiaskin.fr",
-  website: "www.laiaskin.fr",
+  phone: "01 00 00 00 00",
+  email: "contact@mon-institut.fr",
+  website: "www.mon-institut.fr",
   
   // Informations légales
   siret: "123 456 789 00012", // À remplacer par le vrai SIRET

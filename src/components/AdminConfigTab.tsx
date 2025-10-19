@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import {
   Save, Settings, Mail, Phone, MapPin, Facebook, Instagram,
-  MessageCircle, Palette, Clock, FileText, Globe
+  MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
+  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart
 } from 'lucide-react';
 
 interface SiteConfig {
@@ -39,6 +40,64 @@ interface SiteConfig {
   legalNotice?: string;
   emailSignature?: string;
   welcomeEmailText?: string;
+
+  // Informations légales de l'entreprise
+  legalName?: string;
+  siret?: string;
+  siren?: string;
+  tvaNumber?: string;
+  apeCode?: string;
+  rcs?: string;
+  capital?: string;
+  legalForm?: string;
+  insuranceCompany?: string;
+  insuranceContract?: string;
+  insuranceAddress?: string;
+  legalRepName?: string;
+  legalRepTitle?: string;
+
+  // Réseaux sociaux supplémentaires
+  linkedin?: string;
+  youtube?: string;
+
+  // Géolocalisation
+  country?: string;
+  latitude?: string;
+  longitude?: string;
+  googleMapsUrl?: string;
+
+  // Fondateur
+  founderName?: string;
+  founderTitle?: string;
+  founderQuote?: string;
+  founderImage?: string;
+
+  // Page À propos
+  aboutIntro?: string;
+  aboutParcours?: string;
+
+  // Données structurées (JSON)
+  testimonials?: string;
+  formations?: string;
+
+  // Finances
+  bankName?: string;
+  bankIban?: string;
+  bankBic?: string;
+
+  // Configuration technique
+  baseUrl?: string;
+
+  // Tracking & Analytics
+  googleAnalyticsId?: string;
+  facebookPixelId?: string;
+  metaVerificationCode?: string;
+  googleVerificationCode?: string;
+
+  // SEO global
+  defaultMetaTitle?: string;
+  defaultMetaDescription?: string;
+  defaultMetaKeywords?: string;
 }
 
 export default function AdminConfigTab() {
@@ -51,7 +110,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -149,11 +208,16 @@ export default function AdminConfigTab() {
         {[
           { id: 'general', label: 'Général', icon: Globe },
           { id: 'contact', label: 'Contact', icon: Phone },
+          { id: 'company', label: 'Entreprise', icon: Building },
           { id: 'social', label: 'Réseaux sociaux', icon: MessageCircle },
           { id: 'appearance', label: 'Apparence', icon: Palette },
           { id: 'hours', label: 'Horaires', icon: Clock },
           { id: 'content', label: 'Contenu', icon: FileText },
-          { id: 'legal', label: 'Légal', icon: FileText }
+          { id: 'about', label: 'À propos', icon: User },
+          { id: 'location', label: 'Localisation', icon: Map },
+          { id: 'seo', label: 'SEO & Tracking', icon: Search },
+          { id: 'finances', label: 'Finances', icon: CreditCard },
+          { id: 'legal', label: 'Légal', icon: Shield }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -265,7 +329,7 @@ export default function AdminConfigTab() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Ville
@@ -291,6 +355,239 @@ export default function AdminConfigTab() {
                   placeholder="75001"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  Pays
+                </label>
+                <input
+                  type="text"
+                  value={config.country || ''}
+                  onChange={(e) => setConfig({ ...config, country: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  placeholder="France"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'company' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <Building className="w-5 h-5 text-[#d4b5a0]" />
+              Informations légales de l'entreprise
+            </h3>
+
+            {/* Informations de base */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Raison sociale *
+                </label>
+                <input
+                  type="text"
+                  value={config.legalName || ''}
+                  onChange={(e) => setConfig({ ...config, legalName: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  placeholder="LAIA SKIN SARL"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Forme juridique
+                </label>
+                <select
+                  value={config.legalForm || ''}
+                  onChange={(e) => setConfig({ ...config, legalForm: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                >
+                  <option value="">Sélectionner...</option>
+                  <option value="SARL">SARL</option>
+                  <option value="EURL">EURL</option>
+                  <option value="SAS">SAS</option>
+                  <option value="SASU">SASU</option>
+                  <option value="EI">Entreprise Individuelle</option>
+                  <option value="MICRO">Micro-entreprise</option>
+                  <option value="AUTO">Auto-entrepreneur</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Capital social
+                </label>
+                <input
+                  type="text"
+                  value={config.capital || ''}
+                  onChange={(e) => setConfig({ ...config, capital: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  placeholder="10 000 €"
+                />
+              </div>
+            </div>
+
+            {/* Numéros légaux */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3">Numéros d'identification</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SIRET <span className="text-xs text-gray-500">(14 chiffres)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={config.siret || ''}
+                    onChange={(e) => setConfig({ ...config, siret: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="123 456 789 00012"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SIREN <span className="text-xs text-gray-500">(9 chiffres)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={config.siren || ''}
+                    onChange={(e) => setConfig({ ...config, siren: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="123 456 789"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    N° TVA intracommunautaire
+                  </label>
+                  <input
+                    type="text"
+                    value={config.tvaNumber || ''}
+                    onChange={(e) => setConfig({ ...config, tvaNumber: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="FR 12 123456789"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Code APE/NAF
+                  </label>
+                  <input
+                    type="text"
+                    value={config.apeCode || ''}
+                    onChange={(e) => setConfig({ ...config, apeCode: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="9602B"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    RCS (Registre du Commerce)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.rcs || ''}
+                    onChange={(e) => setConfig({ ...config, rcs: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Paris 123 456 789"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Représentant légal */}
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-purple-600" />
+                Représentant légal
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom complet
+                  </label>
+                  <input
+                    type="text"
+                    value={config.legalRepName || ''}
+                    onChange={(e) => setConfig({ ...config, legalRepName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Laïa Martin"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre
+                  </label>
+                  <input
+                    type="text"
+                    value={config.legalRepTitle || ''}
+                    onChange={(e) => setConfig({ ...config, legalRepTitle: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Gérante"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Assurance */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-green-600" />
+                Assurance professionnelle
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Compagnie d'assurance
+                  </label>
+                  <input
+                    type="text"
+                    value={config.insuranceCompany || ''}
+                    onChange={(e) => setConfig({ ...config, insuranceCompany: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="AXA France"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    N° de contrat
+                  </label>
+                  <input
+                    type="text"
+                    value={config.insuranceContract || ''}
+                    onChange={(e) => setConfig({ ...config, insuranceContract: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="1234567"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Adresse de l'assurance
+                  </label>
+                  <input
+                    type="text"
+                    value={config.insuranceAddress || ''}
+                    onChange={(e) => setConfig({ ...config, insuranceAddress: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="10 rue de la Paix, 75001 Paris"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>ℹ️ Informations importantes :</strong> Ces données seront utilisées sur vos factures,
+                devis et documents légaux. Assurez-vous qu'elles sont exactes et à jour.
+              </p>
             </div>
           </div>
         )}
@@ -351,6 +648,34 @@ export default function AdminConfigTab() {
                 onChange={(e) => setConfig({ ...config, whatsapp: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                 placeholder="+33612345678"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <Linkedin className="w-4 h-4" />
+                LinkedIn (URL complète)
+              </label>
+              <input
+                type="url"
+                value={config.linkedin || ''}
+                onChange={(e) => setConfig({ ...config, linkedin: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                placeholder="https://linkedin.com/in/votre-profil"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <Youtube className="w-4 h-4" />
+                YouTube (URL complète)
+              </label>
+              <input
+                type="url"
+                value={config.youtube || ''}
+                onChange={(e) => setConfig({ ...config, youtube: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                placeholder="https://youtube.com/@votre-chaine"
               />
             </div>
           </div>
@@ -597,6 +922,19 @@ export default function AdminConfigTab() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                 placeholder="https://exemple.com/hero.jpg"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Image de fond pour la section hero de la page d'accueil (recommandé: 1920x1080px minimum)
+              </p>
+              {config.heroImage && (
+                <div className="mt-3 p-4 bg-white rounded-lg border border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Aperçu :</p>
+                  <img
+                    src={config.heroImage}
+                    alt="Hero background preview"
+                    className="w-full max-h-60 object-cover rounded-lg"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -614,6 +952,470 @@ export default function AdminConfigTab() {
           </div>
         )}
 
+        {activeTab === 'about' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-[#d4b5a0]" />
+              Page À propos
+            </h3>
+
+            {/* Fondateur */}
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <User className="w-4 h-4 text-purple-600" />
+                Fondateur / Fondatrice
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom complet
+                  </label>
+                  <input
+                    type="text"
+                    value={config.founderName || ''}
+                    onChange={(e) => setConfig({ ...config, founderName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Laïa Martin"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre / Fonction
+                  </label>
+                  <input
+                    type="text"
+                    value={config.founderTitle || ''}
+                    onChange={(e) => setConfig({ ...config, founderTitle: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Fondatrice et Esthéticienne"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Photo du fondateur (URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={config.founderImage || ''}
+                    onChange={(e) => setConfig({ ...config, founderImage: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="https://exemple.com/photo-fondateur.jpg"
+                  />
+                  {config.founderImage && (
+                    <div className="mt-2 p-4 bg-white rounded-lg">
+                      <img src={config.founderImage} alt="Fondateur" className="max-h-40 rounded-lg" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Citation / Message du fondateur
+                  </label>
+                  <textarea
+                    value={config.founderQuote || ''}
+                    onChange={(e) => setConfig({ ...config, founderQuote: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Ma passion est de révéler la beauté naturelle de chaque femme..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Textes de la page À propos */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-600" />
+                Contenus de la page
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Introduction
+                  </label>
+                  <textarea
+                    value={config.aboutIntro || ''}
+                    onChange={(e) => setConfig({ ...config, aboutIntro: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Présentation générale de votre institut..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parcours / Histoire
+                  </label>
+                  <textarea
+                    value={config.aboutParcours || ''}
+                    onChange={(e) => setConfig({ ...config, aboutParcours: e.target.value })}
+                    rows={6}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Racontez votre parcours, votre histoire..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Témoignages */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-green-600" />
+                Témoignages
+              </h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Témoignages (Format JSON)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Format: <code className="bg-gray-100 px-1 rounded">{`[{"name":"Nom","initials":"ND","text":"Témoignage...","rating":5}]`}</code>
+                </p>
+                <p className="text-xs text-blue-600 mb-2">
+                  💡 Les 3 premiers témoignages seront affichés sur la page d'accueil
+                </p>
+                <textarea
+                  value={config.testimonials || ''}
+                  onChange={(e) => setConfig({ ...config, testimonials: e.target.value })}
+                  rows={8}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono text-sm"
+                  placeholder='[
+  {
+    "name": "Sophie D.",
+    "initials": "SD",
+    "text": "Après 3 séances, ma peau est transformée !",
+    "rating": 5
+  }
+]'
+                />
+              </div>
+            </div>
+
+            {/* Formations */}
+            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-orange-600" />
+                Formations & Certifications
+              </h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Format JSON (tableau d'objets)
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Exemple: {`[{"title":"CAP Esthétique","year":"2018","school":"École de beauté"}]`}
+                </p>
+                <textarea
+                  value={config.formations || ''}
+                  onChange={(e) => setConfig({ ...config, formations: e.target.value })}
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono text-sm"
+                  placeholder='[{"title": "CAP Esthétique", "year": "2018", "school": "École de beauté"}]'
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'location' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <Map className="w-5 h-5 text-[#d4b5a0]" />
+              Géolocalisation
+            </h3>
+
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-blue-600" />
+                Coordonnées GPS
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Latitude
+                  </label>
+                  <input
+                    type="text"
+                    value={config.latitude || ''}
+                    onChange={(e) => setConfig({ ...config, latitude: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="48.8566"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    value={config.longitude || ''}
+                    onChange={(e) => setConfig({ ...config, longitude: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="2.3522"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Map className="w-4 h-4 text-green-600" />
+                Google Maps
+              </h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL Google Maps
+                </label>
+                <input
+                  type="url"
+                  value={config.googleMapsUrl || ''}
+                  onChange={(e) => setConfig({ ...config, googleMapsUrl: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  placeholder="https://maps.google.com/?q=votre+adresse"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Pour obtenir l'URL : ouvrez Google Maps, recherchez votre adresse, puis cliquez sur "Partager" et copiez le lien.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>ℹ️ Astuce :</strong> Les coordonnées GPS permettent d'afficher votre institut sur une carte interactive.
+                Vous pouvez trouver vos coordonnées sur <a href="https://www.latlong.net/" target="_blank" className="underline">latlong.net</a>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'seo' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5 text-[#d4b5a0]" />
+              SEO & Tracking
+            </h3>
+
+            {/* Configuration technique */}
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-600" />
+                Configuration technique
+              </h4>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL de base du site
+                </label>
+                <input
+                  type="url"
+                  value={config.baseUrl || ''}
+                  onChange={(e) => setConfig({ ...config, baseUrl: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                  placeholder="https://www.laia-skin.fr"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  URL complète de votre site (utilisée pour générer les liens canoniques et sitemaps)
+                </p>
+              </div>
+            </div>
+
+            {/* SEO Global */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-600" />
+                Métadonnées par défaut
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre SEO par défaut
+                  </label>
+                  <input
+                    type="text"
+                    value={config.defaultMetaTitle || ''}
+                    onChange={(e) => setConfig({ ...config, defaultMetaTitle: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Laia Skin Institut - Institut de beauté à Paris"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Recommandé : 50-60 caractères
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description SEO par défaut
+                  </label>
+                  <textarea
+                    value={config.defaultMetaDescription || ''}
+                    onChange={(e) => setConfig({ ...config, defaultMetaDescription: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Découvrez notre institut de beauté spécialisé en soins du visage, épilation..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Recommandé : 150-160 caractères
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mots-clés SEO (séparés par des virgules)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.defaultMetaKeywords || ''}
+                    onChange={(e) => setConfig({ ...config, defaultMetaKeywords: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="institut beauté, soins visage, épilation, paris"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Analytics & Tracking */}
+            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <BarChart className="w-4 h-4 text-purple-600" />
+                Analytics & Tracking
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Google Analytics ID
+                  </label>
+                  <input
+                    type="text"
+                    value={config.googleAnalyticsId || ''}
+                    onChange={(e) => setConfig({ ...config, googleAnalyticsId: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="G-XXXXXXXXXX ou UA-XXXXXXXXX-X"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Facebook Pixel ID
+                  </label>
+                  <input
+                    type="text"
+                    value={config.facebookPixelId || ''}
+                    onChange={(e) => setConfig({ ...config, facebookPixelId: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="123456789012345"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Codes de vérification */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-green-600" />
+                Codes de vérification
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Google Search Console (code de vérification)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.googleVerificationCode || ''}
+                    onChange={(e) => setConfig({ ...config, googleVerificationCode: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="abcdefghijklmnopqrstuvwxyz123456"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meta (Facebook/Instagram) - Code de vérification
+                  </label>
+                  <input
+                    type="text"
+                    value={config.metaVerificationCode || ''}
+                    onChange={(e) => setConfig({ ...config, metaVerificationCode: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="abcdefghijklmnopqrstuvwxyz123456"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-sm text-amber-800">
+                <strong>ℹ️ Informations importantes :</strong> Ces codes permettent de suivre les performances de votre site
+                et de le référencer sur Google et les réseaux sociaux.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'finances' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-[#d4b5a0]" />
+              Informations bancaires
+            </h3>
+
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="text-md font-semibold text-[#2c3e50] mb-3 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-blue-600" />
+                Coordonnées bancaires
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nom de la banque
+                  </label>
+                  <input
+                    type="text"
+                    value={config.bankName || ''}
+                    onChange={(e) => setConfig({ ...config, bankName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="BNP Paribas"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    IBAN
+                  </label>
+                  <input
+                    type="text"
+                    value={config.bankIban || ''}
+                    onChange={(e) => setConfig({ ...config, bankIban: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    BIC / SWIFT
+                  </label>
+                  <input
+                    type="text"
+                    value={config.bankBic || ''}
+                    onChange={(e) => setConfig({ ...config, bankBic: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="BNPAFRPPXXX"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-sm text-red-800">
+                <strong>⚠️ Sécurité :</strong> Ces informations bancaires seront utilisées sur vos factures.
+                Assurez-vous de les saisir correctement et de ne jamais les partager publiquement.
+              </p>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'legal' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Mentions légales et CGV</h3>
@@ -622,12 +1424,24 @@ export default function AdminConfigTab() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Conditions Générales de Vente (CGV)
               </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Vous pouvez écrire vos CGV personnalisées ici. Si vide, les CGV par défaut seront affichées.
+              </p>
+              <p className="text-xs text-blue-600 mb-2">
+                💡 Utilisez des doubles sauts de ligne pour séparer les paragraphes
+              </p>
               <textarea
                 value={config.termsAndConditions || ''}
                 onChange={(e) => setConfig({ ...config, termsAndConditions: e.target.value })}
-                rows={8}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
-                placeholder="Vos conditions générales de vente..."
+                rows={12}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono text-sm"
+                placeholder="Article 1 - Objet
+
+Les présentes conditions générales de vente...
+
+Article 2 - Tarifs
+
+Les prix sont indiqués en euros TTC..."
               />
             </div>
 

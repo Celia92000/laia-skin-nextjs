@@ -21,8 +21,12 @@ export async function POST(request: Request) {
     // Utiliser getPrismaClient pour s'assurer que la connexion est active
     const prisma = await getPrismaClient();
 
-    const user = await prisma.user.findUnique({
-      where: { email }
+    // Chercher l'utilisateur par email (utiliser findFirst car email n'est plus unique seul)
+    const user = await prisma.user.findFirst({
+      where: { email },
+      include: {
+        organization: true
+      }
     });
 
     if (!user) {

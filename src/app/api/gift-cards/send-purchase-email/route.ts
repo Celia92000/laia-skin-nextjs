@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/notifications';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     const { giftCardId, senderEmail, senderName } = await request.json();
 
@@ -54,7 +68,7 @@ export async function POST(request: NextRequest) {
   <div class="container">
     <div class="header">
       <h1>🎁 Merci pour votre achat !</h1>
-      <p style="margin: 10px 0 0 0; opacity: 0.9;">LAIA SKIN Institut</p>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">${siteName}</p>
     </div>
 
     <div class="content">
@@ -66,7 +80,7 @@ export async function POST(request: NextRequest) {
         <h2>⚠️ Étape importante : Paiement sur place</h2>
         <p><strong>Votre carte cadeau sera activée après le paiement sur place à l'institut.</strong></p>
         <p>Merci de venir régler votre carte cadeau à :</p>
-        <p><strong>LAIA SKIN Institut</strong><br>
+        <p><strong>${siteName}</strong><br>
         5 Rue de la Beauté<br>
         75001 Paris<br>
         <a href="https://maps.google.com/?q=LAIA+SKIN+Institut+Paris" style="color: #f59e0b;">📍 Voir sur Google Maps</a></p>
@@ -106,9 +120,9 @@ export async function POST(request: NextRequest) {
       <h2>📞 Besoin d'aide ?</h2>
       <p>Notre équipe est à votre disposition :</p>
       <ul>
-        <li>📞 Téléphone : 01 23 45 67 89</li>
-        <li>📱 WhatsApp : 06 12 34 56 78</li>
-        <li>✉️ Email : contact@laiaskin.com</li>
+        <li>📞 Téléphone : ${phone}</li>
+        <li>📱 WhatsApp : ${phone}</li>
+        <li>✉️ Email : ${email}</li>
       </ul>
 
       <center>
@@ -118,11 +132,11 @@ export async function POST(request: NextRequest) {
       </center>
 
       <p>Merci de votre confiance !<br>
-      <strong>L'équipe LAIA SKIN Institut</strong> 💝</p>
+      <strong>L'équipe ${siteName}</strong> 💝</p>
     </div>
 
     <div class="footer">
-      <p>© 2024 LAIA SKIN Institut - Tous droits réservés<br>
+      <p>© 2024 ${siteName} - Tous droits réservés<br>
       Cet email a été envoyé à ${senderEmail}<br>
       <a href="https://laia-skin-institut.vercel.app" style="color: #ec4899;">www.laiaskin.com</a></p>
     </div>
@@ -133,7 +147,7 @@ export async function POST(request: NextRequest) {
     // Envoyer l'email de confirmation d'achat
     await sendEmail(
       senderEmail,
-      `🎁 Votre carte cadeau LAIA SKIN - Paiement sur place requis`,
+      `🎁 Votre carte cadeau ${siteName} - Paiement sur place requis`,
       confirmationMessage
     );
 

@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  // Récupérer la configuration du site
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const email = config.email || 'contact@institut.fr';
+
   try {
     const { to, reservation } = await request.json();
 
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmation de réservation - LAIA SKIN INSTITUT</title>
+  <title>Confirmation de réservation - ${siteName}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
@@ -111,9 +123,9 @@ export async function POST(request: NextRequest) {
           
           <!-- Header avec gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 50px 40px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 36px; font-weight: 300; letter-spacing: 2px;">LAIA SKIN INSTITUT</h1>
-              <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 16px; letter-spacing: 1px;">Beauté & Bien-être</p>
+            <td style="background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 50px 40px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 36px; font-weight: 300; letter-spacing: 2px;">${siteName.toUpperCase()}</h1>
+              <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 16px; letter-spacing: 1px;">${config.siteTagline || 'Beauté & Bien-être'}</p>
             </td>
           </tr>
           
@@ -189,13 +201,12 @@ export async function POST(request: NextRequest) {
                   📍 Localisation
                 </h4>
                 <p style="color: #333; font-size: 15px; line-height: 1.8; margin: 0;">
-                  <strong>LAIA SKIN INSTITUT</strong><br>
-                  Allée Jean de la Fontaine<br>
-                  92000 Nanterre
+                  <strong>${siteName.toUpperCase()}</strong><br>
+                  ${fullAddress}
                 </p>
-                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 3px solid #d4b5a0;">
-                  <p style="color: #d4b5a0; font-size: 14px; margin: 0; line-height: 1.8;">
-                    <strong>📱 Appelez-moi au 06 83 71 70 50</strong><br>
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 3px solid ${primaryColor};">
+                  <p style="color: ${primaryColor}; font-size: 14px; margin: 0; line-height: 1.8;">
+                    <strong>📱 Appelez-moi au ${phone}</strong><br>
                     <strong>quand vous serez arrivé</strong>
                   </p>
                 </div>
@@ -247,19 +258,19 @@ export async function POST(request: NextRequest) {
                 Au plaisir de vous accueillir !
               </p>
               <p style="color: rgba(255,255,255,0.8); font-size: 14px; margin: 0 0 20px 0;">
-                LAIA SKIN INSTITUT
+                ${siteName.toUpperCase()}
               </p>
               <div style="margin-top: 25px;">
-                <a href="https://www.instagram.com/laia.skin/" style="color: #d4b5a0; text-decoration: none; margin: 0 15px; font-size: 14px;">
-                  Instagram @laia.skin
+                ${config.instagram ? `<a href="${config.instagram}" style="color: ${primaryColor}; text-decoration: none; margin: 0 15px; font-size: 14px;">
+                  Instagram ${config.instagram.split('/').pop() ? '@' + config.instagram.split('/').pop() : ''}
                 </a>
-                <span style="color: rgba(255,255,255,0.3);">|</span>
-                <a href="https://wa.me/33683717050" style="color: #d4b5a0; text-decoration: none; margin: 0 15px; font-size: 14px;">
+                <span style="color: rgba(255,255,255,0.3);">|</span>` : ''}
+                ${config.whatsapp ? `<a href="https://wa.me/${config.whatsapp.replace(/[^0-9]/g, '')}" style="color: ${primaryColor}; text-decoration: none; margin: 0 15px; font-size: 14px;">
                   WhatsApp
-                </a>
+                </a>` : ''}
               </div>
               <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin: 20px 0 0 0;">
-                © 2025 LAIA SKIN INSTITUT - Tous droits réservés
+                © ${new Date().getFullYear()} ${siteName.toUpperCase()} - Tous droits réservés
               </p>
             </td>
           </tr>
@@ -284,12 +295,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Envoyer l'email avec Resend
-    const { data, error } = await getResend().emails.send({
-      from: 'LAIA SKIN INSTITUT <contact@laiaskininstitut.fr>',
+    const { data, error} = await getResend().emails.send({
+      from: `${siteName} <${email}>`,
       to: [to],
       subject: `✨ Confirmation - RDV du ${date} à ${reservation.time}`,
       html: htmlContent,
-      text: `Confirmation de votre réservation chez LAIA SKIN INSTITUT\n\nDate: ${date}\nHeure: ${reservation.time}\nTotal: ${reservation.totalPrice}€\n\nAdresse: Allée Jean de la Fontaine, 92000 Nanterre\n📱 Appelez-moi au 06 83 71 70 50 quand vous serez arrivé\n\nÀ très bientôt !`
+      text: `Confirmation de votre réservation chez ${siteName}\n\nDate: ${date}\nHeure: ${reservation.time}\nTotal: ${reservation.totalPrice}€\n\nAdresse: ${fullAddress}\n📱 Appelez-moi au ${phone} quand vous serez arrivé\n\nÀ très bientôt !`
     });
 
     if (error) {

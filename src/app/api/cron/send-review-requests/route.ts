@@ -2,9 +2,23 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Cette API doit être appelée tous les jours à 10h (via un cron job)
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
@@ -134,19 +148,19 @@ export async function GET(request: Request) {
       
       <p>À très bientôt,<br>
       <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      📞 06 83 71 70 50<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${fullAddress}<br>
+      📞 ${phone}<br>
+      🌐 ${website.replace('https://', '').replace('http://', '')}</p>
     </div>
   </div>
 </body>
 </html>`;
 
         await getResend().emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+          from: process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`,
           to: [reservation.user.email],
           subject: `✨ Comment s'est passé votre soin ${serviceNames} ?`,
           html: htmlContent,
@@ -162,7 +176,7 @@ export async function GET(request: Request) {
         // Enregistrer dans l'historique
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laia.skininstitut.fr',
+            from: `${email}`,
             to: reservation.user.email,
             subject: `✨ Demande d'avis`,
             content: `Demande d'avis automatique pour le soin ${serviceNames}`,
@@ -175,7 +189,7 @@ export async function GET(request: Request) {
 
         // Envoyer aussi par WhatsApp si le numéro est disponible
         if (reservation.user.phone) {
-          const whatsappMessage = `✨ *LAIA SKIN Institut* ✨
+          const whatsappMessage = `✨ *${siteName}* ✨
 
 Bonjour ${reservation.user.name} ! 💕
 
@@ -191,7 +205,7 @@ ${loyaltyProgress}
 ${nextReward}
 
 Merci infiniment ! 🙏
-*LAIA SKIN Institut*`;
+*${siteName}*`;
           
           try {
             await sendWhatsAppMessage({
@@ -333,19 +347,19 @@ export async function POST(request: Request) {
       
       <p>À très bientôt,<br>
       <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      📞 06 83 71 70 50<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${fullAddress}<br>
+      📞 ${phone}<br>
+      🌐 ${website.replace('https://', '').replace('http://', '')}</p>
     </div>
   </div>
 </body>
 </html>`;
 
     await getResend().emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+      from: process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`,
       to: [reservation.user.email],
       subject: `✨ Comment s'est passé votre soin ${serviceNames} ?`,
       html: htmlContent,
@@ -360,7 +374,7 @@ export async function POST(request: Request) {
     // Enregistrer dans l'historique
     await prisma.emailHistory.create({
       data: {
-        from: 'contact@laia.skininstitut.fr',
+        from: `${email}`,
         to: reservation.user.email,
         subject: `✨ Demande d'avis`,
         content: `Demande d'avis manuelle pour le soin ${serviceNames}`,

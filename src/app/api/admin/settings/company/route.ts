@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -23,15 +37,15 @@ export async function GET(request: NextRequest) {
     if (!settings) {
       // Retourner les valeurs par défaut
       return NextResponse.json({
-        name: "LAIA SKIN Institut",
-        legalName: "LAIA SKIN SARL",
+        name: `${siteName}`,
+        legalName: "${siteName} SARL",
         address: {
           street: "123 Avenue de la Beauté",
           zipCode: "75001",
           city: "Paris",
           country: "France"
         },
-        phone: "01 23 45 67 89",
+        phone: "${phone}",
         email: "contact@laiaskin.fr",
         website: "www.laiaskin.fr",
         siret: "123 456 789 00012",

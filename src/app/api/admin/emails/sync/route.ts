@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { EmailSyncService } from '@/lib/email-sync';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const email = config.email || 'contact@institut.fr';
+  const phone = config.phone || '06 XX XX XX XX';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
+
   const prisma = await getPrismaClient();
   
   try {
@@ -34,7 +41,7 @@ export async function POST(request: NextRequest) {
     const { days = 30 } = body; // Par défaut, synchroniser les 30 derniers jours
 
     // Récupérer les identifiants depuis les headers ou l'environnement
-    const emailUser = request.headers.get('X-Email-User') || process.env.EMAIL_USER || 'contact@laiaskininstitut.fr';
+    const emailUser = request.headers.get('X-Email-User') || process.env.EMAIL_USER || '${email}';
     const emailPassword = request.headers.get('X-Email-Password') || process.env.EMAIL_PASSWORD;
     
     if (!emailPassword) {

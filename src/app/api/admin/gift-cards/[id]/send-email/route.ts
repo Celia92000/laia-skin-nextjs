@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -9,6 +10,19 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   const { id } = await params;
 
@@ -59,7 +73,7 @@ export async function POST(
       <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Votre Carte Cadeau LAIA SKIN</title>
+          <title>Votre Carte Cadeau ${siteName}</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
@@ -68,8 +82,8 @@ export async function POST(
                       <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
                           <!-- Header -->
                           <tr>
-                              <td style="background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 40px; text-align: center;">
-                                  <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 1px;">LAIA SKIN INSTITUT</h1>
+                              <td style="background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 40px; text-align: center;">
+                                  <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 400; letter-spacing: 1px;">${siteName} INSTITUT</h1>
                                   <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Beauté & Bien-être</p>
                               </td>
                           </tr>
@@ -82,7 +96,7 @@ export async function POST(
                                   </h2>
 
                                   <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                                      Merci pour votre achat ! Voici votre carte cadeau LAIA SKIN INSTITUT${giftCard.purchasedFor ? ` pour <strong>${giftCard.purchasedFor}</strong>` : ''}.
+                                      Merci pour votre achat ! Voici votre carte cadeau ${siteName} INSTITUT${giftCard.purchasedFor ? ` pour <strong>${giftCard.purchasedFor}</strong>` : ''}.
                                   </p>
 
                                   ${giftCard.message ? `
@@ -104,7 +118,7 @@ export async function POST(
 
                                       <div style="background: white; padding: 30px; border-radius: 12px; margin: 20px 0; border: 2px solid rgba(212, 181, 160, 0.3);">
                                           <p style="color: #c9a084; font-size: 14px; margin: 0 0 10px 0; font-weight: 500;">Valeur</p>
-                                          <p style="color: #d4b5a0; font-size: 48px; font-weight: bold; margin: 0;">${giftCard.amount}€</p>
+                                          <p style="color: ${primaryColor}; font-size: 48px; font-weight: bold; margin: 0;">${giftCard.amount}€</p>
                                           ${giftCard.balance !== giftCard.amount ? `
                                           <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">
                                               Solde restant: <strong style="color: #4caf50;">${giftCard.balance}€</strong>
@@ -146,7 +160,7 @@ export async function POST(
                           <tr>
                               <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
                                   <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin: 0;">
-                                      LAIA SKIN INSTITUT<br>
+                                      ${siteName} INSTITUT<br>
                                       Votre institut de beauté et bien-être
                                   </p>
                               </td>
@@ -162,15 +176,15 @@ export async function POST(
     // Envoyer l'email
     // Utilise l'adresse email configurée ou le domaine par défaut de Resend
     const fromEmail = process.env.EMAIL_FROM
-      ? `LAIA SKIN Institut <${process.env.EMAIL_FROM}>`
+      ? `${siteName} <${process.env.EMAIL_FROM}>`
       : (process.env.VERIFIED_EMAIL_DOMAIN
-        ? `LAIA SKIN Institut <contact@${process.env.VERIFIED_EMAIL_DOMAIN}>`
-        : 'LAIA SKIN Institut <contact@laiaskininstitut.fr>');
+        ? `${siteName} <contact@${process.env.VERIFIED_EMAIL_DOMAIN}>`
+        : `${siteName} <${email}>`);
 
     const { data, error } = await getResend().emails.send({
       from: fromEmail,
       to: [giftCard.purchaser.email],
-      subject: `🎁 Votre carte cadeau LAIA SKIN - ${giftCard.amount}€`,
+      subject: `🎁 Votre carte cadeau ${siteName} - ${giftCard.amount}€`,
       html: htmlContent
     });
 

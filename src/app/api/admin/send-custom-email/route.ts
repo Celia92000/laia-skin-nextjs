@@ -2,8 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -100,7 +114,7 @@ export async function POST(request: NextRequest) {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>LAIA SKIN INSTITUT</h1>
+        <h1>${siteName} INSTITUT</h1>
       </div>
       <div class="content">
         <p>Bonjour ${clientName || 'Cliente'},</p>
@@ -108,13 +122,13 @@ export async function POST(request: NextRequest) {
         <div class="signature">
           <p>À très bientôt,<br>
           <strong>Laïa</strong><br>
-          LAIA SKIN INSTITUT</p>
+          ${siteName} INSTITUT</p>
         </div>
       </div>
       <div class="footer">
         <p>
-          📍 Allée Jean de la Fontaine, 92000 Nanterre<br>
-          📞 06 83 71 70 50<br>
+          📍 ${fullAddress}<br>
+          📞 ${phone}<br>
           ✉️ <a href="mailto:contact@laia-skin.fr">contact@laia-skin.fr</a><br>
           📸 <a href="https://www.instagram.com/laia.skin/">@laia.skin</a>
         </p>
@@ -127,13 +141,13 @@ export async function POST(request: NextRequest) {
 
     try {
       // Envoyer l'email avec Resend
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>';
+      const fromEmail = process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>';
       const data = await getResend().emails.send({
         from: fromEmail,
         to: [to],
         subject: subject,
         html: htmlMessage,
-        text: `Bonjour ${clientName || 'Cliente'},\n\n${emailMessage}\n\nÀ très bientôt,\nLaïa\nLAIA SKIN INSTITUT`
+        text: `Bonjour ${clientName || 'Cliente'},\n\n${emailMessage}\n\nÀ très bientôt,\nLaïa\n${siteName} INSTITUT`
       });
 
       // Enregistrer dans l'historique

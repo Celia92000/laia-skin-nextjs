@@ -87,7 +87,7 @@ C'est demain ! Nous avons hâte de vous accueillir pour :
 • Venez démaquillée si possible
 • N'hésitez pas à nous appeler si besoin
 
-Pour toute modification : 📞 01 23 45 67 89
+Pour toute modification : 📞 ${phone}
 
 À demain ! ✨
 *L'équipe Laia Skin Institut*`;

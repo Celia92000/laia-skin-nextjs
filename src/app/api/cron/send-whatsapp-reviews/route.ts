@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Cette API doit être appelée tous les jours à 10h pour envoyer les demandes d'avis
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
@@ -84,7 +98,7 @@ export async function GET(request: Request) {
         }
 
         // Message WhatsApp pour demande d'avis
-        const reviewMessage = `✨ *LAIA SKIN Institut* ✨
+        const reviewMessage = `✨ *${siteName}* ✨
 
 Bonjour ${reservation.user.name} ! 💕
 
@@ -104,7 +118,7 @@ ${loyaltyProgress}
 ${nextReward}
 
 Merci infiniment ! 🙏
-*LAIA SKIN Institut*`;
+*${siteName}*`;
         
         const result = await sendWhatsAppMessage({
           to: reservation.user.phone,
@@ -122,7 +136,7 @@ Merci infiniment ! 🙏
           try {
             await prisma.emailHistory.create({
               data: {
-                from: 'LAIA SKIN Institut',
+                from: `${siteName}`,
                 to: reservation.user.phone,
                 subject: `Demande d'avis WhatsApp`,
                 content: `Demande d'avis automatique pour ${serviceNames}`,
@@ -214,7 +228,7 @@ export async function POST(request: Request) {
     const sessionsCount = loyaltyProfile?.individualServicesCount || 0;
     
     // Message WhatsApp
-    const reviewMessage = `✨ *LAIA SKIN Institut* ✨
+    const reviewMessage = `✨ *${siteName}* ✨
 
 Bonjour ${reservation.user.name} ! 💕
 
@@ -227,7 +241,7 @@ Partagez votre expérience en répondant à ce message ou en cliquant ici :
 🎁 Programme de fidélité : ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''}
 
 Merci ! 🙏
-*LAIA SKIN Institut*`;
+*${siteName}*`;
     
     const result = await sendWhatsAppMessage({
       to: reservation.user.phone,

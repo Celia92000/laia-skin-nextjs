@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/notifications';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const phone = config.phone || '06 XX XX XX XX';
+  const email = config.email || 'contact@institut.fr';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const primaryColor = config.primaryColor || '#8B7355';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
   try {
     const { reservationId } = await request.json();
     
@@ -61,27 +73,27 @@ export async function POST(request: NextRequest) {
   <style>
     body { font-family: 'Georgia', serif; line-height: 1.6; color: #2c3e50; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #8B7355 0%, #A0826D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .header { background: linear-gradient(135deg, ${primaryColor} 0%, #A0826D 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
     .content { background: white; padding: 30px; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px; }
     .info-box { background: #f9f7f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
     .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-    .button { display: inline-block; padding: 12px 30px; background: #8B7355; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+    .button { display: inline-block; padding: 12px 30px; background: ${primaryColor}; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
     h1 { margin: 0; font-size: 28px; }
-    h2 { color: #8B7355; font-size: 20px; }
+    h2 { color: ${primaryColor}; font-size: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <h1>✨ Réservation Confirmée ✨</h1>
-      <p style="margin: 10px 0 0 0; opacity: 0.9;">LAIA SKIN Institut</p>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">${siteName}</p>
     </div>
-    
+
     <div class="content">
       <p>Bonjour ${reservation.user.name},</p>
-      
+
       <p><strong>Votre rendez-vous est confirmé !</strong> Nous avons le plaisir de vous accueillir pour votre soin.</p>
-      
+
       <div class="info-box">
         <h2>📅 Détails de votre rendez-vous</h2>
         <p><strong>Date :</strong> ${formattedDate}</p>
@@ -90,13 +102,12 @@ export async function POST(request: NextRequest) {
         <p><strong>Prix :</strong> ${reservation.totalPrice}€</p>
         ${reservation.notes ? `<p><strong>Notes :</strong> ${reservation.notes}</p>` : ''}
       </div>
-      
+
       <div class="info-box" style="background: #fff5f5;">
         <h2>📍 Lieu du rendez-vous</h2>
-        <p><strong>LAIA SKIN Institut</strong><br>
-        5 Rue de la Beauté<br>
-        75001 Paris<br>
-        <a href="https://maps.google.com/?q=LAIA+SKIN+Institut+Paris" style="color: #8B7355;">Voir sur Google Maps</a></p>
+        <p><strong>${siteName}</strong><br>
+        ${fullAddress}<br>
+        <a href="https://maps.google.com/?q=${encodeURIComponent(siteName + ' ' + fullAddress)}" style="color: ${primaryColor};">Voir sur Google Maps</a></p>
       </div>
       
       <h2>💡 Rappels importants</h2>
@@ -114,26 +125,26 @@ export async function POST(request: NextRequest) {
       </ul>
       
       <center>
-        <a href="https://laia-skin-institut.vercel.app/espace-client" class="button">
+        <a href="${website}/espace-client" class="button">
           Accéder à mon espace client
         </a>
       </center>
-      
+
       <p>Si vous devez modifier ou annuler votre rendez-vous, contactez-nous :</p>
       <ul>
-        <li>📞 Téléphone : 01 23 45 67 89</li>
-        <li>📱 WhatsApp : 06 12 34 56 78</li>
-        <li>✉️ Email : contact@laiaskin.com</li>
+        <li>📞 Téléphone : ${phone}</li>
+        ${config.whatsapp ? `<li>📱 WhatsApp : ${config.whatsapp}</li>` : ''}
+        <li>✉️ Email : ${email}</li>
       </ul>
-      
+
       <p>À très bientôt !<br>
-      <strong>L'équipe LAIA SKIN Institut</strong> 💝</p>
+      <strong>L'équipe ${siteName}</strong> 💝</p>
     </div>
-    
+
     <div class="footer">
-      <p>© 2024 LAIA SKIN Institut - Tous droits réservés<br>
+      <p>© ${new Date().getFullYear()} ${siteName} - Tous droits réservés<br>
       Cet email a été envoyé à ${reservation.user.email}<br>
-      <a href="https://laia-skin-institut.vercel.app" style="color: #8B7355;">www.laiaskin.com</a></p>
+      <a href="${website}" style="color: ${primaryColor};">${website.replace('https://', '').replace('http://', '')}</a></p>
     </div>
   </div>
 </body>

@@ -1,3 +1,5 @@
+import { getSiteConfig } from './config-service';
+
 export const emailTemplates = {
   // Template Bienvenue
   welcome: {
@@ -313,11 +315,24 @@ export const emailTemplates = {
   }
 };
 
-export function getEmailTemplate(type: string, data: any): { html: string; text: string; subject: string } {
+export async function getEmailTemplate(type: string, data: any): Promise<{ html: string; text: string; subject: string }> {
   const template = emailTemplates[type as keyof typeof emailTemplates];
   if (!template) {
     throw new Error(`Template ${type} non trouvé`);
   }
+
+  // Récupérer la configuration du site
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  // Utiliser founderName en priorité, sinon legalRepName, sinon fallback
+  const ownerName = config.founderName?.split(' ')[0] || config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const instagram = config.instagram || '';
+  const website = config.baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://votre-institut.fr');
 
   // Version HTML optimisée pour éviter les spams
   const baseHtml = `
@@ -335,20 +350,20 @@ export function getEmailTemplate(type: string, data: any): { html: string; text:
             <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
               <!-- Header -->
               <tr>
-                <td style="background: linear-gradient(135deg, #d4b5a0 0%, #c9a084 100%); padding: 30px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                  <h1 style="margin: 0; font-size: 24px; font-weight: 400; color: #ffffff; letter-spacing: 2px;">LAIA SKIN INSTITUT</h1>
+                <td style="background: linear-gradient(135deg, ${config.primaryColor || '#d4b5a0'} 0%, #c9a084 100%); padding: 30px; text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 400; color: #ffffff; letter-spacing: 2px;">${siteName.toUpperCase()}</h1>
                 </td>
               </tr>
 
               <!-- Content -->
               <tr>
                 <td style="padding: 30px;">
-                  ${template.html(data)}
+                  ${template.html(data).replace(/(<strong>)?Laia(<\/strong>)?/g, `$1${ownerName}$2`).replace(/LAIA SKIN Institut/g, siteName).replace(/LAIA SKIN/g, siteName).replace(/06 12 34 56 78/g, phone)}
 
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px;">
                     <tr>
                       <td align="center">
-                        <a href="https://laia-skin-institut-as92.vercel.app/reservation" style="display: inline-block; padding: 12px 30px; background-color: #d4b5a0; color: #ffffff; text-decoration: none; border-radius: 25px; font-weight: 500; font-size: 16px;">Prendre rendez-vous</a>
+                        <a href="${website}/reservation" style="display: inline-block; padding: 12px 30px; background-color: ${config.primaryColor || '#d4b5a0'}; color: #ffffff; text-decoration: none; border-radius: 25px; font-weight: 500; font-size: 16px;">Prendre rendez-vous</a>
                       </td>
                     </tr>
                   </table>
@@ -357,19 +372,18 @@ export function getEmailTemplate(type: string, data: any): { html: string; text:
 
               <!-- Footer -->
               <tr>
-                <td style="background-color: #2c3e50; padding: 25px; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                <td style="background-color: ${config.secondaryColor || '#2c3e50'}; padding: 25px; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center">
-                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: #ffffff;">LAIA SKIN INSTITUT</p>
-                        <p style="margin: 0 0 15px 0; font-size: 13px; color: rgba(255,255,255,0.8);">Allée Jean de la Fontaine, 92000 Nanterre<br/>Tel: 06 83 71 70 50</p>
+                        <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: bold; color: #ffffff;">${siteName.toUpperCase()}</p>
+                        <p style="margin: 0 0 15px 0; font-size: 13px; color: rgba(255,255,255,0.8);">${fullAddress}<br/>Tel: ${phone}</p>
                         <p style="margin: 15px 0 0 0;">
-                          <a href="https://www.instagram.com/laia.skin/" style="color: #d4b5a0; text-decoration: none; margin: 0 8px;">Instagram</a>
-                          <span style="color: rgba(255,255,255,0.3);">|</span>
-                          <a href="https://laia-skin-institut-as92.vercel.app" style="color: #d4b5a0; text-decoration: none; margin: 0 8px;">Site Web</a>
+                          ${instagram ? `<a href="${instagram}" style="color: ${config.primaryColor || '#d4b5a0'}; text-decoration: none; margin: 0 8px;">Instagram</a><span style="color: rgba(255,255,255,0.3);">|</span>` : ''}
+                          <a href="${website}" style="color: ${config.primaryColor || '#d4b5a0'}; text-decoration: none; margin: 0 8px;">Site Web</a>
                         </p>
                         <p style="margin: 15px 0 0 0; font-size: 11px; color: rgba(255,255,255,0.6);">
-                          <a href="https://laia-skin-institut-as92.vercel.app/unsubscribe?email=${encodeURIComponent(data.email || '')}" style="color: rgba(255,255,255,0.6); text-decoration: underline;">Se désinscrire</a>
+                          <a href="${website}/unsubscribe?email=${encodeURIComponent(data.email || '')}" style="color: rgba(255,255,255,0.6); text-decoration: underline;">Se désinscrire</a>
                         </p>
                       </td>
                     </tr>
@@ -385,7 +399,7 @@ export function getEmailTemplate(type: string, data: any): { html: string; text:
   `;
 
   // Version texte pour éviter les filtres anti-spam
-  const textContent = generateTextVersion(type, data, template);
+  const textContent = generateTextVersion(type, data, template, config, siteName, ownerName, phone, fullAddress, website, instagram);
 
   return {
     html: baseHtml,
@@ -395,10 +409,10 @@ export function getEmailTemplate(type: string, data: any): { html: string; text:
 }
 
 // Génération de la version texte
-function generateTextVersion(type: string, data: any, template: any): string {
+function generateTextVersion(type: string, data: any, template: any, config: any, siteName: string, ownerName: string, phone: string, fullAddress: string, website: string, instagram: string): string {
   const baseText = `
-LAIA SKIN INSTITUT
-Beauté & Bien-être
+${siteName.toUpperCase()}
+${config.siteTagline || 'Institut de Beauté & Bien-être'}
 
 ${template.subject.replace(/{{name}}/g, data.name || 'Cliente')}
 
@@ -412,7 +426,7 @@ ${template.subject.replace(/{{name}}/g, data.name || 'Cliente')}
     case 'welcome':
       specificContent = `Bonjour ${data.name},
 
-Je suis ravie de vous accueillir parmi nos clientes ! Chez LAIA SKIN Institut, chaque soin est une expérience unique.
+Je suis ravie de vous accueillir parmi nos clientes ! Chez ${siteName}, chaque soin est une expérience unique.
 
 VOTRE CADEAU DE BIENVENUE
 ${data.discount || '-15%'} sur votre premier soin
@@ -427,7 +441,7 @@ Nos soins signatures :
 N'hésitez pas à me contacter pour toute question.
 
 Avec toute ma bienveillance,
-Laia`;
+${ownerName}`;
       break;
 
     case 'reminder':
@@ -445,10 +459,10 @@ CONSEILS AVANT VOTRE SOIN
 - Évitez l'exposition au soleil 24h avant
 - Pensez à bien vous hydrater
 
-En cas d'empêchement, merci de me prévenir au moins 24h à l'avance au 06 83 71 70 50
+En cas d'empêchement, merci de me prévenir au moins 24h à l'avance au ${phone}
 
 À demain !
-Laia`;
+${ownerName}`;
       break;
 
     case 'promotion':
@@ -460,14 +474,14 @@ OFFRE EXCEPTIONNELLE
 ${data.offer || '-20%'} sur le soin de votre choix
 Valable jusqu'au ${data.validUntil}
 
-Pour en profiter, réservez en ligne ou appelez-moi au 06 83 71 70 50
+Pour en profiter, réservez en ligne ou appelez-moi au ${phone}
 
 Au plaisir de vous chouchouter,
-Laia`;
+${ownerName}`;
       break;
 
     default:
-      specificContent = `Bonjour ${data.name},\n\nMerci de votre confiance.\n\nCordialement,\nLaia`;
+      specificContent = `Bonjour ${data.name},\n\nMerci de votre confiance.\n\nCordialement,\n${ownerName}`;
   }
 
   return `${baseText}${specificContent}
@@ -475,14 +489,13 @@ Laia`;
 ---
 
 CONTACT
-LAIA SKIN INSTITUT
-Allée Jean de la Fontaine
-92000 Nanterre
-Tel: 06 83 71 70 50
+${siteName.toUpperCase()}
+${fullAddress}
+Tel: ${phone}
 
-Site Web: https://laia-skin-institut-as92.vercel.app
-Instagram: https://www.instagram.com/laia.skin/
+Site Web: ${website}
+${instagram ? `Instagram: ${instagram}` : ''}
 
-Pour vous désinscrire : https://laia-skin-institut-as92.vercel.app/unsubscribe
+Pour vous désinscrire : ${website}/unsubscribe
 `;
 }

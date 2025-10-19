@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
-// Configuration Google Business LAIA SKIN Institut
+// Configuration Google Business ${siteName}
 const GOOGLE_PLACE_ID = '3014602962211627658';
 const GOOGLE_BUSINESS_URL = 'https://www.google.com/maps/place/?q=place_id:3014602962211627658';
 
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // Récupérer les avis Google depuis la base
     const googleReviews = await prisma.googleReview.findMany({

@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import { decryptConfig } from '@/lib/encryption';
 import { z } from 'zod';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Schéma de validation
 const checkoutSchema = z.object({
@@ -16,6 +17,19 @@ const checkoutSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // 🔒 Rate limiting : 5 paiements max par minute (protection anti-fraude)
     const ip = getClientIp(request);
@@ -134,7 +148,7 @@ export async function POST(request: Request) {
           price_data: {
             currency: currency.toLowerCase(),
             product_data: {
-              name: description || 'Paiement LAIA SKIN Institut',
+              name: description || 'Paiement ${siteName}',
               description: reservationId ? `Réservation #${reservationId}` : undefined,
             },
             unit_amount: Math.round(amount * 100), // Stripe utilise les centimes

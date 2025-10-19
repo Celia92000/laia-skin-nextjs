@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
 
 interface CommunicationHistory {
@@ -16,6 +17,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const { id } = await params;
@@ -158,7 +172,7 @@ export async function GET(
       {
         id: '1',
         type: 'whatsapp',
-        content: 'Bonjour, votre rendez-vous pour Soin visage anti-âge est confirmé le 25/03/2024 à 14:00 chez LAIA SKIN Institut. À bientôt ! ✨',
+        content: 'Bonjour, votre rendez-vous pour Soin visage anti-âge est confirmé le 25/03/2024 à 14:00 chez ${siteName}. À bientôt ! ✨',
         timestamp: new Date('2024-03-24T10:00:00'),
         status: 'delivered',
         templateUsed: 'Confirmation de rendez-vous'
@@ -170,12 +184,12 @@ export async function GET(
         timestamp: new Date('2024-03-25T16:30:00'),
         status: 'read',
         templateUsed: 'Suivi après soin',
-        subject: 'Merci pour votre visite chez LAIA SKIN'
+        subject: 'Merci pour votre visite chez ${siteName}'
       },
       {
         id: '3',
         type: 'whatsapp',
-        content: 'Rappel : Votre rdv Soin hydratant est demain 28/03/2024 à 15:30. Nous avons hâte de vous accueillir chez LAIA SKIN ! 💫',
+        content: 'Rappel : Votre rdv Soin hydratant est demain 28/03/2024 à 15:30. Nous avons hâte de vous accueillir chez ${siteName} ! 💫',
         timestamp: new Date('2024-03-27T09:00:00'),
         status: 'read',
         templateUsed: 'Rappel de rendez-vous'
@@ -187,7 +201,7 @@ export async function GET(
         timestamp: new Date('2024-03-20T14:15:00'),
         status: 'sent',
         templateUsed: 'Confirmation de réservation',
-        subject: 'Confirmation de votre rendez-vous LAIA SKIN'
+        subject: 'Confirmation de votre rendez-vous ${siteName}'
       }
     ];
 

@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { getSiteConfig } from "@/lib/config-service";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -46,89 +47,97 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://laia-skin.fr'),
-  title: {
-    default: "LAIA SKIN INSTITUT - Soins Esthétiques Haut de Gamme à Paris",
-    template: "%s | LAIA SKIN INSTITUT"
-  },
-  description: "Institut de beauté premium à Paris spécialisé dans les soins innovants du visage : HydroFacial, BB Glow, Microneedling, LED Thérapie. Réservation en ligne 24/7. Expertise et résultats garantis.",
-  keywords: [
-    "institut beauté Paris",
-    "soin visage Paris",
-    "hydrofacial Paris",
-    "bb glow Paris",
-    "led thérapie Paris",
-    "microneedling Paris",
-    "esthétique haut de gamme",
-    "LAIA SKIN",
-    "soins anti-âge",
-    "rajeunissement visage",
-    "institut esthétique",
-    "soin du visage premium",
-    "réservation en ligne beauté",
-    "esthéticienne Paris",
-    "traitement visage"
-  ],
-  authors: [{ name: "LAIA SKIN INSTITUT" }],
-  creator: "LAIA SKIN INSTITUT",
-  publisher: "LAIA SKIN INSTITUT",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  // Open Graph (Facebook, LinkedIn, WhatsApp)
-  openGraph: {
-    title: "LAIA SKIN INSTITUT - Soins Esthétiques Premium à Paris",
-    description: "✨ HydroFacial, BB Glow, Microneedling, LED Thérapie | Réservation en ligne 24/7 | Institut de beauté premium à Paris",
-    url: "https://laia-skin.fr",
-    siteName: "LAIA SKIN INSTITUT",
-    images: [
-      {
-        url: "/logo-laia-skin.png",
-        width: 1200,
-        height: 630,
-        alt: "LAIA SKIN INSTITUT - Soins Esthétiques Premium",
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut de Beauté';
+  const siteDescription = config.siteDescription || 'Institut de beauté premium spécialisé dans les soins innovants du visage. Réservation en ligne 24/7.';
+  const city = config.city || 'Paris';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
+  return {
+    metadataBase: new URL(website),
+    title: {
+      default: `${siteName} - Soins Esthétiques Haut de Gamme`,
+      template: `%s | ${siteName}`
+    },
+    description: siteDescription,
+    keywords: [
+      `institut beauté ${city}`,
+      `soin visage ${city}`,
+      "hydrofacial",
+      "bb glow",
+      "led thérapie",
+      "microneedling",
+      "esthétique haut de gamme",
+      siteName,
+      "soins anti-âge",
+      "rajeunissement visage",
+      "institut esthétique",
+      "soin du visage premium",
+      "réservation en ligne beauté",
+      `esthéticienne ${city}`,
+      "traitement visage"
     ],
-    locale: "fr_FR",
-    type: "website",
-  },
-  // Twitter Card
-  twitter: {
-    card: "summary_large_image",
-    title: "LAIA SKIN INSTITUT - Soins Esthétiques Premium",
-    description: "✨ HydroFacial, BB Glow, Microneedling, LED Thérapie | Réservation en ligne 24/7",
-    images: ["/logo-laia-skin.png"],
-  },
-  // Robots & SEO
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: siteName }],
+    creator: siteName,
+    publisher: siteName,
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    // Open Graph (Facebook, LinkedIn, WhatsApp)
+    openGraph: {
+      title: `${siteName} - Soins Esthétiques Premium`,
+      description: siteDescription,
+      url: website,
+      siteName: siteName,
+      images: [
+        {
+          url: config.logoUrl || "/logo-laia-skin.png",
+          width: 1200,
+          height: 630,
+          alt: `${siteName} - Soins Esthétiques Premium`,
+        },
+      ],
+      locale: "fr_FR",
+      type: "website",
+    },
+    // Twitter Card
+    twitter: {
+      card: "summary_large_image",
+      title: `${siteName} - Soins Esthétiques Premium`,
+      description: siteDescription,
+      images: [config.logoUrl || "/logo-laia-skin.png"],
+    },
+    // Robots & SEO
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  // Canonical URL
-  alternates: {
-    canonical: "https://laia-skin.fr",
-  },
-  // Vérification pour Google Search Console (à configurer)
-  verification: {
-    google: "votre-code-verification-google",
-    // yandex: "votre-code-yandex",
-    // bing: "votre-code-bing",
-  },
-  // Catégorie du site
-  category: "beauty",
-};
+    // Canonical URL
+    alternates: {
+      canonical: website,
+    },
+    // Vérification pour Google Search Console (à configurer)
+    verification: {
+      google: "votre-code-verification-google",
+      // yandex: "votre-code-yandex",
+      // bing: "votre-code-bing",
+    },
+    // Catégorie du site
+    category: "beauty",
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -137,11 +146,11 @@ export default function RootLayout({
     <html lang="fr" className={`${inter.variable} ${poppins.variable} ${cormorant.variable} ${playfair.variable} ${lora.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <JsonLd />
       </head>
       <body
         className={`${inter.className} antialiased`}
       >
+        <JsonLd />
         <QueryProvider>
           {children}
         </QueryProvider>

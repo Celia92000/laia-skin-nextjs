@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
 
 // GET - Récupérer la configuration des rappels
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     // Vérifier l'authentification admin
@@ -30,7 +44,7 @@ export async function GET(request: Request) {
       smsEnabled: true,
       whatsappEnabled: true,
       timeBefore: 24,
-      messageTemplate: "Bonjour {name}, nous vous rappelons votre rendez-vous demain à {time} pour {service}. LAIA SKIN Institut - 36 Rue de la Gare, 95570 Bouffémont. À bientôt!",
+      messageTemplate: "Bonjour {name}, nous vous rappelons votre rendez-vous demain à {time} pour {service}. ${siteName} - 36 Rue de la Gare, 95570 Bouffémont. À bientôt!",
       testPhone: ''
     };
 

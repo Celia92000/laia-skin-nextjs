@@ -1,49 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
-// Fonction pour obtenir les paramètres de l'entreprise
+// Fonction pour obtenir les paramètres de l'entreprise depuis la config
 async function getCompanySettings() {
-  try {
-    // Essayer de récupérer depuis la base de données
-    const prisma = await getPrismaClient();
-    const settings = await prisma.setting.findFirst({
-      where: { key: 'company_info' }
-    });
-    
-    if (settings) {
-      return JSON.parse(settings.value);
-    }
-  } catch (error) {
-    console.error('Erreur récupération paramètres entreprise:', error);
-  }
-  
-  // Valeurs par défaut si pas de paramètres sauvegardés
+  const config = await getSiteConfig();
+
   return {
-    name: "LAIA SKIN Institut",
-    legalName: "LAIA SKIN SARL",
+    name: config.siteName || "Mon Institut",
+    legalName: config.legalName || config.siteName || "Mon Institut SARL",
     address: {
-      street: "123 Avenue de la Beauté",
-      zipCode: "75001",
-      city: "Paris",
+      street: config.address || "Adresse non renseignée",
+      zipCode: config.postalCode || "",
+      city: config.city || "",
       country: "France"
     },
-    phone: "01 23 45 67 89",
-    email: "contact@laiaskin.fr",
-    website: "www.laiaskin.fr",
-    siret: "123 456 789 00012",
-    siren: "123 456 789",
-    tva: "FR 12 123456789",
-    ape: "9602B",
-    rcs: "Paris 123 456 789",
-    capital: "10 000 €",
-    legalForm: "SARL",
-    insuranceCompany: "AXA France",
-    insuranceContract: "1234567",
-    legalRepName: "Laïa [Nom]",
-    legalRepTitle: "Gérante",
-    bankName: "BNP Paribas",
-    iban: "FR76 1234 5678 9012 3456 7890 123",
-    bic: "BNPAFRPPXXX",
+    phone: config.phone || "",
+    email: config.email || "",
+    website: config.customDomain?.replace('https://', '').replace('http://', '') || "",
+    siret: config.siret || "",
+    siren: config.siren || "",
+    tva: config.tvaNumber || "",
+    ape: config.apeCode || "",
+    rcs: config.rcs || "",
+    capital: config.capital || "",
+    legalForm: config.legalForm || "SARL",
+    insuranceCompany: config.insuranceCompany || "",
+    insuranceContract: config.insuranceContract || "",
+    legalRepName: config.legalRepName || "",
+    legalRepTitle: config.legalRepTitle || "",
+    bankName: "",
+    iban: "",
+    bic: "",
     vatRegime: "franchise",
     vatRate: "20"
   };
@@ -69,6 +57,7 @@ export async function GET(
   const prisma = await getPrismaClient();
   try {
     const { id } = await params;
+    const config = await getSiteConfig();
     const companyInfo = await getCompanySettings();
     
     // Récupérer la réservation avec les infos utilisateur
@@ -319,8 +308,8 @@ export async function GET(
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">LAIA SKIN</div>
-      <div class="subtitle">INSTITUT DE BEAUTÉ</div>
+      <div class="logo">${companyInfo.name.toUpperCase()}</div>
+      <div class="subtitle">${config.siteTagline || 'INSTITUT DE BEAUTÉ'}</div>
     </div>
     
     <div class="invoice-header">
@@ -428,7 +417,7 @@ export async function GET(
     <div class="footer">
       <p style="margin-bottom: 20px;">
         <strong>Merci pour votre confiance !</strong><br>
-        LAIA SKIN Institut - Votre beauté, notre passion
+        ${companyInfo.name} - ${config.siteTagline || 'Votre beauté, notre passion'}
       </p>
       
       <div style="border-top: 1px solid #ddd; padding-top: 20px; margin-top: 20px;">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { sendWhatsApp, sendEmail } from '@/lib/notifications';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Fonction pour générer un numéro de facture
 async function generateInvoiceNumber(): Promise<string> {
@@ -34,6 +35,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     const { id } = await params;
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -374,7 +388,7 @@ export async function POST(
                 if (sponsorProfile.user.phone) {
                   const message = `🎉 Félicitations ${sponsorProfile.user.name} ! 
 
-${reservation.user.name} vient de faire son premier soin chez LAIA SKIN Institut.
+${reservation.user.name} vient de faire son premier soin chez ${siteName}.
 
 ✨ Vous avez gagné 15€ de réduction sur votre prochain soin !
 
@@ -382,7 +396,7 @@ Cette réduction est maintenant disponible dans votre espace client et sera auto
 
 Merci pour votre confiance et votre fidélité ! 💝
 
-L'équipe LAIA SKIN Institut`;
+L'équipe ${siteName}`;
 
                   try {
                     await sendWhatsApp(sponsorProfile.user.phone, message);

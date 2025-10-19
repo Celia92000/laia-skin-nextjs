@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  /* Code désactivé temporairement - À RÉACTIVER EN PRODUCTION
   // TEMPORAIREMENT DÉSACTIVÉ - Retourner next() pour tout
   return NextResponse.next();
-  
-  /* Code désactivé temporairement
+  */
+
   // Ne pas appliquer le middleware aux routes API, assets statiques, login, etc.
   if (
     request.nextUrl.pathname.startsWith('/api/') ||
@@ -18,9 +19,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Détection du tenant (organisation) basée sur le domaine/subdomain
+  const host = request.headers.get('host') || 'localhost:3001'
+  const cleanHost = host.split(':')[0].toLowerCase()
+
+  // Ajouter le host aux headers pour accès dans les Server Components
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-tenant-host', cleanHost)
+
   // Routes protégées
   const protectedPaths = ['/admin', '/espace-client', '/comptable'];
-  const isProtectedPath = protectedPaths.some(path => 
+  const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
 
@@ -39,7 +48,7 @@ export function middleware(request: NextRequest) {
 
     try {
       const decoded = verifyToken(token);
-      
+
       if (!decoded) {
         // Token invalide, rediriger vers login
         const response = NextResponse.redirect(new URL('/login', request.url));
@@ -47,8 +56,7 @@ export function middleware(request: NextRequest) {
         return response;
       }
 
-      // Ajouter les informations de l'utilisateur aux headers pour les pages
-      const requestHeaders = new Headers(request.headers);
+      // Ajouter les informations de l'utilisateur aux headers
       requestHeaders.set('x-user-id', decoded.userId);
       requestHeaders.set('x-user-role', decoded.role);
 
@@ -65,8 +73,12 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
-  */
+  // Pour toutes les autres routes, passer les headers du tenant
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 }
 
 export const config = {

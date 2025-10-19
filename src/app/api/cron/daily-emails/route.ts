@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
+import { getSiteConfig } from '@/lib/config-service';
 import { headers } from 'next/headers';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const email = config.email || 'contact@institut.fr';
+  const phone = config.phone || '06 XX XX XX XX';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
+
   try {
     // Vérifier l'authentification Vercel Cron
     const headersList = await headers();
@@ -119,7 +126,7 @@ export async function GET(request: NextRequest) {
                   <strong>L'équipe Laia Skin Institut</strong></p>
                 </div>
                 <div class="footer">
-                  <p>📞 01 23 45 67 89 | 📧 contact@laiaskininstitut.fr</p>
+                  <p>📞 ${phone} | 📧 ${email}</p>
                   <p>Pour annuler ou reporter : connectez-vous à votre espace client</p>
                 </div>
               </div>
@@ -228,7 +235,7 @@ export async function GET(request: NextRequest) {
                   <strong>L'équipe Laia Skin Institut</strong> 💕</p>
                 </div>
                 <div class="footer">
-                  <p>📞 01 23 45 67 89 | 📧 contact@laiaskininstitut.fr</p>
+                  <p>📞 ${phone} | 📧 ${email}</p>
                   <p>Ce code est unique et personnel, ne le partagez pas</p>
                 </div>
               </div>

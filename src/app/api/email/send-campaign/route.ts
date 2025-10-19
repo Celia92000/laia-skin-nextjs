@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(req: NextRequest) {
   try {
     const prisma = await getPrismaClient();
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const email = config.email || 'contact@institut.fr';
     const { 
       recipients, 
       subject, 
@@ -40,12 +44,12 @@ export async function POST(req: NextRequest) {
 
     // Envoyer les emails
     const results = await Promise.allSettled(
-      recipientEmails.map(email =>
+      recipientEmails.map(recipientEmail =>
         getResend().emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
-          to: email,
+          from: `${siteName} <${email}>`,
+          to: recipientEmail,
           subject: subject,
-          html: getEmailTemplate(templateType, content)
+          html: getEmailTemplate(templateType, content, config)
         })
       )
     );
@@ -150,14 +154,23 @@ async function getSegmentUsers(segment: string) {
   }
 }
 
-function getEmailTemplate(templateType: string, content: string): string {
+function getEmailTemplate(templateType: string, content: string, config: any): string {
+  const siteName = config.siteName || 'Mon Institut';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const phone = config.phone || '06 XX XX XX XX';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
   const baseStyles = `
     <style>
       body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
       .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
-      .header { background: linear-gradient(135deg, #d4b5a0 0%, #c9a084 100%); color: white; padding: 40px 30px; text-align: center; }
+      .header { background: linear-gradient(135deg, ${primaryColor} 0%, #c9a084 100%); color: white; padding: 40px 30px; text-align: center; }
       .content { padding: 30px; }
-      .button { display: inline-block; padding: 14px 30px; margin: 20px 0; background: #d4b5a0; color: white; text-decoration: none; border-radius: 25px; font-weight: 500; }
+      .button { display: inline-block; padding: 14px 30px; margin: 20px 0; background: ${primaryColor}; color: white; text-decoration: none; border-radius: 25px; font-weight: 500; }
       .footer { background: #2c3e50; color: white; padding: 30px; text-align: center; }
     </style>
   `;
@@ -172,22 +185,22 @@ function getEmailTemplate(templateType: string, content: string): string {
     <body>
       <div class="container">
         <div class="header">
-          <h1>LAIA SKIN INSTITUT</h1>
+          <h1>${siteName.toUpperCase()}</h1>
         </div>
         <div class="content">
           ${content}
           <div style="text-align: center; margin-top: 30px;">
-            <a href="https://laia-skin-institut.fr/reservation" class="button">
+            <a href="${website}/reservation" class="button">
               Prendre rendez-vous
             </a>
           </div>
         </div>
         <div class="footer">
-          <p>LAIA SKIN INSTITUT</p>
-          <p>1 Rue de la Paix, 75001 Paris</p>
-          <p>06 12 34 56 78</p>
+          <p>${siteName}</p>
+          <p>${fullAddress}</p>
+          <p>${phone}</p>
           <p style="margin-top: 20px; font-size: 12px;">
-            <a href="https://laia-skin-institut.fr/unsubscribe" style="color: #d4b5a0;">Se désinscrire</a>
+            <a href="${website}/unsubscribe" style="color: ${primaryColor};">Se désinscrire</a>
           </p>
         </div>
       </div>

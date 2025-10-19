@@ -128,6 +128,12 @@ export default function SecureLoginPage() {
           
           // Redirection basée sur le rôle
           const roleRedirects = {
+            'SUPER_ADMIN': '/super-admin',
+            'ORG_OWNER': '/admin',
+            'ORG_ADMIN': '/admin',
+            'LOCATION_MANAGER': '/admin/planning',
+            'STAFF': '/admin/planning',
+            'RECEPTIONIST': '/admin/planning',
             'ADMIN': '/admin',
             'admin': '/admin',
             'COMPTABLE': '/admin/finances',
@@ -136,7 +142,7 @@ export default function SecureLoginPage() {
             'CLIENT': '/espace-client',
             'client': '/espace-client'
           };
-          
+
           const redirectPath = roleRedirects[data.user.role as keyof typeof roleRedirects] || '/';
           window.location.href = redirectPath;
           

@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Cette API doit être appelée régulièrement (toutes les heures par exemple)
 // Via Vercel Cron, GitHub Actions, ou un service externe
 export async function GET(request: Request) {
   try {
+    // Récupérer la configuration du site
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const email = config.email || 'contact@institut.fr';
+
     // Vérifier le token secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
     const secret = searchParams.get('secret');
-    
+
     if (secret !== process.env.CRON_SECRET) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -71,7 +77,7 @@ export async function GET(request: Request) {
     <div class="content">
       <p>Bonjour ${reservation.user.name},</p>
       
-      <p>Je vous rappelle votre rendez-vous <strong>demain</strong> chez LAIA SKIN Institut.</p>
+      <p>Je vous rappelle votre rendez-vous <strong>demain</strong> chez ${siteName}.</p>
       
       <div class="appointment-box">
         <h3>📍 Détails de votre rendez-vous :</h3>
@@ -87,24 +93,24 @@ export async function GET(request: Request) {
       
       <p>Si vous avez besoin de modifier ou annuler votre rendez-vous, merci de me prévenir au plus vite.</p>
       
-      <p>📞 WhatsApp : 06 83 71 70 50</p>
+      <p>📞 WhatsApp : ${phone}</p>
       
       <p>J'ai hâte de vous retrouver demain !</p>
       
       <p>À très bientôt,<br>
       <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${config.address || ''}, ${config.postalCode || ''} ${config.city || ''}<br>
+      🌐 ${config.customDomain?.replace('https://', '').replace('http://', '') || ''}</p>
     </div>
   </div>
 </body>
 </html>`;
-        
+
         await getResend().emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+          from: `${siteName} <${email}>`,
           to: [reservation.user.email],
           subject: `📅 Rappel : Votre rendez-vous demain à ${reservation.time}`,
           html: htmlContent,
@@ -114,7 +120,7 @@ export async function GET(request: Request) {
         // Enregistrer dans l'historique
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laia.skininstitut.fr',
+            from: '${email}',
             to: reservation.user.email,
             subject: `📅 Rappel de rendez-vous`,
             content: `Rappel automatique pour le rendez-vous du ${reservation.date.toLocaleDateString('fr-FR')}`,
@@ -195,19 +201,19 @@ export async function GET(request: Request) {
       <p>J'ai hâte de vous retrouver tout à l'heure !</p>
       
       <p>À tout de suite,<br>
-      <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      <strong>${config.legalRepName?.split(' ')[0] || 'Votre esthéticienne'}</strong><br>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      📞 06 83 71 70 50</p>
+      <p>📍 ${config.address || ''}, ${config.postalCode || ''} ${config.city || ''}<br>
+      📞 ${config.phone || ''}</p>
     </div>
   </div>
 </body>
 </html>`;
-          
+
           await getResend().emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+            from: `${siteName} <${email}>`,
             to: [reservation.user.email],
             subject: `⏰ Rappel urgent : Votre rendez-vous dans 2 heures`,
             html: htmlContent,
@@ -270,37 +276,37 @@ export async function GET(request: Request) {
       
       <div class="birthday-box">
         <h2>C'est votre jour spécial !</h2>
-        <p>Toute l'équipe de LAIA SKIN Institut vous souhaite un merveilleux anniversaire !</p>
-        
+        <p>Toute l'équipe de ${siteName} vous souhaite un merveilleux anniversaire !</p>
+
         <p><strong>Notre cadeau pour vous :</strong></p>
         <div class="code">-30% SUR TOUS LES SOINS</div>
         <p><em>Valable tout le mois de votre anniversaire</em></p>
       </div>
-      
+
       <p>Profitez de cette offre exceptionnelle pour vous faire plaisir avec le soin de votre choix.</p>
-      
+
       <p>Pour réserver, contactez-nous :</p>
       <ul>
-        <li>📞 WhatsApp : 06 83 71 70 50</li>
-        <li>✉️ Email : contact@laia.skininstitut.fr</li>
+        <li>📞 ${config.whatsapp ? `WhatsApp : ${config.whatsapp}` : `Téléphone : ${config.phone || ''}`}</li>
+        <li>✉️ Email : ${email}</li>
       </ul>
-      
+
       <p>Nous avons hâte de célébrer avec vous !</p>
-      
+
       <p>Très belle journée à vous,<br>
-      <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      <strong>${config.legalRepName?.split(' ')[0] || 'Votre esthéticienne'}</strong><br>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${config.address || ''}, ${config.postalCode || ''} ${config.city || ''}<br>
+      🌐 ${config.customDomain?.replace('https://', '').replace('http://', '') || ''}</p>
     </div>
   </div>
 </body>
 </html>`;
-            
+
             await getResend().emails.send({
-              from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+              from: `${siteName} <${email}>`,
               to: [user.email],
               subject: `🎂 Joyeux anniversaire ${user.name} ! Une surprise vous attend`,
               html: htmlContent,
@@ -310,7 +316,7 @@ export async function GET(request: Request) {
             // Enregistrer dans l'historique
             await prisma.emailHistory.create({
               data: {
-                from: 'contact@laia.skininstitut.fr',
+                from: '${email}',
                 to: user.email,
                 subject: `🎂 Joyeux anniversaire ${user.name} !`,
                 content: 'Email d\'anniversaire automatique',

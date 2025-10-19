@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const authHeader = request.headers.get('authorization');
@@ -71,7 +85,7 @@ export async function GET(request: NextRequest) {
       
       <div class="birthday-box">
         <h2>C'est votre jour spécial !</h2>
-        <p>Toute l'équipe de LAIA SKIN Institut vous souhaite un merveilleux anniversaire !</p>
+        <p>Toute l'équipe de ${siteName} vous souhaite un merveilleux anniversaire !</p>
         
         <p><strong>Notre cadeau pour vous :</strong></p>
         <div class="code">-30% SUR TOUS LES SOINS</div>
@@ -82,26 +96,26 @@ export async function GET(request: NextRequest) {
       
       <p>Pour réserver, contactez-nous :</p>
       <ul>
-        <li>📞 WhatsApp : 06 83 71 70 50</li>
-        <li>✉️ Email : contact@laia.skininstitut.fr</li>
+        <li>📞 WhatsApp : ${phone}</li>
+        <li>✉️ Email : ${email}</li>
       </ul>
       
       <p>Nous avons hâte de célébrer avec vous !</p>
       
       <p>Très belle journée à vous,<br>
       <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${fullAddress}<br>
+      🌐 ${website.replace('https://', '').replace('http://', '')}</p>
     </div>
   </div>
 </body>
 </html>`;
 
         await getResend().emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+          from: process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`,
           to: [user.email!],
           subject: `🎂 Joyeux anniversaire ${user.name} ! Une surprise vous attend`,
           html: htmlContent,
@@ -111,7 +125,7 @@ export async function GET(request: NextRequest) {
         // Enregistrer dans l'historique
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laia.skininstitut.fr',
+            from: `${email}`,
             to: user.email!,
             subject: `🎂 Joyeux anniversaire ${user.name} !`,
             content: 'Email d\'anniversaire automatique',

@@ -27,11 +27,30 @@ export async function GET(request: NextRequest) {
     const services = await prisma.service.findMany({
       where,
       take: limit ? parseInt(limit) : undefined,
-      orderBy: { createdAt: 'asc' }
+      orderBy: { order: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        shortDescription: true,
+        price: true,
+        promoPrice: true,
+        launchPrice: true,
+        forfaitPrice: true,
+        forfaitPromo: true,
+        duration: true,
+        mainImage: true,
+        categoryId: true,
+        subcategoryId: true,
+        active: true,
+        featured: true,
+        order: true,
+        canBeOption: true,
+      }
     });
 
-    // Mettre en cache pour 2 minutes
-    cache.set(cacheKey, services, 120000);
+    // Mettre en cache pour 10 minutes
+    cache.set(cacheKey, services, 600000);
 
     return NextResponse.json(services);
   } catch (error: any) {

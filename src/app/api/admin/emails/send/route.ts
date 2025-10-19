@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       for (const recipient of recipients) {
         try {
           const emailContent = content || message;
-          const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>';
+          const fromEmail = process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>';
 
           const { data: emailData, error } = await getResend().emails.send({
             from: fromEmail,
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
             // Enregistrer dans l'historique
             await prisma.emailHistory.create({
               data: {
-                from: 'contact@laiaskininstitut.fr',
+                from: '${email}',
                 to: recipient.email,
                 subject: subject,
                 content: emailContent,
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     }
 
     const emailContent = content || message;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>';
 
     // Envoyer via Resend
     const { data: emailData, error } = await getResend().emails.send({
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     // Enregistrer dans l'historique
     await prisma.emailHistory.create({
       data: {
-        from: 'contact@laiaskininstitut.fr',
+        from: '${email}',
         to: to,
         subject: subject,
         content: emailContent,

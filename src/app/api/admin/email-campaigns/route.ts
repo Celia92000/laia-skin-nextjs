@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -101,8 +115,8 @@ export async function POST(request: NextRequest) {
                 client_name: recipient.name,
                 subject: data.subject,
                 message: data.content,
-                from_name: 'LAIA SKIN Institut',
-                reply_to: 'contact@laia.skininstitut.fr',
+                from_name: `${siteName}`,
+                reply_to: `${email}`,
                 service_name: data.subject,
                 review_link: 'https://laiaskin.fr',
                 loyalty_progress: '',
@@ -114,7 +128,7 @@ export async function POST(request: NextRequest) {
           // Créer l'historique
           await prisma.emailHistory.create({
             data: {
-              from: 'contact@laia.skininstitut.fr',
+              from: `${email}`,
               to: recipient.email,
               subject: data.subject,
               content: data.content,

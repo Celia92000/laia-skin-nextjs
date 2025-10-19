@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { EmailSyncService } from '@/lib/email-sync';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Cron job pour synchroniser automatiquement les emails
 // Appel automatique toutes les 10 minutes via Vercel Cron
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const email = config.email || 'contact@institut.fr';
+  const phone = config.phone || '06 XX XX XX XX';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
+
   const prisma = await getPrismaClient();
 
   try {
@@ -29,7 +36,7 @@ export async function GET(request: Request) {
 
     // Créer le service de synchronisation
     const syncService = new EmailSyncService({
-      user: process.env.EMAIL_USER || 'contact@laiaskininstitut.fr',
+      user: process.env.EMAIL_USER || '${email}',
       password: process.env.EMAIL_PASSWORD,
       host: 'mail.gandi.net',
       port: 993,

@@ -3,13 +3,25 @@ import { prisma } from '@/lib/prisma';
 import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, getDiscountPercentage } from '@/lib/price-utils';
 import { SocialSection } from '@/components/SocialSection';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Force dynamic rendering to avoid build-time database queries
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function Home() {
+  const config = await getSiteConfig();
   let services: any[] = [];
+
+  // Parse testimonials from config (JSON)
+  let testimonials: any[] = [];
+  try {
+    if (config.testimonials) {
+      testimonials = JSON.parse(config.testimonials);
+    }
+  } catch (e) {
+    console.error('Error parsing testimonials:', e);
+  }
   
   try {
     // Récupérer les services depuis la base de données (sans les forfaits)
@@ -37,19 +49,31 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
       <section className="pt-20 sm:pt-24 min-h-screen flex items-center justify-center relative overflow-hidden px-4">
-        {/* Animated Background Elements */}
+        {/* Background Image (if configured) */}
+        {config.heroImage && (
+          <div className="absolute inset-0">
+            <img
+              src={config.heroImage}
+              alt="Hero background"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/20"></div>
+          </div>
+        )}
+
+        {/* Animated Background Elements (fallback or overlay) */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute w-96 h-96 -bottom-48 -left-48 bg-gradient-to-tr from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse delay-700"></div>
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up text-[#2c3e50] leading-tight tracking-normal">
-            <span className="block font-normal">Une peau respectée,</span>
-            <span className="block font-semibold text-[#d4b5a0] mt-1">une beauté révélée</span>
+          <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up leading-tight tracking-normal ${config.heroImage ? 'text-white' : 'text-[#2c3e50]'}`}>
+            <span className="block font-normal">{config.heroTitle || "Une peau respectée,"}</span>
+            <span className={`block font-semibold mt-1 ${config.heroImage ? 'text-white/90' : 'text-[#d4b5a0]'}`}>{config.heroSubtitle || "une beauté révélée"}</span>
           </h1>
-          <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal">
-            Institut spécialisé dans les techniques esthétiques avancées
+          <p className={`font-inter text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal ${config.heroImage ? 'text-white/90' : 'text-[#2c3e50]/60'}`}>
+            {config.siteDescription || config.siteTagline || "Institut spécialisé dans les techniques esthétiques avancées"}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
             <Link href="/reservation" className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
@@ -293,12 +317,12 @@ export default async function Home() {
                 </svg>
               </div>
               <p className="font-playfair text-2xl md:text-3xl lg:text-4xl text-[#2c3e50]/60 italic font-light leading-relaxed tracking-wide px-8">
-                La vraie beauté réside dans l'harmonie parfaite entre science, art et attention personnalisée
+                {config.founderQuote || "La vraie beauté réside dans l'harmonie parfaite entre science, art et attention personnalisée"}
               </p>
               <div className="mt-10">
                 <div className="inline-block">
-                  <p className="font-inter text-sm text-[#d4b5a0] font-medium tracking-[0.3em] uppercase">Laïa Gherbi</p>
-                  <p className="font-inter text-xs text-[#2c3e50]/40 mt-2 tracking-wider">Fondatrice & Experte en soins esthétiques</p>
+                  <p className="font-inter text-sm text-[#d4b5a0] font-medium tracking-[0.3em] uppercase">{config.founderName || "Votre nom"}</p>
+                  <p className="font-inter text-xs text-[#2c3e50]/40 mt-2 tracking-wider">{config.founderTitle || "Fondatrice & Experte en soins esthétiques"}</p>
                   <div className="w-24 h-[0.5px] bg-gradient-to-r from-transparent via-[#d4b5a0] to-transparent mx-auto mt-4"></div>
                 </div>
               </div>
@@ -308,92 +332,54 @@ export default async function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-12 sm:py-16 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2c3e50] mb-4">
-              Témoignages Clients
-            </h2>
-            <p className="text-lg text-[#2c3e50]/70 mb-4">
-              La satisfaction de mes clientes est ma plus belle récompense
-            </p>
-            <div className="inline-flex items-center gap-2 bg-[#fdfbf7] px-4 py-2 rounded-full">
-              <span className="text-sm text-[#2c3e50]/60">Bientôt disponible sur</span>
-              <img 
-                src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" 
-                alt="Google" 
-                className="h-5"
-              />
-              <span className="text-sm text-[#2c3e50]/60">Business</span>
+      {testimonials.length > 0 && (
+        <section className="py-12 sm:py-16 md:py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-[#2c3e50] mb-4">
+                Témoignages Clients
+              </h2>
+              <p className="text-lg text-[#2c3e50]/70 mb-4">
+                La satisfaction de mes clientes est ma plus belle récompense
+              </p>
+              <div className="inline-flex items-center gap-2 bg-[#fdfbf7] px-4 py-2 rounded-full">
+                <span className="text-sm text-[#2c3e50]/60">Bientôt disponible sur</span>
+                <img
+                  src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png"
+                  alt="Google"
+                  className="h-5"
+                />
+                <span className="text-sm text-[#2c3e50]/60">Business</span>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {testimonials.slice(0, 3).map((testimonial: any, index: number) => (
+                <div key={index} className="bg-gradient-to-br from-[#fdfbf7] to-white rounded-2xl p-8 shadow-lg">
+                  <div className="flex mb-4">
+                    {[...Array(testimonial.rating || 5)].map((_, i) => (
+                      <svg key={i} className="w-5 h-5 text-[#d4b5a0] fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-[#2c3e50]/80 italic mb-6">
+                    "{testimonial.text}"
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] rounded-full flex items-center justify-center text-white font-semibold">
+                      {testimonial.initials || testimonial.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[#2c3e50]">{testimonial.name}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gradient-to-br from-[#fdfbf7] to-white rounded-2xl p-8 shadow-lg">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-[#d4b5a0] fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-[#2c3e50]/80 italic mb-6">
-                "Après 3 séances d'Hydro'Cleaning, ma peau est complètement transformée ! Les pores sont resserrés, plus de points noirs et un teint éclatant. Les résultats sont visibles dès la première séance."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] rounded-full flex items-center justify-center text-white font-semibold">
-                  SD
-                </div>
-                <div>
-                  <p className="font-semibold text-[#2c3e50]">Sophie D.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-[#fdfbf7] to-white rounded-2xl p-8 shadow-lg">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-[#d4b5a0] fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-[#2c3e50]/80 italic mb-6">
-                "Le BB Glow est une révélation ! J'ai enfin un teint unifié sans maquillage. Les gens me demandent constamment quelle est ma routine beauté. Un gain de temps précieux chaque matin !"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] rounded-full flex items-center justify-center text-white font-semibold">
-                  ML
-                </div>
-                <div>
-                  <p className="font-semibold text-[#2c3e50]">Marie L.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-[#fdfbf7] to-white rounded-2xl p-8 shadow-lg">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-[#d4b5a0] fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-[#2c3e50]/80 italic mb-6">
-                "Je suis adepte du Renaissance depuis 6 mois. Ma peau n'a jamais été aussi ferme et lumineuse. Les ridules se sont estompées et j'ai retrouvé l'éclat de mes 30 ans. Un investissement qui vaut vraiment le coup !"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] rounded-full flex items-center justify-center text-white font-semibold">
-                  CM
-                </div>
-                <div>
-                  <p className="font-semibold text-[#2c3e50]">Catherine M.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Section Réseaux Sociaux */}
       <SocialSection />

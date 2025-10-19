@@ -9,49 +9,477 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id             String            @id @default(cuid())
-  email          String            @unique
-  password       String
-  name           String
-  phone          String?
-  role           String            @default("client")
-  loyaltyPoints  Int               @default(0)
-  totalSpent     Float             @default(0)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  adminNotes     String?
-  allergies      String?
-  birthDate      DateTime?
-  lastVisit      DateTime?
-  medicalNotes   String?
-  preferences    String?
-  skinType       String?
-  resetToken     String?
-  resetTokenExpiry DateTime?
-  evolutions     ClientEvolution[]
-  loyaltyHistory LoyaltyHistory[]
-  loyaltyProfile LoyaltyProfile?
-  reservations   Reservation[]
-  reviews        Review[]
-  notifications  Notification[]
-  referralsMade  Referral[]        @relation("ReferralReferrer")
-  referredBy     Referral?         @relation("ReferralReferred")
-  leads          Lead[]
-  discounts      Discount[]
-  orders         Order[]
-  payments       Payment[]
-  stockMovements StockMovement[]
-  giftCards      GiftCard[]        @relation("GiftCardPurchaser")
+// ============================================
+// MULTI-TENANCY MODELS
+// ============================================
 
+enum UserRole {
+  SUPER_ADMIN       // Propriétaire de la plateforme (accès complet à tous les instituts)
+  ORG_OWNER         // Propriétaire d'un institut (accès complet à son organisation)
+  ORG_ADMIN         // Co-gérant d'un institut (accès complet à l'organisation)
+  LOCATION_MANAGER  // Responsable d'un point de vente (accès limité à son emplacement)
+  STAFF             // Employé (accès opérationnel limité)
+  RECEPTIONIST      // Réceptionniste (accès limité à la prise de RDV)
+  CLIENT            // Client (accès espace client)
+}
+
+enum OrgType {
+  SINGLE_LOCATION   // Institut avec un seul point de vente
+  MULTI_LOCATION    // Institut avec plusieurs points de vente
+}
+
+enum OrgPlan {
+  SOLO              // 49€/mois - 1 emplacement, 1 utilisateur admin
+  DUO               // 99€/mois - 1 emplacement, 3 utilisateurs
+  TEAM              // 199€/mois - 3 emplacements, 10 utilisateurs
+  PREMIUM           // 399€/mois - Emplacements illimités, utilisateurs illimités
+  STARTER           // Ancien nom - à supprimer après migration
+  ESSENTIAL         // Ancien nom - à supprimer après migration
+  PROFESSIONAL      // Ancien nom - à supprimer après migration
+  ENTERPRISE        // Ancien nom - à supprimer après migration
+}
+
+enum OrgStatus {
+  ACTIVE            // Organisation active
+  TRIAL             // Période d'essai
+  SUSPENDED         // Suspendue (impayé)
+  CANCELLED         // Annulée
+}
+
+enum PaymentProvider {
+  STRIPE            // Stripe Connect
+  SUMUP             // SumUp
+  PAYPAL            // PayPal
+  POS_CLYO          // Logiciel de caisse Clyo
+  POS_ADORIA        // Logiciel de caisse Adoria
+  POS_SHORTCUTS     // Logiciel de caisse Shortcuts
+  POS_OTHER         // Autre logiciel de caisse
+}
+
+// Organisation (Institut de beauté)
+model Organization {
+  id              String       @id @default(cuid())
+  name            String       // "Beauté Éternelle Paris"
+  slug            String       @unique // "beaute-eternelle-paris"
+  legalName       String?      // Raison sociale
+  type            OrgType      @default(SINGLE_LOCATION)
+
+  // Domaine personnalisé
+  domain          String?      @unique // "beaute-eternelle.fr"
+  subdomain       String       @unique // "beaute-eternelle"
+
+  // Base de données dédiée (chiffrée)
+  databaseUrl     String?      // URL de la base de données PostgreSQL dédiée
+
+  // Abonnement
+  plan            OrgPlan      @default(SOLO)
+  status          OrgStatus    @default(TRIAL)
+  trialEndsAt     DateTime?
+  subscriptionId  String?      // ID d'abonnement Stripe
+
+  // Limites du plan
+  maxLocations    Int          @default(1)
+  maxUsers        Int          @default(1)
+  maxStorage      Int          @default(5) // En GB
+
+  // Contact principal
+  ownerEmail      String
+  ownerPhone      String?
+
+  // Paiement et facturation
+  billingEmail    String?
+  billingAddress  String?      // JSON avec adresse complète
+
+  // Configuration
+  config          OrganizationConfig?
+
+  // Relations
+  locations              Location[]
+  users                  User[]
+  services               Service[]
+  products               Product[]
+  blogPosts              BlogPost[]
+  paymentSettings        PaymentSettings?
+  loyaltyProgram         LoyaltyProgramSettings?
+  bookingSettings        BookingSettings?
+  superAdminNotifications SuperAdminNotification[] // Notifications super admin
+  auditLogs              AuditLog[]     // Logs d'audit
+  invoices               Invoice[]      // Factures
+  supportTickets         SupportTicket[] // Tickets de support
+  subscriptionPromoCodes SubscriptionPromoCode[] @relation("SubscriptionPromoUsage") // Codes promo utilisés
+  testimonials           Testimonial[]  @relation("OrganizationTestimonials") // Témoignages
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([slug])
+  @@index([subdomain])
+  @@index([status])
+}
+
+// Configuration d'une organisation (remplace SiteConfig)
+model OrganizationConfig {
+  id              String       @id @default(cuid())
+  organizationId  String       @unique
+
+  // Informations générales
+  siteName        String       @default("Mon Institut de Beauté")
+  siteTagline     String?      @default("Institut de Beauté & Bien-être")
+  siteDescription String?
+
+  // Contact
+  email           String?      @default("contact@mon-institut.fr")
+  phone           String?      @default("+33 6 00 00 00 00")
+  address         String?
+  city            String?
+  postalCode      String?
+  country         String?      @default("France")
+
+  // Réseaux sociaux
+  facebook        String?
+  instagram       String?
+  tiktok          String?
+  whatsapp        String?
+  linkedin        String?
+  youtube         String?
+
+  // Apparence
+  primaryColor    String?      @default("#d4b5a0")
+  secondaryColor  String?      @default("#2c3e50")
+  accentColor     String?      @default("#20b2aa")
+  logoUrl         String?
+  faviconUrl      String?
+
+  // Typographie
+  fontFamily      String?      @default("Inter")
+  headingFont     String?      @default("Playfair Display")
+  baseFontSize    String?      @default("16px")
+  headingSize     String?      @default("2.5rem")
+
+  // Horaires (JSON)
+  businessHours   String?      // {"lundi": "9h-18h", ...}
+
+  // Géolocalisation
+  latitude        String?
+  longitude       String?
+  googleMapsUrl   String?
+
+  // Page d'accueil
+  heroTitle       String?
+  heroSubtitle    String?
+  heroImage       String?
+  aboutText       String?
+
+  // Fondateur/Fondatrice
+  founderName     String?
+  founderTitle    String?
+  founderQuote    String?      @db.Text
+  founderImage    String?
+  aboutIntro      String?      @db.Text
+  aboutParcours   String?      @db.Text
+
+  // Témoignages et formations (JSON)
+  testimonials    String?      @db.Text
+  formations      String?      @db.Text
+
+  // CGV et mentions légales
+  termsAndConditions String?   @db.Text
+  privacyPolicy   String?      @db.Text
+  legalNotice     String?      @db.Text
+
+  // Emails
+  emailSignature  String?
+  welcomeEmailText String?     @db.Text
+
+  // Informations légales
+  siret           String?
+  siren           String?
+  tvaNumber       String?
+  apeCode         String?
+  rcs             String?
+  capital         String?
+  legalForm       String?
+
+  // Assurance
+  insuranceCompany String?
+  insuranceContract String?
+  insuranceAddress String?
+
+  // Banque
+  bankName        String?
+  bankIban        String?
+  bankBic         String?
+
+  // Représentant légal
+  legalRepName    String?
+  legalRepTitle   String?
+
+  // Tracking et Analytics
+  googleAnalyticsId String?
+  facebookPixelId String?
+  metaVerificationCode String?
+  googleVerificationCode String?
+
+  // SEO Global
+  defaultMetaTitle String?
+  defaultMetaDescription String?
+  defaultMetaKeywords String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Point de vente / Emplacement
+model Location {
+  id              String       @id @default(cuid())
+  organizationId  String
+
+  name            String       // "Beauté Éternelle - Champs-Élysées"
+  slug            String       // "champs-elysees"
+
+  // Adresse
+  address         String
+  city            String
+  postalCode      String
+  country         String       @default("France")
+  latitude        String?
+  longitude       String?
+
+  // Contact
+  phone           String?
+  email           String?
+
+  // Horaires spécifiques (si différents de l'organisation)
+  businessHours   String?      // JSON
+
+  // Configuration
+  isMainLocation  Boolean      @default(false)
+  active          Boolean      @default(true)
+
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staff           UserLocation[]
+  workingHours    WorkingHours[]
+  blockedSlots    BlockedSlot[]
+  reservations    Reservation[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([active])
+}
+
+// Paramètres de paiement d'une organisation
+model PaymentSettings {
+  id                    String          @id @default(cuid())
+  organizationId        String          @unique
+
+  // Fournisseur principal
+  primaryProvider       PaymentProvider @default(STRIPE)
+
+  // Stripe Connect
+  stripeAccountId       String?         // ID du compte Stripe Connect
+  stripePublicKey       String?
+  stripeSecretKey       String?         // Chiffré
+  stripeConnected       Boolean         @default(false)
+  stripeOnboardingCompleted Boolean     @default(false)
+
+  // Autres fournisseurs
+  sumupApiKey           String?         // Chiffré
+  paypalClientId        String?
+  paypalSecretKey       String?         // Chiffré
+
+  // Logiciel de caisse (POS)
+  posProvider           PaymentProvider?
+  posApiUrl             String?
+  posApiKey             String?         // Chiffré
+  posWebhookUrl         String?
+  posSyncEnabled        Boolean         @default(false)
+  posLastSync           DateTime?
+
+  // Frais de plateforme (pour future monétisation)
+  platformFeePercent    Float           @default(0)
+  platformFeeFixed      Float           @default(0)
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Programme de fidélité d'une organisation
+model LoyaltyProgramSettings {
+  id                      String       @id @default(cuid())
+  organizationId          String       @unique
+
+  // Activation
+  isEnabled               Boolean      @default(false)
+
+  // Configuration des points
+  pointsPerEuro           Float        @default(1)    // 1 point par euro dépensé
+  pointsValue             Float        @default(0.01) // 1 point = 0.01€
+  minPointsToRedeem       Int          @default(100)  // Minimum 100 points pour utiliser
+  pointsExpirationDays    Int?                        // null = pas d'expiration
+
+  // Paliers VIP
+  bronzeThreshold         Float        @default(0)    // Dès l'inscription
+  silverThreshold         Float        @default(500)  // 500€ dépensés
+  goldThreshold           Float        @default(1500) // 1500€ dépensés
+  platinumThreshold       Float        @default(5000) // 5000€ dépensés
+
+  // Avantages par palier (JSON)
+  bronzePerks             String?      // [{"type": "discount", "value": 5}]
+  silverPerks             String?
+  goldPerks               String?
+  platinumPerks           String?
+
+  // Programme de parrainage
+  referralEnabled         Boolean      @default(true)
+  referralRewardAmount    Float        @default(20)   // 20€ de réduction
+  referralMinimumSpend    Float        @default(0)    // Dépense minimum du filleul
+
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Paramètres de réservation d'une organisation
+model BookingSettings {
+  id                        String       @id @default(cuid())
+  organizationId            String       @unique
+
+  // Contraintes de réservation
+  minAdvanceBookingHours    Int          @default(2)    // Minimum 2h à l'avance
+  maxAdvanceBookingDays     Int          @default(30)   // Maximum 30 jours à l'avance
+  cancellationDeadlineHours Int          @default(24)   // Annulation gratuite 24h avant
+
+  // Options
+  allowStaffSelection       Boolean      @default(true) // Client peut choisir son praticien
+  requireLocationSelection  Boolean      @default(false) // Obligatoire si multi-emplacements
+  allowOnlinePayment        Boolean      @default(true)
+  requireDepositPercent     Float?                      // % d'acompte requis
+
+  // Notifications automatiques
+  sendConfirmationEmail     Boolean      @default(true)
+  sendReminder24h           Boolean      @default(true)
+  sendReminder2h            Boolean      @default(false)
+  sendReviewRequest         Boolean      @default(true)
+
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+
+  organization              Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Utilisateur (client ou staff)
+model User {
+  id               String            @id @default(cuid())
+  organizationId   String?           // null pour SUPER_ADMIN
+  email            String
+  password         String
+  name             String
+  phone            String?
+  role             UserRole          @default(CLIENT)
+
+  // Permissions personnalisées (JSON)
+  customPermissions String?          // {"canViewRevenue": false, "canDeleteReservations": true}
+
+  // Visibilité et disponibilité (pour le staff)
+  isVisible        Boolean           @default(true)  // Visible dans la liste des praticiens
+  isAvailable      Boolean           @default(true)  // Disponible pour les réservations
+
+  // Client data
+  loyaltyPoints    Int               @default(0)
+  totalSpent       Float             @default(0)
+  adminNotes       String?
+  allergies        String?
+  birthDate        DateTime?
+  lastVisit        DateTime?
+  medicalNotes     String?
+  preferences      String?
+  skinType         String?
+
+  // Auth
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  lastLoginAt      DateTime?         // Dernière connexion
+
+  // Relations
+  organization     Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations        UserLocation[]    // Emplacements assignés (pour le staff)
+  evolutions       ClientEvolution[]
+  loyaltyHistory   LoyaltyHistory[]
+  loyaltyProfile   LoyaltyProfile?
+  reservations     Reservation[]
+  reviews          Review[]
+  notifications    Notification[]
+  referralsMade    Referral[]        @relation("ReferralReferrer")
+  referredBy       Referral?         @relation("ReferralReferred")
+  leads            Lead[]
+  discounts        Discount[]
+  orders           Order[]
+  payments         Payment[]
+  stockMovements   StockMovement[]
+  giftCards        GiftCard[]        @relation("GiftCardPurchaser")
+  auditLogs        AuditLog[]        // Logs d'actions (pour SUPER_ADMIN)
+  ticketsCreated   SupportTicket[]   @relation("TicketCreator")
+  ticketsAssigned  SupportTicket[]   @relation("TicketAssignee")
+  ticketMessages   TicketMessage[]
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([organizationId, email])
   @@index([email])
+  @@index([organizationId])
   @@index([role])
   @@index([createdAt])
 }
 
+// Association User <-> Location (Many-to-Many)
+model UserLocation {
+  id              String   @id @default(cuid())
+  userId          String
+  locationId      String
+
+  // Rôle spécifique à cet emplacement (peut différer du rôle global)
+  roleAtLocation  UserRole @default(STAFF)
+
+  // Permissions spécifiques
+  canManageSchedule Boolean @default(false)
+  canViewRevenue    Boolean @default(false)
+  canManageStock    Boolean @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location        Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+}
+
 model Reservation {
   id              String    @id @default(cuid())
+  organizationId  String?   // Nullable temporairement pour migration
+  locationId      String?   // null si la réservation n'est pas liée à un emplacement spécifique
   userId          String
+  staffId         String?   // Praticien assigné
   serviceId       String?
   services        String    @default("[]") // JSON array of service IDs
   packages        String    @default("{}") // JSON object with service packages (single/forfait/abonnement)
@@ -82,13 +510,17 @@ model Reservation {
   giftCardUsedAmount Float?    // Montant de la carte cadeau utilisé
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  location        Location? @relation(fields: [locationId], references: [id])
   user            User      @relation(fields: [userId], references: [id])
   service         Service?  @relation(fields: [serviceId], references: [id])
   giftCard        GiftCard? @relation("GiftCardReservations", fields: [giftCardId], references: [id])
   review          Review?
   stockMovements  StockMovement[]
 
+  @@index([organizationId])
+  @@index([locationId])
   @@index([userId])
+  @@index([staffId])
   @@index([date])
   @@index([status])
   @@index([createdAt])
@@ -96,7 +528,8 @@ model Reservation {
 
 model Service {
   id                String        @id @default(cuid())
-  slug              String        @unique @default("")
+  organizationId    String?       // Nullable temporairement pour migration
+  slug              String        @default("")
   name              String
   shortDescription  String        @default("")
   description       String
@@ -130,13 +563,17 @@ model Service {
   featured          Boolean       @default(false)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   reservations      Reservation[]
   stockLinks        ServiceStock[]  // Relation avec le stock
   serviceCategory   ServiceCategory?    @relation("ServiceToCategory", fields: [categoryId], references: [id])
   serviceSubcategory ServiceSubcategory? @relation("ServiceToSubcategory", fields: [subcategoryId], references: [id])
-
+  @@index([organizationId])
   @@index([categoryId])
   @@index([subcategoryId])
+  @@index([active, featured])
+  @@index([active, order])
+  @@index([categoryId, active])
 }
 
 model LoyaltyProfile {
@@ -192,24 +629,28 @@ model Referral {
 }
 
 model BlogPost {
-  id              String   @id @default(cuid())
-  slug            String   @unique
+  id              String       @id @default(cuid())
+  organizationId  String?      // Nullable temporairement pour migration
+  slug            String
   title           String
   excerpt         String
   content         String
   category        String
-  author          String   @default("LAIA SKIN Institut")
-  readTime        String   @default("5 min")
-  featured        Boolean  @default(false)
-  published       Boolean  @default(true)
+  author          String       @default("LAIA SKIN Institut")
+  readTime        String       @default("5 min")
+  featured        Boolean      @default(false)
+  published       Boolean      @default(true)
   mainImage       String?
   gallery         String? // JSON
   tags            String? // JSON
   metaTitle       String?
   metaDescription String?
-  publishedAt     DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  publishedAt     DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([published])
 }
 
 model ClientEvolution {
@@ -283,27 +724,29 @@ model Setting {
 }
 
 model BlockedSlot {
-  id        String   @id @default(cuid())
-  date      DateTime
-  time      String?  // Si null, toute la journée est bloquée
-  allDay    Boolean  @default(false)
-  reason    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@unique([date, time])
+  id         String    @id @default(cuid())
+  locationId String?   // Nullable temporairement pour migration
+  date       DateTime
+  time       String?   // Si null, toute la journée est bloquée
+  allDay     Boolean   @default(false)
+  reason     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  @@index([locationId])
 }
 
 model WorkingHours {
-  id        String   @id @default(cuid())
-  dayOfWeek Int      // 0 = Dimanche, 1 = Lundi, etc.
-  startTime String   // Format: "14:00"
-  endTime   String   // Format: "20:00"
-  isOpen    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  @@unique([dayOfWeek])
+  id         String    @id @default(cuid())
+  locationId String?   // Nullable temporairement pour migration
+  dayOfWeek  Int       // 0 = Dimanche, 1 = Lundi, etc.
+  startTime  String    // Format: "14:00"
+  endTime    String    // Format: "20:00"
+  isOpen     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  @@index([locationId])
 }
 
 model Package {
@@ -338,22 +781,25 @@ model SiteConfig {
   id                String   @id @default(cuid())
 
   // Informations générales
-  siteName          String   @default("Laia Skin Institut")
+  siteName          String   @default("Mon Institut de Beauté")
   siteTagline       String?  @default("Institut de Beauté & Bien-être")
   siteDescription   String?
 
   // Contact
-  email             String?  @default("contact@laiaskin.com")
-  phone             String?  @default("+33 6 XX XX XX XX")
+  email             String?  @default("contact@mon-institut.fr")
+  phone             String?  @default("+33 6 00 00 00 00")
   address           String?
   city              String?
   postalCode        String?
+  country           String?  @default("France")
 
   // Réseaux sociaux
   facebook          String?
   instagram         String?
   tiktok            String?
   whatsapp          String?
+  linkedin          String?
+  youtube           String?
 
   // Apparence
   primaryColor      String?  @default("#d4b5a0")
@@ -371,20 +817,78 @@ model SiteConfig {
   // Horaires (JSON)
   businessHours     String?  // {"lundi": "9h-18h", "mardi": "9h-18h", ...}
 
+  // Géolocalisation pour SEO Schema.org
+  latitude          String?
+  longitude         String?
+  googleMapsUrl     String?
+
   // Page d'accueil
   heroTitle         String?
   heroSubtitle      String?
   heroImage         String?
   aboutText         String?
 
+  // Fondateur/Fondatrice
+  founderName       String?  // Ex: "Laïa Gherbi"
+  founderTitle      String?  // Ex: "Fondatrice & Experte en soins esthétiques"
+  founderQuote      String?  @db.Text // Citation du fondateur
+  founderImage      String?  // Photo du fondateur
+  aboutIntro        String?  @db.Text // Texte d'introduction page À propos
+  aboutParcours     String?  @db.Text // Parcours professionnel
+
+  // Témoignages (JSON array)
+  testimonials      String?  @db.Text // [{"name": "...", "text": "...", "rating": 5}]
+
+  // Formations (JSON array pour page À propos)
+  formations        String?  @db.Text // [{"name": "CAP Esthétique", "year": "2010"}]
+
   // CGV et mentions légales
-  termsAndConditions String?
-  privacyPolicy      String?
-  legalNotice        String?
+  termsAndConditions String?  @db.Text
+  privacyPolicy      String?  @db.Text
+  legalNotice        String?  @db.Text
 
   // Emails
   emailSignature     String?
-  welcomeEmailText   String?
+  welcomeEmailText   String?  @db.Text
+
+  // Informations légales (ajoutées pour white-labeling)
+  legalName         String?  // Raison sociale
+  siret             String?
+  siren             String?
+  tvaNumber         String?  // N° TVA intracommunautaire
+  apeCode           String?  // Code APE/NAF
+  rcs               String?  // RCS
+  capital           String?  // Capital social
+  legalForm         String?  // SARL, SAS, EURL, etc.
+
+  // Assurance
+  insuranceCompany  String?
+  insuranceContract String?
+  insuranceAddress  String?  // Adresse de l'assureur
+
+  // Banque (pour mentions légales complètes)
+  bankName          String?
+  bankIban          String?
+  bankBic           String?
+
+  // Représentant légal
+  legalRepName      String?
+  legalRepTitle     String?  // Gérant(e), Président(e), etc.
+
+  // URLs et domaines
+  customDomain      String?  @unique
+  baseUrl           String?  // URL de base du site (ex: https://mon-institut.fr)
+
+  // Tracking et Analytics
+  googleAnalyticsId String?
+  facebookPixelId   String?
+  metaVerificationCode String?
+  googleVerificationCode String?
+
+  // SEO Global
+  defaultMetaTitle       String?
+  defaultMetaDescription String?
+  defaultMetaKeywords    String?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -597,7 +1101,8 @@ model CommunicationHistory {
 
 model Product {
   id               String            @id @default(cuid())
-  slug             String            @unique @default("")
+  organizationId   String?           // Nullable temporairement pour migration
+  slug             String            @default("")
   name             String
   description      String
   shortDescription String?
@@ -621,6 +1126,9 @@ model Product {
   order            Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+  @@index([active])
 }
 
 model ProductCategory {
@@ -1065,5 +1573,376 @@ model Payment {
   @@index([paymentMethod])
   @@index([stripePaymentId])
   @@index([createdAt])
+}
+
+// ============================================
+// SUPER ADMIN MODELS
+// ============================================
+
+enum NotificationType {
+  TRIAL_EXPIRING_7D      // Essai expire dans 7 jours
+  TRIAL_EXPIRING_3D      // Essai expire dans 3 jours
+  TRIAL_EXPIRED          // Essai expiré
+  LIMIT_REACHED_80       // 80% de la limite atteinte
+  LIMIT_REACHED_100      // 100% de la limite atteinte
+  PAYMENT_FAILED         // Paiement échoué
+  INACTIVE_ORG           // Organisation inactive
+  NEW_ORGANIZATION       // Nouvelle organisation créée
+  CANCELLED_SUBSCRIPTION // Abonnement annulé
+}
+
+model SuperAdminNotification {
+  id             String           @id @default(cuid())
+  type           NotificationType
+  title          String
+  message        String           @db.Text
+  organizationId String?
+  userId         String?
+  read           Boolean          @default(false)
+  actionUrl      String?
+  metadata       Json?            // Données additionnelles
+  createdAt      DateTime         @default(now())
+
+  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([read])
+  @@index([type])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  CREATE_ORG
+  UPDATE_ORG
+  DELETE_ORG
+  SUSPEND_ORG
+  ACTIVATE_ORG
+  CANCEL_ORG
+  CHANGE_PLAN
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
+  IMPERSONATE
+  END_IMPERSONATE
+  CREATE_LOCATION
+  UPDATE_LOCATION
+  DELETE_LOCATION
+  UPDATE_SETTINGS
+  RESET_PASSWORD
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  userId         String       // Super admin qui a fait l'action
+  action         AuditAction
+  targetType     String       // ORGANIZATION, USER, LOCATION, etc.
+  targetId       String?
+  organizationId String?
+  before         Json?        // État avant (pour updates)
+  after          Json?        // État après (pour updates)
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?        // Données additionnelles
+  createdAt      DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([targetType])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  STRIPE
+  MANUAL
+  BANK_TRANSFER
+  PAYPAL
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  organizationId  String
+  amount          Float
+  currency        String        @default("EUR")
+  status          InvoiceStatus @default(PENDING)
+  stripeInvoiceId String?       @unique
+  paidAt          DateTime?
+  dueDate         DateTime
+  description     String?
+  metadata        Json?         // Détails additionnels
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments        BillingPayment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdAt])
+}
+
+model BillingPayment {
+  id              String        @id @default(cuid())
+  invoiceId       String
+  amount          Float
+  method          PaymentMethod
+  stripePaymentId String?       @unique
+  status          InvoiceStatus
+  metadata        Json?         // Détails additionnels
+  createdAt       DateTime      @default(now())
+
+  invoice         Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum SuperAdminEmailKey {
+  WELCOME
+  TRIAL_ENDING_7D
+  TRIAL_ENDING_3D
+  TRIAL_EXPIRED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  LIMIT_REACHED
+  NEWSLETTER
+  PASSWORD_RESET
+}
+
+model SuperAdminEmailTemplate {
+  id          String              @id @default(cuid())
+  key         SuperAdminEmailKey  @unique
+  name        String
+  subject     String
+  htmlBody    String              @db.Text
+  textBody    String?             @db.Text
+  variables   Json                // Liste des variables disponibles
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([key])
+  @@index([active])
+}
+
+model PlatformConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String   // User ID du super admin
+
+  @@index([key])
+}
+
+// ============================================
+// SUPER ADMIN - SUPPORT
+// ============================================
+
+// Tickets de support
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  TECHNICAL       // Problème technique
+  BILLING         // Facturation
+  FEATURE_REQUEST // Demande de fonctionnalité
+  QUESTION        // Question
+  BUG             // Bug
+  OTHER           // Autre
+}
+
+model SupportTicket {
+  id              String          @id @default(cuid())
+  ticketNumber    String          @unique // #TICKET-001
+  subject         String
+  description     String          @db.Text
+  status          TicketStatus    @default(OPEN)
+  priority        TicketPriority  @default(MEDIUM)
+  category        TicketCategory
+  organizationId  String
+  createdById     String          // User qui a créé le ticket
+  assignedToId    String?         // Super admin assigné
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User            @relation("TicketCreator", fields: [createdById], references: [id])
+  assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  messages        TicketMessage[]
+
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([organizationId])
+  @@index([assignedToId])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id              String          @id @default(cuid())
+  ticketId        String
+  authorId        String
+  message         String          @db.Text
+  attachments     Json?           // URLs des fichiers
+  isInternal      Boolean         @default(false) // Note interne (non visible par le client)
+  createdAt       DateTime        @default(now())
+
+  ticket          SupportTicket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author          User            @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+// ============================================
+// PRIORITÉ 2 - SUPER ADMIN FEATURES
+// ============================================
+
+// Codes promo pour les abonnements LAIA
+enum SubscriptionPromoType {
+  PERCENTAGE  // Réduction en pourcentage
+  FIXED       // Montant fixe
+  FREE_TRIAL  // Essai gratuit prolongé
+}
+
+enum SubscriptionPromoStatus {
+  ACTIVE      // Actif
+  EXPIRED     // Expiré
+  DISABLED    // Désactivé
+}
+
+model SubscriptionPromoCode {
+  id              String                    @id @default(cuid())
+  code            String                    @unique // "LAIA2025"
+  description     String?                   // "Promotion lancement 2025"
+  type            SubscriptionPromoType
+  value           Float                     // 20 (pour 20%) ou 50 (pour 50€)
+
+  // Applicabilité
+  targetPlans     String[]                  // ["SOLO", "DUO"] ou [] pour tous
+  maxUses         Int?                      // Nombre max d'utilisations (null = illimité)
+  currentUses     Int                       @default(0)
+
+  // Dates de validité
+  validFrom       DateTime                  @default(now())
+  validUntil      DateTime?
+
+  status          SubscriptionPromoStatus   @default(ACTIVE)
+
+  // Utilisation
+  usedBy          Organization[]            @relation("SubscriptionPromoUsage")
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([validFrom])
+  @@index([validUntil])
+}
+
+// Témoignages clients pour le marketing
+enum TestimonialStatus {
+  PENDING   // En attente d'approbation
+  APPROVED  // Approuvé et visible
+  REJECTED  // Rejeté
+}
+
+model Testimonial {
+  id              String              @id @default(cuid())
+
+  // Client
+  clientName      String              // "Marie Dupont"
+  clientRole      String?             // "Gérante, Beauté Éternelle Paris"
+  clientPhoto     String?             // URL de la photo
+  organizationId  String?             // Lien vers l'organisation (optionnel)
+
+  // Contenu
+  content         String              @db.Text
+  rating          Int                 @default(5) // 1-5 étoiles
+
+  // Métadonnées
+  status          TestimonialStatus   @default(PENDING)
+  featured        Boolean             @default(false) // Mis en avant
+  showOnLanding   Boolean             @default(false) // Afficher sur la page d'accueil
+
+  // Tags pour filtrer
+  tags            String[]            // ["onboarding", "support", "features"]
+
+  organization    Organization?       @relation("OrganizationTestimonials", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status])
+  @@index([featured])
+  @@index([showOnLanding])
+  @@index([organizationId])
+}
+
+// Notifications push pour les organisations
+enum PushNotificationStatus {
+  SCHEDULED   // Programmée
+  SENT        // Envoyée
+  FAILED      // Échec
+}
+
+model PushNotification {
+  id              String                    @id @default(cuid())
+  title           String
+  body            String                    @db.Text
+  icon            String?
+  url             String?                   // URL de redirection au clic
+
+  // Ciblage
+  targetAll       Boolean                   @default(false)
+  targetPlans     String[]                  // ["SOLO", "DUO"]
+  targetOrgs      String[]                  // IDs des organisations ciblées
+
+  // Programmation
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          PushNotificationStatus    @default(SCHEDULED)
+
+  // Statistiques
+  totalSent       Int                       @default(0)
+  totalClicked    Int                       @default(0)
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([sentAt])
 }
 

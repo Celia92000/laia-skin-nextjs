@@ -38,14 +38,21 @@ export default function AdminSettings() {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('/api/auth/verify');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/verify', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
-        setUserInfo({
-          email: data.email || '',
-          name: data.name || '',
-          role: data.role || ''
-        });
+        if (data.user) {
+          setUserInfo({
+            email: data.user.email || '',
+            name: data.user.name || '',
+            role: data.user.role || ''
+          });
+        }
       }
     } catch (error) {
       console.error('Erreur récupération infos:', error);

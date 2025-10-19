@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 import crypto from 'crypto';
 
 // Vérifier la signature du webhook Resend
@@ -13,6 +14,12 @@ function verifyWebhookSignature(payload: string, signature: string, secret: stri
 }
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const email = config.email || 'contact@institut.fr';
+  const phone = config.phone || '06 XX XX XX XX';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
+
   const prisma = await getPrismaClient();
   
   try {
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
           await prisma.emailHistory.create({
             data: {
               from: inboundEmail.from || inboundEmail.from_email || '',
-              to: inboundEmail.to?.[0] || inboundEmail.to_email || 'contact@laiaskininstitut.fr',
+              to: inboundEmail.to?.[0] || inboundEmail.to_email || '${email}',
               subject: inboundEmail.subject || 'Sans objet',
               content: inboundEmail.html || inboundEmail.text || inboundEmail.body || '',
               direction: 'incoming',

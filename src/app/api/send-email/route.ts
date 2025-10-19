@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 export async function POST(request: NextRequest) {
   try {
     const prisma = await getPrismaClient();
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+    const phone = config.phone || '06 XX XX XX XX';
+    const email = config.email || 'contact@institut.fr';
+    const address = config.address || '';
+    const city = config.city || '';
+    const postalCode = config.postalCode || '';
+    const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+    const instagram = config.instagram || '';
+    const primaryColor = config.primaryColor || '#667eea';
+
     const { to, subject, message, clientName } = await request.json();
 
     // Template HTML professionnel
@@ -31,8 +44,8 @@ export async function POST(request: NextRequest) {
       overflow: hidden;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .header { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .header {
+      background: linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%);
       color: white;
       padding: 30px;
       text-align: center;
@@ -67,8 +80,8 @@ export async function POST(request: NextRequest) {
       color: #666;
       font-size: 14px;
     }
-    .footer a { 
-      color: #667eea;
+    .footer a {
+      color: ${primaryColor};
       text-decoration: none;
     }
   </style>
@@ -77,23 +90,23 @@ export async function POST(request: NextRequest) {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>LAIA SKIN INSTITUT</h1>
+        <h1>${siteName.toUpperCase()}</h1>
       </div>
       <div class="content">
         <p>Bonjour ${clientName || 'Cliente'},</p>
         <div class="message">${message ? message.replace(/\n/g, '<br>') : 'Votre réservation a été confirmée.'}</div>
         <div class="signature">
           <p>À très bientôt,<br>
-          <strong>Laïa</strong><br>
-          LAIA SKIN INSTITUT</p>
+          <strong>${ownerName}</strong><br>
+          ${siteName}</p>
         </div>
       </div>
       <div class="footer">
         <p>
-          📍 Allée Jean de la Fontaine, 92000 Nanterre<br>
-          📞 06 83 71 70 50<br>
-          ✉️ <a href="mailto:contact@laia-skin.fr">contact@laia-skin.fr</a><br>
-          📸 <a href="https://www.instagram.com/laia.skin/">@laia.skin</a>
+          📍 ${fullAddress}<br>
+          📞 ${phone}<br>
+          ✉️ <a href="mailto:${email}">${email}</a><br>
+          ${instagram ? `📸 <a href="${instagram}">${instagram.split('/').pop() ? '@' + instagram.split('/').pop() : instagram}</a>` : ''}
         </p>
       </div>
     </div>
@@ -119,20 +132,20 @@ export async function POST(request: NextRequest) {
 
     try {
       // Envoyer l'email avec Resend
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>';
+      const fromEmail = `${siteName} <${email}>`;
       const data = await getResend().emails.send({
         from: fromEmail,
         to: [to],
         subject: subject,
         html: htmlContent,
-        text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\nLaïa\nLAIA SKIN Institut`
+        text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\n${ownerName}\n${siteName}`
       });
 
       // Enregistrer dans l'historique
       try {
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laia.skininstitut.fr',
+            from: email,
             to: to,
             subject: subject,
             content: message || '',
@@ -158,7 +171,7 @@ export async function POST(request: NextRequest) {
       try {
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laia.skininstitut.fr',
+            from: email,
             to: to,
             subject: subject,
             content: message || '',

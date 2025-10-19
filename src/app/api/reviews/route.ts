@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   const prisma = await getPrismaClient();
   try {
     const { searchParams } = new URL(request.url);
@@ -143,7 +157,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // URL Google Business LAIA SKIN Institut
+    // URL Google Business ${siteName}
     const googleUrl = rating === 5 
       ? 'https://www.google.com/maps/place/?q=place_id:3014602962211627658' 
       : null;

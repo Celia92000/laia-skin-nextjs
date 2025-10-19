@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Resend instance created lazily via getResend()
 
 export async function POST(request: Request) {
   try {
     const prisma = await getPrismaClient();
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const contactEmail = config.email || 'contact@institut.fr';
+    const primaryColor = config.primaryColor || '#d4b5a0';
+
     const { name, email, phone, subject, message } = await request.json();
 
     // Validation des données
@@ -58,14 +64,14 @@ export async function POST(request: Request) {
 
     // Préparer le contenu de l'email
     const emailSubject = subject 
-      ? `Contact LAIA SKIN: ${subject}` 
-      : 'Nouveau message de contact - LAIA SKIN';
+      ? `Contact ${siteName}: ${subject}` 
+      : 'Nouveau message de contact - ${siteName}';
 
     const emailHtml = `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 30px; border-radius: 10px 10px 0 0;">
+        <div style="background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 30px; border-radius: 10px 10px 0 0;">
           <h1 style="color: white; margin: 0; font-size: 24px; text-align: center;">
-            LAIA SKIN INSTITUT
+            ${siteName} INSTITUT
           </h1>
           <p style="color: white; text-align: center; margin: 10px 0 0 0; opacity: 0.9;">
             Nouveau message de contact
@@ -76,31 +82,31 @@ export async function POST(request: Request) {
           <h2 style="color: #2c3e50; margin-bottom: 20px;">Informations du contact</h2>
           
           <div style="margin-bottom: 15px;">
-            <strong style="color: #d4b5a0;">Nom :</strong>
+            <strong style="color: ${primaryColor};">Nom :</strong>
             <p style="margin: 5px 0; color: #2c3e50;">${name}</p>
           </div>
           
           <div style="margin-bottom: 15px;">
-            <strong style="color: #d4b5a0;">Email :</strong>
+            <strong style="color: ${primaryColor};">Email :</strong>
             <p style="margin: 5px 0;"><a href="mailto:${email}" style="color: #2c3e50;">${email}</a></p>
           </div>
           
           ${phone ? `
           <div style="margin-bottom: 15px;">
-            <strong style="color: #d4b5a0;">Téléphone :</strong>
+            <strong style="color: ${primaryColor};">Téléphone :</strong>
             <p style="margin: 5px 0; color: #2c3e50;">${phone}</p>
           </div>
           ` : ''}
           
           ${subject ? `
           <div style="margin-bottom: 15px;">
-            <strong style="color: #d4b5a0;">Sujet :</strong>
+            <strong style="color: ${primaryColor};">Sujet :</strong>
             <p style="margin: 5px 0; color: #2c3e50;">${subject}</p>
           </div>
           ` : ''}
           
           <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #e0e0e0;">
-            <strong style="color: #d4b5a0;">Message :</strong>
+            <strong style="color: ${primaryColor};">Message :</strong>
             <p style="margin: 10px 0; color: #2c3e50; line-height: 1.6;">
               ${message.replace(/\n/g, '<br>')}
             </p>
@@ -109,7 +115,7 @@ export async function POST(request: Request) {
         
         <div style="background: #f8f8f8; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
           <p style="color: #666; font-size: 12px; margin: 0;">
-            Ce message a été envoyé depuis le formulaire de contact du site LAIA SKIN INSTITUT
+            Ce message a été envoyé depuis le formulaire de contact du site ${siteName} INSTITUT
           </p>
         </div>
       </div>
@@ -120,7 +126,7 @@ export async function POST(request: Request) {
       await prisma.emailHistory.create({
         data: {
           from: email,
-          to: 'contact@laiaskininstitut.fr',
+          to: '${email}',
           subject: subject || 'Message de contact',
           content: message,
           template: 'contact_form',
@@ -134,8 +140,8 @@ export async function POST(request: Request) {
 
     // Envoyer l'email à l'administrateur (votre adresse professionnelle)
     const { data, error } = await getResend().emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
-      to: 'contact@laiaskininstitut.fr', // Votre adresse email professionnelle
+      from: process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>',
+      to: '${email}', // Votre adresse email professionnelle
       replyTo: email,
       subject: emailSubject,
       html: emailHtml,
@@ -164,14 +170,14 @@ export async function POST(request: Request) {
     // Envoyer un email de confirmation au client
     try {
       await getResend().emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>',
+        from: process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>',
         to: email,
-        subject: 'Nous avons bien reçu votre message - LAIA SKIN INSTITUT',
+        subject: 'Nous avons bien reçu votre message - ${siteName} INSTITUT',
         html: `
           <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #d4b5a0, #c9a084); padding: 30px; border-radius: 10px 10px 0 0;">
+            <div style="background: linear-gradient(135deg, ${primaryColor}, #c9a084); padding: 30px; border-radius: 10px 10px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 24px; text-align: center;">
-                LAIA SKIN INSTITUT
+                ${siteName} INSTITUT
               </h1>
             </div>
             
@@ -179,7 +185,7 @@ export async function POST(request: Request) {
               <h2 style="color: #2c3e50; margin-bottom: 20px;">Bonjour ${name},</h2>
               
               <p style="color: #2c3e50; line-height: 1.6;">
-                Nous avons bien reçu votre message et nous vous remercions de votre intérêt pour LAIA SKIN INSTITUT.
+                Nous avons bien reçu votre message et nous vous remercions de votre intérêt pour ${siteName} INSTITUT.
               </p>
               
               <p style="color: #2c3e50; line-height: 1.6;">
@@ -196,19 +202,19 @@ export async function POST(request: Request) {
               </div>
               
               <p style="color: #2c3e50; line-height: 1.6;">
-                En attendant, n'hésitez pas à découvrir nos soins sur notre site ou à nous suivre sur Instagram <a href="https://www.instagram.com/laia.skin/" style="color: #d4b5a0;">@laia.skin</a>
+                En attendant, n'hésitez pas à découvrir nos soins sur notre site ou à nous suivre sur Instagram <a href="https://www.instagram.com/laia.skin/" style="color: ${primaryColor};">@laia.skin</a>
               </p>
               
               <p style="color: #2c3e50; line-height: 1.6; margin-top: 30px;">
                 À très bientôt,<br>
-                <strong>L'équipe LAIA SKIN INSTITUT</strong>
+                <strong>L'équipe ${siteName} INSTITUT</strong>
               </p>
             </div>
             
             <div style="background: #f8f8f8; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
               <p style="color: #999; font-size: 12px; margin: 0;">
-                LAIA SKIN INSTITUT | Institut de beauté | Nanterre<br>
-                <a href="mailto:contact@laiaskininstitut.fr" style="color: #d4b5a0;">contact@laiaskininstitut.fr</a>
+                ${siteName} INSTITUT | Institut de beauté | Nanterre<br>
+                <a href="mailto:${email}" style="color: ${primaryColor};">${email}</a>
               </p>
             </div>
           </div>

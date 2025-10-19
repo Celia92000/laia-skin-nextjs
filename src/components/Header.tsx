@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Shield, User, LogOut, Calculator } from "lucide-react";
 import { logout } from "@/lib/auth-client";
+import { useConfig } from "@/hooks/useConfig";
 
 export default function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const { config } = useConfig();
 
   useEffect(() => {
     const checkUser = () => {
@@ -89,14 +91,14 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
               <Image
-                src="/logo-laia-skin.png"
-                alt="LAIA SKIN Logo"
+                src={config.logoUrl || "/logo-laia-skin.png"}
+                alt={`${config.siteName} Logo`}
                 fill
                 className="object-contain"
                 priority
               />
             </div>
-            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">LAIA SKIN INSTITUT</h1>
+            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">{config.siteName?.toUpperCase() || 'MON INSTITUT'}</h1>
           </Link>
 
           {/* Desktop Navigation */}

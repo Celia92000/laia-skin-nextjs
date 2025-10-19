@@ -29,13 +29,28 @@ interface SiteConfig {
   legalNotice?: string;
   emailSignature?: string;
   welcomeEmailText?: string;
+
+  // Informations légales
+  legalName?: string;
+  siret?: string;
+  siren?: string;
+  tvaNumber?: string;
+  apeCode?: string;
+  rcs?: string;
+  capital?: string;
+  legalForm?: string;
+  insuranceCompany?: string;
+  insuranceContract?: string;
+  legalRepName?: string;
+  legalRepTitle?: string;
+  customDomain?: string;
 }
 
 const defaultConfig: SiteConfig = {
-  siteName: 'Laia Skin Institut',
+  siteName: 'Mon Institut de Beauté',
   siteTagline: 'Institut de Beauté & Bien-être',
-  email: 'contact@laiaskin.com',
-  phone: '+33 6 XX XX XX XX',
+  email: 'contact@mon-institut.fr',
+  phone: '+33 6 00 00 00 00',
   primaryColor: '#d4b5a0',
   secondaryColor: '#2c3e50',
   accentColor: '#20b2aa'

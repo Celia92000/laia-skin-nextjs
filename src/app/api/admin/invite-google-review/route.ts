@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
             <p>Laia Skin Institut<br>
             Votre adresse<br>
             Téléphone : 06 XX XX XX XX<br>
-            Email : contact@laiaskin.com</p>
+            Email : ${email}</p>
           </div>
         </div>
       </body>

@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Webhook pour recevoir les messages WhatsApp
 export async function POST(request: Request) {
   try {
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const phone = config.phone || '06 XX XX XX XX';
+    const website = config.customDomain || 'https://votre-institut.fr';
+
     const body = await request.json();
     
     // Vérifier le token de vérification
@@ -29,13 +35,13 @@ export async function POST(request: Request) {
           if (lowerText.includes('rdv') || lowerText.includes('rendez-vous')) {
             // Envoyer un lien de réservation
             await sendAutoReply(from, 
-              `Pour prendre rendez-vous, cliquez ici:\n👉 https://laiaskin.fr/reservation\n\nOu appelez-nous au 01 23 45 67 89`
+              `Pour prendre rendez-vous, cliquez ici:\n👉 ${website}/reservation\n\nOu appelez-nous au ${phone}`
             );
           }
           
           if (lowerText.includes('prix') || lowerText.includes('tarif')) {
             await sendAutoReply(from,
-              `Nos tarifs:\n\n💆‍♀️ LAIA Hydro'Cleaning: 120€\n✨ LAIA Renaissance: 150€\n🌟 LAIA Hydro'Naissance: 180€\n💎 BB Glow: 90€\n💡 LED Thérapie: 60€\n\nPour plus d'infos: https://laiaskin.fr`
+              `Nos tarifs:\n\n💆‍♀️ Hydro'Cleaning: 120€\n✨ Renaissance: 150€\n🌟 Hydro'Naissance: 180€\n💎 BB Glow: 90€\n💡 LED Thérapie: 60€\n\nPour plus d'infos: ${website}`
             );
           }
           

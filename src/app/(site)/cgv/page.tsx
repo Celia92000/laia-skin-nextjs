@@ -1,4 +1,8 @@
-export default function CGV() {
+import { getSiteConfig } from '@/lib/config-service';
+
+export default async function CGV() {
+  const config = await getSiteConfig();
+
   return (
     <main className="pt-36 pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       <div className="max-w-4xl mx-auto px-4">
@@ -7,13 +11,22 @@ export default function CGV() {
         </h1>
 
         <div className="bg-white rounded-xl shadow-lg p-8 space-y-8">
+          {config.termsAndConditions ? (
+            <div className="prose prose-sm max-w-none">
+              <div
+                className="text-sm text-[#2c3e50]/70 font-light leading-relaxed space-y-8"
+                dangerouslySetInnerHTML={{ __html: config.termsAndConditions.replace(/\n\n/g, '</p><p class="text-sm text-[#2c3e50]/70 font-light leading-relaxed">').replace(/^/, '<p class="text-sm text-[#2c3e50]/70 font-light leading-relaxed">').replace(/$/, '</p>') }}
+              />
+            </div>
+          ) : (
+            <div className="space-y-8">
           <section>
             <h2 className="text-xl font-medium text-[#2c3e50] mb-4 uppercase tracking-wide">
               Article 1 - Objet
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              Les présentes conditions générales de vente régissent les relations contractuelles entre 
-              LAIA SKIN INSTITUT et ses clients pour toute réservation de prestations de soins esthétiques 
+              Les présentes conditions générales de vente régissent les relations contractuelles entre
+              {config.siteName || "l'institut"} et ses clients pour toute réservation de prestations de soins esthétiques
               effectuée sur le site ou directement à l'institut.
             </p>
           </section>
@@ -23,9 +36,9 @@ export default function CGV() {
               Article 2 - Prestations
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              LAIA SKIN INSTITUT propose des soins esthétiques du visage. Les descriptions des prestations 
-              sont disponibles sur le site internet et peuvent être complétées lors de la consultation. 
-              Les durées indiquées sont approximatives et peuvent varier selon les besoins spécifiques 
+              {config.siteName || "L'institut"} propose des soins esthétiques du visage. Les descriptions des prestations
+              sont disponibles sur le site internet et peuvent être complétées lors de la consultation.
+              Les durées indiquées sont approximatives et peuvent varier selon les besoins spécifiques
               de chaque client.
             </p>
           </section>
@@ -94,9 +107,9 @@ export default function CGV() {
               Article 8 - Contre-indications
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              Le client s'engage à informer l'institut de tout problème de santé, allergie, traitement 
-              médicamenteux ou état particulier (grossesse, etc.) pouvant constituer une contre-indication 
-              aux soins. LAIA SKIN INSTITUT se réserve le droit de refuser ou d'adapter une prestation 
+              Le client s'engage à informer l'institut de tout problème de santé, allergie, traitement
+              médicamenteux ou état particulier (grossesse, etc.) pouvant constituer une contre-indication
+              aux soins. {config.siteName || "L'institut"} se réserve le droit de refuser ou d'adapter une prestation
               en cas de contre-indication.
             </p>
           </section>
@@ -106,8 +119,8 @@ export default function CGV() {
               Article 9 - Responsabilité
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              LAIA SKIN INSTITUT s'engage à mettre en œuvre tous les moyens pour assurer la qualité 
-              et la sécurité des prestations. L'institut ne pourra être tenu responsable des réactions 
+              {config.siteName || "L'institut"} s'engage à mettre en œuvre tous les moyens pour assurer la qualité
+              et la sécurité des prestations. L'institut ne pourra être tenu responsable des réactions
               allergiques non signalées ou des résultats non conformes aux attentes subjectives du client.
             </p>
           </section>
@@ -138,8 +151,8 @@ export default function CGV() {
               Article 12 - Réclamations
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              Toute réclamation doit être formulée dans les 48 heures suivant la prestation. Les réclamations 
-              peuvent être adressées par email à contact@laia-skin.fr ou directement à l'institut.
+              Toute réclamation doit être formulée dans les 48 heures suivant la prestation. Les réclamations
+              peuvent être adressées par email à {config.email || "contact@institut.fr"} ou directement à l'institut.
             </p>
           </section>
 
@@ -159,7 +172,7 @@ export default function CGV() {
               Article 14 - Propriété intellectuelle
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              Tous les éléments du site internet de LAIA SKIN INSTITUT (textes, images, vidéos) sont 
+              Tous les éléments du site internet de {config.siteName || "l'institut"} (textes, images, vidéos) sont
               protégés par le droit d'auteur. Toute reproduction sans autorisation est interdite.
             </p>
           </section>
@@ -180,15 +193,17 @@ export default function CGV() {
               Article 16 - Modification des CGV
             </h2>
             <p className="text-sm text-[#2c3e50]/70 font-light leading-relaxed">
-              LAIA SKIN INSTITUT se réserve le droit de modifier les présentes CGV à tout moment. 
-              Les nouvelles conditions s'appliqueront aux réservations effectuées postérieurement 
+              {config.siteName || "L'institut"} se réserve le droit de modifier les présentes CGV à tout moment.
+              Les nouvelles conditions s'appliqueront aux réservations effectuées postérieurement
               à leur mise en ligne.
             </p>
           </section>
+            </div>
+          )}
 
           <div className="pt-6 border-t border-gray-200">
             <p className="text-xs text-[#2c3e50]/50 text-center font-light">
-              Dernière mise à jour : Décembre 2024
+              Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
             </p>
           </div>
         </div>
