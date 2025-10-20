@@ -2,20 +2,19 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Users, CreditCard, BarChart3, Mail, Sparkles, MessageCircle, Gift, Star, FileText, Bell, ScrollText, Settings, Home, Globe, UserPlus, Receipt } from 'lucide-react'
+import { Building2, Users, CreditCard, BarChart3, Mail, Sparkles, MessageCircle, Gift, Star, FileText, Bell, ScrollText, Settings, Home, Globe, UserPlus, Receipt, Send } from 'lucide-react'
 
 export default function SuperAdminNav() {
   const pathname = usePathname()
 
   const tabs = [
     { name: 'Dashboard', href: '/super-admin', icon: Home },
+    { name: 'Analytics', href: '/super-admin/analytics', icon: BarChart3 },
     { name: 'Site Vitrine', href: '/platform', icon: Globe, external: true },
     { name: 'Inscriptions', href: '/platform/register', icon: UserPlus, external: true },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
-    { name: 'Utilisateurs', href: '/super-admin/users', icon: Users },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },
-    { name: 'Paramètres Factures', href: '/super-admin/invoice-settings', icon: Receipt },
-    { name: 'Analytics', href: '/super-admin/analytics', icon: BarChart3 },
+    { name: 'Communications', href: '/super-admin/communications', icon: Send },
     { name: 'Campagnes Email', href: '/super-admin/email-campaigns', icon: Mail },
     { name: 'Nouveautés', href: '/super-admin/blog', icon: Sparkles },
     { name: 'Support', href: '/super-admin/tickets', icon: MessageCircle },

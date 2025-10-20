@@ -9,25 +9,25 @@ export default function InvoiceSettingsPage() {
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
     // Informations émetteur
-    companyName: 'LAIA SAS',
-    address: '123 Avenue de la Beauté',
-    postalCode: '75001',
+    companyName: 'LAIA',
+    address: 'Paris',
+    postalCode: '75000',
     city: 'Paris',
     country: 'France',
-    siret: '123 456 789 00012',
-    tvaNumber: 'FR12345678900',
-    capitalSocial: '10 000€',
-    rcs: 'RCS Paris 123 456 789',
+    siret: 'À remplir',
+    tvaNumber: 'À remplir',
+    capitalSocial: 'À définir',
+    rcs: 'À remplir',
 
     // Contact
-    email: 'contact@laia.com',
-    phone: '+33 1 23 45 67 89',
-    website: 'https://laia.com',
+    email: 'contact@laiaskin.com',
+    phone: 'À remplir',
+    website: 'https://laia-skin-institut.com',
 
     // Design
     logoUrl: '',
-    primaryColor: '#667eea',
-    secondaryColor: '#764ba2',
+    primaryColor: '#d4b5a0',
+    secondaryColor: '#c9a88e',
 
     // Paramètres
     invoicePrefix: 'LAIA',
@@ -36,7 +36,7 @@ export default function InvoiceSettingsPage() {
     // Mentions légales
     paymentTerms: 'Prélèvement SEPA automatique',
     latePenalty: 'En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.',
-    footerText: 'TVA intracommunautaire: FR12345678900',
+    footerText: 'Logiciel de gestion pour instituts de beauté',
   })
 
   useEffect(() => {

@@ -2,6 +2,31 @@ import PDFDocument from 'pdfkit'
 import { prisma } from '@/lib/prisma'
 import fs from 'fs'
 import path from 'path'
+import https from 'https'
+import http from 'http'
+
+/**
+ * Télécharge une image depuis une URL
+ */
+async function downloadImage(url: string): Promise<Buffer | null> {
+  return new Promise((resolve) => {
+    try {
+      const protocol = url.startsWith('https') ? https : http
+      protocol.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          resolve(null)
+          return
+        }
+        const chunks: Buffer[] = []
+        response.on('data', (chunk) => chunks.push(chunk))
+        response.on('end', () => resolve(Buffer.concat(chunks)))
+        response.on('error', () => resolve(null))
+      }).on('error', () => resolve(null))
+    } catch (error) {
+      resolve(null)
+    }
+  })
+}
 
 export interface InvoiceData {
   invoiceNumber: string
@@ -90,26 +115,43 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
       doc.on('error', reject)
 
       // === HEADER ===
-      // Logo LAIA (texte stylisé pour l'instant)
+      let logoY = 50
+
+      // Essayer d'afficher le logo si URL fournie
+      if (settings?.logoUrl) {
+        try {
+          const logoBuffer = await downloadImage(settings.logoUrl)
+          if (logoBuffer) {
+            doc.image(logoBuffer, 50, 50, { width: 100 })
+            logoY = 160 // Décaler le texte si logo affiché
+          }
+        } catch (error) {
+          console.warn('Impossible de charger le logo:', error)
+        }
+      }
+
+      // Nom de l'entreprise
       doc
-        .fontSize(28)
+        .fontSize(logoY === 160 ? 18 : 28)
         .fillColor(settings?.primaryColor || '#667eea')
-        .text('🌸 ' + (settings?.companyName || 'LAIA Beauty'), 50, 50)
+        .text((logoY === 160 ? '' : '🌸 ') + (settings?.companyName || 'LAIA Beauty'), 50, logoY)
+
+      const baselineY = logoY + (logoY === 160 ? 10 : 35)
 
       doc
         .fontSize(10)
         .fillColor('#666')
-        .text('Logiciel de gestion pour instituts de beauté', 50, 85)
+        .text('Logiciel de gestion pour instituts de beauté', 50, baselineY)
 
       // Coordonnées LAIA
       doc
         .fontSize(9)
         .fillColor('#333')
-        .text(settings?.companyName || 'LAIA SAS', 50, 110)
-        .text(settings?.address || '123 Avenue de la Beauté', 50, 123)
-        .text(`${settings?.postalCode || '75001'} ${settings?.city || 'Paris'}, ${settings?.country || 'France'}`, 50, 136)
-        .text(`SIRET: ${settings?.siret || '123 456 789 00012'}`, 50, 149)
-        .text(`TVA: ${settings?.tvaNumber || 'FR12345678900'}`, 50, 162)
+        .text(settings?.companyName || 'LAIA SAS', 50, baselineY + 25)
+        .text(settings?.address || '123 Avenue de la Beauté', 50, baselineY + 38)
+        .text(`${settings?.postalCode || '75001'} ${settings?.city || 'Paris'}, ${settings?.country || 'France'}`, 50, baselineY + 51)
+        .text(`SIRET: ${settings?.siret || '123 456 789 00012'}`, 50, baselineY + 64)
+        .text(`TVA: ${settings?.tvaNumber || 'FR12345678900'}`, 50, baselineY + 77)
 
       // Informations facture (droite)
       doc

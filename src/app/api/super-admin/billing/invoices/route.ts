@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { generateAndSaveInvoice } from '@/lib/invoice-service'
 
 export async function GET(request: Request) {
   try {
@@ -116,18 +117,37 @@ export async function POST(request: Request) {
     const data = await request.json()
     const { organizationId, amount, dueDate, description } = data
 
-    if (!organizationId || !amount || !dueDate) {
+    if (!organizationId || !amount) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
     }
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        organizationId,
-        amount: parseFloat(amount),
-        dueDate: new Date(dueDate),
-        description: description || null,
-        status: 'PENDING'
-      },
+    // Récupérer l'organisation par ID ou par nom
+    let org = await prisma.organization.findUnique({
+      where: { id: organizationId }
+    })
+
+    // Si pas trouvé par ID, chercher par nom
+    if (!org) {
+      org = await prisma.organization.findFirst({
+        where: { name: organizationId }
+      })
+    }
+
+    if (!org) {
+      return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
+    }
+
+    // Générer la facture avec PDF
+    const invoiceData = await generateAndSaveInvoice(
+      org.id, // Utiliser org.id au cas où l'utilisateur a fourni un nom
+      parseFloat(amount),
+      org.plan,
+      undefined // Pas de Stripe payment intent pour facture manuelle
+    )
+
+    // Récupérer la facture créée avec les relations
+    const invoice = await prisma.invoice.findFirst({
+      where: { invoiceNumber: invoiceData.invoiceNumber },
       include: {
         organization: {
           select: {
