@@ -2,13 +2,17 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
-export async function PATCH(
+// PUT - Modifier un utilisateur
+export async function PUT(
   request: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    // Vérifier l'authentification
+    const { id, userId } = await params
+
+    // Vérifier l'authentification super admin
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
@@ -21,56 +25,97 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const superAdmin = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
     })
 
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!superAdmin || superAdmin.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Vérifier que l'utilisateur appartient à l'organisation
-    const targetUser = await prisma.user.findFirst({
+    const { email, password, name, phone, role } = await request.json()
+
+    // Vérifier que l'utilisateur existe et appartient à cette organisation
+    const existingUser = await prisma.user.findFirst({
       where: {
-        id: params.userId,
-        organizationId: params.id
+        id: userId,
+        organizationId: id
       }
     })
 
-    if (!targetUser) {
+    if (!existingUser) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
     }
 
-    const data = await request.json()
+    // Vérifier si l'email est déjà utilisé par un autre utilisateur
+    if (email !== existingUser.email) {
+      const emailTaken = await prisma.user.findFirst({
+        where: {
+          organizationId: id,
+          email: email,
+          id: { not: userId }
+        }
+      })
+
+      if (emailTaken) {
+        return NextResponse.json(
+          { error: 'Cet email est déjà utilisé par un autre utilisateur' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Préparer les données de mise à jour
+    const updateData: any = {
+      email,
+      name,
+      phone: phone || null,
+      role: role || existingUser.role
+    }
+
+    // Mettre à jour le mot de passe uniquement si fourni
+    if (password && password.trim() !== '') {
+      updateData.password = await bcrypt.hash(password, 10)
+    }
 
     // Mettre à jour l'utilisateur
     const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
-      data: {
-        role: data.role !== undefined ? data.role : undefined,
-        isActive: data.isActive !== undefined ? data.isActive : undefined
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        createdAt: true
       }
     })
 
-    return NextResponse.json(updatedUser)
+    return NextResponse.json({
+      message: 'Utilisateur modifié avec succès',
+      user: updatedUser
+    })
 
   } catch (error) {
-    console.error('Erreur mise à jour utilisateur:', error)
+    console.error('Erreur modification utilisateur:', error)
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur lors de la modification' },
       { status: 500 }
     )
   }
 }
 
+// DELETE - Supprimer un utilisateur
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; userId: string } }
+  { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
-    // Vérifier l'authentification
+    const { id, userId } = await params
+
+    // Vérifier l'authentification super admin
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
@@ -83,39 +128,53 @@ export async function DELETE(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const superAdmin = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
     })
 
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!superAdmin || superAdmin.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Vérifier que l'utilisateur appartient à l'organisation
-    const targetUser = await prisma.user.findFirst({
+    // Vérifier que l'utilisateur existe et appartient à cette organisation
+    const user = await prisma.user.findFirst({
       where: {
-        id: params.userId,
-        organizationId: params.id
+        id: userId,
+        organizationId: id
+      },
+      select: {
+        id: true,
+        role: true,
+        email: true
       }
     })
 
-    if (!targetUser) {
+    if (!user) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
+    }
+
+    // Empêcher la suppression du propriétaire
+    if (user.role === 'ORG_OWNER') {
+      return NextResponse.json(
+        { error: 'Impossible de supprimer le propriétaire de l\'organisation' },
+        { status: 400 }
+      )
     }
 
     // Supprimer l'utilisateur
     await prisma.user.delete({
-      where: { id: params.userId }
+      where: { id: userId }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      message: 'Utilisateur supprimé avec succès'
+    })
 
   } catch (error) {
     console.error('Erreur suppression utilisateur:', error)
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur lors de la suppression' },
       { status: 500 }
     )
   }

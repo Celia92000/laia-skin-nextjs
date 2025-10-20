@@ -5,9 +5,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string; locationId: string } }
+  { params }: { params: Promise<{ id: string; locationId: string }> }
 ) {
   try {
+    const { id, locationId } = await params
+
     // Vérifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
@@ -34,8 +36,8 @@ export async function PATCH(
     // Vérifier que l'emplacement existe et appartient à l'organisation
     const existingLocation = await prisma.location.findFirst({
       where: {
-        id: params.locationId,
-        organizationId: params.id
+        id: locationId,
+        organizationId: id
       }
     })
 
@@ -49,9 +51,9 @@ export async function PATCH(
     if (data.slug && data.slug !== existingLocation.slug) {
       const slugExists = await prisma.location.findFirst({
         where: {
-          organizationId: params.id,
+          organizationId: id,
           slug: data.slug,
-          id: { not: params.locationId }
+          id: { not: locationId }
         }
       })
 
@@ -65,7 +67,7 @@ export async function PATCH(
 
     // Mettre à jour l'emplacement
     const location = await prisma.location.update({
-      where: { id: params.locationId },
+      where: { id: locationId },
       data: {
         name: data.name,
         slug: data.slug,
@@ -91,9 +93,11 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string; locationId: string } }
+  { params }: { params: Promise<{ id: string; locationId: string }> }
 ) {
   try {
+    const { id, locationId } = await params
+
     // Vérifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
@@ -120,8 +124,8 @@ export async function DELETE(
     // Vérifier que l'emplacement existe et appartient à l'organisation
     const location = await prisma.location.findFirst({
       where: {
-        id: params.locationId,
-        organizationId: params.id
+        id: locationId,
+        organizationId: id
       }
     })
 
@@ -139,7 +143,7 @@ export async function DELETE(
 
     // Supprimer l'emplacement
     await prisma.location.delete({
-      where: { id: params.locationId }
+      where: { id: locationId }
     })
 
     return NextResponse.json({ success: true })

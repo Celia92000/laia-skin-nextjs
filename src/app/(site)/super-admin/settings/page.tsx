@@ -16,7 +16,12 @@ export default function SettingsPage() {
     maintenanceMode: false,
     maxOrganizations: 1000,
     defaultStorageLimit: 5,
-    trialDurationDays: 14
+    trialDurationDays: 14,
+    // Couleurs du thème
+    primaryColor: '#d4a574',
+    roseColor: '#e8b4b8',
+    nudeColor: '#f5e6d3',
+    darkColor: '#2c1810'
   })
 
   useEffect(() => {
@@ -37,7 +42,11 @@ export default function SettingsPage() {
           maintenanceMode: data.settings.maintenanceMode?.value || false,
           maxOrganizations: data.settings.maxOrganizations?.value || 1000,
           defaultStorageLimit: data.settings.defaultStorageLimit?.value || 5,
-          trialDurationDays: data.settings.trialDurationDays?.value || 14
+          trialDurationDays: data.settings.trialDurationDays?.value || 14,
+          primaryColor: data.settings.primaryColor?.value || '#d4a574',
+          roseColor: data.settings.roseColor?.value || '#e8b4b8',
+          nudeColor: data.settings.nudeColor?.value || '#f5e6d3',
+          darkColor: data.settings.darkColor?.value || '#2c1810'
         })
       } else if (response.status === 401) {
         router.push('/login?redirect=/super-admin')
@@ -77,8 +86,17 @@ export default function SettingsPage() {
         saveSetting('maintenanceMode', settings.maintenanceMode, 'Mode maintenance actif'),
         saveSetting('maxOrganizations', settings.maxOrganizations, 'Limite globale d\'organisations'),
         saveSetting('defaultStorageLimit', settings.defaultStorageLimit, 'Limite de stockage par défaut (GB)'),
-        saveSetting('trialDurationDays', settings.trialDurationDays, 'Durée de la période d\'essai (jours)')
+        saveSetting('trialDurationDays', settings.trialDurationDays, 'Durée de la période d\'essai (jours)'),
+        saveSetting('primaryColor', settings.primaryColor, 'Couleur principale'),
+        saveSetting('roseColor', settings.roseColor, 'Couleur rose poudré'),
+        saveSetting('nudeColor', settings.nudeColor, 'Couleur nude'),
+        saveSetting('darkColor', settings.darkColor, 'Couleur sombre')
       ])
+      // Mettre à jour les variables CSS
+      document.documentElement.style.setProperty('--laia-primary', settings.primaryColor)
+      document.documentElement.style.setProperty('--laia-rose', settings.roseColor)
+      document.documentElement.style.setProperty('--laia-nude', settings.nudeColor)
+      document.documentElement.style.setProperty('--laia-dark', settings.darkColor)
       alert('Paramètres enregistrés avec succès')
     } catch (error) {
       alert('Erreur lors de l\'enregistrement')
@@ -269,6 +287,155 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Personnalisation des couleurs */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">🎨 Personnalisation des couleurs</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Personnalisez la palette de couleurs de l'interface Super Admin.
+            Les changements seront appliqués immédiatement après l'enregistrement.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Couleur principale (Or rose)
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={settings.primaryColor}
+                  onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                  className="w-16 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.primaryColor}
+                  onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="#d4a574"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Utilisée pour les éléments principaux et boutons</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Couleur rose poudré
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={settings.roseColor}
+                  onChange={(e) => setSettings({ ...settings, roseColor: e.target.value })}
+                  className="w-16 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.roseColor}
+                  onChange={(e) => setSettings({ ...settings, roseColor: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="#e8b4b8"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Utilisée pour les accents et dégradés</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Couleur nude (fond)
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={settings.nudeColor}
+                  onChange={(e) => setSettings({ ...settings, nudeColor: e.target.value })}
+                  className="w-16 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.nudeColor}
+                  onChange={(e) => setSettings({ ...settings, nudeColor: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="#f5e6d3"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Utilisée pour les arrière-plans</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Couleur sombre (textes)
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={settings.darkColor}
+                  onChange={(e) => setSettings({ ...settings, darkColor: e.target.value })}
+                  className="w-16 h-10 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.darkColor}
+                  onChange={(e) => setSettings({ ...settings, darkColor: e.target.value })}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  placeholder="#2c1810"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Utilisée pour les textes et titres</p>
+            </div>
+          </div>
+
+          {/* Aperçu des couleurs */}
+          <div className="mt-6 p-6 rounded-lg border-2 border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Aperçu</h3>
+            <div className="flex gap-4 items-center">
+              <div
+                className="w-24 h-24 rounded-lg shadow-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: settings.primaryColor }}
+              >
+                Primary
+              </div>
+              <div
+                className="w-24 h-24 rounded-lg shadow-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: settings.roseColor }}
+              >
+                Rose
+              </div>
+              <div
+                className="w-24 h-24 rounded-lg shadow-lg flex items-center justify-center font-bold"
+                style={{
+                  backgroundColor: settings.nudeColor,
+                  color: settings.darkColor
+                }}
+              >
+                Nude
+              </div>
+              <div
+                className="w-24 h-24 rounded-lg shadow-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: settings.darkColor }}
+              >
+                Dark
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton reset */}
+          <div className="mt-6">
+            <button
+              onClick={() => setSettings({
+                ...settings,
+                primaryColor: '#d4a574',
+                roseColor: '#e8b4b8',
+                nudeColor: '#f5e6d3',
+                darkColor: '#2c1810'
+              })}
+              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              🔄 Réinitialiser les couleurs par défaut
+            </button>
+          </div>
         </div>
 
         {/* Informations système */}

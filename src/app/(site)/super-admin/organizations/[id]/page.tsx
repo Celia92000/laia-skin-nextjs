@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function OrganizationDetailPage({ params }: { params: { id: string } }) {
+export default function OrganizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [organization, setOrganization] = useState<any>(null)
@@ -18,7 +19,7 @@ export default function OrganizationDetailPage({ params }: { params: { id: strin
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch(`/api/super-admin/organizations/${params.id}`)
+        const response = await fetch(`/api/super-admin/organizations/${id}`)
         if (response.ok) {
           const data = await response.json()
           setOrganization(data.organization)
@@ -35,7 +36,7 @@ export default function OrganizationDetailPage({ params }: { params: { id: strin
       }
     }
     fetchData()
-  }, [params.id, router])
+  }, [id, router])
 
   if (loading) {
     return (
@@ -153,6 +154,121 @@ export default function OrganizationDetailPage({ params }: { params: { id: strin
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Informations principales */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Identifiants Admin - À communiquer au client */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-green-300 flex items-center gap-2">
+                🔑 Identifiants Admin (à communiquer au client)
+              </h2>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-white rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-600 mb-2">Email de connexion</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      defaultValue={organization.ownerEmail}
+                      id="admin-email-input"
+                      className="flex-1 font-mono font-bold text-lg text-gray-900 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        const emailInput = document.getElementById('admin-email-input') as HTMLInputElement
+                        navigator.clipboard.writeText(emailInput.value)
+                        alert('✅ Email copié !')
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium whitespace-nowrap"
+                    >
+                      📋 Copier
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const emailInput = document.getElementById('admin-email-input') as HTMLInputElement
+                        const newEmail = emailInput.value.trim()
+
+                        if (!newEmail || !newEmail.includes('@')) {
+                          alert('❌ Email invalide')
+                          return
+                        }
+
+                        if (!confirm(`Modifier l'email de connexion vers ${newEmail} ?`)) return
+
+                        try {
+                          const response = await fetch(`/api/super-admin/organizations/${organization.id}/update-admin-email`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ newEmail })
+                          })
+
+                          if (response.ok) {
+                            alert('✅ Email modifié avec succès')
+                            window.location.reload()
+                          } else {
+                            const error = await response.json()
+                            alert(`❌ ${error.error}`)
+                          }
+                        } catch (error) {
+                          alert('❌ Erreur de connexion')
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-sm font-medium whitespace-nowrap"
+                    >
+                      💾 Modifier
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600 mb-1">URL de connexion</p>
+                    <p className="font-mono font-bold text-blue-600">http://localhost:3001/admin</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('http://localhost:3001/admin')
+                      alert('✅ URL copiée !')
+                    }}
+                    className="ml-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium"
+                  >
+                    📋 Copier
+                  </button>
+                </div>
+
+                <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ <strong>Mot de passe :</strong> Le mot de passe a été généré automatiquement lors de la création et ne peut plus être affiché pour des raisons de sécurité.
+                  </p>
+                  <p className="text-sm text-yellow-800 mt-2">
+                    💡 <strong>Solution :</strong> Utilisez le bouton "Générer un nouveau mot de passe" ci-dessous.
+                  </p>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!confirm('Générer un nouveau mot de passe pour cet administrateur ?')) return
+
+                    try {
+                      const response = await fetch(`/api/super-admin/organizations/${organization.id}/reset-password`, {
+                        method: 'POST'
+                      })
+
+                      if (response.ok) {
+                        const data = await response.json()
+                        alert(`✅ Nouveau mot de passe généré :\n\n${data.newPassword}\n\n(Copiez-le maintenant, il ne sera plus affiché !)`)
+                        navigator.clipboard.writeText(data.newPassword)
+                      } else {
+                        alert('❌ Erreur lors de la génération du mot de passe')
+                      }
+                    } catch (error) {
+                      alert('❌ Erreur de connexion')
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold"
+                >
+                  🔄 Générer un nouveau mot de passe
+                </button>
+              </div>
+            </div>
+
             {/* Détails de l'organisation */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">

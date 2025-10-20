@@ -5,9 +5,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Vérifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
@@ -33,7 +35,7 @@ export async function GET(
 
     // Récupérer l'organisation
     const organization = await prisma.organization.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -48,7 +50,7 @@ export async function GET(
 
     // Récupérer tous les emplacements
     const locations = await prisma.location.findMany({
-      where: { organizationId: params.id },
+      where: { organizationId: id },
       orderBy: [
         { isMainLocation: 'desc' },
         { createdAt: 'asc' }
@@ -71,9 +73,11 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     // Vérifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
@@ -99,7 +103,7 @@ export async function POST(
 
     // Vérifier que l'organisation existe et n'a pas atteint sa limite
     const organization = await prisma.organization.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         locations: true
       }
@@ -121,7 +125,7 @@ export async function POST(
     // Vérifier que le slug est unique pour cette organisation
     const existingLocation = await prisma.location.findFirst({
       where: {
-        organizationId: params.id,
+        organizationId: id,
         slug: data.slug
       }
     })
@@ -136,7 +140,7 @@ export async function POST(
     // Créer le nouvel emplacement
     const location = await prisma.location.create({
       data: {
-        organizationId: params.id,
+        organizationId: id,
         name: data.name,
         slug: data.slug,
         address: data.address,

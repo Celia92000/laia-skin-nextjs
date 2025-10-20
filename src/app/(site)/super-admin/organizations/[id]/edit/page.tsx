@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -22,7 +22,8 @@ interface Organization {
   trialEndsAt: string | null
 }
 
-export default function EditOrganizationPage({ params }: { params: { id: string } }) {
+export default function EditOrganizationPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -43,11 +44,11 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
 
   useEffect(() => {
     fetchOrganization()
-  }, [params.id])
+  }, [id])
 
   async function fetchOrganization() {
     try {
-      const response = await fetch(`/api/super-admin/organizations/${params.id}`)
+      const response = await fetch(`/api/super-admin/organizations/${id}`)
       if (response.ok) {
         const data = await response.json()
         const org = data.organization
@@ -82,7 +83,7 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
     setSaving(true)
 
     try {
-      const response = await fetch(`/api/super-admin/organizations/${params.id}`, {
+      const response = await fetch(`/api/super-admin/organizations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -90,7 +91,7 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
 
       if (response.ok) {
         alert('Organisation mise à jour avec succès')
-        router.push(`/super-admin/organizations/${params.id}`)
+        router.push(`/super-admin/organizations/${id}`)
       } else {
         const error = await response.json()
         alert(`Erreur: ${error.error}`)
@@ -133,7 +134,7 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Link
-            href={`/super-admin/organizations/${params.id}`}
+            href={`/super-admin/organizations/${id}`}
             className="text-purple-200 hover:text-white mb-2 inline-block"
           >
             ← Retour à l'organisation
@@ -329,7 +330,7 @@ export default function EditOrganizationPage({ params }: { params: { id: string 
           {/* Actions */}
           <div className="flex gap-4 pt-4">
             <Link
-              href={`/super-admin/organizations/${params.id}`}
+              href={`/super-admin/organizations/${id}`}
               className="flex-1 text-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
             >
               Annuler

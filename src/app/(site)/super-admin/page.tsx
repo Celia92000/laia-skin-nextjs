@@ -53,107 +53,116 @@ export default async function SuperAdminPage() {
   const recentOrgs = organizations.slice(0, 5)
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+        {/* Bienvenue */}
+        <div className="mb-8 p-8 rounded-2xl shadow-lg bg-white border-2" style={{
+          borderColor: '#d4b5a0'
+        }}>
+          <h2 className="text-3xl font-bold mb-2" style={{
+            fontFamily: 'Playfair Display, serif',
+            color: '#d4b5a0'
+          }}>
+            👋 Bienvenue {user.name}
+          </h2>
+          <p className="text-gray-700 text-lg">
+            Vous êtes connecté en tant que <strong>{user.email}</strong>
+          </p>
+          <p className="text-gray-600 mt-2">
+            Gérez toutes les organisations de la plateforme LAIA depuis ce tableau de bord.
+          </p>
+        </div>
+
         {/* Statistiques globales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Organisations</p>
-                <p className="text-3xl font-bold text-purple-600">{organizations.length}</p>
+                <p className="text-sm mb-1 text-gray-600">Organisations</p>
+                <p className="text-3xl font-bold" style={{ color: '#d4b5a0' }}>{organizations.length}</p>
                 <div className="flex gap-2 mt-2">
                   <span className="text-xs text-green-600">✓ {activeOrgs} actives</span>
                   <span className="text-xs text-blue-600">△ {trialOrgs} essais</span>
                 </div>
               </div>
-              <div className="text-4xl">🏢</div>
+              <div className="text-5xl opacity-20">🏢</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Utilisateurs</p>
-                <p className="text-3xl font-bold text-indigo-600">{totalUsers}</p>
-                <p className="text-xs text-gray-500 mt-2">Moyenne: {organizations.length > 0 ? Math.round(totalUsers / organizations.length) : 0} par org</p>
+                <p className="text-sm mb-1 text-gray-600">Utilisateurs</p>
+                <p className="text-3xl font-bold" style={{ color: '#e8b4b8' }}>{totalUsers}</p>
+                <p className="text-xs mt-2 text-gray-500">Moyenne: {organizations.length > 0 ? Math.round(totalUsers / organizations.length) : 0} par org</p>
               </div>
-              <div className="text-4xl">👥</div>
+              <div className="text-5xl opacity-20">👥</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Réservations</p>
-                <p className="text-3xl font-bold text-pink-600">{totalReservations}</p>
-                <p className="text-xs text-gray-500 mt-2">Total plateforme</p>
+                <p className="text-sm mb-1 text-gray-600">Réservations</p>
+                <p className="text-3xl font-bold" style={{ color: '#b8935f' }}>{totalReservations}</p>
+                <p className="text-xs mt-2 text-gray-500">Total plateforme</p>
               </div>
-              <div className="text-4xl">📅</div>
+              <div className="text-5xl opacity-20">📅</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Services</p>
+                <p className="text-sm mb-1 text-gray-600">Services</p>
                 <p className="text-3xl font-bold text-teal-600">{totalServices}</p>
-                <p className="text-xs text-gray-500 mt-2">Catalogue global</p>
+                <p className="text-xs mt-2 text-gray-500">Catalogue global</p>
               </div>
-              <div className="text-4xl">💆</div>
+              <div className="text-5xl opacity-20">💆</div>
             </div>
           </div>
         </div>
 
         {/* Statistiques par plan */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all border-2 border-gray-200">
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-1">SOLO</p>
+              <p className="text-sm mb-1 text-gray-600">SOLO</p>
               <p className="text-2xl font-bold text-gray-700">{planStats.SOLO}</p>
-              <p className="text-xs text-gray-500 mt-1">49€/mois</p>
+              <p className="text-xs mt-1 text-gray-500">49€/mois</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all border-2 border-blue-200">
             <div className="text-center">
-              <p className="text-sm text-blue-600 mb-1">DUO</p>
+              <p className="text-sm mb-1 text-blue-600">DUO</p>
               <p className="text-2xl font-bold text-blue-700">{planStats.DUO}</p>
-              <p className="text-xs text-blue-500 mt-1">99€/mois</p>
+              <p className="text-xs mt-1 text-gray-600">99€/mois</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all border-2" style={{ borderColor: '#d4b5a0' }}>
             <div className="text-center">
-              <p className="text-sm text-purple-600 mb-1">TEAM</p>
-              <p className="text-2xl font-bold text-purple-700">{planStats.TEAM}</p>
-              <p className="text-xs text-purple-500 mt-1">199€/mois</p>
+              <p className="text-sm mb-1" style={{ color: '#d4b5a0' }}>TEAM</p>
+              <p className="text-2xl font-bold" style={{ color: '#d4b5a0' }}>{planStats.TEAM}</p>
+              <p className="text-xs mt-1 text-gray-600">199€/mois</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg shadow-md p-6">
+          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all border-2" style={{ borderColor: '#e8b4b8' }}>
             <div className="text-center">
-              <p className="text-sm text-indigo-600 mb-1">PREMIUM</p>
-              <p className="text-2xl font-bold text-indigo-700">{planStats.PREMIUM}</p>
-              <p className="text-xs text-indigo-500 mt-1">399€/mois</p>
+              <p className="text-sm mb-1" style={{ color: '#e8b4b8' }}>PREMIUM</p>
+              <p className="text-2xl font-bold" style={{ color: '#e8b4b8' }}>{planStats.PREMIUM}</p>
+              <p className="text-xs mt-1 text-gray-600">399€/mois</p>
             </div>
           </div>
-        </div>
-
-        {/* Bienvenue */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-md p-6 mb-8 text-white">
-          <h2 className="text-2xl font-bold mb-2">👋 Bienvenue {user.name}</h2>
-          <p className="text-purple-100">
-            Vous êtes connecté en tant que <strong>{user.email}</strong>
-          </p>
-          <p className="text-purple-100 mt-2">
-            Utilisez les onglets ci-dessus pour naviguer dans les différentes sections de la plateforme.
-          </p>
         </div>
 
         {/* Liste des organisations */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800">📋 Toutes les Organisations</h2>
+        <div className="bg-white rounded-2xl overflow-hidden shadow-lg">
+          <div className="px-6 py-5 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-2xl font-semibold text-gray-800" style={{
+              fontFamily: 'Playfair Display, serif'
+            }}>📋 Toutes les Organisations</h2>
           </div>
 
           <div className="overflow-x-auto">
@@ -261,7 +270,11 @@ export default async function SuperAdminPage() {
         <div className="mt-6 flex justify-end">
           <a
             href="/super-admin/organizations/new"
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+            className="text-white px-8 py-3 rounded-full font-semibold transition-all hover:scale-105"
+            style={{
+              background: 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)',
+              boxShadow: '0 4px 12px rgba(212, 181, 160, 0.3)'
+            }}
           >
             + Ajouter une Organisation
           </a>
@@ -271,7 +284,7 @@ export default async function SuperAdminPage() {
         <div className="mt-8 text-center">
           <a
             href="/admin"
-            className="text-gray-600 hover:text-gray-800 underline"
+            className="text-gray-600 hover:text-gray-800 hover:underline transition-all"
           >
             ← Retour à l'interface Admin normale
           </a>

@@ -141,7 +141,8 @@ export async function getOrganizationBySlug(slug: string): Promise<Organization 
 export async function getAllOrganizations() {
   try {
     return await prisma.organization.findMany({
-      where: { status: 'ACTIVE' },
+      // Récupérer TOUTES les organisations (ACTIVE, TRIAL, SUSPENDED, etc.)
+      // Le super admin doit pouvoir voir toutes les organisations
       include: {
         config: true,
         locations: {
@@ -149,7 +150,7 @@ export async function getAllOrganizations() {
           orderBy: { isMainLocation: 'desc' }
         }
       },
-      orderBy: { name: 'asc' }
+      orderBy: { createdAt: 'desc' } // Les plus récentes en premier
     })
   } catch (error) {
     console.error('Erreur lors de la récupération des organisations:', error)

@@ -17,6 +17,7 @@ enum UserRole {
   SUPER_ADMIN       // Propriétaire de la plateforme (accès complet à tous les instituts)
   ORG_OWNER         // Propriétaire d'un institut (accès complet à son organisation)
   ORG_ADMIN         // Co-gérant d'un institut (accès complet à l'organisation)
+  ACCOUNTANT        // Comptable (accès aux factures, paiements, stats financières)
   LOCATION_MANAGER  // Responsable d'un point de vente (accès limité à son emplacement)
   STAFF             // Employé (accès opérationnel limité)
   RECEPTIONIST      // Réceptionniste (accès limité à la prise de RDV)
@@ -89,6 +90,27 @@ model Organization {
   // Paiement et facturation
   billingEmail    String?
   billingAddress  String?      // JSON avec adresse complète
+
+  // Mandat SEPA pour prélèvement automatique
+  sepaIban        String?      // IBAN du compte bancaire
+  sepaBic         String?      // BIC de la banque
+  sepaAccountHolder String?    // Titulaire du compte
+  sepaMandateRef  String?      // Référence unique du mandat (RUM)
+  sepaMandateDate DateTime?    // Date de signature du mandat
+  sepaMandate     Boolean      @default(false) // Mandat signé oui/non
+
+  // Prochaine facturation
+  nextBillingDate DateTime?    // Date du prochain prélèvement
+  lastBillingDate DateTime?    // Date du dernier prélèvement
+  lastPaymentDate DateTime?    // Date du dernier paiement réussi
+  monthlyAmount   Float?       // Montant mensuel de l'abonnement
+
+  // Stripe
+  stripeCustomerId String?     @unique // ID du client Stripe
+
+  // Template et versioning (pour modèle centralisé LAIA)
+  templateVersion String       @default("1.0.0") // Version du template utilisée
+  lastTemplateUpdate DateTime? // Dernière mise à jour du template
 
   // Configuration
   config          OrganizationConfig?

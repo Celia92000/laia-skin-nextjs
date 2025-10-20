@@ -13,12 +13,19 @@
     },
     "src/app/api/cron/sync-emails/route.ts": {
       "maxDuration": 60
+    },
+    "src/app/api/cron/process-payments/route.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [
     {
       "path": "/api/cron/sync-emails?secret=$CRON_SECRET",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/process-payments",
+      "schedule": "0 2 * * *"
     }
   ]
 }

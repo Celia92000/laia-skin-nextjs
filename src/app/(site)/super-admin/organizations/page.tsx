@@ -118,6 +118,35 @@ export default function OrganizationsPage() {
     a.click()
   }
 
+  async function handleDelete(org: Organization) {
+    if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${org.name}" ?\n\nCette action est IRRÉVERSIBLE et supprimera :\n- Tous les utilisateurs\n- Tous les emplacements\n- Toutes les réservations\n- Tous les services et produits\n- Toutes les données associées`)) {
+      return
+    }
+
+    const confirmText = prompt(`Pour confirmer, tapez le nom de l'organisation : "${org.name}"`)
+    if (confirmText !== org.name) {
+      alert('Le nom ne correspond pas. Suppression annulée.')
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/super-admin/organizations/${org.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        alert('✅ Organisation supprimée avec succès')
+        fetchOrganizations() // Recharger la liste
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur : ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Erreur suppression:', error)
+      alert('❌ Erreur lors de la suppression')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -315,12 +344,26 @@ export default function OrganizationsPage() {
                       {new Date(org.createdAt).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        href={`/super-admin/organizations/${org.id}`}
-                        className="text-purple-600 hover:text-purple-900"
-                      >
-                        Voir
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/super-admin/organizations/${org.id}`}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          👁️ Voir
+                        </Link>
+                        <Link
+                          href={`/super-admin/organizations/${org.id}/edit`}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          ✏️ Modifier
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(org)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          🗑️ Supprimer
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

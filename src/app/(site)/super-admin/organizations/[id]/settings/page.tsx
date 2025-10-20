@@ -1,70 +1,26 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-interface OrganizationSettings {
-  organization: {
-    id: string
-    name: string
-    slug: string
-    status: string
-    plan: string
-  }
-  paymentSettings: {
-    primaryProvider: string
-    stripeConnectAccountId: string | null
-    stripeLiveMode: boolean
-    sumupEnabled: boolean
-    sumupMerchantCode: string | null
-  }
-  bookingSettings: {
-    advanceBookingHours: number
-    cancellationHours: number
-    requireDeposit: boolean
-    depositPercentage: number
-    sendConfirmationEmail: boolean
-    sendReminderEmail: boolean
-    reminderHoursBefore: number
-    sendWhatsAppReminder: boolean
-  }
-  loyaltySettings: {
-    isEnabled: boolean
-    name: string
-    currency: string
-    pointsPerEuro: number
-    minimumPointsToRedeem: number
-    pointsExpirationMonths: number | null
-  }
-  organizationConfig: {
-    siteName: string
-    email: string
-    phone: string
-    address: string
-    city: string
-    postalCode: string
-    instagramUrl: string | null
-    facebookUrl: string | null
-    tiktokUrl: string | null
-    whatsappNumber: string | null
-  }
-}
-
-export default function OrganizationSettingsPage({ params }: { params: { id: string } }) {
+export default function OrganizationSettingsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [settings, setSettings] = useState<OrganizationSettings | null>(null)
-  const [activeTab, setActiveTab] = useState<'general' | 'payment' | 'booking' | 'loyalty'>('general')
+  const [organization, setOrganization] = useState<any>(null)
+  const [config, setConfig] = useState<any>(null)
+  const [message, setMessage] = useState({ type: '', text: '' })
 
   useEffect(() => {
-    async function fetchSettings() {
+    async function fetchData() {
       try {
-        const response = await fetch(`/api/super-admin/organizations/${params.id}/settings`)
+        const response = await fetch(`/api/super-admin/organizations/${id}/settings`)
         if (response.ok) {
           const data = await response.json()
-          setSettings(data)
+          setOrganization(data.organization)
+          setConfig(data.config || {})
         } else if (response.status === 401) {
           router.push('/login?redirect=/super-admin')
         } else if (response.status === 403) {
@@ -76,29 +32,28 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
         setLoading(false)
       }
     }
-    fetchSettings()
-  }, [params.id, router])
+    fetchData()
+  }, [id, router])
 
-  async function handleSave() {
-    if (!settings) return
-
+  const handleSave = async () => {
     setSaving(true)
+    setMessage({ type: '', text: '' })
+
     try {
-      const response = await fetch(`/api/super-admin/organizations/${params.id}/settings`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/super-admin/organizations/${id}/settings`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify({ config })
       })
 
       if (response.ok) {
-        alert('Paramètres mis à jour avec succès')
+        setMessage({ type: 'success', text: 'Paramètres sauvegardés avec succès !' })
       } else {
         const error = await response.json()
-        alert(`Erreur: ${error.error}`)
+        setMessage({ type: 'error', text: error.error || 'Erreur lors de la sauvegarde' })
       }
     } catch (error) {
-      console.error('Error saving settings:', error)
-      alert('Erreur lors de la sauvegarde')
+      setMessage({ type: 'error', text: 'Erreur de connexion au serveur' })
     } finally {
       setSaving(false)
     }
@@ -106,21 +61,21 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
   }
 
-  if (!settings) {
+  if (!organization || !config) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Paramètres non trouvés</h1>
-          <Link href="/super-admin" className="text-purple-600 hover:text-purple-800 underline">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
+          <Link href="/super-admin" className="text-indigo-600 hover:text-indigo-800 underline">
             ← Retour au dashboard
           </Link>
         </div>
@@ -129,72 +84,54 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#d4b5a0' }}>
+        <div className="max-w-6xl mx-auto px-4 py-6">
           <Link
             href={`/super-admin/organizations/${params.id}`}
-            className="text-purple-200 hover:text-white mb-2 inline-block"
+            className="text-white/90 hover:text-white mb-2 inline-block"
           >
             ← Retour à l'organisation
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Paramètres - {settings.organization.name}</h1>
-          <p className="text-purple-100">Configuration complète de l'organisation</p>
+          <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+            ⚙️ Paramètres de {organization.name}
+          </h1>
+          <p className="text-white/90">Contrôle total des paramètres du client</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="flex border-b">
-            <button
-              onClick={() => setActiveTab('general')}
-              className={`px-6 py-3 font-medium transition ${
-                activeTab === 'general'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              ⚙️ Général
-            </button>
-            <button
-              onClick={() => setActiveTab('payment')}
-              className={`px-6 py-3 font-medium transition ${
-                activeTab === 'payment'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              💳 Paiement
-            </button>
-            <button
-              onClick={() => setActiveTab('booking')}
-              className={`px-6 py-3 font-medium transition ${
-                activeTab === 'booking'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              📅 Réservations
-            </button>
-            <button
-              onClick={() => setActiveTab('loyalty')}
-              className={`px-6 py-3 font-medium transition ${
-                activeTab === 'loyalty'
-                  ? 'border-b-2 border-purple-600 text-purple-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              ⭐ Fidélité
-            </button>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Message */}
+        {message.text && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            message.type === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            {message.text}
           </div>
+        )}
+
+        {/* Info importante */}
+        <div className="mb-8 p-6 rounded-xl border-2" style={{ borderColor: '#d4b5a0', backgroundColor: '#faf7f3' }}>
+          <h3 className="text-lg font-semibold mb-3" style={{ color: '#d4b5a0' }}>
+            🔐 Contrôle Super Admin
+          </h3>
+          <p className="text-gray-700 mb-2">
+            Vous pouvez modifier tous les paramètres de cette organisation. Les modifications seront immédiatement visibles sur leur site.
+          </p>
+          <p className="text-gray-700">
+            <strong>Attention :</strong> Toutes les modifications ici écrasent les paramètres définis par le client dans son admin.
+          </p>
         </div>
 
-        {/* General Settings */}
-        {activeTab === 'general' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-6">Informations générales</h2>
+        <div className="space-y-8">
+          {/* Informations de base */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              Informations de base
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -202,27 +139,139 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="text"
-                  value={settings.organizationConfig.siteName}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, siteName: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.siteName || ''}
+                  onChange={(e) => setConfig({ ...config, siteName: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ focusRingColor: '#d4b5a0' }}
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Slogan
+                </label>
+                <input
+                  type="text"
+                  value={config.siteTagline || ''}
+                  onChange={(e) => setConfig({ ...config, siteTagline: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description du site
+                </label>
+                <textarea
+                  value={config.siteDescription || ''}
+                  onChange={(e) => setConfig({ ...config, siteDescription: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Informations légales et facturation */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              Informations légales & Facturation
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  SIRET *
+                </label>
+                <input
+                  type="text"
+                  value={config.siret || ''}
+                  onChange={(e) => setConfig({ ...config, siret: e.target.value })}
+                  pattern="[0-9]{14}"
+                  maxLength={14}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  placeholder="14 chiffres"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Raison sociale
+                </label>
+                <input
+                  type="text"
+                  value={config.legalName || ''}
+                  onChange={(e) => setConfig({ ...config, legalName: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  N° TVA intracommunautaire
+                </label>
+                <input
+                  type="text"
+                  value={config.tvaNumber || ''}
+                  onChange={(e) => setConfig({ ...config, tvaNumber: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Code APE/NAF
+                </label>
+                <input
+                  type="text"
+                  value={config.apeCode || ''}
+                  onChange={(e) => setConfig({ ...config, apeCode: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Forme juridique
+                </label>
+                <input
+                  type="text"
+                  value={config.legalForm || ''}
+                  onChange={(e) => setConfig({ ...config, legalForm: e.target.value })}
+                  placeholder="SARL, SAS, EURL, etc."
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Capital social
+                </label>
+                <input
+                  type="text"
+                  value={config.capital || ''}
+                  onChange={(e) => setConfig({ ...config, capital: e.target.value })}
+                  placeholder="Ex: 10000€"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              Coordonnées
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email de contact
                 </label>
                 <input
                   type="email"
-                  value={settings.organizationConfig.email}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, email: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.email || ''}
+                  onChange={(e) => setConfig({ ...config, email: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
@@ -232,43 +281,21 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="tel"
-                  value={settings.organizationConfig.phone}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, phone: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  WhatsApp
-                </label>
-                <input
-                  type="tel"
-                  value={settings.organizationConfig.whatsappNumber || ''}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, whatsappNumber: e.target.value }
-                  })}
-                  placeholder="+33612345678"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.phone || ''}
+                  onChange={(e) => setConfig({ ...config, phone: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adresse
+                  Adresse complète
                 </label>
                 <input
                   type="text"
-                  value={settings.organizationConfig.address}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, address: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.address || ''}
+                  onChange={(e) => setConfig({ ...config, address: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
@@ -278,12 +305,9 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="text"
-                  value={settings.organizationConfig.city}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, city: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.city || ''}
+                  onChange={(e) => setConfig({ ...config, city: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
@@ -293,28 +317,30 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="text"
-                  value={settings.organizationConfig.postalCode}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, postalCode: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  value={config.postalCode || ''}
+                  onChange={(e) => setConfig({ ...config, postalCode: e.target.value })}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
+            </div>
+          </div>
 
+          {/* Réseaux sociaux */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              Réseaux sociaux
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Instagram
                 </label>
                 <input
                   type="url"
-                  value={settings.organizationConfig.instagramUrl || ''}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, instagramUrl: e.target.value }
-                  })}
+                  value={config.instagram || ''}
+                  onChange={(e) => setConfig({ ...config, instagram: e.target.value })}
                   placeholder="https://instagram.com/..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
@@ -324,13 +350,10 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="url"
-                  value={settings.organizationConfig.facebookUrl || ''}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, facebookUrl: e.target.value }
-                  })}
+                  value={config.facebook || ''}
+                  onChange={(e) => setConfig({ ...config, facebook: e.target.value })}
                   placeholder="https://facebook.com/..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
 
@@ -340,400 +363,118 @@ export default function OrganizationSettingsPage({ params }: { params: { id: str
                 </label>
                 <input
                   type="url"
-                  value={settings.organizationConfig.tiktokUrl || ''}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    organizationConfig: { ...settings.organizationConfig, tiktokUrl: e.target.value }
-                  })}
+                  value={config.tiktok || ''}
+                  onChange={(e) => setConfig({ ...config, tiktok: e.target.value })}
                   placeholder="https://tiktok.com/@..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Payment Settings */}
-        {activeTab === 'payment' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-6">Paramètres de paiement</h2>
-            <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fournisseur principal
+                  WhatsApp
                 </label>
-                <select
-                  value={settings.paymentSettings.primaryProvider}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    paymentSettings: { ...settings.paymentSettings, primaryProvider: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="STRIPE">Stripe</option>
-                  <option value="SUMUP">SumUp</option>
-                  <option value="CASH">Espèces uniquement</option>
-                </select>
-              </div>
-
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Configuration Stripe</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ID compte Stripe Connect
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.paymentSettings.stripeConnectAccountId || ''}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        paymentSettings: { ...settings.paymentSettings, stripeConnectAccountId: e.target.value }
-                      })}
-                      placeholder="acct_..."
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="stripeLiveMode"
-                      checked={settings.paymentSettings.stripeLiveMode}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        paymentSettings: { ...settings.paymentSettings, stripeLiveMode: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="stripeLiveMode" className="ml-2 block text-sm text-gray-700">
-                      Mode production (Live)
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Configuration SumUp</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="sumupEnabled"
-                      checked={settings.paymentSettings.sumupEnabled}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        paymentSettings: { ...settings.paymentSettings, sumupEnabled: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="sumupEnabled" className="ml-2 block text-sm text-gray-700">
-                      Activer SumUp
-                    </label>
-                  </div>
-
-                  {settings.paymentSettings.sumupEnabled && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Code marchand SumUp
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.paymentSettings.sumupMerchantCode || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          paymentSettings: { ...settings.paymentSettings, sumupMerchantCode: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Booking Settings */}
-        {activeTab === 'booking' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-6">Paramètres de réservation</h2>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Réservation à l'avance (heures)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.bookingSettings.advanceBookingHours}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      bookingSettings: { ...settings.bookingSettings, advanceBookingHours: parseInt(e.target.value) }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Minimum d'heures à l'avance pour réserver</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Annulation (heures)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.bookingSettings.cancellationHours}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      bookingSettings: { ...settings.bookingSettings, cancellationHours: parseInt(e.target.value) }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Heures avant pour annuler sans frais</p>
-                </div>
-              </div>
-
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Acompte</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="requireDeposit"
-                      checked={settings.bookingSettings.requireDeposit}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        bookingSettings: { ...settings.bookingSettings, requireDeposit: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="requireDeposit" className="ml-2 block text-sm text-gray-700">
-                      Exiger un acompte à la réservation
-                    </label>
-                  </div>
-
-                  {settings.bookingSettings.requireDeposit && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Pourcentage d'acompte (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={settings.bookingSettings.depositPercentage}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bookingSettings: { ...settings.bookingSettings, depositPercentage: parseInt(e.target.value) }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Notifications</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="sendConfirmationEmail"
-                      checked={settings.bookingSettings.sendConfirmationEmail}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        bookingSettings: { ...settings.bookingSettings, sendConfirmationEmail: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="sendConfirmationEmail" className="ml-2 block text-sm text-gray-700">
-                      Envoyer email de confirmation
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="sendReminderEmail"
-                      checked={settings.bookingSettings.sendReminderEmail}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        bookingSettings: { ...settings.bookingSettings, sendReminderEmail: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="sendReminderEmail" className="ml-2 block text-sm text-gray-700">
-                      Envoyer email de rappel
-                    </label>
-                  </div>
-
-                  {settings.bookingSettings.sendReminderEmail && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Rappel avant (heures)
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.bookingSettings.reminderHoursBefore}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bookingSettings: { ...settings.bookingSettings, reminderHoursBefore: parseInt(e.target.value) }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="sendWhatsAppReminder"
-                      checked={settings.bookingSettings.sendWhatsAppReminder}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        bookingSettings: { ...settings.bookingSettings, sendWhatsAppReminder: e.target.checked }
-                      })}
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="sendWhatsAppReminder" className="ml-2 block text-sm text-gray-700">
-                      Envoyer rappel WhatsApp
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loyalty Settings */}
-        {activeTab === 'loyalty' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-6">Programme de fidélité</h2>
-            <div className="space-y-6">
-              <div className="flex items-center">
                 <input
-                  type="checkbox"
-                  id="loyaltyEnabled"
-                  checked={settings.loyaltySettings.isEnabled}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    loyaltySettings: { ...settings.loyaltySettings, isEnabled: e.target.checked }
-                  })}
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                  type="tel"
+                  value={config.whatsapp || ''}
+                  onChange={(e) => setConfig({ ...config, whatsapp: e.target.value })}
+                  placeholder="+33 6 00 00 00 00"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 />
-                <label htmlFor="loyaltyEnabled" className="ml-2 block text-sm font-medium text-gray-700">
-                  Activer le programme de fidélité
-                </label>
               </div>
-
-              {settings.loyaltySettings.isEnabled && (
-                <div className="space-y-6 border-t pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nom du programme
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.loyaltySettings.name}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          loyaltySettings: { ...settings.loyaltySettings, name: e.target.value }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Monnaie
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.loyaltySettings.currency}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          loyaltySettings: { ...settings.loyaltySettings, currency: e.target.value }
-                        })}
-                        placeholder="Points, Étoiles, etc."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Points par euro dépensé
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={settings.loyaltySettings.pointsPerEuro}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          loyaltySettings: { ...settings.loyaltySettings, pointsPerEuro: parseInt(e.target.value) }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Points minimum pour échanger
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={settings.loyaltySettings.minimumPointsToRedeem}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          loyaltySettings: { ...settings.loyaltySettings, minimumPointsToRedeem: parseInt(e.target.value) }
-                        })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expiration des points (mois)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={settings.loyaltySettings.pointsExpirationMonths || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          loyaltySettings: {
-                            ...settings.loyaltySettings,
-                            pointsExpirationMonths: e.target.value ? parseInt(e.target.value) : null
-                          }
-                        })}
-                        placeholder="Laisser vide pour jamais"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-        )}
 
-        {/* Save Button */}
-        <div className="mt-8 flex justify-end space-x-4">
-          <Link
-            href={`/super-admin/organizations/${params.id}`}
-            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-          >
-            Annuler
-          </Link>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
-          </button>
+          {/* Couleurs du site */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              Apparence du site
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Couleur principale
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={config.primaryColor || '#d4b5a0'}
+                    onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                    className="h-12 w-16 border-2 border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={config.primaryColor || '#d4b5a0'}
+                    onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="#d4b5a0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Couleur secondaire
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={config.secondaryColor || '#2c3e50'}
+                    onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
+                    className="h-12 w-16 border-2 border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={config.secondaryColor || '#2c3e50'}
+                    onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="#2c3e50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Couleur d'accent
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={config.accentColor || '#20b2aa'}
+                    onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                    className="h-12 w-16 border-2 border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={config.accentColor || '#20b2aa'}
+                    onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="#20b2aa"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Boutons d'action */}
+          <div className="flex justify-end space-x-4 pt-6 border-t">
+            <Link
+              href={`/super-admin/organizations/${params.id}`}
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+            >
+              Annuler
+            </Link>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)'
+              }}
+            >
+              {saving ? 'Sauvegarde en cours...' : 'Sauvegarder les paramètres'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

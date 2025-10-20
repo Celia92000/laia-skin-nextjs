@@ -3,12 +3,15 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// GET - Récupérer tous les paramètres de l'organisation
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Vérifier l'authentification
+    const { id } = await params
+
+    // Vérifier l'authentification super admin
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
@@ -21,7 +24,6 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
@@ -31,15 +33,17 @@ export async function GET(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer l'organisation et tous ses paramètres
+    // Récupérer l'organisation et sa configuration
     const organization = await prisma.organization.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,
         slug: true,
-        status: true,
-        plan: true
+        legalName: true,
+        ownerEmail: true,
+        billingEmail: true,
+        billingAddress: true
       }
     })
 
@@ -47,123 +51,34 @@ export async function GET(
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
-    // Récupérer les paramètres de paiement
-    let paymentSettings = await prisma.paymentSettings.findUnique({
-      where: { organizationId: params.id }
+    // Récupérer la configuration complète
+    const config = await prisma.organizationConfig.findUnique({
+      where: { organizationId: id }
     })
-
-    // Si les paramètres de paiement n'existent pas, les créer avec des valeurs par défaut
-    if (!paymentSettings) {
-      paymentSettings = await prisma.paymentSettings.create({
-        data: {
-          organizationId: params.id,
-          primaryProvider: 'STRIPE'
-        }
-      })
-    }
-
-    // Récupérer les paramètres de réservation
-    let bookingSettings = await prisma.bookingSettings.findUnique({
-      where: { organizationId: params.id }
-    })
-
-    if (!bookingSettings) {
-      bookingSettings = await prisma.bookingSettings.create({
-        data: {
-          organizationId: params.id
-        }
-      })
-    }
-
-    // Récupérer les paramètres du programme de fidélité
-    let loyaltySettings = await prisma.loyaltyProgramSettings.findUnique({
-      where: { organizationId: params.id }
-    })
-
-    if (!loyaltySettings) {
-      loyaltySettings = await prisma.loyaltyProgramSettings.create({
-        data: {
-          organizationId: params.id,
-          isEnabled: false
-        }
-      })
-    }
-
-    // Récupérer la configuration de l'organisation
-    let organizationConfig = await prisma.organizationConfig.findUnique({
-      where: { organizationId: params.id }
-    })
-
-    if (!organizationConfig) {
-      organizationConfig = await prisma.organizationConfig.create({
-        data: {
-          organizationId: params.id,
-          siteName: organization.name,
-          email: '',
-          phone: '',
-          address: '',
-          city: '',
-          postalCode: ''
-        }
-      })
-    }
 
     return NextResponse.json({
       organization,
-      paymentSettings: {
-        primaryProvider: paymentSettings.primaryProvider,
-        stripeConnectAccountId: paymentSettings.stripeConnectAccountId,
-        stripeLiveMode: paymentSettings.stripeLiveMode,
-        sumupEnabled: paymentSettings.sumupEnabled,
-        sumupMerchantCode: paymentSettings.sumupMerchantCode
-      },
-      bookingSettings: {
-        advanceBookingHours: bookingSettings.advanceBookingHours,
-        cancellationHours: bookingSettings.cancellationHours,
-        requireDeposit: bookingSettings.requireDeposit,
-        depositPercentage: bookingSettings.depositPercentage,
-        sendConfirmationEmail: bookingSettings.sendConfirmationEmail,
-        sendReminderEmail: bookingSettings.sendReminderEmail,
-        reminderHoursBefore: bookingSettings.reminderHoursBefore,
-        sendWhatsAppReminder: bookingSettings.sendWhatsAppReminder
-      },
-      loyaltySettings: {
-        isEnabled: loyaltySettings.isEnabled,
-        name: loyaltySettings.name,
-        currency: loyaltySettings.currency,
-        pointsPerEuro: loyaltySettings.pointsPerEuro,
-        minimumPointsToRedeem: loyaltySettings.minimumPointsToRedeem,
-        pointsExpirationMonths: loyaltySettings.pointsExpirationMonths
-      },
-      organizationConfig: {
-        siteName: organizationConfig.siteName,
-        email: organizationConfig.email,
-        phone: organizationConfig.phone,
-        address: organizationConfig.address,
-        city: organizationConfig.city,
-        postalCode: organizationConfig.postalCode,
-        instagramUrl: organizationConfig.instagramUrl,
-        facebookUrl: organizationConfig.facebookUrl,
-        tiktokUrl: organizationConfig.tiktokUrl,
-        whatsappNumber: organizationConfig.whatsappNumber
-      }
+      config: config || {}
     })
 
   } catch (error) {
     console.error('Erreur récupération paramètres:', error)
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur lors de la récupération' },
       { status: 500 }
     )
   }
 }
 
-export async function PATCH(
+// PUT - Mettre à jour les paramètres de l'organisation
+export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Vérifier l'authentification
+    const { id } = await params
+
+    // Vérifier l'authentification super admin
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
@@ -176,7 +91,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
@@ -186,79 +100,125 @@ export async function PATCH(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const data = await request.json()
-
-    // Mettre à jour les paramètres de paiement
-    if (data.paymentSettings) {
-      await prisma.paymentSettings.update({
-        where: { organizationId: params.id },
-        data: {
-          primaryProvider: data.paymentSettings.primaryProvider,
-          stripeConnectAccountId: data.paymentSettings.stripeConnectAccountId || null,
-          stripeLiveMode: data.paymentSettings.stripeLiveMode,
-          sumupEnabled: data.paymentSettings.sumupEnabled,
-          sumupMerchantCode: data.paymentSettings.sumupMerchantCode || null
-        }
-      })
-    }
-
-    // Mettre à jour les paramètres de réservation
-    if (data.bookingSettings) {
-      await prisma.bookingSettings.update({
-        where: { organizationId: params.id },
-        data: {
-          advanceBookingHours: data.bookingSettings.advanceBookingHours,
-          cancellationHours: data.bookingSettings.cancellationHours,
-          requireDeposit: data.bookingSettings.requireDeposit,
-          depositPercentage: data.bookingSettings.depositPercentage,
-          sendConfirmationEmail: data.bookingSettings.sendConfirmationEmail,
-          sendReminderEmail: data.bookingSettings.sendReminderEmail,
-          reminderHoursBefore: data.bookingSettings.reminderHoursBefore,
-          sendWhatsAppReminder: data.bookingSettings.sendWhatsAppReminder
-        }
-      })
-    }
-
-    // Mettre à jour les paramètres du programme de fidélité
-    if (data.loyaltySettings) {
-      await prisma.loyaltyProgramSettings.update({
-        where: { organizationId: params.id },
-        data: {
-          isEnabled: data.loyaltySettings.isEnabled,
-          name: data.loyaltySettings.name,
-          currency: data.loyaltySettings.currency,
-          pointsPerEuro: data.loyaltySettings.pointsPerEuro,
-          minimumPointsToRedeem: data.loyaltySettings.minimumPointsToRedeem,
-          pointsExpirationMonths: data.loyaltySettings.pointsExpirationMonths || null
-        }
-      })
-    }
+    const { config } = await request.json()
 
     // Mettre à jour la configuration de l'organisation
-    if (data.organizationConfig) {
-      await prisma.organizationConfig.update({
-        where: { organizationId: params.id },
-        data: {
-          siteName: data.organizationConfig.siteName,
-          email: data.organizationConfig.email,
-          phone: data.organizationConfig.phone,
-          address: data.organizationConfig.address,
-          city: data.organizationConfig.city,
-          postalCode: data.organizationConfig.postalCode,
-          instagramUrl: data.organizationConfig.instagramUrl || null,
-          facebookUrl: data.organizationConfig.facebookUrl || null,
-          tiktokUrl: data.organizationConfig.tiktokUrl || null,
-          whatsappNumber: data.organizationConfig.whatsappNumber || null
-        }
-      })
-    }
+    const updatedConfig = await prisma.organizationConfig.update({
+      where: { organizationId: id },
+      data: {
+        // Informations de base
+        siteName: config.siteName,
+        siteTagline: config.siteTagline,
+        siteDescription: config.siteDescription,
 
-    return NextResponse.json({ success: true })
+        // Contact
+        email: config.email,
+        phone: config.phone,
+        address: config.address,
+        city: config.city,
+        postalCode: config.postalCode,
+        country: config.country || 'France',
+
+        // Réseaux sociaux
+        instagram: config.instagram,
+        facebook: config.facebook,
+        tiktok: config.tiktok,
+        whatsapp: config.whatsapp,
+        linkedin: config.linkedin,
+        youtube: config.youtube,
+
+        // Apparence
+        primaryColor: config.primaryColor,
+        secondaryColor: config.secondaryColor,
+        accentColor: config.accentColor,
+        logoUrl: config.logoUrl,
+        faviconUrl: config.faviconUrl,
+
+        // Informations légales
+        siret: config.siret,
+        legalName: config.legalName,
+        siren: config.siren,
+        tvaNumber: config.tvaNumber,
+        apeCode: config.apeCode,
+        rcs: config.rcs,
+        capital: config.capital,
+        legalForm: config.legalForm,
+
+        // Assurance
+        insuranceCompany: config.insuranceCompany,
+        insuranceContract: config.insuranceContract,
+        insuranceAddress: config.insuranceAddress,
+
+        // Banque
+        bankName: config.bankName,
+        bankIban: config.bankIban,
+        bankBic: config.bankBic,
+
+        // Hero section
+        heroTitle: config.heroTitle,
+        heroSubtitle: config.heroSubtitle,
+        heroImage: config.heroImage,
+
+        // À propos
+        aboutText: config.aboutText,
+        aboutIntro: config.aboutIntro,
+        aboutParcours: config.aboutParcours,
+
+        // Fondateur
+        founderName: config.founderName,
+        founderTitle: config.founderTitle,
+        founderQuote: config.founderQuote,
+        founderImage: config.founderImage,
+
+        // Horaires
+        businessHours: config.businessHours,
+
+        // Géolocalisation
+        latitude: config.latitude,
+        longitude: config.longitude,
+        googleMapsUrl: config.googleMapsUrl,
+
+        // Typographie
+        fontFamily: config.fontFamily,
+        headingFont: config.headingFont,
+        baseFontSize: config.baseFontSize,
+        headingSize: config.headingSize,
+
+        // CGV et mentions légales
+        termsAndConditions: config.termsAndConditions,
+        privacyPolicy: config.privacyPolicy,
+        legalNotice: config.legalNotice,
+
+        // Emails
+        emailSignature: config.emailSignature,
+        welcomeEmailText: config.welcomeEmailText,
+
+        // Représentant légal
+        legalRepName: config.legalRepName,
+        legalRepTitle: config.legalRepTitle,
+
+        // Analytics
+        googleAnalyticsId: config.googleAnalyticsId,
+        facebookPixelId: config.facebookPixelId,
+        metaVerificationCode: config.metaVerificationCode,
+        googleVerificationCode: config.googleVerificationCode,
+
+        // SEO
+        defaultMetaTitle: config.defaultMetaTitle,
+        defaultMetaDescription: config.defaultMetaDescription,
+        defaultMetaKeywords: config.defaultMetaKeywords,
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Paramètres mis à jour avec succès',
+      config: updatedConfig
+    })
 
   } catch (error) {
     console.error('Erreur mise à jour paramètres:', error)
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur lors de la mise à jour' },
       { status: 500 }
     )
   }
