@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe-service'
 import { prisma } from '@/lib/prisma'
+import { generateAndSaveInvoice } from '@/lib/invoice-service'
+import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '@/lib/payment-emails'
 import Stripe from 'stripe'
 
 /**
@@ -103,6 +105,16 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   }
 
   try {
+    // Récupérer l'organisation
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    })
+
+    if (!org) {
+      console.warn(`⚠️ Organisation ${organizationId} introuvable`)
+      return
+    }
+
     // Mettre à jour l'organisation
     await prisma.organization.update({
       where: { id: organizationId },
@@ -114,8 +126,43 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
 
     console.log(`✅ Paiement réussi pour l'organisation ${organizationId}`)
 
-    // TODO: Envoyer email de confirmation
-    // TODO: Générer facture PDF
+    // Calculer la prochaine date de facturation
+    const nextBillingDate = new Date(org.nextBillingDate || new Date())
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1)
+
+    // Générer la facture PDF
+    const planPrices: Record<string, number> = {
+      SOLO: 49,
+      DUO: 99,
+      TEAM: 199,
+      PREMIUM: 399,
+    }
+    const amount = planPrices[org.plan] || 0
+
+    try {
+      const invoice = await generateAndSaveInvoice(
+        org.id,
+        amount,
+        org.plan,
+        paymentIntent.id
+      )
+
+      console.log(`📄 Facture générée: ${invoice.invoiceNumber}`)
+
+      // Envoyer l'email de confirmation avec la facture
+      await sendPaymentSuccessEmail({
+        to: org.billingEmail || org.ownerEmail,
+        organizationName: org.name,
+        amount,
+        plan: org.plan,
+        nextBillingDate,
+        invoiceUrl: invoice.pdfUrl,
+      })
+
+      console.log(`📧 Email de confirmation envoyé`)
+    } catch (emailError) {
+      console.error('⚠️ Erreur envoi email/facture (non bloquant):', emailError)
+    }
   } catch (error) {
     console.error('Erreur mise à jour après paiement:', error)
   }
@@ -133,6 +180,16 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
   }
 
   try {
+    // Récupérer l'organisation
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    })
+
+    if (!org) {
+      console.warn(`⚠️ Organisation ${organizationId} introuvable`)
+      return
+    }
+
     // Suspendre l'organisation
     await prisma.organization.update({
       where: { id: organizationId },
@@ -143,7 +200,30 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
 
     console.log(`❌ Paiement échoué pour l'organisation ${organizationId}`)
 
-    // TODO: Envoyer email d'échec
+    // Calculer le montant
+    const planPrices: Record<string, number> = {
+      SOLO: 49,
+      DUO: 99,
+      TEAM: 199,
+      PREMIUM: 399,
+    }
+    const amount = planPrices[org.plan] || 0
+
+    // Envoyer email d'échec
+    try {
+      await sendPaymentFailedEmail({
+        to: org.billingEmail || org.ownerEmail,
+        organizationName: org.name,
+        amount,
+        plan: org.plan,
+        reason: paymentIntent.last_payment_error?.message,
+      })
+
+      console.log(`📧 Email d'échec envoyé`)
+    } catch (emailError) {
+      console.error('⚠️ Erreur envoi email échec (non bloquant):', emailError)
+    }
+
     // TODO: Créer notification super admin
   } catch (error) {
     console.error('Erreur mise à jour après échec paiement:', error)

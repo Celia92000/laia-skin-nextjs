@@ -1,5 +1,7 @@
 import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
+import { generateAndSaveInvoice } from '@/lib/invoice-service'
+import { sendPaymentSuccessEmail } from '@/lib/payment-emails'
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY manquant dans .env.local')
@@ -252,8 +254,31 @@ export async function processAutomaticCharges() {
 
         results.success.push(org.id)
 
-        // TODO: Envoyer email de confirmation
-        // TODO: Générer et envoyer facture PDF
+        // Générer la facture PDF
+        try {
+          const invoice = await generateAndSaveInvoice(
+            org.id,
+            amount,
+            org.plan,
+            charge.id
+          )
+
+          console.log(`📄 Facture générée: ${invoice.invoiceNumber}`)
+
+          // Envoyer l'email de confirmation avec la facture
+          await sendPaymentSuccessEmail({
+            to: org.billingEmail || org.ownerEmail,
+            organizationName: org.name,
+            amount,
+            plan: org.plan,
+            nextBillingDate: nextMonth,
+            invoiceUrl: invoice.pdfUrl,
+          })
+
+          console.log(`📧 Email de confirmation envoyé`)
+        } catch (emailError) {
+          console.error('⚠️ Erreur envoi email/facture (non bloquant):', emailError)
+        }
       } catch (error) {
         console.error(`❌ Échec prélèvement ${org.name}:`, error)
 

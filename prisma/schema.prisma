@@ -1693,23 +1693,29 @@ enum PaymentMethod {
 }
 
 model Invoice {
-  id              String        @id @default(cuid())
-  organizationId  String
-  amount          Float
-  currency        String        @default("EUR")
-  status          InvoiceStatus @default(PENDING)
-  stripeInvoiceId String?       @unique
-  paidAt          DateTime?
-  dueDate         DateTime
-  description     String?
-  metadata        Json?         // Détails additionnels
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                     String        @id @default(cuid())
+  organizationId         String
+  invoiceNumber          String        @unique // LAIA-2025-001234
+  amount                 Float
+  currency               String        @default("EUR")
+  plan                   String?       // SOLO, DUO, TEAM, PREMIUM
+  status                 InvoiceStatus @default(PENDING)
+  stripeInvoiceId        String?       @unique
+  stripePaymentIntentId  String?       // ID du PaymentIntent Stripe
+  paidAt                 DateTime?
+  issueDate              DateTime      @default(now()) // Date d'émission
+  dueDate                DateTime
+  description            String?
+  pdfPath                String?       // Chemin vers le PDF
+  metadata               Json?         // Détails additionnels
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   payments        BillingPayment[]
 
   @@index([organizationId])
+  @@index([invoiceNumber])
   @@index([status])
   @@index([dueDate])
   @@index([createdAt])
@@ -1730,6 +1736,44 @@ model BillingPayment {
   @@index([invoiceId])
   @@index([status])
   @@index([createdAt])
+}
+
+// Configuration des factures LAIA (paramètres globaux)
+model InvoiceSettings {
+  id              String   @id @default(cuid())
+
+  // Informations émetteur (LAIA)
+  companyName     String   @default("LAIA SAS")
+  address         String   @default("123 Avenue de la Beauté")
+  postalCode      String   @default("75001")
+  city            String   @default("Paris")
+  country         String   @default("France")
+  siret           String   @default("123 456 789 00012")
+  tvaNumber       String   @default("FR12345678900")
+  capitalSocial   String   @default("10 000€")
+  rcs             String   @default("RCS Paris 123 456 789")
+
+  // Contact
+  email           String   @default("contact@laia.com")
+  phone           String?  @default("+33 1 23 45 67 89")
+  website         String?  @default("https://laia.com")
+
+  // Design
+  logoUrl         String?  // URL du logo
+  primaryColor    String   @default("#667eea") // Violet
+  secondaryColor  String   @default("#764ba2") // Rose
+
+  // Paramètres facture
+  invoicePrefix   String   @default("LAIA") // LAIA-2025-001234
+  tvaRate         Float    @default(20.0) // Taux TVA en %
+
+  // Mentions légales
+  paymentTerms    String   @default("Prélèvement SEPA automatique")
+  latePenalty     String   @default("En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.")
+  footerText      String?  @default("TVA intracommunautaire: FR12345678900")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 enum SuperAdminEmailKey {
