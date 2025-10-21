@@ -1,11 +1,5 @@
 import crypto from 'crypto'
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
-
-if (!ENCRYPTION_KEY) {
-  throw new Error('ENCRYPTION_KEY manquant dans .env.local')
-}
-
 // L'algorithme AES-256-GCM est recommandé pour le chiffrement de données sensibles
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16 // Pour AES, c'est toujours 16 octets
@@ -15,9 +9,27 @@ const TAG_POSITION = SALT_LENGTH + IV_LENGTH
 const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH
 
 /**
+ * Récupère la clé de chiffrement depuis l'environnement
+ */
+function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY
+
+  if (!key) {
+    throw new Error('🔐 ENCRYPTION_KEY manquant dans .env.local - Exécutez: npx tsx scripts/security/secure-production.ts')
+  }
+
+  if (key.length !== 64) {
+    throw new Error('🔐 ENCRYPTION_KEY doit faire 64 caractères (32 bytes en hex)')
+  }
+
+  return key
+}
+
+/**
  * Dérive une clé à partir de la clé d'encryption et d'un salt
  */
 function getKey(salt: Buffer): Buffer {
+  const ENCRYPTION_KEY = getEncryptionKey()
   return crypto.pbkdf2Sync(
     ENCRYPTION_KEY!,
     salt,

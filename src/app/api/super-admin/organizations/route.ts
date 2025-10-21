@@ -6,6 +6,59 @@ import { seedOrganization } from '@/lib/seed-organization'
 import { createStripeCustomer } from '@/lib/stripe-service'
 import { encrypt, validateIban, validateBic } from '@/lib/encryption-service'
 import bcrypt from 'bcryptjs'
+import { getAllOrganizations } from '@/lib/tenant-service'
+
+export async function GET() {
+  try {
+    // Vérifier l'authentification
+    const cookieStore = await cookies()
+    const token = cookieStore.get('auth-token')?.value
+
+    if (!token) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded || !decoded.userId) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
+    // Vérifier que l'utilisateur est SUPER_ADMIN
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, name: true, email: true, role: true }
+    })
+
+    if (!user || user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
+    // Récupérer toutes les organisations
+    const organizations = await getAllOrganizations()
+
+    // Statistiques globales
+    const totalUsers = await prisma.user.count()
+    const totalReservations = await prisma.reservation.count()
+    const totalServices = await prisma.service.count()
+
+    return NextResponse.json({
+      user,
+      organizations,
+      stats: {
+        totalUsers,
+        totalReservations,
+        totalServices
+      }
+    })
+
+  } catch (error) {
+    console.error('Erreur récupération organisations:', error)
+    return NextResponse.json(
+      { error: 'Erreur lors de la récupération' },
+      { status: 500 }
+    )
+  }
+}
 
 export async function POST(request: Request) {
   try {

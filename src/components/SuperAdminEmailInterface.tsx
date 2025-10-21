@@ -187,8 +187,13 @@ L'équipe LAIA Beauty`
         });
         if (response.ok) {
           const data = await response.json();
-          // Fusionner les templates de la BDD avec les templates par défaut
-          setTemplates(prev => [...prev, ...data]);
+          // Vérifier que data est un tableau avant de fusionner
+          if (Array.isArray(data)) {
+            // Fusionner les templates de la BDD avec les templates par défaut
+            setTemplates(prev => [...prev, ...data]);
+          } else {
+            console.error('Format de données inattendu pour les templates:', data);
+          }
         }
       } catch (error) {
         console.error('Erreur chargement templates:', error);

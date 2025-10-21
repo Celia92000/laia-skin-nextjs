@@ -29,15 +29,26 @@ export async function POST(request: Request) {
     
     const { email } = await request.json();
 
-    const user = await prisma.user.findUnique({
-      where: { email }
+    const user = await prisma.user.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        organizationId: true
+      }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
 
-    const token = generateToken(user.id, user.role);
+    const token = generateToken({
+      userId: user.id,
+      role: user.role,
+      organizationId: user.organizationId
+    });
 
     return NextResponse.json({
       token,

@@ -131,6 +131,9 @@ model Organization {
   subscriptionPromoCodes SubscriptionPromoCode[] @relation("SubscriptionPromoUsage") // Codes promo utilisés
   testimonials           Testimonial[]  @relation("OrganizationTestimonials") // Témoignages
 
+  // CRM Relations
+  convertedLeads         Lead[]         // Leads convertis en clients
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -450,8 +453,13 @@ model User {
   notifications    Notification[]
   referralsMade    Referral[]        @relation("ReferralReferrer")
   referredBy       Referral?         @relation("ReferralReferred")
-  leads            Lead[]
   discounts        Discount[]
+
+  // CRM Relations
+  assignedLeads    Lead[]
+  leadInteractions LeadInteraction[]
+  contactFormLeads ContactFormLead[]
+  demoSlots        DemoSlot[]        @relation("DemoSlots")
   orders           Order[]
   payments         Payment[]
   stockMovements   StockMovement[]
@@ -460,6 +468,7 @@ model User {
   ticketsCreated   SupportTicket[]   @relation("TicketCreator")
   ticketsAssigned  SupportTicket[]   @relation("TicketAssignee")
   ticketMessages   TicketMessage[]
+  platformNews     PlatformNews[]    // Nouveautés LAIA Beauty créées
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -783,7 +792,9 @@ model Package {
   updatedAt   DateTime @updatedAt
 }
 
-model Lead {
+// Lead - Modèle basique de capture formulaire (conservé pour compatibilité)
+// Pour le CRM complet, voir le modèle Lead CRM plus bas
+model ContactFormLead {
   id          String   @id @default(cuid())
   name        String
   email       String   @unique
@@ -2010,5 +2021,231 @@ model PushNotification {
   @@index([status])
   @@index([scheduledAt])
   @@index([sentAt])
+}
+
+// ============================================
+// CRM & PROSPECTION MODELS
+// ============================================
+
+enum LeadStatus {
+  NEW                 // Nouveau lead (découverte)
+  CONTACTED           // Premier contact effectué
+  QUALIFIED           // Prospect qualifié (intéressé)
+  DEMO_SCHEDULED      // Démo planifiée
+  DEMO_DONE           // Démo effectuée
+  PROPOSAL_SENT       // Proposition commerciale envoyée
+  NEGOTIATION         // En négociation
+  WON                 // Gagné → converti en client
+  LOST                // Perdu
+  ON_HOLD             // En attente
+}
+
+enum LeadSource {
+  WEBSITE             // Formulaire site web
+  REFERRAL            // Recommandation
+  LINKEDIN            // LinkedIn
+  INSTAGRAM           // Instagram
+  FACEBOOK            // Facebook
+  GOOGLE_ADS          // Google Ads
+  EMAIL_CAMPAIGN      // Campagne email
+  COLD_EMAIL          // Email à froid
+  COLD_CALL           // Appel à froid
+  NETWORKING          // Networking/Salon professionnel
+  PARTNER             // Partenaire commercial
+  OTHER               // Autre
+}
+
+enum InteractionType {
+  EMAIL
+  PHONE
+  MEETING
+  DEMO
+  WHATSAPP
+  LINKEDIN_MESSAGE
+  NOTE
+}
+
+model Lead {
+  id                String        @id @default(cuid())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Informations institut
+  institutName      String
+  contactName       String
+  contactEmail      String
+  contactPhone      String?
+  website           String?
+  address           String?
+  city              String?
+  postalCode        String?
+  country           String        @default("France")
+
+  // Informations business
+  numberOfLocations Int           @default(1)
+  numberOfEmployees Int?
+  currentSoftware   String?       // Logiciel actuel utilisé
+  estimatedRevenue  Decimal?      @db.Decimal(10, 2)
+  painPoints        String[]      // Points de douleur
+
+  // Pipeline
+  status            LeadStatus    @default(NEW)
+  source            LeadSource
+  score             Int           @default(0)  // Score de qualité 0-100
+  probability       Int           @default(0)  // Probabilité de conversion 0-100%
+  estimatedValue    Decimal?      @db.Decimal(10, 2)
+
+  // Suivi commercial
+  assignedToUserId  String?
+  assignedTo        User?         @relation(fields: [assignedToUserId], references: [id])
+  nextFollowUpDate  DateTime?
+  lastContactDate   DateTime?
+  expectedCloseDate DateTime?
+
+  // Conversion
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  convertedAt       DateTime?
+  lostReason        String?
+
+  // Métadonnées
+  tags              String[]
+  notes             String?       @db.Text
+
+  interactions      LeadInteraction[]
+  demoBooking       DemoBooking?  @relation("DemoBookingLead")
+
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([source])
+  @@index([nextFollowUpDate])
+  @@index([contactEmail])
+  @@index([city])
+}
+
+model LeadInteraction {
+  id              String          @id @default(cuid())
+  createdAt       DateTime        @default(now())
+
+  leadId          String
+  lead            Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+
+  type            InteractionType
+  subject         String?
+  content         String          @db.Text
+  nextAction      String?
+  nextActionDate  DateTime?
+
+  // Pièces jointes
+  attachments     String[]
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ProspectingEmailTemplate {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  name        String
+  subject     String
+  body        String    @db.Text  // HTML avec variables {{institutName}}, {{contactName}}, etc.
+  category    String?               // 'first_contact', 'follow_up', 'demo', 'proposal', etc.
+  isActive    Boolean   @default(true)
+}
+
+// Système de calendrier pour les démos commerciales
+model DemoSlot {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  date          DateTime  // Date et heure du créneau
+  duration      Int       @default(30) // Durée en minutes
+  userId        String?   // Commercial assigné (super-admin)
+  user          User?     @relation("DemoSlots", fields: [userId], references: [id])
+
+  isAvailable   Boolean   @default(true)
+  isRecurring   Boolean   @default(false) // Créneau récurrent chaque semaine
+  dayOfWeek     Int?      // 0=Dimanche, 1=Lundi, etc. (pour récurrence)
+
+  bookings      DemoBooking[]
+}
+
+model DemoBooking {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  slotId        String
+  slot          DemoSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  // Informations du prospect
+  institutName  String
+  contactName   String
+  contactEmail  String
+  contactPhone  String?
+  message       String?   @db.Text
+
+  // Lead associé
+  leadId        String?   @unique
+  lead          Lead?     @relation("DemoBookingLead", fields: [leadId], references: [id])
+
+  // Type de rendez-vous
+  type          String    @default("ONLINE") // ONLINE (visio) ou PHYSICAL (physique)
+  location      String?   // Adresse si rendez-vous physique
+
+  status        String    @default("CONFIRMED") // CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
+  meetingUrl    String?   // URL visio si démo en ligne
+  notes         String?   @db.Text
+
+  reminderSent  Boolean   @default(false)
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+}
+
+// ============================================
+// PLATFORM NEWS - NOUVEAUTÉS LAIA BEAUTY
+// ============================================
+
+enum PlatformNewsStatus {
+  DRAFT       // Brouillon
+  PUBLISHED   // Publié
+  ARCHIVED    // Archivé
+}
+
+model PlatformNews {
+  id              String              @id @default(cuid())
+  title           String
+  slug            String              @unique
+  excerpt         String              @db.Text
+  content         String              @db.Text
+  category        String              // "Nouvelle fonctionnalité", "Mise à jour", "Conseil", etc.
+  status          PlatformNewsStatus  @default(DRAFT)
+
+  featuredImage   String?
+  tags            Json?               // ["automatisation", "réservation", "IA"]
+
+  // SEO
+  seoTitle        String?
+  seoDescription  String?
+
+  // Author (Super Admin)
+  authorId        String
+  author          User                @relation(fields: [authorId], references: [id])
+
+  publishedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([category])
+  @@index([authorId])
 }
 

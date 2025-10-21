@@ -11,14 +11,17 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(userId: string, role: string, rememberMe: boolean = false): string {
-  const expiresIn = rememberMe ? '90d' : '30d'; // 90 jours si "Se souvenir", sinon 30 jours
-  return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn });
+export function generateToken(
+  payload: { userId: string; role: string; organizationId?: string | null },
+  rememberMe: boolean = false
+): string {
+  const expiresIn = rememberMe ? '90d' : '30d';
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): { userId: string; role: string; organizationId?: string | null } | null {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET) as { userId: string; role: string; organizationId?: string | null };
   } catch (error) {
     return null;
   }

@@ -123,7 +123,7 @@ export default function AuditLogsPage() {
     if (action.startsWith('DELETE')) return 'bg-red-50 border-red-200 text-red-800'
     if (action.includes('SUSPEND') || action.includes('CANCEL')) return 'bg-orange-50 border-orange-200 text-orange-800'
     if (action.includes('ACTIVATE')) return 'bg-green-50 border-green-200 text-green-800'
-    if (action.includes('IMPERSONATE')) return 'bg-purple-50 border-purple-200 text-purple-800'
+    if (action.includes('IMPERSONATE')) return 'bg-purple-50 border-purple-200 text-beige-800'
     return 'bg-gray-50 border-gray-200 text-gray-800'
   }
 
@@ -164,7 +164,7 @@ export default function AuditLogsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement des logs...</p>
         </div>
       </div>
@@ -174,19 +174,19 @@ export default function AuditLogsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">📋 Logs d'Audit</h1>
-              <p className="text-purple-100">Historique de toutes les actions administratives</p>
+              <p className="text-white/90">Historique de toutes les actions administratives</p>
             </div>
             <button
               onClick={exportToCSV}
-              className="px-6 py-3 bg-white text-purple-600 rounded-lg font-medium hover:bg-purple-50"
+              className="px-6 py-3 bg-white className=" style={{ color: "#b8935f" }}rounded-lg font-medium hover:bg-gray-50"
             >
               📥 Exporter CSV
             </button>
@@ -211,8 +211,8 @@ export default function AuditLogsPage() {
 
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6">
             <div className="text-sm text-purple-700 mb-1">Cette semaine</div>
-            <div className="text-3xl font-bold text-purple-800">{stats.thisWeek}</div>
-            <div className="text-xs text-purple-600 mt-1">actions</div>
+            <div className="text-3xl font-bold text-beige-800">{stats.thisWeek}</div>
+            <div className="text-xs className=" style={{ color: "#b8935f" }} mt-1">actions</div>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-6">
@@ -342,7 +342,7 @@ export default function AuditLogsPage() {
                         <div className="mt-3">
                           <button
                             onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                            className="text-sm text-purple-600 hover:text-purple-800"
+                            className="text-sm className=" style={{ color: "#b8935f" }} hover:text-beige-800"
                           >
                             {expandedLog === log.id ? '▼ Masquer détails' : '▶ Voir détails'}
                           </button>
@@ -403,7 +403,7 @@ export default function AuditLogsPage() {
                 <button
                   onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Suivant →
                 </button>

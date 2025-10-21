@@ -17,13 +17,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    // Vérifier que c'est un admin ou super admin
+    const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    const allowedRoles = ['ADMIN', 'admin', 'SUPER_ADMIN'];
+    if (!user || !allowedRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
     if (userId) where.userId = userId;
     if (type) where.type = type;
     if (status) where.status = status;
+
+    // Filtrer par organisation pour les admins (pas pour super admin)
+    if (user.role !== 'SUPER_ADMIN' && user.organizationId) {
+      where.user = {
+        organizationId: user.organizationId
+      };
+    }
 
     const emails = await prisma.emailHistory.findMany({
       where,

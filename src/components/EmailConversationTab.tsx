@@ -191,6 +191,13 @@ export default function EmailConversationTab() {
       const response = await fetch('/api/admin/emails');
       const data = await response.json();
 
+      // Vérifier si c'est une erreur de l'API
+      if (!response.ok || data.error) {
+        console.error('Erreur API:', data.error || 'Erreur serveur');
+        setEmails([]);
+        return;
+      }
+
       if (Array.isArray(data)) {
         // Filtrer les emails archivés sauf si showArchived est true
         const filteredEmails = showArchived

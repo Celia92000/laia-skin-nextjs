@@ -26,6 +26,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null)
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
   const [filterStatus, setFilterStatus] = useState<'ALL' | BlogPost['status']>('ALL')
   const [filterCategory, setFilterCategory] = useState<'ALL' | BlogPost['category']>('ALL')
 
@@ -126,11 +127,11 @@ export default function BlogPage() {
 
   const getCategoryLabel = (category: BlogPost['category']) => {
     const labels = {
-      NEWS: 'Actualités',
+      NEWS: 'Actualitï¿½s',
       TUTORIAL: 'Tutoriel',
-      FEATURE: 'Fonctionnalité',
-      CASE_STUDY: 'Étude de cas',
-      UPDATE: 'Mise à jour'
+      FEATURE: 'Fonctionnalitï¿½',
+      CASE_STUDY: 'ï¿½tude de cas',
+      UPDATE: 'Mise ï¿½ jour'
     }
     return labels[category]
   }
@@ -157,7 +158,7 @@ export default function BlogPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
       </div>
     )
   }
@@ -167,12 +168,12 @@ export default function BlogPage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">=Ý Blog LAIA</h1>
-          <p className="text-gray-600">Gérez les articles de blog et actualités de la plateforme</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">=ï¿½ Blog LAIA</h1>
+          <p className="text-gray-600">Gï¿½rez les articles de blog et actualitï¿½s de la plateforme</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
         >
           + Nouvel Article
         </button>
@@ -183,25 +184,25 @@ export default function BlogPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
         >
           <option value="ALL">Tous les statuts</option>
           <option value="DRAFT">Brouillons</option>
-          <option value="PUBLISHED">Publiés</option>
-          <option value="ARCHIVED">Archivés</option>
+          <option value="PUBLISHED">Publiï¿½s</option>
+          <option value="ARCHIVED">Archivï¿½s</option>
         </select>
 
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value as typeof filterCategory)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
         >
-          <option value="ALL">Toutes les catégories</option>
-          <option value="NEWS">Actualités</option>
+          <option value="ALL">Toutes les catï¿½gories</option>
+          <option value="NEWS">Actualitï¿½s</option>
           <option value="TUTORIAL">Tutoriels</option>
-          <option value="FEATURE">Fonctionnalités</option>
-          <option value="CASE_STUDY">Études de cas</option>
-          <option value="UPDATE">Mises à jour</option>
+          <option value="FEATURE">Fonctionnalitï¿½s</option>
+          <option value="CASE_STUDY">ï¿½tudes de cas</option>
+          <option value="UPDATE">Mises ï¿½ jour</option>
         </select>
       </div>
 
@@ -209,10 +210,10 @@ export default function BlogPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total articles</p>
-          <p className="text-3xl font-bold text-purple-600">{posts.length}</p>
+          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{posts.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Publiés</p>
+          <p className="text-sm text-gray-600 mb-1">Publiï¿½s</p>
           <p className="text-3xl font-bold text-green-600">
             {posts.filter(p => p.status === 'PUBLISHED').length}
           </p>
@@ -243,8 +244,8 @@ export default function BlogPage() {
 
         {filteredPosts.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            <p className="text-lg mb-2">Aucun article trouvé</p>
-            <p className="text-sm">Créez votre premier article de blog</p>
+            <p className="text-lg mb-2">Aucun article trouvï¿½</p>
+            <p className="text-sm">Crï¿½ez votre premier article de blog</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -267,10 +268,10 @@ export default function BlogPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
                   <p className="text-sm text-gray-600 mb-4 line-clamp-2">{post.excerpt}</p>
 
-                  {post.tags && post.tags.length > 0 && (
+                  {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-4">
                       {post.tags.slice(0, 3).map((tag, idx) => (
-                        <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                        <span key={idx} className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#f3e8d8', color: '#8b6f47' }}>
                           {tag}
                         </span>
                       ))}
@@ -279,8 +280,8 @@ export default function BlogPage() {
 
                   <div className="text-xs text-gray-500 mb-4">
                     {post.publishedAt
-                      ? `Publié le ${new Date(post.publishedAt).toLocaleDateString('fr-FR')}`
-                      : `Créé le ${new Date(post.createdAt).toLocaleDateString('fr-FR')}`}
+                      ? `Publiï¿½ le ${new Date(post.publishedAt).toLocaleDateString('fr-FR')}`
+                      : `Crï¿½ï¿½ le ${new Date(post.createdAt).toLocaleDateString('fr-FR')}`}
                   </div>
 
                   <div className="flex gap-2">
@@ -294,7 +295,8 @@ export default function BlogPage() {
                     )}
                     <button
                       onClick={() => setSelectedPost(post)}
-                      className="flex-1 bg-purple-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-purple-700"
+                      className="flex-1 text-white px-3 py-2 rounded text-sm font-medium"
+                      style={{ backgroundColor: "#d4b5a0" }}
                     >
                       Voir
                     </button>
@@ -312,7 +314,7 @@ export default function BlogPage() {
         )}
       </div>
 
-      {/* Modal de création */}
+      {/* Modal de crï¿½ation */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -325,58 +327,58 @@ export default function BlogPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                  placeholder="Ex: Les nouveautés LAIA de janvier 2025"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="Ex: Les nouveautï¿½s LAIA de janvier 2025"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Résumé</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rï¿½sumï¿½</label>
                 <textarea
                   required
                   value={formData.excerpt}
                   onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                  placeholder="Court résumé de l'article..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="Court rï¿½sumï¿½ de l'article..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Catï¿½gorie</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as BlogPost['category'] })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   >
-                    <option value="NEWS">Actualités</option>
+                    <option value="NEWS">Actualitï¿½s</option>
                     <option value="TUTORIAL">Tutoriel</option>
-                    <option value="FEATURE">Fonctionnalité</option>
-                    <option value="CASE_STUDY">Étude de cas</option>
-                    <option value="UPDATE">Mise à jour</option>
+                    <option value="FEATURE">Fonctionnalitï¿½</option>
+                    <option value="CASE_STUDY">ï¿½tude de cas</option>
+                    <option value="UPDATE">Mise ï¿½ jour</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par virgule)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (sï¿½parï¿½s par virgule)</label>
                   <input
                     type="text"
                     value={formData.tags}
                     onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                    placeholder="saas, beauté, gestion"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    placeholder="saas, beautï¿½, gestion"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image à la une (URL)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image ï¿½ la une (URL)</label>
                 <input
                   type="url"
                   value={formData.featuredImage}
                   onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -388,8 +390,8 @@ export default function BlogPage() {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   rows={12}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 font-mono text-sm"
-                  placeholder="Contenu de l'article (Markdown supporté)..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 font-mono text-sm"
+                  placeholder="Contenu de l'article (Markdown supportï¿½)..."
                 />
               </div>
 
@@ -402,7 +404,7 @@ export default function BlogPage() {
                       type="text"
                       value={formData.seoTitle}
                       onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       placeholder="Si vide, utilisera le titre de l'article"
                     />
                   </div>
@@ -412,8 +414,8 @@ export default function BlogPage() {
                       value={formData.seoDescription}
                       onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })}
                       rows={2}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                      placeholder="Si vide, utilisera le résumé"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                      placeholder="Si vide, utilisera le rï¿½sumï¿½"
                     />
                   </div>
                 </div>
@@ -422,9 +424,10 @@ export default function BlogPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white"
+                  style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
                 >
-                  Créer en brouillon
+                  Crï¿½er en brouillon
                 </button>
                 <button
                   type="button"
@@ -439,7 +442,7 @@ export default function BlogPage() {
         </div>
       )}
 
-      {/* Modal de détail */}
+      {/* Modal de dï¿½tail */}
       {selectedPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -471,10 +474,10 @@ export default function BlogPage() {
                 <p className="text-gray-600 italic">{selectedPost.excerpt}</p>
               </div>
 
-              {selectedPost.tags && selectedPost.tags.length > 0 && (
+              {selectedPost.tags && Array.isArray(selectedPost.tags) && selectedPost.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {selectedPost.tags.map((tag, idx) => (
-                    <span key={idx} className="bg-purple-100 text-purple-700 px-3 py-1 rounded text-sm">
+                    <span key={idx} className="px-3 py-1 rounded text-sm" style={{ backgroundColor: '#f3e8d8', color: '#8b6f47' }}>
                       #{tag}
                     </span>
                   ))}
@@ -505,7 +508,7 @@ export default function BlogPage() {
                     handlePublish(selectedPost.id)
                     setSelectedPost(null)
                   }}
-                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
+                  className="flex-1 bg-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
                 >
                   Publier
                 </button>

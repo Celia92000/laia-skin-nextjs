@@ -108,7 +108,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
-          <Link href="/super-admin" className="text-purple-600 hover:text-purple-800 underline">
+          <Link href="/super-admin" className="style={{ color: "#b8935f" }} className=" hover:text-beige-800 underline">
             ← Retour au dashboard
           </Link>
         </div>
@@ -131,16 +131,16 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Link
             href={`/super-admin/organizations/${id}`}
-            className="text-purple-200 hover:text-white mb-2 inline-block"
+            className="text-white/80 hover:text-white mb-2 inline-block"
           >
             ← Retour à l'organisation
           </Link>
           <h1 className="text-3xl font-bold mb-2">Modifier - {organization.name}</h1>
-          <p className="text-purple-100">Configuration de l'organisation</p>
+          <p className="text-white/90">Configuration de l'organisation</p>
         </div>
       </div>
 
@@ -161,7 +161,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -173,7 +173,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   type="text"
                   value={formData.legalName}
                   onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -186,7 +186,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   required
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Utilisé dans l'URL: /{formData.slug}</p>
               </div>
@@ -198,7 +198,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="SINGLE_LOCATION">Mono-emplacement</option>
                   <option value="MULTI_LOCATION">Multi-emplacements</option>
@@ -222,7 +222,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   required
                   value={formData.subdomain}
                   onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">{formData.subdomain}.platform.com</p>
               </div>
@@ -236,7 +236,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   value={formData.domain}
                   onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                   placeholder="www.exemple.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   required
                   value={formData.ownerEmail}
                   onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -269,7 +269,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   type="tel"
                   value={formData.ownerPhone}
                   onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                 <select
                   value={formData.plan}
                   onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="SOLO">SOLO - 49€/mois</option>
                   <option value="DUO">DUO - 99€/mois</option>
@@ -304,7 +304,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="TRIAL">Essai</option>
                   <option value="ACTIVE">Actif</option>
@@ -321,7 +321,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                   type="date"
                   value={formData.trialEndsAt}
                   onChange={(e) => setFormData({ ...formData, trialEndsAt: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -338,7 +338,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </button>

@@ -42,8 +42,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer l'utilisateur
-    const user = await prisma.user.findUnique({
-      where: { email: magicLink.email }
+    const user = await prisma.user.findFirst({
+      where: { email: magicLink.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        organizationId: true,
+        loyaltyPoints: true,
+        totalSpent: true
+      }
     });
 
     if (!user) {
@@ -60,7 +69,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Générer un JWT pour l'utilisateur
-    const authToken = generateToken(user.id, user.role);
+    const authToken = generateToken({
+      userId: user.id,
+      role: user.role,
+      organizationId: user.organizationId
+    });
 
     return NextResponse.json({
       token: authToken,

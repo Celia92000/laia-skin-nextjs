@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
-import { getAllOrganizations } from '@/lib/tenant-service'
 import { prisma } from '@/lib/prisma'
 
 export async function GET() {
@@ -29,8 +28,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer toutes les organisations
-    const organizations = await getAllOrganizations()
+    // Récupérer toutes les organisations avec toutes les infos nécessaires
+    const organizations = await prisma.organization.findMany({
+      include: {
+        locations: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
     return NextResponse.json({ organizations })
 

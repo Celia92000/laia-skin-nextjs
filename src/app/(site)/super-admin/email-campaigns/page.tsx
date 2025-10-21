@@ -3,420 +3,387 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface EmailCampaign {
+interface Organization {
   id: string
   name: string
-  subject: string
-  content: string
-  target: 'ALL' | 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'PLAN_SOLO' | 'PLAN_DUO' | 'PLAN_TEAM' | 'PLAN_PREMIUM'
-  status: 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'FAILED'
-  scheduledAt?: Date
-  sentAt?: Date
-  stats?: {
-    sent: number
-    opened: number
-    clicked: number
-  }
-  createdAt: Date
+  slug: string
+  clientCount: number
 }
+
+type TemplateType = 'welcome' | 'reminder' | 'promotion' | 'loyalty' | 'birthday' | 'reactivation' | 'reviewRequest'
 
 export default function EmailCampaignsPage() {
   const router = useRouter()
-  const [campaigns, setCampaigns] = useState<EmailCampaign[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [selectedCampaign, setSelectedCampaign] = useState<EmailCampaign | null>(null)
+  const [sending, setSending] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState('')
 
-  // Formulaire de cr�ation
-  const [formData, setFormData] = useState({
-    name: '',
-    subject: '',
-    content: '',
-    target: 'ALL' as EmailCampaign['target'],
-    scheduledAt: ''
+  // Formulaire
+  const [selectedOrg, setSelectedOrg] = useState<string>('all')
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('promotion')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailData, setEmailData] = useState({
+    discount: '-15%',
+    offer: '-20%',
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
+    gift: '-25%',
+    reward: '-30€',
+    sessionsCount: '6'
   })
 
   useEffect(() => {
-    fetchCampaigns()
+    fetchOrganizations()
   }, [])
 
-  async function fetchCampaigns() {
+  async function fetchOrganizations() {
     try {
-      const response = await fetch('/api/super-admin/email-campaigns')
+      const response = await fetch('/api/super-admin/organizations-list')
       if (response.ok) {
         const data = await response.json()
-        setCampaigns(data)
-      } else if (response.status === 401) {
-        router.push('/login?redirect=/super-admin/email-campaigns')
-      } else if (response.status === 403) {
-        router.push('/admin')
+        setOrganizations(data)
       }
     } catch (error) {
-      console.error('Error fetching campaigns:', error)
+      console.error('Error fetching organizations:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const templateLabels: Record<TemplateType, string> = {
+    welcome: '🎁 Bienvenue',
+    reminder: '📅 Rappel RDV',
+    promotion: '💝 Offre Spéciale',
+    loyalty: '⭐ Fidélité',
+    birthday: '🎂 Anniversaire',
+    reactivation: '💔 Réactivation',
+    reviewRequest: '⭐ Demande Avis'
+  }
+
+  async function handlePreview() {
     try {
-      const response = await fetch('/api/super-admin/email-campaigns', {
+      const response = await fetch('/api/super-admin/preview-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          organizationId: selectedOrg === 'all' ? null : selectedOrg,
+          templateType: selectedTemplate,
+          subject: emailSubject,
+          data: emailData
+        })
       })
 
+      const result = await response.json()
+
       if (response.ok) {
-        setShowCreateModal(false)
-        setFormData({ name: '', subject: '', content: '', target: 'ALL', scheduledAt: '' })
-        fetchCampaigns()
+        setPreviewHtml(result.html)
+        setShowPreview(true)
+      } else {
+        alert(`❌ Erreur: ${result.error}`)
       }
     } catch (error) {
-      console.error('Error creating campaign:', error)
+      console.error('Error previewing email:', error)
+      alert('❌ Erreur lors de la prévisualisation')
     }
   }
 
-  async function handleSendCampaign(id: string) {
-    if (!confirm('Voulez-vous vraiment envoyer cette campagne ?')) return
+  async function handleSendEmails() {
+    if (!emailSubject.trim()) {
+      alert('Veuillez saisir un sujet pour l\'email')
+      return
+    }
+
+    const selectedOrgData = organizations.find(o => o.id === selectedOrg)
+    const clientCount = selectedOrg === 'all'
+      ? organizations.reduce((sum, org) => sum + org.clientCount, 0)
+      : selectedOrgData?.clientCount || 0
+
+    if (clientCount === 0) {
+      alert('Aucun client à qui envoyer l\'email')
+      return
+    }
+
+    const confirmMessage = selectedOrg === 'all'
+      ? `Envoyer ${selectedTemplate} à ${clientCount} clients de TOUTES les organisations ?`
+      : `Envoyer ${selectedTemplate} à ${clientCount} clients de ${selectedOrgData?.name} ?`
+
+    if (!confirm(confirmMessage)) return
+
+    setSending(true)
 
     try {
-      const response = await fetch(`/api/super-admin/email-campaigns/${id}/send`, {
-        method: 'POST'
+      const response = await fetch('/api/super-admin/send-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: selectedOrg === 'all' ? null : selectedOrg,
+          templateType: selectedTemplate,
+          subject: emailSubject,
+          data: emailData
+        })
       })
+
+      const result = await response.json()
+
       if (response.ok) {
-        fetchCampaigns()
+        alert(`✅ Email envoyé avec succès à ${result.sent} clients !`)
+        setEmailSubject('')
+      } else {
+        alert(`❌ Erreur: ${result.error}`)
       }
     } catch (error) {
       console.error('Error sending campaign:', error)
+      alert('❌ Erreur lors de l\'envoi')
+    } finally {
+      setSending(false)
     }
-  }
-
-  const getTargetLabel = (target: EmailCampaign['target']) => {
-    const labels = {
-      ALL: 'Toutes les organisations',
-      TRIAL: 'Organisations en essai',
-      ACTIVE: 'Organisations actives',
-      SUSPENDED: 'Organisations suspendues',
-      PLAN_SOLO: 'Plan SOLO',
-      PLAN_DUO: 'Plan DUO',
-      PLAN_TEAM: 'Plan TEAM',
-      PLAN_PREMIUM: 'Plan PREMIUM'
-    }
-    return labels[target] || target
-  }
-
-  const getStatusBadge = (status: EmailCampaign['status']) => {
-    const styles = {
-      DRAFT: 'bg-gray-100 text-gray-800',
-      SCHEDULED: 'bg-blue-100 text-blue-800',
-      SENDING: 'bg-yellow-100 text-yellow-800',
-      SENT: 'bg-green-100 text-green-800',
-      FAILED: 'bg-red-100 text-red-800'
-    }
-    return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
-        {status}
-      </span>
-    )
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
       </div>
     )
   }
 
+  const totalClients = organizations.reduce((sum, org) => sum + org.clientCount, 0)
+  const selectedOrgData = organizations.find(o => o.id === selectedOrg)
+  const recipientCount = selectedOrg === 'all' ? totalClients : (selectedOrgData?.clientCount || 0)
+
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">=� Campagnes Email</h1>
-          <p className="text-gray-600">Envoyez des emails marketing � vos organisations clientes</p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
-        >
-          + Nouvelle Campagne
-        </button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+          📧 Campagnes Email Clients
+        </h1>
+        <p className="text-gray-600">
+          Envoyez des emails personnalisés aux clients de vos instituts
+        </p>
       </div>
 
-      {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total campagnes</p>
-          <p className="text-3xl font-bold text-purple-600">{campaigns.length}</p>
+          <p className="text-sm text-gray-600 mb-1">Total Clients</p>
+          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{totalClients}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Envoy�es</p>
-          <p className="text-3xl font-bold text-green-600">
-            {campaigns.filter(c => c.status === 'SENT').length}
-          </p>
+          <p className="text-sm text-gray-600 mb-1">Organisations</p>
+          <p className="text-3xl font-bold text-blue-600">{organizations.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Brouillons</p>
-          <p className="text-3xl font-bold text-gray-600">
-            {campaigns.filter(c => c.status === 'DRAFT').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Programm�es</p>
-          <p className="text-3xl font-bold text-blue-600">
-            {campaigns.filter(c => c.status === 'SCHEDULED').length}
-          </p>
+          <p className="text-sm text-gray-600 mb-1">Destinataires sélectionnés</p>
+          <p className="text-3xl font-bold text-green-600">{recipientCount}</p>
         </div>
       </div>
 
-      {/* Liste des campagnes */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Toutes les campagnes</h2>
-        </div>
+      {/* Formulaire d'envoi */}
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Créer une campagne</h2>
 
-        {campaigns.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            <p className="text-lg mb-2">Aucune campagne pour le moment</p>
-            <p className="text-sm">Cr�ez votre premi�re campagne pour commencer</p>
+        <div className="space-y-6">
+          {/* Organisation */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Organisation cible
+            </label>
+            <select
+              value={selectedOrg}
+              onChange={(e) => setSelectedOrg(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+            >
+              <option value="all">🌍 Toutes les organisations ({totalClients} clients)</option>
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>
+                  {org.name} ({org.clientCount} clients)
+                </option>
+              ))}
+            </select>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cible</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statistiques</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {campaigns.map((campaign) => (
-                  <tr key={campaign.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                        <div className="text-sm text-gray-500">{campaign.subject}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {getTargetLabel(campaign.target)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(campaign.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {campaign.stats ? (
-                        <div>
-                          <div>{campaign.stats.sent} envoy�s</div>
-                          <div className="text-xs text-gray-500">
-                            {campaign.stats.opened} ouverts � {campaign.stats.clicked} clics
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {campaign.sentAt
-                        ? new Date(campaign.sentAt).toLocaleDateString('fr-FR')
-                        : campaign.scheduledAt
-                        ? new Date(campaign.scheduledAt).toLocaleDateString('fr-FR')
-                        : new Date(campaign.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {campaign.status === 'DRAFT' && (
-                        <button
-                          onClick={() => handleSendCampaign(campaign.id)}
-                          className="text-green-600 hover:text-green-900 mr-3"
-                        >
-                          Envoyer
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setSelectedCampaign(campaign)}
-                        className="text-purple-600 hover:text-purple-900"
-                      >
-                        Voir
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
 
-      {/* Modal de cr�ation */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Nouvelle Campagne Email</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Template */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Type d'email
+            </label>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value as TemplateType)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+            >
+              {Object.entries(templateLabels).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sujet */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sujet de l'email
+            </label>
+            <input
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              placeholder="Ex: 🎁 Offre exclusive pour vous !"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+            />
+          </div>
+
+          {/* Données du template */}
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <h3 className="font-semibold text-gray-900 mb-4">Personnalisation</h3>
+
+            {selectedTemplate === 'promotion' && (
+              <>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Réduction offerte</label>
+                  <input
+                    type="text"
+                    value={emailData.offer}
+                    onChange={(e) => setEmailData({ ...emailData, offer: e.target.value })}
+                    placeholder="-20%"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Valable jusqu'au</label>
+                  <input
+                    type="text"
+                    value={emailData.validUntil}
+                    onChange={(e) => setEmailData({ ...emailData, validUntil: e.target.value })}
+                    placeholder="31/12/2024"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </>
+            )}
+
+            {selectedTemplate === 'welcome' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de la campagne
-                </label>
+                <label className="block text-sm text-gray-600 mb-1">Réduction bienvenue</label>
                 <input
                   type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  placeholder="Ex: Nouveaut�s janvier 2025"
+                  value={emailData.discount}
+                  onChange={(e) => setEmailData({ ...emailData, discount: e.target.value })}
+                  placeholder="-15%"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
+            )}
 
+            {selectedTemplate === 'birthday' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sujet de l'email
-                </label>
+                <label className="block text-sm text-gray-600 mb-1">Cadeau d'anniversaire</label>
                 <input
                   type="text"
-                  required
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  placeholder="Ex: D�couvrez les nouvelles fonctionnalit�s LAIA"
+                  value={emailData.gift}
+                  onChange={(e) => setEmailData({ ...emailData, gift: e.target.value })}
+                  placeholder="-25%"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cible
-                </label>
-                <select
-                  value={formData.target}
-                  onChange={(e) => setFormData({ ...formData, target: e.target.value as EmailCampaign['target'] })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                >
-                  <option value="ALL">Toutes les organisations</option>
-                  <option value="TRIAL">Organisations en essai</option>
-                  <option value="ACTIVE">Organisations actives</option>
-                  <option value="SUSPENDED">Organisations suspendues</option>
-                  <option value="PLAN_SOLO">Plan SOLO uniquement</option>
-                  <option value="PLAN_DUO">Plan DUO uniquement</option>
-                  <option value="PLAN_TEAM">Plan TEAM uniquement</option>
-                  <option value="PLAN_PREMIUM">Plan PREMIUM uniquement</option>
-                </select>
-              </div>
+            {selectedTemplate === 'loyalty' && (
+              <>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Nombre de séances</label>
+                  <input
+                    type="text"
+                    value={emailData.sessionsCount}
+                    onChange={(e) => setEmailData({ ...emailData, sessionsCount: e.target.value })}
+                    placeholder="6"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Récompense</label>
+                  <input
+                    type="text"
+                    value={emailData.reward}
+                    onChange={(e) => setEmailData({ ...emailData, reward: e.target.value })}
+                    placeholder="-30€"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contenu de l'email
-                </label>
-                <textarea
-                  required
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={10}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  placeholder="R�digez votre email ici..."
-                />
-              </div>
+          {/* Boutons prévisualisation et envoi */}
+          <div className="pt-4 space-y-3">
+            <button
+              onClick={handlePreview}
+              className="w-full py-3 rounded-lg font-semibold border-2 hover:bg-gray-50 transition-all"
+              style={{ color: "#b8935f", borderColor: "#d4b5a0" }}
+            >
+              👁️ Prévisualiser l'email
+            </button>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Programmer l'envoi (optionnel)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.scheduledAt}
-                  onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all"
-                >
-                  Cr�er la campagne
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all"
-                >
-                  Annuler
-                </button>
-              </div>
-            </form>
+            <button
+              onClick={handleSendEmails}
+              disabled={sending || !emailSubject.trim()}
+              className={`w-full py-4 rounded-lg font-semibold text-white text-lg transition-all ${
+                sending || !emailSubject.trim()
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }} className=" hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+              }`}
+            >
+              {sending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  Envoi en cours...
+                </span>
+              ) : (
+                `📧 Envoyer à ${recipientCount} client${recipientCount > 1 ? 's' : ''}`
+              )}
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Modal de d�tail */}
-      {selectedCampaign && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{selectedCampaign.name}</h2>
+      {/* Modal de prévisualisation */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">Prévisualisation de l'email</h3>
               <button
-                onClick={() => setSelectedCampaign(null)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowPreview(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                
+                ×
               </button>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Sujet</label>
-                <p className="text-lg text-gray-900">{selectedCampaign.subject}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600">Cible</label>
-                <p className="text-gray-900">{getTargetLabel(selectedCampaign.target)}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-600">Status</label>
-                <div className="mt-1">{getStatusBadge(selectedCampaign.status)}</div>
-              </div>
-
-              {selectedCampaign.stats && (
-                <div className="border-t pt-4">
-                  <label className="text-sm font-medium text-gray-600 mb-2 block">Statistiques</label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-purple-600">{selectedCampaign.stats.sent}</p>
-                      <p className="text-xs text-gray-600">Envoy�s</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-green-600">{selectedCampaign.stats.opened}</p>
-                      <p className="text-xs text-gray-600">Ouverts</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-blue-600">{selectedCampaign.stats.clicked}</p>
-                      <p className="text-xs text-gray-600">Clics</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t pt-4">
-                <label className="text-sm font-medium text-gray-600 mb-2 block">Contenu</label>
-                <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap text-sm">
-                  {selectedCampaign.content}
-                </div>
-              </div>
+            <div className="overflow-auto max-h-[calc(90vh-120px)]">
+              <iframe
+                srcDoc={previewHtml}
+                className="w-full h-[600px] border-0"
+                title="Email Preview"
+              />
             </div>
-
-            <div className="mt-6">
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
               <button
-                onClick={() => setSelectedCampaign(null)}
-                className="w-full bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+                onClick={() => setShowPreview(false)}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Fermer
+              </button>
+              <button
+                onClick={() => {
+                  setShowPreview(false)
+                  handleSendEmails()
+                }}
+                disabled={sending}
+                className="px-4 py-2 text-white rounded-lg"
+                style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
+              >
+                Envoyer maintenant
               </button>
             </div>
           </div>

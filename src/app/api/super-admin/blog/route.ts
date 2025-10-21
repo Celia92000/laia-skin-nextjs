@@ -5,12 +5,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    // Vérifier l'authentification
+    // VÃ©rifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 })
     }
 
     const decoded = verifyToken(token)
@@ -18,31 +18,38 @@ export async function GET() {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
+    // VÃ©rifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, role: true, name: true }
     })
 
     if (!user || user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+      return NextResponse.json({ error: 'AccÃ¨s refusÃ©' }, { status: 403 })
     }
 
-    // Récupérer tous les articles de blog
-    const posts = await prisma.blogPost.findMany({
+    // RÃ©cupÃ©rer toutes les nouveautÃ©s LAIA Beauty
+    const posts = await prisma.platformNews.findMany({
+      include: {
+        author: {
+          select: {
+            name: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     })
 
     // Ajouter le nom de l'auteur
     const postsWithAuthor = posts.map(post => ({
       ...post,
-      author: user.name || 'LAIA Team'
+      author: post.author?.name || 'LAIA Team'
     }))
 
     return NextResponse.json(postsWithAuthor)
 
   } catch (error) {
-    console.error('Erreur récupération posts:', error)
+    console.error('Erreur rÃ©cupÃ©ration posts:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -52,12 +59,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    // Vérifier l'authentification
+    // VÃ©rifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 })
     }
 
     const decoded = verifyToken(token)
@@ -65,20 +72,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
+    // VÃ©rifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, role: true, name: true }
     })
 
     if (!user || user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+      return NextResponse.json({ error: 'AccÃ¨s refusÃ©' }, { status: 403 })
     }
 
     const body = await request.json()
     const { title, excerpt, content, category, featuredImage, tags, seoTitle, seoDescription } = body
 
-    // Générer le slug à partir du titre
+    // GÃ©nÃ©rer le slug Ã  partir du titre
     const slug = title
       .toLowerCase()
       .normalize('NFD')
@@ -86,8 +93,8 @@ export async function POST(request: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
 
-    // Créer l'article
-    const post = await prisma.blogPost.create({
+    // CrÃ©er l'article
+    const post = await prisma.platformNews.create({
       data: {
         title,
         slug,
@@ -109,7 +116,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur création post:', error)
+    console.error('Erreur crÃ©ation post:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

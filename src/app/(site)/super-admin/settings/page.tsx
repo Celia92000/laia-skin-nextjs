@@ -109,7 +109,7 @@ export default function SettingsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -119,20 +119,21 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div style={{ background: 'linear-gradient(to right, #d4b5a0, #c9a589)' }} className="text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">⚙️ Configuration Plateforme</h1>
-              <p className="text-purple-100">Paramètres globaux de la plateforme multi-tenant</p>
+              <p className="text-white/90">Paramètres globaux de la plateforme multi-tenant</p>
             </div>
             <button
               onClick={handleSaveAll}
               disabled={saving}
-              className="px-6 py-3 bg-white text-purple-600 rounded-lg font-medium hover:bg-purple-50 disabled:opacity-50"
+              className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
+              style={{ color: '#b8935f' }}
             >
               {saving ? '💾 Enregistrement...' : '💾 Enregistrer tout'}
             </button>
@@ -154,7 +155,7 @@ export default function SettingsPage() {
                 type="text"
                 value={settings.platformName}
                 onChange={(e) => setSettings({ ...settings, platformName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="Laia Skin Multi-Tenant"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -170,7 +171,7 @@ export default function SettingsPage() {
                 type="email"
                 value={settings.supportEmail}
                 onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="support@laiaskin.com"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -186,7 +187,7 @@ export default function SettingsPage() {
                 type="url"
                 value={settings.supportUrl}
                 onChange={(e) => setSettings({ ...settings, supportUrl: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="https://support.laiaskin.com"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -209,7 +210,7 @@ export default function SettingsPage() {
                 type="number"
                 value={settings.maxOrganizations}
                 onChange={(e) => setSettings({ ...settings, maxOrganizations: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 min="1"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -225,7 +226,7 @@ export default function SettingsPage() {
                 type="number"
                 value={settings.defaultStorageLimit}
                 onChange={(e) => setSettings({ ...settings, defaultStorageLimit: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 min="1"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -241,7 +242,7 @@ export default function SettingsPage() {
                 type="number"
                 value={settings.trialDurationDays}
                 onChange={(e) => setSettings({ ...settings, trialDurationDays: parseInt(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 min="1"
                 max="90"
               />
@@ -261,7 +262,8 @@ export default function SettingsPage() {
               type="checkbox"
               checked={settings.maintenanceMode}
               onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
-              className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500 mt-0.5"
+              className="w-5 h-5 rounded focus:ring-2 focus:ring-amber-500 mt-0.5"
+              style={{ color: '#b8935f' }}
             />
             <div className="ml-3">
               <label className="text-sm font-medium text-gray-700">
@@ -313,7 +315,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.primaryColor}
                   onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="#d4a574"
                 />
               </div>
@@ -335,7 +337,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.roseColor}
                   onChange={(e) => setSettings({ ...settings, roseColor: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="#e8b4b8"
                 />
               </div>
@@ -357,7 +359,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.nudeColor}
                   onChange={(e) => setSettings({ ...settings, nudeColor: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="#f5e6d3"
                 />
               </div>
@@ -379,7 +381,7 @@ export default function SettingsPage() {
                   type="text"
                   value={settings.darkColor}
                   onChange={(e) => setSettings({ ...settings, darkColor: e.target.value })}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="#2c1810"
                 />
               </div>

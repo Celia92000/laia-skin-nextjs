@@ -2,20 +2,18 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Users, CreditCard, BarChart3, Mail, Sparkles, MessageCircle, Gift, Star, FileText, Bell, ScrollText, Settings, Home, Globe, UserPlus, Receipt, Send } from 'lucide-react'
+import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, FileText, Bell, ScrollText, Settings, Home, Send, Target, Calendar } from 'lucide-react'
 
 export default function SuperAdminNav() {
   const pathname = usePathname()
 
   const tabs = [
     { name: 'Dashboard', href: '/super-admin', icon: Home },
-    { name: 'Analytics', href: '/super-admin/analytics', icon: BarChart3 },
-    { name: 'Site Vitrine', href: '/platform', icon: Globe, external: true },
-    { name: 'Inscriptions', href: '/platform/register', icon: UserPlus, external: true },
+    { name: 'CRM', href: '/super-admin/crm', icon: Target },
+    { name: 'Démos', href: '/super-admin/demos', icon: Calendar },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },
     { name: 'Communications', href: '/super-admin/communications', icon: Send },
-    { name: 'Campagnes Email', href: '/super-admin/email-campaigns', icon: Mail },
     { name: 'Nouveautés', href: '/super-admin/blog', icon: Sparkles },
     { name: 'Support', href: '/super-admin/tickets', icon: MessageCircle },
     { name: 'Codes Promo', href: '/super-admin/promo-codes', icon: Gift },
@@ -46,7 +44,15 @@ export default function SuperAdminNav() {
             </h1>
             <p className="text-sm text-white/90">Super Admin</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <a
+              href="/platform"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm px-3 py-1.5 rounded-full transition-colors text-white/90 hover:text-white hover:bg-white/10"
+            >
+              Site Vitrine ↗
+            </a>
             <a
               href="/admin"
               className="text-sm px-3 py-1.5 rounded-full transition-colors text-white/90 hover:text-white hover:bg-white/10"

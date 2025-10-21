@@ -117,7 +117,7 @@ export default function EmailTemplatesPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -127,15 +127,15 @@ export default function EmailTemplatesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">📧 Templates d'Emails</h1>
-              <p className="text-purple-100">Gestion des emails automatiques de la plateforme</p>
+              <p className="text-white/90">Gestion des emails automatiques de la plateforme</p>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function EmailTemplatesPage() {
 
                 <button
                   onClick={() => handleEdit(template)}
-                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  className="w-full px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700"
                 >
                   ✏️ Modifier
                 </button>
@@ -269,7 +269,7 @@ export default function EmailTemplatesPage() {
                   type="checkbox"
                   checked={editForm.active}
                   onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                  className="w-4 h-4 text-purple-600 rounded"
+                  className="w-4 h-4 className=" style={{ color: "#b8935f" }} rounded"
                 />
                 <label className="ml-2 text-sm text-gray-700">
                   Template actif
@@ -280,7 +280,7 @@ export default function EmailTemplatesPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={saveTemplate}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="flex-1 px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700"
               >
                 💾 Enregistrer
               </button>

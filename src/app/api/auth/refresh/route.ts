@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         role: true,
+        organizationId: true,
         loyaltyPoints: true,
         totalSpent: true
       }
@@ -35,7 +36,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Générer un nouveau token
-    const newToken = generateToken(user.id, user.role);
+    const newToken = generateToken({
+      userId: user.id,
+      role: user.role,
+      organizationId: user.organizationId
+    });
 
     // Créer la réponse avec le nouveau token
     const response = NextResponse.json({ 

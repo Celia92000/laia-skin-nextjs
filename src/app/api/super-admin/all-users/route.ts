@@ -38,7 +38,7 @@ export async function GET() {
             slug: true
           }
         },
-        userLocations: {
+        locations: {
           include: {
             location: {
               select: {
@@ -63,7 +63,7 @@ export async function GET() {
       createdAt: u.createdAt,
       lastLoginAt: u.lastLoginAt,
       organization: u.organization,
-      locations: u.userLocations.map(ul => ul.location)
+      locations: u.locations?.map(ul => ul.location) || []
     }))
 
     return NextResponse.json({ users: formattedUsers })

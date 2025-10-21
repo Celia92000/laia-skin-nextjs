@@ -117,6 +117,8 @@ export default function OrganizationsPage() {
 
   // Organizations filters
   function applyOrgFilters() {
+    if (!organizations) return
+
     let filtered = [...organizations]
 
     if (orgSearchTerm) {
@@ -156,6 +158,8 @@ export default function OrganizationsPage() {
 
   // Users filters
   function applyUserFilters() {
+    if (!users) return
+
     let filtered = [...users]
 
     if (userSearchTerm) {
@@ -206,6 +210,8 @@ export default function OrganizationsPage() {
   }
 
   async function handleOrgExportCSV() {
+    if (!filteredOrgs || filteredOrgs.length === 0) return
+
     const csv = [
       ['Nom', 'Slug', 'Plan', 'Statut', 'Emplacements', 'Créé le'].join(','),
       ...filteredOrgs.map(org => [
@@ -227,6 +233,8 @@ export default function OrganizationsPage() {
   }
 
   async function handleUserExportCSV() {
+    if (!filteredUsers || filteredUsers.length === 0) return
+
     const csv = [
       ['Nom', 'Email', 'Rôle', 'Organisation', 'Statut', 'Créé le', 'Dernière connexion'].join(','),
       ...filteredUsers.map(user => [
@@ -320,7 +328,7 @@ export default function OrganizationsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -337,13 +345,13 @@ export default function OrganizationsPage() {
   const planColors: { [key: string]: string } = {
     SOLO: 'bg-gray-100 text-gray-800',
     DUO: 'bg-blue-100 text-blue-800',
-    TEAM: 'bg-purple-100 text-purple-800',
+    TEAM: 'bg-amber-100 text-amber-800',
     PREMIUM: 'bg-indigo-100 text-indigo-800',
   }
 
   const roleColors: { [key: string]: string } = {
     SUPER_ADMIN: 'bg-red-100 text-red-800',
-    ORG_OWNER: 'bg-purple-100 text-purple-800',
+    ORG_OWNER: 'bg-amber-100 text-amber-800',
     ORG_ADMIN: 'bg-indigo-100 text-indigo-800',
     LOCATION_MANAGER: 'bg-blue-100 text-blue-800',
     STAFF: 'bg-green-100 text-green-800',
@@ -352,48 +360,49 @@ export default function OrganizationsPage() {
   }
 
   // User stats
-  const activeUsers = users.filter(u => u.isActive).length
-  const inactiveUsers = users.filter(u => !u.isActive).length
+  const activeUsers = users?.filter(u => u.isActive).length || 0
+  const inactiveUsers = users?.filter(u => !u.isActive).length || 0
   const roleStats = {
-    SUPER_ADMIN: users.filter(u => u.role === 'SUPER_ADMIN').length,
-    ORG_OWNER: users.filter(u => u.role === 'ORG_OWNER').length,
-    ORG_ADMIN: users.filter(u => u.role === 'ORG_ADMIN').length,
-    LOCATION_MANAGER: users.filter(u => u.role === 'LOCATION_MANAGER').length,
-    STAFF: users.filter(u => u.role === 'STAFF').length,
-    RECEPTIONIST: users.filter(u => u.role === 'RECEPTIONIST').length,
-    CLIENT: users.filter(u => u.role === 'CLIENT').length
+    SUPER_ADMIN: users?.filter(u => u.role === 'SUPER_ADMIN').length || 0,
+    ORG_OWNER: users?.filter(u => u.role === 'ORG_OWNER').length || 0,
+    ORG_ADMIN: users?.filter(u => u.role === 'ORG_ADMIN').length || 0,
+    LOCATION_MANAGER: users?.filter(u => u.role === 'LOCATION_MANAGER').length || 0,
+    STAFF: users?.filter(u => u.role === 'STAFF').length || 0,
+    RECEPTIONIST: users?.filter(u => u.role === 'RECEPTIONIST').length || 0,
+    CLIENT: users?.filter(u => u.role === 'CLIENT').length || 0
   }
 
   // Pagination for users
   const indexOfLastUser = currentPage * usersPerPage
   const indexOfFirstUser = indexOfLastUser - usersPerPage
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser)
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage)
+  const currentUsers = filteredUsers?.slice(indexOfFirstUser, indexOfLastUser) || []
+  const totalPages = Math.ceil((filteredUsers?.length || 0) / usersPerPage)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div style={{ background: 'linear-gradient(to right, #d4b5a0, #c9a589)' }} className="text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">
                 {activeTab === 'organizations' ? '🏢 Organisations' : '👥 Utilisateurs'}
               </h1>
-              <p className="text-purple-100">
+              <p className="text-white/90">
                 {activeTab === 'organizations'
-                  ? `${filteredOrgs.length} organisation${filteredOrgs.length > 1 ? 's' : ''}`
-                  : `${users.length} utilisateurs au total`
+                  ? `${filteredOrgs?.length || 0} organisation${(filteredOrgs?.length || 0) > 1 ? 's' : ''}`
+                  : `${users?.length || 0} utilisateurs au total`
                 }
               </p>
             </div>
             {activeTab === 'organizations' && (
               <Link
                 href="/super-admin/organizations/new"
-                className="px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-gray-100 transition font-semibold"
+                className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
+                style={{ color: '#b8935f' }}
               >
                 + Nouvelle organisation
               </Link>
@@ -406,9 +415,10 @@ export default function OrganizationsPage() {
               onClick={() => setActiveTab('organizations')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'organizations'
-                  ? 'bg-white text-purple-600 shadow-lg'
+                  ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
+              style={activeTab === 'organizations' ? { color: '#b8935f' } : {}}
             >
               🏢 Organisations
             </button>
@@ -416,9 +426,10 @@ export default function OrganizationsPage() {
               onClick={() => setActiveTab('users')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'users'
-                  ? 'bg-white text-purple-600 shadow-lg'
+                  ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
+              style={activeTab === 'users' ? { color: '#b8935f' } : {}}
             >
               👥 Utilisateurs
             </button>
@@ -441,7 +452,7 @@ export default function OrganizationsPage() {
                   placeholder="Nom, slug, subdomain..."
                   value={orgSearchTerm}
                   onChange={(e) => setOrgSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -452,7 +463,7 @@ export default function OrganizationsPage() {
                 <select
                   value={planFilter}
                   onChange={(e) => setPlanFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="ALL">Tous les plans</option>
                   <option value="SOLO">SOLO</option>
@@ -469,7 +480,7 @@ export default function OrganizationsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="ALL">Tous les statuts</option>
                   <option value="ACTIVE">Actif</option>
@@ -487,7 +498,7 @@ export default function OrganizationsPage() {
                   <select
                     value={orgSortBy}
                     onChange={(e) => setOrgSortBy(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
                     <option value="createdAt">Date création</option>
                     <option value="name">Nom</option>
@@ -506,7 +517,7 @@ export default function OrganizationsPage() {
 
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-gray-600">
-                Affichage de {filteredOrgs.length} sur {organizations.length} organisations
+                Affichage de {filteredOrgs?.length || 0} sur {organizations?.length || 0} organisations
               </div>
               <button
                 onClick={handleOrgExportCSV}
@@ -604,7 +615,7 @@ export default function OrganizationsPage() {
               </table>
             </div>
 
-            {filteredOrgs.length === 0 && (
+            {(filteredOrgs?.length || 0) === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500">Aucune organisation trouvée</p>
               </div>
@@ -620,7 +631,7 @@ export default function OrganizationsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-sm text-gray-600 mb-1">Total Utilisateurs</div>
-              <div className="text-3xl font-bold text-purple-600">{users.length}</div>
+              <div className="text-3xl font-bold" style={{ color: '#b8935f' }}>{users?.length || 0}</div>
               <div className="flex gap-3 mt-2 text-xs">
                 <span className="text-green-600">✓ {activeUsers} actifs</span>
                 <span className="text-red-600">✗ {inactiveUsers} inactifs</span>
@@ -629,7 +640,7 @@ export default function OrganizationsPage() {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-sm text-gray-600 mb-1">Propriétaires</div>
-              <div className="text-3xl font-bold text-purple-600">{roleStats.ORG_OWNER}</div>
+              <div className="text-3xl font-bold" style={{ color: '#b8935f' }}>{roleStats.ORG_OWNER}</div>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -655,7 +666,7 @@ export default function OrganizationsPage() {
                   placeholder="Nom, email, organisation..."
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
@@ -664,7 +675,7 @@ export default function OrganizationsPage() {
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="ALL">Tous les rôles</option>
                   <option value="ORG_OWNER">Propriétaires</option>
@@ -681,7 +692,7 @@ export default function OrganizationsPage() {
                 <select
                   value={userStatusFilter}
                   onChange={(e) => setUserStatusFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="ALL">Tous</option>
                   <option value="ACTIVE">Actifs</option>
@@ -694,7 +705,7 @@ export default function OrganizationsPage() {
                 <select
                   value={orgFilter}
                   onChange={(e) => setOrgFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="ALL">Toutes</option>
                   {organizations.map(org => (
@@ -709,7 +720,7 @@ export default function OrganizationsPage() {
                   <select
                     value={userSortBy}
                     onChange={(e) => setUserSortBy(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
                     <option value="createdAt">Date création</option>
                     <option value="lastLoginAt">Dernière connexion</option>
@@ -728,7 +739,7 @@ export default function OrganizationsPage() {
 
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-gray-600">
-                Affichage de {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, filteredUsers.length)} sur {filteredUsers.length} utilisateurs
+                Affichage de {indexOfFirstUser + 1}-{Math.min(indexOfLastUser, filteredUsers?.length || 0)} sur {filteredUsers?.length || 0} utilisateurs
               </div>
               <button
                 onClick={handleUserExportCSV}
@@ -798,7 +809,9 @@ export default function OrganizationsPage() {
                           {user.organization && (
                             <Link
                               href={`/super-admin/organizations/${user.organization.id}`}
-                              className="text-purple-600 hover:text-purple-900"
+                              style={{ color: '#b8935f' }}
+                              onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = '#b8935f'}
                             >
                               Org
                             </Link>
@@ -811,7 +824,7 @@ export default function OrganizationsPage() {
               </table>
             </div>
 
-            {filteredUsers.length === 0 && (
+            {(filteredUsers?.length || 0) === 0 && (
               <div className="text-center py-12">
                 <p className="text-gray-500">Aucun utilisateur trouvé</p>
               </div>

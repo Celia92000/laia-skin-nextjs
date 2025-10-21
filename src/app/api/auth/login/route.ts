@@ -39,7 +39,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email ou mot de passe incorrect' }, { status: 401 });
     }
 
-    const token = generateToken(user.id, user.role, rememberMe);
+    const token = generateToken(
+      {
+        userId: user.id,
+        role: user.role,
+        organizationId: user.organizationId
+      },
+      rememberMe
+    );
 
     // Créer la réponse
     const response = NextResponse.json({

@@ -2,10 +2,13 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import ContactForm from '@/components/platform/ContactForm'
+import DemoBooking from '@/components/platform/DemoBooking'
 
 export default function PlatformHomePage() {
   const [scrollY, setScrollY] = useState(0)
   const [activeTab, setActiveTab] = useState('reservations')
+  const [showDemoModal, setShowDemoModal] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -164,12 +167,21 @@ export default function PlatformHomePage() {
               <a href="#pricing" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
                 Tarifs
               </a>
+              <Link href="/platform/nouveautes" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+                Nouveautés
+              </Link>
               <Link
                 href="/connexion"
                 className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
               >
                 Connexion
               </Link>
+              <button
+                onClick={() => setShowDemoModal(true)}
+                className="px-6 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-all"
+              >
+                🎯 Réserver une démo
+              </button>
               <Link
                 href="/register"
                 className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
@@ -288,6 +300,86 @@ export default function PlatformHomePage() {
         </div>
       </section>
 
+      {/* Demo Section with Celia */}
+      <section id="demo" className="py-20 px-4 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              {/* Vidéo de Celia */}
+              <div className="relative h-96 lg:h-auto overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                <video
+                  src="/team/celia-page.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-purple-900/90 to-transparent">
+                  <p className="text-lg text-purple-200">Fondatrice & CEO LAIA Beauty</p>
+                </div>
+              </div>
+
+              {/* Contenu */}
+              <div className="p-8 lg:p-12 flex flex-col justify-center bg-white">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 border border-purple-200 rounded-full text-purple-700 mb-6 w-fit">
+                  <span className="text-2xl">👋</span>
+                  <span className="text-sm font-semibold">Une question ? Je vous réponds !</span>
+                </div>
+
+                <h3 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
+                  Découvrez LAIA en
+                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">
+                    30 minutes chrono
+                  </span>
+                </h3>
+
+                <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                  Je vous montre personnellement comment LAIA peut transformer votre quotidien et faire gagner
+                  <span className="font-bold text-purple-600"> 20h par semaine</span> à votre institut.
+                </p>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-purple-600">✓</span>
+                    </div>
+                    <span className="text-gray-700">Démo personnalisée selon vos besoins</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-purple-600">✓</span>
+                    </div>
+                    <span className="text-gray-700">Sans engagement, 100% gratuit</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-purple-600">✓</span>
+                    </div>
+                    <span className="text-gray-700">En visio ou sur place dans votre institut</span>
+                  </li>
+                </ul>
+
+                <button
+                  onClick={() => setShowDemoModal(true)}
+                  className="w-full px-8 py-5 bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl text-lg font-bold hover:shadow-xl hover:shadow-purple-500/50 transition-all transform hover:scale-105 flex items-center justify-center gap-3"
+                >
+                  <span className="text-2xl">📅</span>
+                  Réserver ma démo gratuite
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+
+                <p className="text-sm text-gray-500 text-center mt-4">
+                  ⏱️ Créneaux disponibles cette semaine
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section - Modern cards */}
       <section id="pricing" className="py-20 px-4 bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="max-w-7xl mx-auto">
@@ -361,6 +453,22 @@ export default function PlatformHomePage() {
           <p className="text-center text-gray-700 mt-12 text-lg">
             💎 Tous les plans incluent : SSL gratuit, sauvegardes quotidiennes, mises à jour automatiques et support francophone
           </p>
+        </div>
+      </section>
+
+      {/* Section Contact */}
+      <section id="contact" className="py-20 px-4 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
+              Contactez-nous
+            </h2>
+            <p className="text-xl text-gray-600">
+              Une question ? Notre équipe vous répond sous 24h
+            </p>
+          </div>
+
+          <ContactForm />
         </div>
       </section>
 
@@ -513,6 +621,29 @@ export default function PlatformHomePage() {
           animation-fill-mode: both;
         }
       `}</style>
+
+      {/* Modal de réservation de démo */}
+      {showDemoModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+          onClick={() => setShowDemoModal(false)}
+        >
+          <div
+            className="relative max-w-4xl w-full my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowDemoModal(false)}
+              className="absolute -top-4 -right-4 bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition z-10"
+            >
+              <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <DemoBooking />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

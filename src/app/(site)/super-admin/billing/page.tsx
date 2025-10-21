@@ -269,7 +269,7 @@ export default function BillingPage() {
       PENDING: 'bg-yellow-100 text-yellow-800',
       PAID: 'bg-green-100 text-green-800',
       FAILED: 'bg-red-100 text-red-800',
-      REFUNDED: 'bg-purple-100 text-purple-800',
+      REFUNDED: 'bg-purple-100 text-beige-800',
       CANCELLED: 'bg-gray-100 text-gray-800'
     }
     return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800'
@@ -279,7 +279,7 @@ export default function BillingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -289,15 +289,15 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">💳 Facturation & Abonnements</h1>
-              <p className="text-purple-100">Gestion des factures, paiements et paramètres</p>
+              <p className="text-white/90">Gestion des factures, paiements et paramètres</p>
             </div>
             {activeTab === 'invoices' && (
               <div className="flex gap-3">
@@ -309,7 +309,8 @@ export default function BillingPage() {
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="px-6 py-3 bg-white text-purple-600 rounded-lg font-medium hover:bg-purple-50"
+                  className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50"
+                  style={{ color: "#b8935f" }}
                 >
                   ➕ Créer facture
                 </button>
@@ -323,7 +324,7 @@ export default function BillingPage() {
               onClick={() => setActiveTab('invoices')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'invoices'
-                  ? 'bg-white text-purple-600 shadow-lg'
+                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -333,7 +334,7 @@ export default function BillingPage() {
               onClick={() => setActiveTab('settings')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'settings'
-                  ? 'bg-white text-purple-600 shadow-lg'
+                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -370,7 +371,7 @@ export default function BillingPage() {
 
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6">
               <div className="text-sm text-purple-700 mb-1">Revenus total</div>
-              <div className="text-2xl font-bold text-purple-800">{formatCurrency(stats.totalRevenue)}</div>
+              <div className="text-2xl font-bold text-beige-800">{formatCurrency(stats.totalRevenue)}</div>
             </div>
           </div>
 
@@ -460,7 +461,8 @@ export default function BillingPage() {
                                 href={invoice.pdfPath}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-purple-600 hover:text-purple-800"
+                                className="hover:text-beige-800"
+                                style={{ color: "#b8935f" }}
                                 title="Voir la facture PDF"
                               >
                                 📄
@@ -509,7 +511,8 @@ export default function BillingPage() {
                   <button
                     onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                     disabled={pagination.page === pagination.totalPages}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                    className="px-4 py-2 text-white rounded-lg disabled:opacity-50"
+                    style={{ backgroundColor: "#d4b5a0" }}
                   >
                     Suivant →
                   </button>
@@ -525,7 +528,7 @@ export default function BillingPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {settingsLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
               <p className="text-gray-600">Chargement...</p>
             </div>
           ) : (
@@ -545,7 +548,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.companyName}
                       onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -558,7 +561,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.siret}
                       onChange={(e) => setSettings({ ...settings, siret: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -571,7 +574,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.address}
                       onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -584,7 +587,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.postalCode}
                       onChange={(e) => setSettings({ ...settings, postalCode: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -597,7 +600,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.city}
                       onChange={(e) => setSettings({ ...settings, city: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -610,7 +613,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.country}
                       onChange={(e) => setSettings({ ...settings, country: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -623,7 +626,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.tvaNumber}
                       onChange={(e) => setSettings({ ...settings, tvaNumber: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -636,7 +639,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.capitalSocial}
                       onChange={(e) => setSettings({ ...settings, capitalSocial: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
 
@@ -648,7 +651,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.rcs}
                       onChange={(e) => setSettings({ ...settings, rcs: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
@@ -669,7 +672,7 @@ export default function BillingPage() {
                       type="email"
                       value={settings.email}
                       onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -682,7 +685,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.phone || ''}
                       onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
 
@@ -694,7 +697,7 @@ export default function BillingPage() {
                       type="url"
                       value={settings.website || ''}
                       onChange={(e) => setSettings({ ...settings, website: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
@@ -715,7 +718,7 @@ export default function BillingPage() {
                       type="url"
                       value={settings.logoUrl || ''}
                       onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       placeholder="https://..."
                     />
                   </div>
@@ -735,7 +738,7 @@ export default function BillingPage() {
                         type="text"
                         value={settings.primaryColor}
                         onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
                   </div>
@@ -755,7 +758,7 @@ export default function BillingPage() {
                         type="text"
                         value={settings.secondaryColor}
                         onChange={(e) => setSettings({ ...settings, secondaryColor: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       />
                     </div>
                   </div>
@@ -777,7 +780,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.invoicePrefix}
                       onChange={(e) => setSettings({ ...settings, invoicePrefix: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                     <p className="text-xs text-gray-500 mt-1">Ex: LAIA-2025-001234</p>
@@ -792,7 +795,7 @@ export default function BillingPage() {
                       step="0.1"
                       value={settings.tvaRate}
                       onChange={(e) => setSettings({ ...settings, tvaRate: parseFloat(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       required
                     />
                   </div>
@@ -814,7 +817,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.paymentTerms}
                       onChange={(e) => setSettings({ ...settings, paymentTerms: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
 
@@ -825,7 +828,7 @@ export default function BillingPage() {
                     <textarea
                       value={settings.latePenalty}
                       onChange={(e) => setSettings({ ...settings, latePenalty: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                       rows={2}
                     />
                   </div>
@@ -838,7 +841,7 @@ export default function BillingPage() {
                       type="text"
                       value={settings.footerText || ''}
                       onChange={(e) => setSettings({ ...settings, footerText: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
@@ -874,7 +877,7 @@ export default function BillingPage() {
                   type="text"
                   value={newInvoice.organizationId}
                   onChange={(e) => setNewInvoice({ ...newInvoice, organizationId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="Nom de l'organisation..."
                   required
                 />
@@ -886,7 +889,7 @@ export default function BillingPage() {
                   step="0.01"
                   value={newInvoice.amount}
                   onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="99.00"
                   required
                 />
@@ -897,7 +900,7 @@ export default function BillingPage() {
                   type="date"
                   value={newInvoice.dueDate}
                   onChange={(e) => setNewInvoice({ ...newInvoice, dueDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
@@ -906,7 +909,7 @@ export default function BillingPage() {
                   type="text"
                   value={newInvoice.description}
                   onChange={(e) => setNewInvoice({ ...newInvoice, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="Abonnement mensuel..."
                 />
               </div>
@@ -914,7 +917,8 @@ export default function BillingPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={createInvoice}
-                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="flex-1 px-4 py-2 text-white rounded-lg"
+                style={{ backgroundColor: "#d4b5a0" }}
               >
                 Créer
               </button>
@@ -941,7 +945,7 @@ export default function BillingPage() {
                   type="text"
                   value={extendTrial.organizationId}
                   onChange={(e) => setExtendTrial({ ...extendTrial, organizationId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   placeholder="cmxxx..."
                 />
               </div>
@@ -950,7 +954,7 @@ export default function BillingPage() {
                 <select
                   value={extendTrial.days}
                   onChange={(e) => setExtendTrial({ ...extendTrial, days: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 >
                   <option value="7">7 jours</option>
                   <option value="14">14 jours</option>

@@ -16,7 +16,8 @@ export async function POST(request: Request) {
     }
 
     // Rechercher l'utilisateur par email
-    const user = await prisma.user.findUnique({
+    // Utiliser findFirst car le schema a une contrainte unique composée (organizationId_email)
+    const user = await prisma.user.findFirst({
       where: { email },
       include: {
         organization: {

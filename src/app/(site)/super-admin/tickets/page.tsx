@@ -128,7 +128,7 @@ export default function TicketsPage() {
     const styles = {
       OPEN: 'bg-blue-100 text-blue-800',
       IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-      WAITING_CUSTOMER: 'bg-purple-100 text-purple-800',
+      WAITING_CUSTOMER: 'bg-purple-100 text-beige-800',
       RESOLVED: 'bg-green-100 text-green-800',
       CLOSED: 'bg-gray-100 text-gray-800'
     }
@@ -136,8 +136,8 @@ export default function TicketsPage() {
       OPEN: 'Ouvert',
       IN_PROGRESS: 'En cours',
       WAITING_CUSTOMER: 'En attente client',
-      RESOLVED: 'Résolu',
-      CLOSED: 'Fermé'
+      RESOLVED: 'RÃ©solu',
+      CLOSED: 'FermÃ©'
     }
     return (
       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
@@ -150,7 +150,7 @@ export default function TicketsPage() {
     const labels = {
       TECHNICAL: 'Technique',
       BILLING: 'Facturation',
-      FEATURE_REQUEST: 'Demande de fonctionnalité',
+      FEATURE_REQUEST: 'Demande de fonctionnalitï¿½',
       QUESTION: 'Question',
       BUG: 'Bug',
       OTHER: 'Autre'
@@ -167,7 +167,7 @@ export default function TicketsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
       </div>
     )
   }
@@ -176,8 +176,8 @@ export default function TicketsPage() {
     <div className="px-4 py-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">=¬ Support Clients</h1>
-        <p className="text-gray-600">Gérez les tickets de support des organisations</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">=ï¿½ Support Clients</h1>
+        <p className="text-gray-600">Gï¿½rez les tickets de support des organisations</p>
       </div>
 
       {/* Filtres */}
@@ -191,8 +191,8 @@ export default function TicketsPage() {
           <option value="OPEN">Ouverts</option>
           <option value="IN_PROGRESS">En cours</option>
           <option value="WAITING_CUSTOMER">En attente client</option>
-          <option value="RESOLVED">Résolus</option>
-          <option value="CLOSED">Fermés</option>
+          <option value="RESOLVED">Rï¿½solus</option>
+          <option value="CLOSED">Fermï¿½s</option>
         </select>
 
         <select
@@ -200,7 +200,7 @@ export default function TicketsPage() {
           onChange={(e) => setFilterPriority(e.target.value as typeof filterPriority)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
         >
-          <option value="ALL">Toutes les priorités</option>
+          <option value="ALL">Toutes les prioritï¿½s</option>
           <option value="URGENT">Urgent</option>
           <option value="HIGH">Haute</option>
           <option value="MEDIUM">Moyenne</option>
@@ -212,7 +212,7 @@ export default function TicketsPage() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total</p>
-          <p className="text-3xl font-bold text-purple-600">{tickets.length}</p>
+          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{tickets.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Ouverts</p>
@@ -233,7 +233,7 @@ export default function TicketsPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Résolus</p>
+          <p className="text-sm text-gray-600 mb-1">Rï¿½solus</p>
           <p className="text-3xl font-bold text-green-600">
             {tickets.filter(t => t.status === 'RESOLVED').length}
           </p>
@@ -248,7 +248,7 @@ export default function TicketsPage() {
 
         {filteredTickets.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            <p className="text-lg mb-2">Aucun ticket trouvé</p>
+            <p className="text-lg mb-2">Aucun ticket trouvï¿½</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -257,8 +257,8 @@ export default function TicketsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organisation</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priorité</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catï¿½gorie</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prioritï¿½</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -293,7 +293,8 @@ export default function TicketsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => setSelectedTicket(ticket)}
-                        className="text-purple-600 hover:text-purple-900"
+                        className="hover:text-beige-900"
+                        style={{ color: "#b8935f" }}
                       >
                         Voir
                       </button>
@@ -306,7 +307,7 @@ export default function TicketsPage() {
         )}
       </div>
 
-      {/* Modal de détail */}
+      {/* Modal de dï¿½tail */}
       {selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -330,16 +331,16 @@ export default function TicketsPage() {
                 <p className="text-gray-900">{selectedTicket.organization.name}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Créé par</label>
+                <label className="text-sm font-medium text-gray-600">Crï¿½ï¿½ par</label>
                 <p className="text-gray-900">{selectedTicket.createdBy.name}</p>
                 <p className="text-sm text-gray-500">{selectedTicket.createdBy.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Catégorie</label>
+                <label className="text-sm font-medium text-gray-600">Catï¿½gorie</label>
                 <p className="text-gray-900">{getCategoryLabel(selectedTicket.category)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Priorité</label>
+                <label className="text-sm font-medium text-gray-600">Prioritï¿½</label>
                 <div className="mt-1">
                   <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(selectedTicket.priority)}`}>
                     {selectedTicket.priority}
@@ -359,8 +360,8 @@ export default function TicketsPage() {
                 <option value="OPEN">Ouvert</option>
                 <option value="IN_PROGRESS">En cours</option>
                 <option value="WAITING_CUSTOMER">En attente client</option>
-                <option value="RESOLVED">Résolu</option>
-                <option value="CLOSED">Fermé</option>
+                <option value="RESOLVED">Rï¿½solu</option>
+                <option value="CLOSED">Fermï¿½</option>
               </select>
             </div>
 
@@ -401,22 +402,23 @@ export default function TicketsPage() {
                 )}
               </div>
 
-              {/* Formulaire de réponse */}
+              {/* Formulaire de rÃ©ponse */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Répondre au client</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">RÃ©pondre au client</label>
                 <textarea
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                  placeholder="Votre réponse..."
+                  placeholder="Votre rÃ©ponse..."
                 />
                 <button
                   onClick={() => handleReply(selectedTicket.id)}
                   disabled={!replyMessage.trim()}
-                  className="mt-2 bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-2 px-6 py-2 rounded-lg font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: "#d4b5a0" }}
                 >
-                  Envoyer la réponse
+                  Envoyer la rÃ©ponse
                 </button>
               </div>
             </div>

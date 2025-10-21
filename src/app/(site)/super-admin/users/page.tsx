@@ -195,7 +195,7 @@ export default function GlobalUsersPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -210,7 +210,7 @@ export default function GlobalUsersPage() {
 
   const roleColors: { [key: string]: string } = {
     SUPER_ADMIN: 'bg-red-100 text-red-800',
-    ORG_OWNER: 'bg-purple-100 text-purple-800',
+    ORG_OWNER: 'bg-purple-100 text-beige-800',
     ORG_ADMIN: 'bg-indigo-100 text-indigo-800',
     LOCATION_MANAGER: 'bg-blue-100 text-blue-800',
     STAFF: 'bg-green-100 text-green-800',
@@ -234,13 +234,13 @@ export default function GlobalUsersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <Link href="/super-admin" className="text-purple-200 hover:text-white mb-2 inline-block">
+          <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
             ← Retour au dashboard
           </Link>
           <h1 className="text-3xl font-bold mb-2">👥 Gestion Globale des Utilisateurs</h1>
-          <p className="text-purple-100">{users.length} utilisateurs au total</p>
+          <p className="text-white/90">{users.length} utilisateurs au total</p>
         </div>
       </div>
 
@@ -249,7 +249,7 @@ export default function GlobalUsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">Total Utilisateurs</div>
-            <div className="text-3xl font-bold text-purple-600">{users.length}</div>
+            <div className="text-3xl font-bold" style={{ color: "#b8935f" }}>{users.length}</div>
             <div className="flex gap-3 mt-2 text-xs">
               <span className="text-green-600">✓ {activeUsers} actifs</span>
               <span className="text-red-600">✗ {inactiveUsers} inactifs</span>
@@ -258,7 +258,7 @@ export default function GlobalUsersPage() {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">Propriétaires</div>
-            <div className="text-3xl font-bold text-purple-600">{roleStats.ORG_OWNER}</div>
+            <div className="text-3xl font-bold" style={{ color: "#b8935f" }}>{roleStats.ORG_OWNER}</div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -284,7 +284,7 @@ export default function GlobalUsersPage() {
                 placeholder="Nom, email, organisation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               />
             </div>
 
@@ -293,7 +293,7 @@ export default function GlobalUsersPage() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="ALL">Tous les rôles</option>
                 <option value="ORG_OWNER">Propriétaires</option>
@@ -310,7 +310,7 @@ export default function GlobalUsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="ALL">Tous</option>
                 <option value="ACTIVE">Actifs</option>
@@ -323,7 +323,7 @@ export default function GlobalUsersPage() {
               <select
                 value={orgFilter}
                 onChange={(e) => setOrgFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="ALL">Toutes</option>
                 {organizations.map(org => (
@@ -338,7 +338,7 @@ export default function GlobalUsersPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="createdAt">Date création</option>
                   <option value="lastLoginAt">Dernière connexion</option>
@@ -427,7 +427,7 @@ export default function GlobalUsersPage() {
                         {user.organization && (
                           <Link
                             href={`/super-admin/organizations/${user.organization.id}`}
-                            className="text-purple-600 hover:text-purple-900"
+                            className="style={{ color: "#b8935f" }} className=" hover-text-beige-900"
                           >
                             Org
                           </Link>

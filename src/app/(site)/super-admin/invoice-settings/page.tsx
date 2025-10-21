@@ -114,7 +114,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.companyName}
                 onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -127,7 +127,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.siret}
                 onChange={(e) => setSettings({ ...settings, siret: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -140,7 +140,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.address}
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -153,7 +153,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.postalCode}
                 onChange={(e) => setSettings({ ...settings, postalCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -166,7 +166,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.city}
                 onChange={(e) => setSettings({ ...settings, city: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -179,7 +179,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.country}
                 onChange={(e) => setSettings({ ...settings, country: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -192,7 +192,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.tvaNumber}
                 onChange={(e) => setSettings({ ...settings, tvaNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -205,7 +205,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.capitalSocial}
                 onChange={(e) => setSettings({ ...settings, capitalSocial: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
@@ -217,7 +217,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.rcs}
                 onChange={(e) => setSettings({ ...settings, rcs: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function InvoiceSettingsPage() {
                 type="email"
                 value={settings.email}
                 onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -251,7 +251,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.phone || ''}
                 onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
@@ -263,7 +263,7 @@ export default function InvoiceSettingsPage() {
                 type="url"
                 value={settings.website || ''}
                 onChange={(e) => setSettings({ ...settings, website: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function InvoiceSettingsPage() {
                 type="url"
                 value={settings.logoUrl || ''}
                 onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="https://..."
               />
             </div>
@@ -304,7 +304,7 @@ export default function InvoiceSettingsPage() {
                   type="text"
                   value={settings.primaryColor}
                   onChange={(e) => setSettings({ ...settings, primaryColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 />
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function InvoiceSettingsPage() {
                   type="text"
                   value={settings.secondaryColor}
                   onChange={(e) => setSettings({ ...settings, secondaryColor: e.target.value })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 />
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.invoicePrefix}
                 onChange={(e) => setSettings({ ...settings, invoicePrefix: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">Ex: LAIA-2025-001234</p>
@@ -361,7 +361,7 @@ export default function InvoiceSettingsPage() {
                 step="0.1"
                 value={settings.tvaRate}
                 onChange={(e) => setSettings({ ...settings, tvaRate: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -383,7 +383,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.paymentTerms}
                 onChange={(e) => setSettings({ ...settings, paymentTerms: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
@@ -394,7 +394,7 @@ export default function InvoiceSettingsPage() {
               <textarea
                 value={settings.latePenalty}
                 onChange={(e) => setSettings({ ...settings, latePenalty: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 rows={2}
               />
             </div>
@@ -407,7 +407,7 @@ export default function InvoiceSettingsPage() {
                 type="text"
                 value={settings.footerText || ''}
                 onChange={(e) => setSettings({ ...settings, footerText: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>

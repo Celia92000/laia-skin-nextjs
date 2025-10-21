@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.split(' ')[1] || cookieStore.get('auth-token')?.value || cookieStore.get('token')?.value
 
     if (!token) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
       }
     })
 
-    return NextResponse.json({ templates })
+    return NextResponse.json(templates)
 
   } catch (error) {
     console.error('Erreur email templates:', error)
@@ -46,7 +47,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get('auth-token')?.value
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.split(' ')[1] || cookieStore.get('auth-token')?.value || cookieStore.get('token')?.value
 
     if (!token) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })

@@ -195,6 +195,46 @@ export async function GET(request: Request) {
       .sort((a, b) => b.reservations - a.reservations)
       .slice(0, 5)
 
+    // Statistiques détaillées par organisation
+    const organizationsStats = await Promise.all(
+      allOrgs.map(async org => {
+        const [clientCount, reservationCount, totalRevenue, lastReservation] = await Promise.all([
+          prisma.user.count({
+            where: { organizationId: org.id, role: 'CLIENT' }
+          }),
+          prisma.reservation.count({
+            where: { organizationId: org.id }
+          }),
+          prisma.reservation.aggregate({
+            where: {
+              organizationId: org.id,
+              status: { in: ['CONFIRMED', 'COMPLETED'] }
+            },
+            _sum: { totalPrice: true }
+          }),
+          prisma.reservation.findFirst({
+            where: { organizationId: org.id },
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true }
+          })
+        ])
+
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          status: org.status,
+          plan: org.plan,
+          clients: clientCount,
+          reservations: reservationCount,
+          revenue: totalRevenue._sum.totalPrice || 0,
+          lastActivity: lastReservation?.createdAt || org.createdAt,
+          monthlyFee: planPrices[org.plan] || 0,
+          createdAt: org.createdAt
+        }
+      })
+    )
+
     return NextResponse.json({
       growth,
       conversion: {
@@ -210,7 +250,8 @@ export async function GET(request: Request) {
       topOrganizations: {
         byRevenue: topByRevenue,
         byReservations: topByReservations
-      }
+      },
+      organizationsStats: organizationsStats.sort((a, b) => b.revenue - a.revenue)
     })
 
   } catch (error) {

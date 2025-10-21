@@ -42,7 +42,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
           <Link
             href="/super-admin"
-            className="text-purple-600 hover:text-purple-800 underline"
+            className="style={{ color: "#b8935f" }} className=" hover:text-beige-800 underline"
           >
             ← Retour au dashboard
           </Link>
@@ -75,25 +75,25 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
   const planColors = {
     SOLO: 'bg-gray-100 text-gray-800',
     DUO: 'bg-blue-100 text-blue-800',
-    TEAM: 'bg-purple-100 text-purple-800',
+    TEAM: 'bg-purple-100 text-beige-800',
     PREMIUM: 'bg-indigo-100 text-indigo-800',
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
               <Link
                 href="/super-admin"
-                className="text-purple-200 hover:text-white mb-2 inline-block"
+                className="text-white/80 hover:text-white mb-2 inline-block"
               >
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">{organization.name}</h1>
-              <p className="text-purple-100">@{organization.slug}</p>
+              <p className="text-white/90">@{organization.slug}</p>
             </div>
             <div className="flex items-center space-x-4">
               <span className={`px-4 py-2 rounded-lg font-semibold border-2 ${statusColors[organization.status as keyof typeof statusColors]}`}>
@@ -114,7 +114,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">Utilisateurs</p>
-                <p className="text-3xl font-bold text-purple-600">{stats.usersCount}</p>
+                <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{stats.usersCount}</p>
               </div>
               <div className="text-4xl">👥</div>
             </div>
@@ -343,7 +343,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium text-gray-900">{location.name}</h3>
                         {location.isMainLocation && (
-                          <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">
+                          <span className="px-2 py-1 bg-purple-100 text-beige-800 text-xs font-semibold rounded">
                             Principal
                           </span>
                         )}
@@ -402,7 +402,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                   <div className="flex items-center justify-between">
                     <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
                       <div
-                        className="bg-purple-600 h-2 rounded-full"
+                        className="style={{ backgroundColor: "#d4b5a0" }} className=" h-2 rounded-full"
                         style={{
                           width: `${Math.min(
                             ((organization.locations?.length || 0) / organization.maxLocations) * 100,
@@ -454,7 +454,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               <div className="space-y-3">
                 <Link
                   href={`/super-admin/organizations/${organization.id}/edit`}
-                  className="block w-full text-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  className="block w-full text-center px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 transition"
                 >
                   ✏️ Modifier
                 </Link>

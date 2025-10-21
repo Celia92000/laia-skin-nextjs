@@ -153,7 +153,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
   }
 
   const roleColors: { [key: string]: string } = {
-    ORG_OWNER: 'bg-purple-100 text-purple-800',
+    ORG_OWNER: 'bg-purple-100 text-beige-800',
     ORG_ADMIN: 'bg-indigo-100 text-indigo-800',
     ACCOUNTANT: 'bg-orange-100 text-orange-800',
     LOCATION_MANAGER: 'bg-blue-100 text-blue-800',

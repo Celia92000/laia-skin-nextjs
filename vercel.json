@@ -16,6 +16,12 @@
     },
     "src/app/api/cron/process-payments/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/generate-monthly-invoices/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/cron/send-payment-reminders/route.ts": {
+      "maxDuration": 180
     }
   },
   "crons": [
@@ -26,6 +32,14 @@
     {
       "path": "/api/cron/process-payments",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/generate-monthly-invoices",
+      "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/send-payment-reminders",
+      "schedule": "0 9 * * *"
     }
   ]
 }
