@@ -56,7 +56,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
           <Link
             href="/super-admin"
-            className="style={{ color: "#b8935f" }} className=" hover:text-beige-800 underline"
+            className="text-[#b8935f] hover:text-beige-800 underline"
           >
             ← Retour au dashboard
           </Link>
