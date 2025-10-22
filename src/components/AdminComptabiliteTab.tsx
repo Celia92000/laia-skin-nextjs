@@ -25,7 +25,7 @@ export default function AdminComptabiliteTab({ reservations, fetchReservations, 
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'pending'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'pending'>('paid');
   const [expandedSections, setExpandedSections] = useState({
     stats: true,
     factures: true,
@@ -777,6 +777,17 @@ Pour toute question: contact@laia-skin-institut.com`;
                     <span className="text-gray-600">TVA</span>
                     <span className="font-medium">{(stats.totalRevenue * 0.20 / 1.20).toFixed(2)}€</span>
                   </div>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => {
+                        setFilterStatus('all');
+                        document.getElementById('factures-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="text-green-600 hover:text-green-700 underline"
+                    >
+                      Voir le détail →
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -790,7 +801,7 @@ Pour toute question: contact@laia-skin-institut.com`;
                 <p className="text-2xl font-bold text-blue-600">{stats.paidAmount.toFixed(2)}€</p>
                 <div className="mt-2">
                   <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-blue-600 h-2 rounded-full transition-all"
                       style={{ width: `${stats.totalRevenue > 0 ? (stats.paidAmount / stats.totalRevenue) * 100 : 0}%` }}
                     />
@@ -798,6 +809,17 @@ Pour toute question: contact@laia-skin-institut.com`;
                   <p className="text-xs text-gray-600 mt-1">
                     {stats.totalRevenue > 0 ? Math.round((stats.paidAmount / stats.totalRevenue) * 100) : 0}% du CA
                   </p>
+                  <div className="mt-2 text-xs">
+                    <button
+                      onClick={() => {
+                        setFilterStatus('paid');
+                        document.getElementById('factures-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className="text-blue-600 hover:text-blue-700 underline"
+                    >
+                      Voir les paiements →
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -812,7 +834,14 @@ Pour toute question: contact@laia-skin-institut.com`;
                 <p className="text-xs text-gray-600 mb-1">En attente</p>
                 <p className="text-2xl font-bold text-orange-600">{stats.pendingAmount.toFixed(2)}€</p>
                 <div className="mt-2 text-xs">
-                  <button className="text-orange-600 hover:text-orange-700 underline">
+                  <button
+                    onClick={() => {
+                      setFilterStatus('pending');
+                      // Scroll vers la section factures
+                      document.getElementById('factures-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="text-orange-600 hover:text-orange-700 underline"
+                  >
                     Voir les impayés →
                   </button>
                 </div>
@@ -886,8 +915,8 @@ Pour toute question: contact@laia-skin-institut.com`;
       </div>
 
       {/* Gestion des Factures */}
-      <div>
-        <div 
+      <div id="factures-section">
+        <div
           className="bg-white rounded-t-xl shadow-sm p-4 flex items-center justify-between"
         >
           <div 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, CheckCircle, XCircle, CreditCard, Euro, Calendar, Gift } from "lucide-react";
+import { X, CheckCircle, XCircle, CreditCard, Euro, Calendar, Gift, Clock } from "lucide-react";
 import ReservationPaymentButton from './ReservationPaymentButton';
 import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
@@ -704,11 +704,12 @@ export default function ValidationPaymentModal({
                   setPaymentStatus('paid');
                 }
               }}
+              disabled={reservation.paymentStatus === 'pending'}
               className={`py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-xs ${
                 clientPresent === true
                   ? 'border-green-500 bg-green-50 text-green-700'
                   : 'border-gray-300 hover:border-green-400 text-gray-600'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <CheckCircle className="w-4 h-4" />
               Oui, présent
@@ -718,11 +719,12 @@ export default function ValidationPaymentModal({
                 setClientPresent(false);
                 setPaymentStatus(null);
               }}
+              disabled={reservation.paymentStatus === 'pending'}
               className={`py-2 px-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 text-xs ${
                 clientPresent === false
                   ? 'border-orange-500 bg-orange-50 text-orange-700'
                   : 'border-gray-300 hover:border-orange-400 text-gray-600'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <XCircle className="w-4 h-4" />
               Non, absent
@@ -737,7 +739,29 @@ export default function ValidationPaymentModal({
               2. {clientPresent ? 'Le client a-t-il payé ?' : 'Un acompte a-t-il été versé ?'}
             </h3>
 
-            {reservation.paymentStatus === 'paid' ? (
+            {reservation.paymentStatus === 'pending' ? (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-orange-700 font-semibold flex items-center gap-2 text-sm mb-2">
+                  <Clock className="w-5 h-5" />
+                  Paiement en attente de confirmation
+                </p>
+                <p className="text-orange-600 text-xs mb-3">
+                  Le client a initié un paiement en ligne via {reservation.paymentMethod}.
+                  Vous ne pouvez pas valider cette réservation tant que le paiement n'est pas confirmé.
+                </p>
+                <div className="bg-white rounded-lg p-3 border border-orange-200">
+                  <p className="text-xs text-gray-700">
+                    <strong>Montant :</strong> {reservation.paymentAmount || reservation.totalPrice}€<br />
+                    <strong>Méthode :</strong> {reservation.paymentMethod}<br />
+                    <strong>Statut :</strong> En attente de confirmation
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mt-3 italic">
+                  💡 La réservation sera automatiquement mise à jour une fois le paiement confirmé.
+                  Vous pourrez ensuite valider la présence du client.
+                </p>
+              </div>
+            ) : reservation.paymentStatus === 'paid' ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-green-700 font-medium flex items-center gap-2 text-xs">
                   <CheckCircle className="w-4 h-4" />
@@ -1224,10 +1248,10 @@ export default function ValidationPaymentModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={clientPresent === null || paymentStatus === null}
+            disabled={clientPresent === null || paymentStatus === null || reservation.paymentStatus === 'pending'}
             className="flex-1 px-3 py-2 text-xs bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:from-[#c9a084] hover:to-[#b89574] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Valider
+            {reservation.paymentStatus === 'pending' ? 'En attente du paiement...' : 'Valider'}
           </button>
         </div>
         </div>
