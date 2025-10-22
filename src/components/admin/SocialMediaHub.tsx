@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { FaPlus, FaCalendarAlt, FaLightbulb, FaChartBar, FaKey, FaCog } from 'react-icons/fa';
+import { FaPlus, FaCalendarAlt, FaLightbulb } from 'react-icons/fa';
 import SimpleSocialMediaPlanner from './SimpleSocialMediaPlanner';
 import DragDropCalendar from './DragDropCalendar';
-import SocialMediaAPISync from '../SocialMediaAPISync';
-import SocialMediaPreferences from './SocialMediaPreferences';
 
 export default function SocialMediaHub() {
-  const [activeTab, setActiveTab] = useState<'create' | 'plan' | 'stats' | 'sync' | 'preferences'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'plan' | 'stats'>('create');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-stone-50 to-orange-50">
@@ -64,34 +62,6 @@ export default function SocialMediaHub() {
                 <div className="font-semibold text-sm">Conseils</div>
               </div>
             </button>
-
-            <button
-              onClick={() => setActiveTab('sync')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                activeTab === 'sync'
-                  ? 'bg-[#8B6F5C] text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-amber-50 border border-amber-200'
-              }`}
-            >
-              <FaKey className="text-base" />
-              <div className="text-left">
-                <div className="font-semibold text-sm">API Sync</div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('preferences')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                activeTab === 'preferences'
-                  ? 'bg-[#8B6F5C] text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-amber-50 border border-amber-200'
-              }`}
-            >
-              <FaCog className="text-base" />
-              <div className="text-left">
-                <div className="font-semibold text-sm">Préférences</div>
-              </div>
-            </button>
           </div>
         </div>
 
@@ -99,8 +69,6 @@ export default function SocialMediaHub() {
         <div>
           {activeTab === 'create' && <SimpleSocialMediaPlanner />}
           {activeTab === 'plan' && <DragDropCalendar />}
-          {activeTab === 'sync' && <SocialMediaAPISync />}
-          {activeTab === 'preferences' && <SocialMediaPreferences />}
           {activeTab === 'stats' && (
             <div className="space-y-6">
               {/* Stats dashboard */}
