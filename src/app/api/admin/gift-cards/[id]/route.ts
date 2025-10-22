@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
@@ -28,7 +27,7 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (!isAdminRole(decoded.role) && decoded.role !== 'EMPLOYEE') {
+    if (decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -81,7 +80,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (!isAdminRole(decoded.role) && decoded.role !== 'EMPLOYEE') {
+    if (decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -205,7 +204,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (!isAdminRole(decoded.role)) {
+    if (decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

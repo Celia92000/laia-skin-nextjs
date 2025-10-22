@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/admin-roles';
 import { verifyToken } from '@/lib/auth';
 import { SocialMediaPublisher } from '@/lib/social-media-publisher';
 
@@ -13,7 +12,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    if (!decoded || (!isAdminRole(decoded.role) && decoded.role !== 'admin')) {
+    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'admin')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

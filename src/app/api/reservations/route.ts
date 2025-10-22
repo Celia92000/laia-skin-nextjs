@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
         };
         
         // S'assurer que l'utilisateur est un CLIENT (pas ADMIN ou autre)
-        if (user.role !== 'CLIENT' && !isAdminRole(user.role)) {
+        if (user.role !== 'CLIENT' && user.role !== 'ADMIN') {
           updateData.role = 'CLIENT';
         }
         

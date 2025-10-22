@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { verifyToken, generateToken } from '@/lib/auth'
+import { verifyToken, createToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
@@ -64,11 +64,7 @@ export async function POST(request: Request) {
     }
 
     // Créer un nouveau token pour l'utilisateur cible
-    const impersonationToken = generateToken({
-      userId: targetUser.id,
-      role: targetUser.role,
-      organizationId: targetUser.organizationId
-    })
+    const impersonationToken = createToken(targetUser.id, targetUser.role)
 
     // Stocker l'information d'impersonnation dans un cookie séparé
     const cookieStore2 = await cookies()
@@ -150,11 +146,7 @@ export async function DELETE(request: Request) {
     }
 
     // Recréer le token du super admin
-    const superAdminToken = generateToken({
-      userId: superAdmin.id,
-      role: superAdmin.role,
-      organizationId: superAdmin.organizationId
-    })
+    const superAdminToken = createToken(superAdmin.id, superAdmin.role)
 
     // Nettoyer les cookies d'impersonnation
     cookieStore.delete('impersonating-as')

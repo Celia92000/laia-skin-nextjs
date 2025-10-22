@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/admin-roles';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { encrypt, decrypt, encryptConfig, decryptConfig } from '@/lib/encryption';
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || !isAdminRole(decoded.role)) {
+    if (!decoded || decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -95,7 +94,7 @@ export async function POST(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || !isAdminRole(decoded.role)) {
+    if (!decoded || decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -176,7 +175,7 @@ export async function PUT(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || !isAdminRole(decoded.role)) {
+    if (!decoded || decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -238,7 +237,7 @@ export async function DELETE(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || !isAdminRole(decoded.role)) {
+    if (!decoded || decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

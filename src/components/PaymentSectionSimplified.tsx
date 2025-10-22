@@ -159,8 +159,6 @@ export default function PaymentSectionSimplified({ reservation, loyaltyProfiles,
               serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
               paymentStatus={reservation.paymentStatus || 'unpaid'}
               paymentMethod={reservation.paymentMethod}
-              customerEmail={reservation.userEmail}
-              customerName={reservation.userName}
               onPaymentInitiated={() => window.location.reload()}
             />
           </div>

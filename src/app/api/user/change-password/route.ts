@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { verifyToken } from '@/lib/auth';
-import { validatePassword } from '@/lib/password-validation';
 
 export async function POST(request: Request) {
   const prisma = await getPrismaClient();
   try {
     // Vérifier l'authentification
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-
+    
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -29,31 +28,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Récupérer l'utilisateur pour la validation
+    if (newPassword.length < 8) {
+      return NextResponse.json(
+        { error: 'Le nouveau mot de passe doit contenir au moins 8 caractères' },
+        { status: 400 }
+      );
+    }
+
+    // Récupérer l'utilisateur
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
-    }
-
-    // Valider la force du nouveau mot de passe
-    const passwordValidation = validatePassword(newPassword, undefined, {
-      name: user.name,
-      email: user.email
-    });
-
-    if (!passwordValidation.isValid) {
-      return NextResponse.json(
-        {
-          error: 'Le nouveau mot de passe est trop faible',
-          details: passwordValidation.errors,
-          strength: passwordValidation.strength,
-          score: passwordValidation.score
-        },
-        { status: 400 }
-      );
     }
 
     // Vérifier le mot de passe actuel

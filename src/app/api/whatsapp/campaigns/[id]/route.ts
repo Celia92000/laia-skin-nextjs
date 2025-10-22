@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { isAdminRole } from '@/lib/admin-roles';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
@@ -55,7 +54,7 @@ export async function PUT(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && !isAdminRole(user.role))) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -130,7 +129,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && !isAdminRole(user.role))) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

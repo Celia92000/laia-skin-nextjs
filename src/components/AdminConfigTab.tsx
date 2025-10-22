@@ -6,7 +6,6 @@ import {
   MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
   Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart
 } from 'lucide-react';
-import PaymentMethodsConfig from './PaymentMethodsConfig';
 
 interface SiteConfig {
   id?: string;
@@ -111,7 +110,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'payment'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -218,7 +217,6 @@ export default function AdminConfigTab() {
           { id: 'location', label: 'Localisation', icon: Map },
           { id: 'seo', label: 'SEO & Tracking', icon: Search },
           { id: 'finances', label: 'Finances', icon: CreditCard },
-          { id: 'payment', label: 'Paiements', icon: CreditCard },
           { id: 'legal', label: 'Légal', icon: Shield }
         ].map((tab) => (
           <button
@@ -1473,10 +1471,6 @@ Les prix sont indiqués en euros TTC..."
               />
             </div>
           </div>
-        )}
-
-        {activeTab === 'payment' && (
-          <PaymentMethodsConfig />
         )}
       </div>
     </div>

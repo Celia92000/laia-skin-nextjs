@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getSiteConfig } from '@/lib/config-service';
-import { hasAdminAccess } from '@/lib/admin-roles';
 
 export async function GET(request: NextRequest) {
   const config = await getSiteConfig();
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

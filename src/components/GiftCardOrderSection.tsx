@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Gift, ShoppingCart, Plus, Minus, CreditCard, Banknote, Building2, X, User } from 'lucide-react';
-import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 interface GiftCard {
   id: string;
@@ -19,6 +18,15 @@ interface GiftCardOrderSectionProps {
   onOrderCreated?: () => void;
 }
 
+// Cartes cadeaux prédéfinies
+const GIFT_CARDS: GiftCard[] = [
+  { id: '1', name: 'Carte cadeau 50€', amount: 50 },
+  { id: '2', name: 'Carte cadeau 100€', amount: 100 },
+  { id: '3', name: 'Carte cadeau 150€', amount: 150 },
+  { id: '4', name: 'Carte cadeau 200€', amount: 200 },
+  { id: '5', name: 'Carte cadeau personnalisée', amount: 0 }, // Montant personnalisé
+];
+
 export default function GiftCardOrderSection({ onOrderCreated }: GiftCardOrderSectionProps = {}) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedClient, setSelectedClient] = useState('');
@@ -26,21 +34,6 @@ export default function GiftCardOrderSection({ onOrderCreated }: GiftCardOrderSe
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [customAmount, setCustomAmount] = useState<number>(0);
-
-  // Récupérer les paramètres de fidélité pour les montants de cartes cadeaux
-  const { settings: loyaltySettings } = useLoyaltySettings();
-
-  // Générer les cartes cadeaux depuis les settings
-  const GIFT_CARDS: GiftCard[] = useMemo(() => {
-    const cards = loyaltySettings.giftCardAmounts.map((amount, index) => ({
-      id: String(index + 1),
-      name: `Carte cadeau ${amount}€`,
-      amount: amount
-    }));
-    // Ajouter la carte personnalisée
-    cards.push({ id: String(cards.length + 1), name: 'Carte cadeau personnalisée', amount: 0 });
-    return cards;
-  }, [loyaltySettings.giftCardAmounts]);
 
   useEffect(() => {
     fetchClients();

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
             {
               OR: [
                 { role: 'CLIENT' },
-                { role: 'CLIENT' }
+                { role: 'client' }
               ]
             }
           ]
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
                 ...clientWhere,
                 OR: [
                   { role: 'CLIENT' },
-                  { role: 'CLIENT' }
+                  { role: 'client' }
                 ]
               },
               take: 20
@@ -305,7 +305,7 @@ export async function POST(request: NextRequest) {
             {
               OR: [
                 { role: 'CLIENT' },
-                { role: 'CLIENT' }
+                { role: 'client' }
               ]
             }
           ]
@@ -429,7 +429,7 @@ export async function POST(request: NextRequest) {
                 ...clientWhere,
                 OR: [
                   { role: 'CLIENT' },
-                  { role: 'CLIENT' }
+                  { role: 'client' }
                 ]
               },
               take: 20

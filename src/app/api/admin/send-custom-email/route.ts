@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const { to, subject, message, html, clientName, attachments } = await request.json();
+    const { to, subject, message, html, clientName } = await request.json();
 
     // Validation des champs obligatoires
     if (!to || !subject || (!message && !html)) {
@@ -141,24 +141,14 @@ export async function POST(request: NextRequest) {
 
     try {
       // Envoyer l'email avec Resend
-      const fromEmail = process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`;
-
-      // Préparer les options d'envoi
-      const emailOptions: any = {
+      const fromEmail = process.env.RESEND_FROM_EMAIL || '${siteName} <${email}>';
+      const data = await getResend().emails.send({
         from: fromEmail,
         to: [to],
         subject: subject,
         html: htmlMessage,
         text: `Bonjour ${clientName || 'Cliente'},\n\n${emailMessage}\n\nÀ très bientôt,\nLaïa\n${siteName} INSTITUT`
-      };
-
-      // Ajouter les pièces jointes si présentes
-      // Format attendu: [{ filename: "contrat.pdf", content: "base64string" }]
-      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-        emailOptions.attachments = attachments;
-      }
-
-      const data = await getResend().emails.send(emailOptions);
+      });
 
       // Enregistrer dans l'historique
       await prisma.emailHistory.create({

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { cache } from '@/lib/cache';
-import { hasAdminAccess } from '@/lib/admin-roles';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -39,7 +38,10 @@ export async function GET(request: NextRequest) {
     // Récupérer tous les clients avec leurs stats
     const clients = await prisma.user.findMany({
       where: {
-        role: 'CLIENT'
+        OR: [
+          { role: 'CLIENT' },
+          { role: 'client' }
+        ]
       },
       select: {
         id: true,
@@ -145,7 +147,7 @@ export async function PUT(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

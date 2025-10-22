@@ -10,9 +10,7 @@ import { checkAndCleanAuth, getAuthToken, clearAuthData } from '@/lib/auth-utils
 import { logout } from "@/lib/auth-client";
 import { getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
-import { displayPaymentAmount } from '@/lib/display-utils';
 import type { Client } from "@/components/UnifiedCRMTab";
-import { isAdminRole } from "@/lib/admin-roles";
 
 // Lazy load des composants lourds uniquement quand nécessaire
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
@@ -48,7 +46,7 @@ const AdvancedSearch = dynamic(() => import("@/components/AdvancedSearch"), { ss
 const FormationOrderSection = dynamic(() => import("@/components/FormationOrderSection"), { ssr: false });
 const AdminOrdersTab = dynamic(() => import("@/components/AdminOrdersTab"), { ssr: false });
 const SocialMediaCalendar = dynamic(() => import("@/components/admin/SocialMediaCalendar"), { ssr: false });
-const SendEmailWithAttachments = dynamic(() => import("@/components/SendEmailWithAttachments"), { ssr: false });
+const SocialMediaHub = dynamic(() => import("@/components/admin/SocialMediaHub"), { ssr: false });
 
 interface Reservation {
   id: string;
@@ -186,10 +184,8 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Autoriser tous les rôles admin
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ACCOUNTANT', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ADMIN', 'admin', 'EMPLOYEE', 'COMPTABLE', 'STAGIAIRE'];
-
-      if (!adminRoles.includes(userInfo.role)) {
+      // Autoriser admin ET employés
+      if (userInfo.role !== 'admin' && userInfo.role !== 'ADMIN' && userInfo.role !== 'EMPLOYEE') {
         router.push('/espace-client');
         return;
       }
@@ -1078,7 +1074,7 @@ export default function AdminDashboard() {
               </button>
               
               {/* Boutons visibles uniquement pour les ADMINS */}
-              {isAdminRole(userRole) && (
+              {(userRole === 'ADMIN' || userRole === 'admin') && (
                 <button
                   onClick={() => router.push('/admin/users')}
                   className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
@@ -1170,7 +1166,7 @@ export default function AdminDashboard() {
                 : "bg-white text-[#2c3e50] hover:shadow-md"
             }`}
           >
-            {userRole === 'EMPLOYEE' || userRole === 'STAFF' || userRole === 'RECEPTIONIST' ? 'Tableau de bord' : 'Statistiques'}
+            {userRole === 'EMPLOYEE' ? 'Tableau de bord' : 'Statistiques'}
           </button>
           <button
             onClick={() => setActiveTab("planning")}
@@ -1263,7 +1259,7 @@ export default function AdminDashboard() {
             CRM Clients
           </button>
           {/* Emailing et WhatsApp après CRM */}
-          {isAdminRole(userRole) && (
+          {(userRole === 'ADMIN' || userRole === 'admin') && (
             <>
               <button
                 onClick={() => setActiveTab("emailing")}
@@ -1287,21 +1283,10 @@ export default function AdminDashboard() {
                 <MessageCircle className="w-4 h-4 inline mr-2" />
                 WhatsApp
               </button>
-              <button
-                onClick={() => setActiveTab("documents")}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                  activeTab === "documents"
-                    ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                    : "bg-white text-[#2c3e50] hover:shadow-md"
-                }`}
-              >
-                <Send className="w-4 h-4 inline mr-2" />
-                Documents
-              </button>
             </>
           )}
           {/* Services et Produits - uniquement pour ADMIN */}
-          {isAdminRole(userRole) && (
+          {(userRole === 'ADMIN' || userRole === 'admin') && (
             <>
               <button
                 onClick={() => setActiveTab("services")}
@@ -1337,7 +1322,7 @@ export default function AdminDashboard() {
               </button>
             </>
           )}
-          {isAdminRole(userRole) && (
+          {(userRole === 'ADMIN' || userRole === 'admin') && (
             <>
               <button
                 onClick={() => setActiveTab("comptabilite")}
@@ -1363,6 +1348,19 @@ export default function AdminDashboard() {
             <Star className="w-4 h-4 inline mr-2" />
             Avis & Photos
           </button>
+          {(userRole === 'ADMIN' || userRole === 'admin') && (
+            <button
+              onClick={() => setActiveTab("social-media")}
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                activeTab === "social-media"
+                  ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
+                  : "bg-white text-[#2c3e50] hover:shadow-md"
+              }`}
+            >
+              <Calendar className="w-4 h-4 inline mr-2" />
+              Réseaux Sociaux
+            </button>
+          )}
           </div>
         </div>
 
@@ -1371,10 +1369,10 @@ export default function AdminDashboard() {
           {activeTab === "stats" && (
             <div className="space-y-8">
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
-                {userRole === 'EMPLOYEE' || userRole === 'STAFF' || userRole === 'RECEPTIONIST' ? 'Tableau de bord' : 'Tableau de bord et statistiques'}
+                {userRole === 'EMPLOYEE' ? 'Tableau de bord' : 'Tableau de bord et statistiques'}
               </h2>
               
-              {userRole === 'EMPLOYEE' || userRole === 'STAFF' || userRole === 'RECEPTIONIST' ? (
+              {userRole === 'EMPLOYEE' ? (
                 // Vue limitée pour les employés
                 <div className="space-y-6">
                   {/* Stats de base uniquement */}
@@ -1995,15 +1993,7 @@ export default function AdminDashboard() {
                         <div className="flex justify-between items-center pt-3 border-t border-[#d4b5a0]/10">
                           <div className="flex items-center gap-2">
                             <Euro className="w-4 h-4 text-[#d4b5a0]" />
-                            {(() => {
-                              const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
-                              return (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xl font-bold text-[#d4b5a0]">{main}</span>
-                                  {sub && <span className="text-xs text-gray-500">{sub}</span>}
-                                </div>
-                              );
-                            })()}
+                            <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
                           </div>
                           {reservation.paymentStatus && (
                             <span className={`text-xs px-2 py-1 rounded-full ${
@@ -2063,7 +2053,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {isAdminRole(userRole) && (
+                {(userRole === 'ADMIN' || userRole === 'admin') && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -2140,15 +2130,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        {(() => {
-                          const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
-                          return (
-                            <>
-                              <span className="text-xl font-bold text-[#d4b5a0]">{main}</span>
-                              {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
-                            </>
-                          );
-                        })()}
+                        <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
                       </div>
                     </div>
 
@@ -2334,15 +2316,10 @@ export default function AdminDashboard() {
                             </p>
                           </div>
                           <div className="text-right">
-                            {(() => {
-                              const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
-                              return (
-                                <>
-                                  <p className="text-2xl font-bold text-[#d4b5a0]">{main}</p>
-                                  {sub && <p className="text-sm text-[#2c3e50]/60">{sub}</p>}
-                                </>
-                              );
-                            })()}
+                            <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
+                            {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                              <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                            )}
                           </div>
                         </div>
                         
@@ -2432,7 +2409,7 @@ export default function AdminDashboard() {
                   Gestion des Paiements & Livre de Recettes
                 </h2>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {isAdminRole(userRole) && (
+                {(userRole === 'ADMIN' || userRole === 'admin') && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -2700,15 +2677,10 @@ export default function AdminDashboard() {
                         )}
                       </div>
                       <div className="text-right">
-                        {(() => {
-                          const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
-                          return (
-                            <>
-                              <p className="text-2xl font-bold text-[#d4b5a0]">{main}</p>
-                              {sub && <p className="text-sm text-[#2c3e50]/60">{sub}</p>}
-                            </>
-                          );
-                        })()}
+                        <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
+                        {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                          <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                        )}
                       </div>
                     </div>
                     
@@ -3167,10 +3139,6 @@ export default function AdminDashboard() {
             <EmailCompleteInterface />
           )}
 
-          {activeTab === "documents" && (
-            <SendEmailWithAttachments />
-          )}
-
           {false && activeTab === "OLD_CLIENTS" && (
             <div>
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
@@ -3343,9 +3311,7 @@ export default function AdminDashboard() {
                                     {reservation.services.map(s => cleanServices[s as keyof typeof cleanServices]).join(', ')}
                                   </span>
                                 </div>
-                                <span className="text-sm font-medium text-[#d4b5a0]">
-                                  {displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice).main}
-                                </span>
+                                <span className="text-sm font-medium text-[#d4b5a0]">{reservation.totalPrice}€</span>
                               </div>
                             ))}
                         </div>
@@ -3387,6 +3353,10 @@ export default function AdminDashboard() {
           {activeTab === "whatsapp" && <WhatsAppHub />}
 
           {activeTab === "reviews" && <AdminReviewsManager />}
+
+          {activeTab === "social-media" && (
+            <SocialMediaHub />
+          )}
         </div>
 
       {/* Modal Nouvelle Réservation */}
@@ -3936,9 +3906,7 @@ export default function AdminDashboard() {
                              reservation.status === 'pending' ? 'En attente' :
                              reservation.status === 'cancelled' ? 'Annulé' : 'Terminé'}
                           </span>
-                          <p className="text-sm font-bold text-[#2c3e50] mt-2">
-                            {displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice).main}
-                          </p>
+                          <p className="text-sm font-bold text-[#2c3e50] mt-2">{reservation.totalPrice}€</p>
                         </div>
                       </div>
                     </div>
@@ -3998,9 +3966,7 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-green-600">
-                            {displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice).main}
-                          </p>
+                          <p className="text-sm font-bold text-green-600">{reservation.totalPrice}€</p>
                           {reservation.paymentStatus === 'paid' && (
                             <span className="text-xs text-green-600">✓ Payé</span>
                           )}
@@ -4239,7 +4205,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Bouton export - uniquement pour ADMIN */}
-                  {isAdminRole(userRole) && (
+                  {(userRole === 'ADMIN' || userRole === 'admin') && (
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => exportPayments('detailed')}

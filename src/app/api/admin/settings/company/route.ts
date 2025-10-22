@@ -24,13 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-
-    if (!decoded) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!hasAdminAccess({ role: decoded.role })) {
+    const user = verifyToken(token);
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -90,13 +85,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const decoded = verifyToken(token);
-
-    if (!decoded) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!hasAdminAccess({ role: decoded.role })) {
+    const user = verifyToken(token);
+    if (!user || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 

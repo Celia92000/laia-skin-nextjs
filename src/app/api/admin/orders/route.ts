@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
-import { hasAdminAccess } from '@/lib/admin-roles';
 // GET - Récupérer toutes les commandes (produits et formations)
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -155,7 +154,7 @@ export async function PUT(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

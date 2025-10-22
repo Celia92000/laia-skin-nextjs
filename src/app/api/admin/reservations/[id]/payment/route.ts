@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { sendWhatsApp, sendEmail } from '@/lib/notifications';
-import { hasAdminAccess } from '@/lib/admin-roles';
 import { getSiteConfig } from '@/lib/config-service';
 
 // Fonction pour générer un numéro de facture
@@ -64,7 +63,7 @@ export async function GET(
       where: { id: decoded.userId }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -135,7 +134,7 @@ export async function POST(
       where: { id: decoded.userId }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -452,7 +451,7 @@ export async function DELETE(
       where: { id: decoded.userId }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 

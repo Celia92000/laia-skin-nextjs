@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { X, CheckCircle, XCircle, CreditCard, Euro, Calendar, Gift, ChevronDown, ChevronUp, Banknote, Building2 } from "lucide-react";
-import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 interface ValidationPaymentModalProps {
   reservation: any;
@@ -55,23 +54,19 @@ export default function ValidationPaymentModalCompact({
   const [isVerifyingGiftCard, setIsVerifyingGiftCard] = useState(false);
   const [giftCardAmount, setGiftCardAmount] = useState(0);
 
-  // Récupérer les paramètres de fidélité
-  const { settings: loyaltySettings } = useLoyaltySettings();
-
   // Calculate discounts
   const individualServicesCount = loyaltyProfile?.individualServicesCount || 0;
   const packagesCount = loyaltyProfile?.packagesCount || 0;
 
-  // Utiliser les paramètres configurables au lieu des valeurs en dur
-  const isLoyaltyEligible = individualServicesCount >= loyaltySettings.serviceThreshold;
-  const loyaltyDiscount = isLoyaltyEligible ? loyaltySettings.serviceDiscount : 0;
+  const isLoyaltyEligible = individualServicesCount >= 5;
+  const loyaltyDiscount = isLoyaltyEligible ? 20 : 0;
 
-  const isPackageEligible = packagesCount >= loyaltySettings.packageThreshold;
-  const packageDiscount = isPackageEligible ? loyaltySettings.packageDiscount : 0;
+  const isPackageEligible = packagesCount >= 2;
+  const packageDiscount = isPackageEligible ? 40 : 0;
 
-  const referralSponsorDiscount = loyaltySettings.referralSponsorDiscount;
-  const referralReferredDiscount = loyaltySettings.referralReferredDiscount;
-  const birthdayDiscount = loyaltySettings.birthdayDiscount;
+  const referralSponsorDiscount = 15;
+  const referralReferredDiscount = 10;
+  const birthdayDiscount = 10;
 
   // Auto-apply discounts on mount
   useEffect(() => {

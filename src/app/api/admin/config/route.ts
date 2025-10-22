@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import { cache } from '@/lib/cache';
 import jwt from 'jsonwebtoken';
-import { hasAdminAccess } from '@/lib/admin-roles';
-
-const CONFIG_CACHE_KEY = 'site_config';
-const CONFIG_CACHE_TTL = 3600000; // 60 minutes (optimisé pour réduire les requêtes DB)
 
 // Fonction pour vérifier l'authentification admin
 async function verifyAdmin(request: NextRequest) {
@@ -23,7 +18,7 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!hasAdminAccess(user)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN')) {
       return null;
     }
 
@@ -34,15 +29,9 @@ async function verifyAdmin(request: NextRequest) {
   }
 }
 
-// GET - Récupérer la configuration du site (avec cache)
+// GET - Récupérer la configuration du site
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier le cache d'abord
-    const cached = cache.get(CONFIG_CACHE_KEY);
-    if (cached) {
-      return NextResponse.json(cached);
-    }
-
     const prisma = await getPrismaClient();
 
     // Récupérer ou créer la configuration
@@ -62,9 +51,6 @@ export async function GET(request: NextRequest) {
         }
       });
     }
-
-    // Stocker en cache
-    cache.set(CONFIG_CACHE_KEY, config, CONFIG_CACHE_TTL);
 
     return NextResponse.json(config);
   } catch (error) {
@@ -105,9 +91,6 @@ export async function PUT(request: NextRequest) {
         data
       });
     }
-
-    // Vider le cache après modification
-    cache.clear(CONFIG_CACHE_KEY);
 
     return NextResponse.json(config);
   } catch (error) {

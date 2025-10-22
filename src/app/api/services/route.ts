@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Mettre en cache pour 30 minutes (optimisé pour réduire les requêtes DB)
-    cache.set(cacheKey, services, 1800000);
+    // Mettre en cache pour 10 minutes
+    cache.set(cacheKey, services, 600000);
 
     return NextResponse.json(services);
   } catch (error: any) {

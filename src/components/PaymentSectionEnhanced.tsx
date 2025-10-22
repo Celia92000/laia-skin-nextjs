@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Gift, CreditCard, Euro, Banknote, Building2, Users, Cake, Star, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { InvoiceButton } from './InvoiceGenerator';
 import ReservationPaymentButton from './ReservationPaymentButton';
-import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 interface PaymentSectionProps {
   reservation: any;
@@ -37,9 +36,6 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
 
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
-
-  // Récupérer les paramètres de fidélité
-  const { settings: loyaltySettings } = useLoyaltySettings();
 
   // Charger les réductions depuis la base de données
   useEffect(() => {
@@ -82,25 +78,25 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
 
   // Calculer les réductions disponibles
   const availableDiscounts: AvailableDiscount[] = [];
-
-  // Utiliser les paramètres configurables
-  if (userProfile && userProfile.individualServicesCount >= loyaltySettings.serviceThreshold) {
+  
+  // 5 soins individuels = -20€
+  if (userProfile && userProfile.individualServicesCount >= 5) {
     availableDiscounts.push({
       type: 'individual',
-      amount: loyaltySettings.serviceDiscount,
-      description: `${loyaltySettings.serviceThreshold} soins réalisés`,
+      amount: 20,
+      description: '5 soins réalisés',
       icon: Gift,
       color: 'bg-[#d4b5a0]',
       automatic: true
     });
   }
-
-  // Utiliser les paramètres configurables pour les forfaits
-  if (userProfile && userProfile.packagesCount >= loyaltySettings.packageThreshold) {
+  
+  // 3 forfaits = -40€
+  if (userProfile && userProfile.packagesCount >= 3) {
     availableDiscounts.push({
       type: 'package',
-      amount: loyaltySettings.packageDiscount,
-      description: `${loyaltySettings.packageThreshold} forfaits complétés`,
+      amount: 40,
+      description: '3 forfaits achetés',
       icon: Star,
       color: 'bg-purple-500',
       automatic: true
@@ -142,11 +138,11 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
 
     const autoDiscounts: AvailableDiscount[] = [];
 
-    // Utiliser les paramètres configurables
-    if (userProfile.individualServicesCount >= loyaltySettings.serviceThreshold) {
+    // 5 soins individuels = -20€
+    if (userProfile.individualServicesCount >= 5) {
       autoDiscounts.push({
         type: 'individual',
-        amount: loyaltySettings.serviceDiscount,
+        amount: 20,
         description: '5 soins réalisés',
         icon: Gift,
         color: 'bg-[#d4b5a0]',
@@ -154,11 +150,11 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
       });
     }
 
-    // Utiliser les paramètres configurables pour les forfaits
-    if (userProfile.packagesCount >= loyaltySettings.packageThreshold) {
+    // 3 forfaits = -40€
+    if (userProfile.packagesCount >= 3) {
       autoDiscounts.push({
         type: 'package',
-        amount: loyaltySettings.packageDiscount,
+        amount: 40,
         description: '3 forfaits achetés',
         icon: Star,
         color: 'bg-purple-500',
@@ -615,8 +611,6 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
                 serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
                 paymentStatus={reservation.paymentStatus || 'unpaid'}
                 paymentMethod={reservation.paymentMethod}
-                customerEmail={reservation.userEmail}
-                customerName={reservation.userName}
                 onPaymentInitiated={() => {
                   // Rafraîchir après paiement
                   window.location.reload();

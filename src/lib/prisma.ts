@@ -24,12 +24,6 @@ const createPrismaClient = () => {
       }
     },
   }).$extends({
-    client: {
-      // Configurer le pool de connexions
-      $connect: async function() {
-        return this as any;
-      }
-    },
     query: {
       async $allOperations({ operation, model, args, query }) {
         const start = performance.now();

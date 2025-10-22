@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Gift, CreditCard, Euro, Banknote, Building2 } from 'lucide-react';
 import { InvoiceButton } from './InvoiceGenerator';
-import { getEnabledPaymentMethods, PaymentMethods } from '@/lib/payment-methods';
-import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 interface PaymentSectionProps {
   reservation: any;
@@ -21,31 +19,11 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
   const [showManualDiscount, setShowManualDiscount] = useState(false);
   const [manualDiscountAmount, setManualDiscountAmount] = useState(0);
   const [manualDiscountReason, setManualDiscountReason] = useState('');
-  const [enabledPaymentMethods, setEnabledPaymentMethods] = useState<PaymentMethods>({
-    stripe: true,
-    cash: true,
-    check: true,
-    transfer: false,
-    paypal: false
-  });
-
-  useEffect(() => {
-    const fetchPaymentMethods = async () => {
-      const methods = await getEnabledPaymentMethods();
-      setEnabledPaymentMethods(methods);
-    };
-    fetchPaymentMethods();
-  }, []);
-
-  // Récupérer les paramètres de fidélité
-  const { settings: loyaltySettings } = useLoyaltySettings();
-
+  
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
-
-  // Utiliser les paramètres configurables
-  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= loyaltySettings.serviceThreshold;
-  const hasPackageDiscount = userProfile && userProfile.packagesCount >= loyaltySettings.packageThreshold;
+  const hasIndividualDiscount = userProfile && userProfile.individualServicesCount >= 5;  // 5ème soin = réduction
+  const hasPackageDiscount = userProfile && userProfile.packagesCount >= 3;  // 3ème forfait = réduction
   const isBirthday = userProfile && userProfile.user.birthDate && 
     new Date(userProfile.user.birthDate).getMonth() === new Date().getMonth() &&
     new Date(userProfile.user.birthDate).getDate() === new Date().getDate();
@@ -235,11 +213,9 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 id={`method-${reservation.id}`}
                 className="w-full px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
               >
-                {enabledPaymentMethods.cash && <option value="cash">Espèces</option>}
-                {enabledPaymentMethods.stripe && <option value="card">Carte bancaire</option>}
-                {enabledPaymentMethods.check && <option value="check">Chèque</option>}
-                {enabledPaymentMethods.transfer && <option value="transfer">Virement</option>}
-                {enabledPaymentMethods.paypal && <option value="paypal">PayPal</option>}
+                <option value="cash">Espèces</option>
+                <option value="card">Carte bancaire</option>
+                <option value="transfer">Virement</option>
               </select>
             </div>
             <div>
@@ -259,48 +235,42 @@ export default function PaymentSection({ reservation, loyaltyProfiles, recordPay
                 Total à payer : {appliedDiscount ? Math.max(0, reservation.totalPrice - appliedDiscount.amount) : reservation.totalPrice}€
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {enabledPaymentMethods.cash && (
-                  <div className="flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-green-600" />
-                    <label className="text-sm text-[#2c3e50]/60">Espèces</label>
-                    <input
-                      type="number"
-                      value={cashAmount}
-                      onChange={(e) => setCashAmount(Number(e.target.value))}
-                      placeholder="0"
-                      className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
-                    />
-                    <span className="text-sm">€</span>
-                  </div>
-                )}
-                {enabledPaymentMethods.stripe && (
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-blue-600" />
-                    <label className="text-sm text-[#2c3e50]/60">Carte</label>
-                    <input
-                      type="number"
-                      value={cardAmount}
-                      onChange={(e) => setCardAmount(Number(e.target.value))}
-                      placeholder="0"
-                      className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
-                    />
-                    <span className="text-sm">€</span>
-                  </div>
-                )}
-                {enabledPaymentMethods.transfer && (
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-purple-600" />
-                    <label className="text-sm text-[#2c3e50]/60">Virement</label>
-                    <input
-                      type="number"
-                      value={transferAmount}
-                      onChange={(e) => setTransferAmount(Number(e.target.value))}
-                      placeholder="0"
-                      className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
-                    />
-                    <span className="text-sm">€</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-green-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Espèces</label>
+                  <input
+                    type="number"
+                    value={cashAmount}
+                    onChange={(e) => setCashAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Carte</label>
+                  <input
+                    type="number"
+                    value={cardAmount}
+                    onChange={(e) => setCardAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                  <label className="text-sm text-[#2c3e50]/60">Virement</label>
+                  <input
+                    type="number"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="flex-1 px-2 py-1 border border-[#d4b5a0]/20 rounded focus:border-[#d4b5a0] focus:outline-none"
+                  />
+                  <span className="text-sm">€</span>
+                </div>
               </div>
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center">

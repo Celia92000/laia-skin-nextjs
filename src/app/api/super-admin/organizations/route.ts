@@ -2,15 +2,11 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { cache } from '@/lib/cache'
 import { seedOrganization } from '@/lib/seed-organization'
 import { createStripeCustomer } from '@/lib/stripe-service'
 import { encrypt, validateIban, validateBic } from '@/lib/encryption-service'
 import bcrypt from 'bcryptjs'
 import { getAllOrganizations } from '@/lib/tenant-service'
-
-const ORGANIZATIONS_CACHE_KEY = 'all_organizations'
-const ORGANIZATIONS_CACHE_TTL = 60000 // 1 minute (les orgs changent plus souvent que la config)
 
 export async function GET() {
   try {
@@ -37,15 +33,6 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Vérifier le cache
-    const cached = cache.get(ORGANIZATIONS_CACHE_KEY)
-    if (cached) {
-      return NextResponse.json({
-        user,
-        ...cached
-      })
-    }
-
     // Récupérer toutes les organisations
     const organizations = await getAllOrganizations()
 
@@ -54,21 +41,14 @@ export async function GET() {
     const totalReservations = await prisma.reservation.count()
     const totalServices = await prisma.service.count()
 
-    const data = {
+    return NextResponse.json({
+      user,
       organizations,
       stats: {
         totalUsers,
         totalReservations,
         totalServices
       }
-    }
-
-    // Mettre en cache
-    cache.set(ORGANIZATIONS_CACHE_KEY, data, ORGANIZATIONS_CACHE_TTL)
-
-    return NextResponse.json({
-      user,
-      ...data
     })
 
   } catch (error) {
@@ -328,9 +308,6 @@ export async function POST(request: Request) {
       console.error('⚠️ Erreur lors du seed (non bloquant):', seedError)
       // On ne bloque pas la création même si le seed échoue
     }
-
-    // Invalider le cache des organisations
-    cache.clear(ORGANIZATIONS_CACHE_KEY)
 
     return NextResponse.json({
       id: organization.id,

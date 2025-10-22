@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminStatistics } from '@/lib/statistics';
 import jwt from 'jsonwebtoken';
-import { isAdminRole } from '@/lib/admin-roles';
 
 const defaultStats = {
   totalReservations: 0,
@@ -39,18 +38,18 @@ export async function GET(request: Request) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
 
-      // Vérifier que c'est un admin
-      if (!isAdminRole(decoded.role)) {
+      // Vérifier que c'est un admin ou employé
+      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE'].includes(decoded.role)) {
         return NextResponse.json({ ...defaultStats, error: 'Accès refusé' }, { status: 200 });
       }
     } catch (error) {
       return NextResponse.json({ ...defaultStats, error: 'Token invalide' }, { status: 200 });
     }
 
-    // Récupérer les statistiques avec timeout augmenté
+    // Récupérer les statistiques avec timeout
     const statsPromise = getAdminStatistics();
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 30000)
+      setTimeout(() => reject(new Error('Timeout')), 8000)
     );
 
     const stats = await Promise.race([statsPromise, timeoutPromise]) as any;
