@@ -7,6 +7,9 @@ import {
   MessageSquare, Package, TrendingUp, Users, Gift
 } from 'lucide-react';
 import StripeConfigModal from './integrations/StripeConfigModal';
+import PayPalConfigModal from './integrations/PayPalConfigModal';
+import MollieConfigModal from './integrations/MollieConfigModal';
+import SumUpConfigModal from './integrations/SumUpConfigModal';
 
 interface Integration {
   id: string;
@@ -31,6 +34,36 @@ const AVAILABLE_INTEGRATIONS = [
     color: 'bg-indigo-500',
     docsUrl: 'https://stripe.com/docs',
     importance: 'essential'
+  },
+  {
+    type: 'paypal',
+    name: 'PayPal',
+    description: 'Paiements en ligne via PayPal et cartes bancaires',
+    category: 'payments',
+    icon: CreditCard,
+    color: 'bg-blue-600',
+    docsUrl: 'https://developer.paypal.com/docs',
+    importance: 'essential'
+  },
+  {
+    type: 'mollie',
+    name: 'Mollie',
+    description: 'Solution de paiement européenne (CB, iDEAL, Bancontact...)',
+    category: 'payments',
+    icon: CreditCard,
+    color: 'bg-gray-800',
+    docsUrl: 'https://docs.mollie.com',
+    importance: 'important'
+  },
+  {
+    type: 'sumup',
+    name: 'SumUp',
+    description: 'TPE mobile et paiements en ligne',
+    category: 'payments',
+    icon: CreditCard,
+    color: 'bg-cyan-500',
+    docsUrl: 'https://developer.sumup.com',
+    importance: 'useful'
   },
   {
     type: 'planity',
@@ -142,6 +175,9 @@ export default function IntegrationsTab() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null);
   const [showStripeModal, setShowStripeModal] = useState(false);
+  const [showPayPalModal, setShowPayPalModal] = useState(false);
+  const [showMollieModal, setShowMollieModal] = useState(false);
+  const [showSumUpModal, setShowSumUpModal] = useState(false);
 
   useEffect(() => {
     fetchIntegrations();
@@ -193,6 +229,12 @@ export default function IntegrationsTab() {
   const handleActivateIntegration = (type: string) => {
     if (type === 'stripe') {
       setShowStripeModal(true);
+    } else if (type === 'paypal') {
+      setShowPayPalModal(true);
+    } else if (type === 'mollie') {
+      setShowMollieModal(true);
+    } else if (type === 'sumup') {
+      setShowSumUpModal(true);
     } else {
       setSelectedIntegration(type);
     }
@@ -200,6 +242,7 @@ export default function IntegrationsTab() {
 
   const handleSaveStripe = async (config: any) => {
     try {
+      // 1. Sauvegarder la configuration
       const response = await fetch('/api/admin/integrations', {
         method: 'POST',
         headers: {
@@ -215,14 +258,159 @@ export default function IntegrationsTab() {
         })
       });
 
-      if (response.ok) {
-        await fetchIntegrations();
-        setShowStripeModal(false);
-      } else {
+      if (!response.ok) {
         throw new Error('Erreur lors de la sauvegarde');
       }
+
+      const savedIntegration = await response.json();
+
+      // 2. Mettre à jour le statut à "connected" puisque le test a réussi
+      await fetch('/api/admin/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          id: savedIntegration.id,
+          status: 'connected'
+        })
+      });
+
+      // 3. Rafraîchir la liste
+      await fetchIntegrations();
+      setShowStripeModal(false);
     } catch (error) {
       console.error('Erreur sauvegarde Stripe:', error);
+      throw error;
+    }
+  };
+
+  const handleSavePayPal = async (config: any) => {
+    try {
+      const response = await fetch('/api/admin/integrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          type: 'paypal',
+          enabled: true,
+          config,
+          displayName: 'PayPal',
+          description: 'Paiements en ligne via PayPal et cartes bancaires'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      const savedIntegration = await response.json();
+
+      await fetch('/api/admin/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          id: savedIntegration.id,
+          status: 'connected'
+        })
+      });
+
+      await fetchIntegrations();
+      setShowPayPalModal(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde PayPal:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveMollie = async (config: any) => {
+    try {
+      const response = await fetch('/api/admin/integrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          type: 'mollie',
+          enabled: true,
+          config,
+          displayName: 'Mollie',
+          description: 'Solution de paiement européenne'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      const savedIntegration = await response.json();
+
+      await fetch('/api/admin/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          id: savedIntegration.id,
+          status: 'connected'
+        })
+      });
+
+      await fetchIntegrations();
+      setShowMollieModal(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde Mollie:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveSumUp = async (config: any) => {
+    try {
+      const response = await fetch('/api/admin/integrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          type: 'sumup',
+          enabled: true,
+          config,
+          displayName: 'SumUp',
+          description: 'TPE mobile et paiements en ligne'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      const savedIntegration = await response.json();
+
+      await fetch('/api/admin/integrations', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          id: savedIntegration.id,
+          status: 'connected'
+        })
+      });
+
+      await fetchIntegrations();
+      setShowSumUpModal(false);
+    } catch (error) {
+      console.error('Erreur sauvegarde SumUp:', error);
       throw error;
     }
   };
@@ -440,6 +628,33 @@ export default function IntegrationsTab() {
           onClose={() => setShowStripeModal(false)}
           onSave={handleSaveStripe}
           existingConfig={(integrations.find(i => i.type === 'stripe') as any)?.config}
+        />
+      )}
+
+      {/* Modal PayPal */}
+      {showPayPalModal && (
+        <PayPalConfigModal
+          onClose={() => setShowPayPalModal(false)}
+          onSave={handleSavePayPal}
+          existingConfig={(integrations.find(i => i.type === 'paypal') as any)?.config}
+        />
+      )}
+
+      {/* Modal Mollie */}
+      {showMollieModal && (
+        <MollieConfigModal
+          onClose={() => setShowMollieModal(false)}
+          onSave={handleSaveMollie}
+          existingConfig={(integrations.find(i => i.type === 'mollie') as any)?.config}
+        />
+      )}
+
+      {/* Modal SumUp */}
+      {showSumUpModal && (
+        <SumUpConfigModal
+          onClose={() => setShowSumUpModal(false)}
+          onSave={handleSaveSumUp}
+          existingConfig={(integrations.find(i => i.type === 'sumup') as any)?.config}
         />
       )}
 

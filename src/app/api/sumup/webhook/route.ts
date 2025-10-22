@@ -1,0 +1,79 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+
+    console.log('Webhook SumUp reçu:', body.event_type);
+
+    // SumUp envoie un event_type dans le webhook
+    const eventType = body.event_type;
+    const checkout = body.checkout || body;
+
+    // Trouver la réservation via checkout_reference
+    const reservationId = checkout.checkout_reference || checkout.id;
+
+    if (!reservationId) {
+      console.log('Pas de checkout_reference dans le webhook SumUp');
+      return NextResponse.json({ received: true });
+    }
+
+    // Trouver la réservation
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId }
+    });
+
+    if (!reservation) {
+      console.log('Réservation non trouvée:', reservationId);
+      return NextResponse.json({ received: true });
+    }
+
+    // Traiter selon le statut
+    if (eventType === 'CHECKOUT_PAID' || checkout.status === 'PAID') {
+      const paymentAmount = checkout.amount || checkout.total_amount;
+
+      await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          paymentStatus: 'paid',
+          paymentAmount: paymentAmount,
+          paymentDate: new Date(checkout.date || checkout.timestamp),
+          stripePaymentId: checkout.id,
+          paymentMethod: 'SumUp'
+        }
+      });
+
+      // Créer une entrée dans Payment
+      await prisma.payment.create({
+        data: {
+          type: 'reservation',
+          reservationId: reservationId,
+          userId: reservation.userId,
+          amount: paymentAmount,
+          currency: checkout.currency || 'EUR',
+          status: 'succeeded',
+          paymentMethod: 'sumup',
+          stripePaymentId: checkout.id,
+          description: `Paiement SumUp réservation #${reservationId}`,
+          metadata: JSON.stringify(body)
+        }
+      });
+    } else if (eventType === 'CHECKOUT_FAILED' || checkout.status === 'FAILED') {
+      await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          paymentStatus: 'unpaid'
+        }
+      });
+    }
+
+    return NextResponse.json({ received: true });
+
+  } catch (error: any) {
+    console.error('Erreur webhook SumUp:', error);
+    return NextResponse.json({
+      error: error.message || 'Erreur serveur'
+    }, { status: 500 });
+  }
+}

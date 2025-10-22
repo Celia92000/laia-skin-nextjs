@@ -594,7 +594,50 @@ Pour toute question: contact@laia-skin-institut.com`;
     }
   };
 
-  const filteredReservations = reservations
+  // Filtrer par période d'abord
+  const now = new Date();
+  let reservationsByPeriod = reservations;
+
+  switch (period) {
+    case 'day':
+      reservationsByPeriod = reservations.filter(r => {
+        const date = new Date(r.date);
+        return date.toDateString() === now.toDateString();
+      });
+      break;
+    case 'week':
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      reservationsByPeriod = reservations.filter(r => {
+        const date = new Date(r.date);
+        return date >= weekStart;
+      });
+      break;
+    case 'month':
+      reservationsByPeriod = reservations.filter(r => {
+        const date = new Date(r.date);
+        return date.getMonth() === now.getMonth() &&
+               date.getFullYear() === now.getFullYear();
+      });
+      break;
+    case 'quarter':
+      const quarterStart = new Date(now);
+      quarterStart.setMonth(Math.floor(now.getMonth() / 3) * 3);
+      quarterStart.setDate(1);
+      reservationsByPeriod = reservations.filter(r => {
+        const date = new Date(r.date);
+        return date >= quarterStart;
+      });
+      break;
+    case 'year':
+      reservationsByPeriod = reservations.filter(r => {
+        const date = new Date(r.date);
+        return date.getFullYear() === now.getFullYear();
+      });
+      break;
+  }
+
+  const filteredReservations = reservationsByPeriod
     .filter(r => {
       const matchesSearch = searchTerm === '' ||
         r.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -614,6 +657,7 @@ Pour toute question: contact@laia-skin-institut.com`;
       return dateB - dateA;
     });
 
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -632,7 +676,23 @@ Pour toute question: contact@laia-skin-institut.com`;
           </h2>
           <div className="flex gap-2">
             <button
-              onClick={fetchReservations}
+              onClick={async () => {
+                console.log('🔄 Actualisation en cours...');
+                // Invalider le cache d'abord
+                try {
+                  const token = localStorage.getItem('token');
+                  const clearResponse = await fetch('/api/admin/clear-cache', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  });
+                  console.log('✅ Cache invalidé:', await clearResponse.json());
+                } catch (error) {
+                  console.error('❌ Erreur invalidation cache:', error);
+                }
+
+                // Forcer un rechargement complet de la page
+                window.location.reload();
+              }}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
             >
               <RefreshCw className="w-4 h-4" />
@@ -930,7 +990,7 @@ Pour toute question: contact@laia-skin-institut.com`;
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredReservations.slice(0, 10).map(reservation => (
+                  {filteredReservations.slice(0, 50).map(reservation => (
                     <tr key={reservation.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm">
                         <div className="flex items-center gap-1">
@@ -951,19 +1011,66 @@ Pour toute question: contact@laia-skin-institut.com`;
                       <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
                         {Array.isArray(reservation.services) ? reservation.services.join(', ') : reservation.services}
                       </td>
-                      <td className="px-4 py-3 text-sm font-bold">
-                        {reservation.totalPrice?.toFixed(2)}€
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-bold">
+                            {(reservation.paymentAmount || reservation.totalPrice)?.toFixed(2)}€
+                          </span>
+                          {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                            <span className="text-xs text-gray-500">
+                              (sur {reservation.totalPrice?.toFixed(2)}€)
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        {reservation.paymentStatus === 'paid' ? (
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            ✓ Payée
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                            En attente
-                          </span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {reservation.paymentStatus === 'paid' ? (
+                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                              ✓ Payée
+                            </span>
+                          ) : reservation.paymentStatus === 'pending' && reservation.paymentMethod === 'Stripe' ? (
+                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full flex items-center gap-1 w-fit">
+                              💳 Stripe - En attente
+                            </span>
+                          ) : reservation.paymentStatus === 'pending' && reservation.paymentMethod === 'PayPal' ? (
+                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full flex items-center gap-1 w-fit">
+                              💳 PayPal - En attente
+                            </span>
+                          ) : reservation.paymentStatus === 'pending' && reservation.paymentMethod === 'Mollie' ? (
+                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full flex items-center gap-1 w-fit">
+                              💳 Mollie - En attente
+                            </span>
+                          ) : reservation.paymentStatus === 'pending' && reservation.paymentMethod === 'SumUp' ? (
+                            <span className="px-2 py-1 text-xs font-medium bg-cyan-100 text-cyan-800 rounded-full flex items-center gap-1 w-fit">
+                              💳 SumUp - En attente
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                              En attente
+                            </span>
+                          )}
+                          {reservation.paymentMethod === 'Stripe' && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-600 rounded w-fit">
+                              💳 Stripe
+                            </span>
+                          )}
+                          {reservation.paymentMethod === 'PayPal' && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded w-fit">
+                              💳 PayPal
+                            </span>
+                          )}
+                          {reservation.paymentMethod === 'Mollie' && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 rounded w-fit">
+                              💳 Mollie
+                            </span>
+                          )}
+                          {reservation.paymentMethod === 'SumUp' && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-cyan-50 text-cyan-600 rounded w-fit">
+                              💳 SumUp
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
@@ -1067,15 +1174,53 @@ Pour toute question: contact@laia-skin-institut.com`;
                             {order.totalAmount?.toFixed(2)}€
                           </td>
                           <td className="px-4 py-3">
-                            {order.paymentStatus === 'paid' ? (
-                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                                Payé
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                                En attente
-                              </span>
-                            )}
+                            <div className="flex flex-col gap-1">
+                              {order.paymentStatus === 'paid' ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                  Payé
+                                </span>
+                              ) : order.paymentStatus === 'pending' && order.paymentMethod === 'Stripe' ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full flex items-center gap-1 w-fit">
+                                  💳 Stripe - En attente
+                                </span>
+                              ) : order.paymentStatus === 'pending' && order.paymentMethod === 'PayPal' ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full flex items-center gap-1 w-fit">
+                                  💳 PayPal - En attente
+                                </span>
+                              ) : order.paymentStatus === 'pending' && order.paymentMethod === 'Mollie' ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full flex items-center gap-1 w-fit">
+                                  💳 Mollie - En attente
+                                </span>
+                              ) : order.paymentStatus === 'pending' && order.paymentMethod === 'SumUp' ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-cyan-100 text-cyan-800 rounded-full flex items-center gap-1 w-fit">
+                                  💳 SumUp - En attente
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                                  En attente
+                                </span>
+                              )}
+                              {order.paymentMethod === 'Stripe' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-indigo-50 text-indigo-600 rounded w-fit">
+                                  💳 Stripe
+                                </span>
+                              )}
+                              {order.paymentMethod === 'PayPal' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded w-fit">
+                                  💳 PayPal
+                                </span>
+                              )}
+                              {order.paymentMethod === 'Mollie' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-600 rounded w-fit">
+                                  💳 Mollie
+                                </span>
+                              )}
+                              {order.paymentMethod === 'SumUp' && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-cyan-50 text-cyan-600 rounded w-fit">
+                                  💳 SumUp
+                                </span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

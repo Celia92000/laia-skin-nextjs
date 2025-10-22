@@ -61,8 +61,10 @@ export async function POST(request: Request) {
             where: { id: reservationId },
             data: {
               paymentStatus: 'paid',
+              paymentAmount: session.amount_total / 100,
+              paymentDate: new Date(),
               stripePaymentId: session.payment_intent,
-              paymentMethod: 'stripe'
+              paymentMethod: 'Stripe'
             }
           });
 

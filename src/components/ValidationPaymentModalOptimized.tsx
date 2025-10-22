@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, CheckCircle, XCircle, CreditCard, Euro, Calendar, Gift } from "lucide-react";
 import ReservationPaymentButton from './ReservationPaymentButton';
+import { useLoyaltySettings } from '@/hooks/useLoyaltySettings';
 
 interface ValidationPaymentModalProps {
   reservation: any;
@@ -50,22 +51,30 @@ export default function ValidationPaymentModal({
   const [isVerifyingGiftCard, setIsVerifyingGiftCard] = useState(false);
   const [giftCardAmount, setGiftCardAmount] = useState(0);
 
+  // États pour vérifier quelles intégrations de paiement sont activées
+  const [isStripeEnabled, setIsStripeEnabled] = useState(false);
+  const [isPayPalEnabled, setIsPayPalEnabled] = useState(false);
+  const [isMollieEnabled, setIsMollieEnabled] = useState(false);
+  const [isSumUpEnabled, setIsSumUpEnabled] = useState(false);
+
+  // Récupérer les paramètres de fidélité
+  const { settings: loyaltySettings } = useLoyaltySettings();
+
   // Calculer les réductions disponibles
   const individualServicesCount = loyaltyProfile?.individualServicesCount || 0;
   const packagesCount = loyaltyProfile?.packagesCount || 0;
-  
-  // 5 soins = -20€ (le client doit avoir 5 soins pour avoir la réduction)
-  const isLoyaltyEligible = individualServicesCount >= 5;
-  const loyaltyDiscount = isLoyaltyEligible ? 20 : 0;
-  
-  // Réduction forfaits : disponible dès qu'on a 2 forfaits complétés (8 séances)
-  // La réduction s'applique à la 9ème séance (début du 3ème forfait)
-  const isPackageEligible = packagesCount >= 2;
-  const packageDiscount = isPackageEligible ? 40 : 0;
-  
-  const referralSponsorDiscount = 15; // Réduction pour le parrain
-  const referralReferredDiscount = 10; // Réduction pour le filleul
-  const birthdayDiscount = 10; // Réduction anniversaire
+
+  // Utiliser les paramètres configurables au lieu des valeurs en dur
+  const isLoyaltyEligible = individualServicesCount >= loyaltySettings.serviceThreshold;
+  const loyaltyDiscount = isLoyaltyEligible ? loyaltySettings.serviceDiscount : 0;
+
+  // Réduction forfaits : disponible selon le seuil configuré
+  const isPackageEligible = packagesCount >= loyaltySettings.packageThreshold;
+  const packageDiscount = isPackageEligible ? loyaltySettings.packageDiscount : 0;
+
+  const referralSponsorDiscount = loyaltySettings.referralSponsorDiscount; // Réduction pour le parrain (configurable)
+  const referralReferredDiscount = loyaltySettings.referralReferredDiscount; // Réduction pour le filleul (configurable)
+  const birthdayDiscount = loyaltySettings.birthdayDiscount; // Réduction anniversaire configurable
   
   // Pré-cocher automatiquement les réductions de fidélité disponibles au montage
   useEffect(() => {
@@ -77,12 +86,15 @@ export default function ValidationPaymentModal({
       if (isPackageEligible && !applyPackageDiscount) {
         setApplyPackageDiscount(true);
       }
-      
+
       // Vérifier le statut de parrainage du client
       checkReferralStatus();
-      
+
       // Vérifier si c'est le mois d'anniversaire du client
       checkBirthdayStatus();
+
+      // Vérifier si Stripe est activé
+      checkStripeIntegration();
     }
   }, [isOpen, isLoyaltyEligible, isPackageEligible]);
 
@@ -161,6 +173,39 @@ export default function ValidationPaymentModal({
       }
     } catch (error) {
       console.error('Erreur vérification anniversaire:', error);
+    }
+  };
+
+  // Vérifier quelles intégrations de paiement sont configurées et activées
+  const checkStripeIntegration = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const integrations = await response.json();
+
+        // Vérifier chaque intégration de paiement
+        const stripeIntegration = integrations.find((i: any) => i.type === 'stripe');
+        setIsStripeEnabled(stripeIntegration?.enabled && stripeIntegration?.status === 'connected');
+
+        const paypalIntegration = integrations.find((i: any) => i.type === 'paypal');
+        setIsPayPalEnabled(paypalIntegration?.enabled && paypalIntegration?.status === 'connected');
+
+        const mollieIntegration = integrations.find((i: any) => i.type === 'mollie');
+        setIsMollieEnabled(mollieIntegration?.enabled && mollieIntegration?.status === 'connected');
+
+        const sumupIntegration = integrations.find((i: any) => i.type === 'sumup');
+        setIsSumUpEnabled(sumupIntegration?.enabled && sumupIntegration?.status === 'connected');
+      }
+    } catch (error) {
+      console.error('Erreur vérification intégrations paiement:', error);
+      setIsStripeEnabled(false);
+      setIsPayPalEnabled(false);
+      setIsMollieEnabled(false);
+      setIsSumUpEnabled(false);
     }
   };
 
@@ -261,7 +306,13 @@ export default function ValidationPaymentModal({
 
     if (paymentStatus === 'paid') {
       // Paiement effectué (client présent ou acompte si absent)
-      data.paymentStatus = clientPresent ? 'paid' : 'partial';
+      // Pour les paiements en ligne, le paiement est en attente jusqu'à confirmation du webhook
+      const onlinePaymentMethods = ['Stripe', 'PayPal', 'Mollie', 'SumUp'];
+      if (onlinePaymentMethods.includes(paymentMethod)) {
+        data.paymentStatus = 'pending';
+      } else {
+        data.paymentStatus = clientPresent ? 'paid' : 'partial';
+      }
       data.paymentAmount = paymentAmount;
       data.paymentMethod = paymentMethod;
       data.paymentDate = new Date().toISOString();
@@ -334,22 +385,39 @@ export default function ValidationPaymentModal({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-xl max-w-md w-full mx-4 max-h-[98vh] flex flex-col">
+      <div className="bg-white rounded-xl max-w-2xl w-full mx-4 max-h-[95vh] overflow-y-auto">
         {/* Alerte si des réductions sont disponibles */}
         {(isLoyaltyEligible || isPackageEligible) && (
-          <div className="m-2 mb-0 p-1.5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg animate-pulse">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-              <p className="font-semibold text-green-800 text-xs">
+          <div className="m-4 mb-0 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg animate-pulse">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <p className="font-semibold text-green-800">
                 🎉 Réduction de fidélité disponible !
               </p>
             </div>
-            <p className="text-xs text-green-700 mt-0.5">
-              {isLoyaltyEligible && `• ${individualServicesCount} soins individuels réalisés → Réduction de 20€ disponible`}
-              {isLoyaltyEligible && isPackageEligible && <br />}
-              {isPackageEligible && `• ${packagesCount} forfaits complétés (${packagesCount * 4} séances) → Réduction de 40€ disponible`}
-            </p>
-            <p className="text-xs text-green-600 mt-0.5 font-medium">
+            <div className="mt-2 space-y-2">
+              {isLoyaltyEligible && (
+                <div className="bg-green-100 rounded p-2">
+                  <p className="text-sm font-bold text-green-900">
+                    💰 RÉDUCTION DE {loyaltySettings.serviceDiscount}€ APPLICABLE DÈS MAINTENANT !
+                  </p>
+                  <p className="text-xs text-green-700 mt-0.5">
+                    {individualServicesCount} soins individuels réalisés → La réduction s'applique sur ce soin
+                  </p>
+                </div>
+              )}
+              {isPackageEligible && (
+                <div className="bg-green-100 rounded p-2">
+                  <p className="text-sm font-bold text-green-900">
+                    💰 RÉDUCTION DE {loyaltySettings.packageDiscount}€ APPLICABLE DÈS MAINTENANT !
+                  </p>
+                  <p className="text-xs text-green-700 mt-0.5">
+                    {packagesCount} forfaits complétés ({packagesCount * 4} séances) → Début du {loyaltySettings.packageThreshold + 1}ème forfait
+                  </p>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-green-600 mt-2 font-medium">
               ✅ Les réductions sont automatiquement appliquées au montant !
             </p>
           </div>
@@ -458,9 +526,11 @@ export default function ValidationPaymentModal({
                   ? `${calculateFinalAmount()}€`
                   : `${reservation.totalPrice}€`}
               </span>
-              {(isLoyaltyEligible || isPackageEligible) && (
+              {(applyLoyaltyDiscount || applyPackageDiscount) && (
                 <span className="text-xs text-green-600 font-medium">
-                  (-{(applyLoyaltyDiscount ? loyaltyDiscount : 0) + (applyPackageDiscount ? packageDiscount : 0)}€)
+                  ({applyLoyaltyDiscount && `-${loyaltyDiscount}€ soins`}
+                  {applyLoyaltyDiscount && applyPackageDiscount && ', '}
+                  {applyPackageDiscount && `-${packageDiscount}€ forfaits`})
                 </span>
               )}
             </div>
@@ -541,38 +611,18 @@ export default function ValidationPaymentModal({
                                     <div className="font-semibold">📍 1 forfait complété</div>
                                     <div>→ 2ème forfait en cours</div>
                                     <div className="text-orange-600 font-semibold">
-                                      ⏳ -40€ dès le 3ème forfait
+                                      ⏳ -{loyaltySettings.packageDiscount}€ dès le {loyaltySettings.packageThreshold + 1}ème forfait
                                     </div>
                                   </>
                                 );
                               }
                               
-                              if (forfaitsCompletes === 2) {
-                                return (
-                                  <>
-                                    <div className="font-semibold text-green-600">✨ État actuel: 2 forfaits déjà complétés</div>
-                                    <div className="text-green-600 font-bold animate-pulse">
-                                      🎉 Cette séance est la 1ère séance du 3ème forfait !
-                                    </div>
-                                    <div className="bg-green-100 rounded p-1 mt-1">
-                                      <div className="text-green-800 font-bold">
-                                        💰 RÉDUCTION DE 40€ APPLICABLE DÈS MAINTENANT !
-                                      </div>
-                                      <div className="text-xs text-green-700">
-                                        La réduction s'applique au début du 3ème forfait
-                                      </div>
-                                    </div>
-                                    <div className="text-xs text-purple-600 mt-1">
-                                      → Cette séance compte comme la 1ère/4 du 3ème forfait
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      → Le forfait sera complété après 3 séances supplémentaires
-                                    </div>
-                                  </>
-                                );
+                              if (forfaitsCompletes === loyaltySettings.packageThreshold) {
+                                return null;
                               }
                               
-                              if (forfaitsCompletes >= 3) {
+                              if (forfaitsCompletes >= loyaltySettings.packageThreshold) {
+                                const thresholdValue = loyaltySettings.packageThreshold;
                                 const nouveauCycle = positionDansCycle;
                                 if (nouveauCycle === 0) {
                                   return (
@@ -580,7 +630,7 @@ export default function ValidationPaymentModal({
                                       <div className="font-semibold">📍 Nouveau cycle - Aucun forfait dans ce cycle</div>
                                       <div>→ Cette validation compte pour le 1er forfait du nouveau cycle</div>
                                       <div className="text-orange-600 font-semibold mt-1">
-                                        ⏳ Encore 2 forfaits complets avant la prochaine réduction de 40€
+                                        ⏳ Encore {thresholdValue} forfaits complets avant la prochaine réduction de {loyaltySettings.packageDiscount}€
                                       </div>
                                     </>
                                   );
@@ -590,21 +640,16 @@ export default function ValidationPaymentModal({
                                       <div className="font-semibold">📍 Nouveau cycle - 1 forfait complété</div>
                                       <div>→ Cette validation compte pour le 2ème forfait</div>
                                       <div className="text-orange-600 font-semibold mt-1">
-                                        ⏳ Encore 1 forfait complet avant la prochaine réduction de 40€
+                                        ⏳ Encore {thresholdValue - 1} forfait complet avant la prochaine réduction de {loyaltySettings.packageDiscount}€
                                       </div>
                                     </>
                                   );
                                 } else {
                                   return (
                                     <>
-                                      <div className="font-semibold text-green-600">✨ 2 forfaits dans ce cycle</div>
-                                      <div className="text-green-600 font-bold animate-pulse">
-                                        🎉 Cette séance fait partie du 3ème forfait !
-                                      </div>
-                                      <div className="bg-green-100 rounded p-1 mt-1">
-                                        <div className="text-green-800 font-bold">
-                                          💰 RÉDUCTION DE 40€ APPLICABLE !
-                                        </div>
+                                      <div className="font-semibold text-green-600">✨ {thresholdValue} forfaits dans ce cycle</div>
+                                      <div className="text-green-600 font-bold">
+                                        🎉 Cette séance fait partie du {thresholdValue + 1}ème forfait !
                                       </div>
                                     </>
                                   );
@@ -624,14 +669,14 @@ export default function ValidationPaymentModal({
                           ✨ Soin individuel - Programme fidélité soins
                         </span>
                         <span className="text-xs text-blue-600 ml-2">
-                          Compteur actuel: {individualServicesCount}/5 soins
+                          Compteur actuel: {individualServicesCount}/{loyaltySettings.serviceThreshold} soins
                         </span>
                         <span className="text-xs text-blue-600 ml-2">
-                          → Après validation: {individualServicesCount + 1}/5 soins
+                          → Après validation: {individualServicesCount + 1}/{loyaltySettings.serviceThreshold} soins
                         </span>
-                        {individualServicesCount >= 4 && (
+                        {individualServicesCount >= (loyaltySettings.serviceThreshold - 1) && (
                           <span className="text-xs font-semibold text-green-600 ml-2 animate-pulse">
-                            🎉 Prochain soin = -20€ de réduction !
+                            🎉 Prochain soin = -{loyaltySettings.serviceDiscount}€ de réduction !
                           </span>
                         )}
                       </>
@@ -644,8 +689,8 @@ export default function ValidationPaymentModal({
         </div>
         </div>
 
-        {/* Contenu scrollable */}
-        <div className="flex-1 overflow-y-auto p-3 pt-0">
+        {/* Contenu principal */}
+        <div className="p-3 pt-0">
         {/* Étape 1 : Le client est-il venu ? */}
         <div className="mb-4">
           <h3 className="text-xs font-medium text-[#2c3e50] mb-2">
@@ -732,20 +777,6 @@ export default function ValidationPaymentModal({
                     <div className="bg-gradient-to-r from-[#fdfbf7] to-[#f8f6f0] rounded-lg p-3 border border-[#d4b5a0]/20">
                       <h4 className="text-xs font-semibold text-[#2c3e50] mb-2">Réductions de fidélité</h4>
 
-                      {/* Message d'alerte si des réductions sont disponibles */}
-                      {(isLoyaltyEligible || isPackageEligible) && (
-                        <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded-lg animate-pulse">
-                          <p className="text-xs font-medium text-green-800">
-                            ⚠️ ATTENTION : Réduction(s) disponible(s) !
-                          </p>
-                          <p className="text-xs text-green-700 mt-1">
-                            {isLoyaltyEligible && `• Réduction de 20€ pour 5 soins réalisés`}
-                            {isLoyaltyEligible && isPackageEligible && <br />}
-                            {isPackageEligible && `• Réduction de 40€ pour 3 forfaits achetés`}
-                          </p>
-                        </div>
-                      )}
-                      
                       {/* Réduction soins individuels */}
                       <label className={`flex items-center justify-between mb-2 p-2 rounded-lg transition-all ${
                         isLoyaltyEligible
@@ -774,13 +805,13 @@ export default function ValidationPaymentModal({
                             </p>
                             <p className="text-xs text-[#2c3e50]/60">
                               {isLoyaltyEligible
-                                ? `✅ ${individualServicesCount}/5 soins réalisés - Réduction disponible ! (Le compteur sera remis à zéro)`
-                                : `⏳ ${individualServicesCount}/5 soins réalisés - Encore ${5 - individualServicesCount} soin(s) avant réduction`}
+                                ? `✅ ${individualServicesCount}/${loyaltySettings.serviceThreshold} soins réalisés - Réduction disponible ! (Le compteur sera remis à zéro)`
+                                : `⏳ ${individualServicesCount}/${loyaltySettings.serviceThreshold} soins réalisés - Encore ${loyaltySettings.serviceThreshold - individualServicesCount} soin(s) avant réduction`}
                             </p>
                           </div>
                         </div>
                         <span className={`font-bold text-xs ${isLoyaltyEligible ? 'text-green-600' : 'text-gray-400'}`}>
-                          {isLoyaltyEligible ? '-20€' : '🔒'}
+                          {isLoyaltyEligible ? `-${loyaltySettings.serviceDiscount}€` : '🔒'}
                         </span>
                       </label>
                       
@@ -812,13 +843,13 @@ export default function ValidationPaymentModal({
                             </p>
                             <p className="text-xs text-[#2c3e50]/60">
                               {isPackageEligible
-                                ? `✅ ${packagesCount} forfaits complétés (${packagesCount * 4} séances) - Réduction de 40€ disponible !`
-                                : `⏳ ${packagesCount} forfait${packagesCount > 1 ? 's' : ''} complété${packagesCount > 1 ? 's' : ''} (${packagesCount * 4}/8 séances) - Encore ${(2 - packagesCount) * 4} séances avant réduction`}
+                                ? `✅ ${packagesCount} forfaits complétés (${packagesCount * 4} séances) - Réduction de ${loyaltySettings.packageDiscount}€ disponible !`
+                                : `⏳ ${packagesCount} forfait${packagesCount > 1 ? 's' : ''} complété${packagesCount > 1 ? 's' : ''} (${packagesCount * 4}/${loyaltySettings.packageThreshold * 4} séances) - Encore ${(loyaltySettings.packageThreshold - packagesCount) * 4} séances avant réduction`}
                             </p>
                           </div>
                         </div>
                         <span className={`font-bold text-xs ${isPackageEligible ? 'text-green-600' : 'text-gray-400'}`}>
-                          {isPackageEligible ? '-40€' : '🔒'}
+                          {isPackageEligible ? `-${loyaltySettings.packageDiscount}€` : '🔒'}
                         </span>
                       </label>
                       
@@ -895,7 +926,7 @@ export default function ValidationPaymentModal({
                               </p>
                             </div>
                           </div>
-                          <span className="text-green-600 font-bold text-xs">-{birthdayDiscount}€</span>
+                          <span className="text-green-600 font-bold text-xs">-{loyaltySettings.birthdayDiscount}€</span>
                         </label>
                       )}
                       
@@ -1067,7 +1098,10 @@ export default function ValidationPaymentModal({
                         <option value="Espèces">Espèces</option>
                         <option value="Virement">Virement</option>
                         <option value="Chèque">Chèque</option>
-                        <option value="Stripe">Stripe (Paiement en ligne)</option>
+                        {isStripeEnabled && <option value="Stripe">Stripe (Paiement en ligne)</option>}
+                        {isPayPalEnabled && <option value="PayPal">PayPal (Paiement en ligne)</option>}
+                        {isMollieEnabled && <option value="Mollie">Mollie (Paiement en ligne)</option>}
+                        {isSumUpEnabled && <option value="SumUp">SumUp (Paiement en ligne)</option>}
                       </select>
                     </div>
 
@@ -1075,14 +1109,77 @@ export default function ValidationPaymentModal({
                     {paymentMethod === 'Stripe' && (
                       <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
                         <p className="text-xs text-indigo-900 mb-2">
-                          📧 Un lien de paiement sécurisé sera envoyé au client
+                          📧 Lien de paiement pour {paymentAmount}€
                         </p>
                         <ReservationPaymentButton
                           reservationId={reservation.id}
-                          amount={calculateFinalAmount()}
+                          amount={paymentAmount}
                           serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
                           paymentStatus={reservation.paymentStatus || 'unpaid'}
                           paymentMethod={reservation.paymentMethod}
+                          customerEmail={reservation.userEmail}
+                          customerName={reservation.userName}
+                          provider="stripe"
+                          onPaymentInitiated={() => window.location.reload()}
+                        />
+                      </div>
+                    )}
+
+                    {/* Bouton PayPal si sélectionné */}
+                    {paymentMethod === 'PayPal' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                        <p className="text-xs text-blue-900 mb-2">
+                          💳 Lien de paiement PayPal pour {paymentAmount}€
+                        </p>
+                        <ReservationPaymentButton
+                          reservationId={reservation.id}
+                          amount={paymentAmount}
+                          serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
+                          paymentStatus={reservation.paymentStatus || 'unpaid'}
+                          paymentMethod={reservation.paymentMethod}
+                          customerEmail={reservation.userEmail}
+                          customerName={reservation.userName}
+                          provider="paypal"
+                          onPaymentInitiated={() => window.location.reload()}
+                        />
+                      </div>
+                    )}
+
+                    {/* Bouton Mollie si sélectionné */}
+                    {paymentMethod === 'Mollie' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
+                        <p className="text-xs text-gray-900 mb-2">
+                          💳 Lien de paiement Mollie pour {paymentAmount}€
+                        </p>
+                        <ReservationPaymentButton
+                          reservationId={reservation.id}
+                          amount={paymentAmount}
+                          serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
+                          paymentStatus={reservation.paymentStatus || 'unpaid'}
+                          paymentMethod={reservation.paymentMethod}
+                          customerEmail={reservation.userEmail}
+                          customerName={reservation.userName}
+                          provider="mollie"
+                          onPaymentInitiated={() => window.location.reload()}
+                        />
+                      </div>
+                    )}
+
+                    {/* Bouton SumUp si sélectionné */}
+                    {paymentMethod === 'SumUp' && (
+                      <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-2">
+                        <p className="text-xs text-cyan-900 mb-2">
+                          💳 Lien de paiement SumUp pour {paymentAmount}€
+                        </p>
+                        <ReservationPaymentButton
+                          reservationId={reservation.id}
+                          amount={paymentAmount}
+                          serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
+                          paymentStatus={reservation.paymentStatus || 'unpaid'}
+                          paymentMethod={reservation.paymentMethod}
+                          customerEmail={reservation.userEmail}
+                          customerName={reservation.userName}
+                          provider="sumup"
                           onPaymentInitiated={() => window.location.reload()}
                         />
                       </div>
@@ -1108,8 +1205,8 @@ export default function ValidationPaymentModal({
         )}
         </div>
 
-        {/* Boutons d'action - fixés en bas */}
-        <div className="p-3 pt-0 border-t border-gray-100">
+        {/* Boutons d'action */}
+        <div className="p-3 pt-3 border-t border-gray-100">
         <div className="flex gap-2">
           <button
             onClick={() => {
