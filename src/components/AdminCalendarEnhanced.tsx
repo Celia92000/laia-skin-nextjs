@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatDateLocal } from '@/lib/date-utils';
+import { displayPaymentAmount } from '@/lib/display-utils';
 import { ChevronLeft, ChevronRight, Clock, User, Euro, Calendar, Grid3x3, List, CalendarDays, Mail, Phone } from "lucide-react";
 import ReservationPaymentButton from './ReservationPaymentButton';
 // import { servicePricing, formatPriceDetails } from "@/lib/pricing";
@@ -21,6 +22,7 @@ interface Reservation {
   status: string;
   notes?: string;
   paymentStatus?: string;
+  paymentAmount?: number;
   paymentMethod?: string;
 }
 
@@ -330,7 +332,15 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                            {(() => {
+                              const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
+                              return (
+                                <>
+                                  <span className="text-xl font-bold text-[#d4b5a0]">{main}</span>
+                                  {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
+                                </>
+                              );
+                            })()}
                             {reservation.paymentStatus === 'paid' && (
                               <div className="text-xs text-green-600 font-medium mt-1">✓ Payé</div>
                             )}
@@ -697,9 +707,15 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                         
                         {/* Prix et actions */}
                         <div className="text-right space-y-2">
-                          <div className="text-2xl font-bold text-[#d4b5a0] mb-2">
-                            {reservation.totalPrice}€
-                          </div>
+                          {(() => {
+                            const { main, sub } = displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice);
+                            return (
+                              <div className="mb-2">
+                                <div className="text-2xl font-bold text-[#d4b5a0]">{main}</div>
+                                {sub && <div className="text-xs text-gray-500 mt-1">{sub}</div>}
+                              </div>
+                            );
+                          })()}
                           <ReservationPaymentButton
                             reservationId={reservation.id}
                             amount={reservation.totalPrice}

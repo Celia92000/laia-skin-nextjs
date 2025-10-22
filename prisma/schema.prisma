@@ -134,6 +134,9 @@ model Organization {
   // CRM Relations
   convertedLeads         Lead[]         // Leads convertis en clients
 
+  // API Tokens
+  apiTokens              ApiToken[]     // Tokens API chiffrés
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -922,6 +925,10 @@ model SiteConfig {
   defaultMetaTitle       String?
   defaultMetaDescription String?
   defaultMetaKeywords    String?
+
+  // Modes de paiement activés (JSON)
+  // {"stripe": true, "cash": true, "check": true, "transfer": true, "paypal": false}
+  paymentMethods    String?  @default("{\"stripe\":true,\"cash\":true,\"check\":true,\"transfer\":false,\"paypal\":false}")
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -2247,5 +2254,42 @@ model PlatformNews {
   @@index([publishedAt])
   @@index([category])
   @@index([authorId])
+}
+
+// ============================================
+// API TOKENS - GESTION SÉCURISÉE DES TOKENS
+// ============================================
+
+enum ApiTokenService {
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  STRIPE
+  RESEND
+  TWILIO
+  CLOUDINARY
+  OTHER
+}
+
+model ApiToken {
+  id               String           @id @default(cuid())
+  service          ApiTokenService
+  name             String           // Ex: "access_token", "secret_key", "api_key"
+  tokenEncrypted   String           @db.Text // Token chiffré avec encryption-service
+  expiresAt        DateTime?        // Date d'expiration (null si pas d'expiration)
+
+  // Multi-tenant: null = token global (plateforme), sinon spécifique à une org
+  organizationId   String?
+  organization     Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  metadata         Json?            // Infos supplémentaires (scope, permissions, etc.)
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([service, name, organizationId])
+  @@index([service])
+  @@index([organizationId])
+  @@index([expiresAt])
 }
 

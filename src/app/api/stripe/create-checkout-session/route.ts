@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { decryptConfig } from '@/lib/encryption';
 import { z } from 'zod';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 import { getSiteConfig } from '@/lib/config-service';
+import { isAdminRole } from '@/lib/admin-roles';
+import { getStripeConfig } from '@/lib/stripe-config';
 
 // Schéma de validation
 const checkoutSchema = z.object({
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
       }
 
       // Vérifier que l'utilisateur a le droit de payer cette réservation
-      if (reservation.userId !== decoded.userId && decoded.role !== 'ADMIN') {
+      if (reservation.userId !== decoded.userId && !isAdminRole(decoded.role)) {
         return NextResponse.json({
           error: 'Non autorisé à payer cette réservation'
         }, { status: 403 });
@@ -108,40 +109,33 @@ export async function POST(request: Request) {
       }
     }
 
-    // Récupérer la configuration Stripe
-    const stripeIntegration = await prisma.integration.findFirst({
-      where: {
-        type: 'stripe',
-        enabled: true
-      }
-    });
-
-    if (!stripeIntegration || !stripeIntegration.config) {
+    // Récupérer la configuration Stripe depuis la BDD
+    let stripeConfig;
+    try {
+      stripeConfig = await getStripeConfig();
+    } catch (error: any) {
       return NextResponse.json({
-        error: 'Stripe n\'est pas configuré. Activez-le dans Paramètres > Intégrations.'
+        error: 'Stripe n\'est pas configuré. Veuillez configurer Stripe dans Paramètres > Intégrations.',
+        details: error.message
       }, { status: 400 });
     }
 
-    // Déchiffrer la configuration
-    let config: any;
-    try {
-      config = decryptConfig(stripeIntegration.config as string);
-    } catch (error) {
-      return NextResponse.json({
-        error: 'Erreur de déchiffrement de la configuration Stripe'
-      }, { status: 500 });
-    }
+    const secretKey = stripeConfig.secretKey;
+    const publishableKey = stripeConfig.publishableKey;
 
-    if (!config.secretKey) {
+    if (!secretKey || !publishableKey) {
       return NextResponse.json({
-        error: 'Clé secrète Stripe manquante'
+        error: 'Configuration Stripe incomplète'
       }, { status: 500 });
     }
 
     // Créer une session Stripe Checkout
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
 
-    const sessionData = {
+    // Récupérer l'email du client depuis la réservation ou le token
+    const customerEmail = reservation?.user?.email || decoded.email;
+
+    const sessionData: any = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -165,16 +159,50 @@ export async function POST(request: Request) {
         productId: productId || '',
         ...metadata
       },
-      customer_email: decoded.email || undefined,
     };
+
+    // Ajouter l'email seulement s'il existe
+    if (customerEmail) {
+      sessionData.customer_email = customerEmail;
+    }
+
+    // Construire le body pour Stripe (format x-www-form-urlencoded avec objets imbriqués)
+    const formData = new URLSearchParams();
+    formData.append('mode', sessionData.mode);
+    formData.append('success_url', sessionData.success_url);
+    formData.append('cancel_url', sessionData.cancel_url);
+
+    // Payment methods
+    sessionData.payment_method_types.forEach((type: string) => {
+      formData.append('payment_method_types[]', type);
+    });
+
+    // Line items
+    formData.append('line_items[0][price_data][currency]', sessionData.line_items[0].price_data.currency);
+    formData.append('line_items[0][price_data][unit_amount]', sessionData.line_items[0].price_data.unit_amount.toString());
+    formData.append('line_items[0][price_data][product_data][name]', sessionData.line_items[0].price_data.product_data.name);
+    if (sessionData.line_items[0].price_data.product_data.description) {
+      formData.append('line_items[0][price_data][product_data][description]', sessionData.line_items[0].price_data.product_data.description);
+    }
+    formData.append('line_items[0][quantity]', sessionData.line_items[0].quantity.toString());
+
+    // Metadata
+    Object.entries(sessionData.metadata).forEach(([key, value]) => {
+      formData.append(`metadata[${key}]`, String(value));
+    });
+
+    // Customer email
+    if (customerEmail) {
+      formData.append('customer_email', customerEmail);
+    }
 
     const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.secretKey}`,
+        'Authorization': `Bearer ${secretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams(sessionData as any).toString()
+      body: formData.toString()
     });
 
     if (!stripeResponse.ok) {
@@ -187,14 +215,20 @@ export async function POST(request: Request) {
 
     const session = await stripeResponse.json();
 
-    // Mettre à jour le statut de l'intégration
-    await prisma.integration.update({
-      where: { id: stripeIntegration.id },
-      data: {
-        status: 'connected',
-        lastSync: new Date()
-      }
+    // Mettre à jour le statut de l'intégration si elle existe
+    const stripeIntegration = await prisma.integration.findFirst({
+      where: { type: 'stripe' }
     });
+
+    if (stripeIntegration) {
+      await prisma.integration.update({
+        where: { id: stripeIntegration.id },
+        data: {
+          status: 'connected',
+          lastSync: new Date()
+        }
+      });
+    }
 
     // Si c'est pour une réservation, mettre à jour avec l'ID de session Stripe
     if (reservationId && reservation) {
@@ -211,7 +245,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       sessionId: session.id,
       url: session.url,
-      publicKey: config.publishableKey
+      publicKey: publishableKey
     });
 
   } catch (error: any) {

@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { getReservationWithServiceNames } from '@/lib/service-utils';
 import { formatDateLocal } from "@/lib/date-utils";
+import { displayPaymentAmount } from '@/lib/display-utils';
+import ReservationPaymentButton from '@/components/ReservationPaymentButton';
 
 interface Reservation {
   id: string;
@@ -42,6 +44,9 @@ interface Reservation {
   rescheduledFrom?: string;
   rescheduledTo?: string;
   rescheduledAt?: string;
+  paymentStatus?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
 }
 
 type Status = "confirmed" | "pending" | "completed" | "cancelled";
@@ -348,7 +353,9 @@ export default function AdminReservations() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-sm font-semibold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                      <span className="text-sm font-semibold text-[#d4b5a0]">
+                        {displayPaymentAmount(reservation.paymentAmount, reservation.totalPrice).main}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(reservation.status)}`}>
@@ -473,7 +480,15 @@ export default function AdminReservations() {
                 </div>
                 <div>
                   <p className="text-sm text-[#2c3e50]/60 mb-1">Prix</p>
-                  <p className="font-semibold text-[#d4b5a0] text-xl">{selectedReservation.prix}€</p>
+                  {(() => {
+                    const { main, sub } = displayPaymentAmount(selectedReservation.paymentAmount, selectedReservation.prix || selectedReservation.totalPrice);
+                    return (
+                      <>
+                        <p className="font-semibold text-[#d4b5a0] text-xl">{main}</p>
+                        {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               
@@ -521,8 +536,23 @@ export default function AdminReservations() {
                   )}
                 </div>
               )}
+
+              {/* Bouton de paiement */}
+              <div>
+                <p className="text-sm text-[#2c3e50]/60 mb-2">Paiement</p>
+                <ReservationPaymentButton
+                  reservationId={selectedReservation.id}
+                  amount={selectedReservation.prix || selectedReservation.totalPrice}
+                  serviceName={selectedReservation.service || selectedReservation.serviceName || 'Réservation'}
+                  paymentStatus={selectedReservation.paymentStatus || 'unpaid'}
+                  paymentMethod={selectedReservation.paymentMethod}
+                  customerEmail={selectedReservation.email || selectedReservation.userEmail}
+                  customerName={selectedReservation.client || selectedReservation.userName}
+                  onPaymentInitiated={() => fetchReservations()}
+                />
+              </div>
             </div>
-            
+
             <div className="flex gap-3 mt-6">
               <button className="flex-1 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
                 Modifier

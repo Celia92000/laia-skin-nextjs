@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { formatDateLocal } from '@/lib/date-utils';
+import { isAdminRole } from '@/lib/admin-roles';
 
 export async function GET(request: Request) {
   try {
@@ -12,12 +13,12 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-      
-      // Vérifier que c'est un admin ou employé
-      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE'].includes(decoded.role)) {
+
+      // Vérifier que c'est un admin
+      if (!isAdminRole(decoded.role)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
       }
     } catch (error) {

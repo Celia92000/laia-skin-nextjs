@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
+import { hasAdminAccess } from '@/lib/admin-roles';
 // Fonction pour vérifier l'authentification admin
 async function verifyAdmin(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -18,7 +19,7 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+    if (!hasAdminAccess(user)) {
       return null;
     }
 

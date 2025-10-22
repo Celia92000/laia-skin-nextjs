@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
 
     // Gérer les différents événements
     switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        await handleCheckoutSessionCompleted(session)
+        break
+      }
+
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         await handlePaymentSuccess(paymentIntent)
@@ -90,6 +96,120 @@ export async function POST(request: NextRequest) {
       { error: 'Erreur serveur' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * Gère la completion d'une session de checkout
+ */
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  const organizationId = session.metadata?.organizationId
+
+  if (!organizationId) {
+    console.warn('⚠️ organizationId manquant dans checkout session metadata')
+    return
+  }
+
+  try {
+    // Récupérer l'organisation
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    })
+
+    if (!org) {
+      console.warn(`⚠️ Organisation ${organizationId} introuvable`)
+      return
+    }
+
+    // Mettre à jour la facture avec le paiement réussi
+    const invoice = await prisma.invoice.findFirst({
+      where: { stripeInvoiceId: session.id },
+    })
+
+    if (invoice) {
+      // Générer le PDF de la facture si pas déjà généré
+      let pdfUrl = invoice.pdfUrl
+      if (!pdfUrl) {
+        try {
+          const invoiceResult = await generateAndSaveInvoice(
+            org.id,
+            invoice.amount,
+            org.plan,
+            session.id
+          )
+          pdfUrl = invoiceResult.pdfUrl
+          console.log(`📄 PDF de facture généré: ${invoiceResult.invoiceNumber}`)
+        } catch (pdfError) {
+          console.error('⚠️ Erreur génération PDF (non bloquant):', pdfError)
+        }
+      }
+
+      // Mettre à jour la facture avec le statut PAID et le PDF
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          status: 'PAID',
+          paidAt: new Date(),
+          pdfUrl: pdfUrl || invoice.pdfUrl,
+        },
+      })
+      console.log(`✅ Facture ${invoice.invoiceNumber} marquée comme payée`)
+
+      // Envoyer l'email avec la facture
+      if (pdfUrl) {
+        try {
+          await sendPaymentSuccessEmail({
+            to: org.billingEmail || org.ownerEmail,
+            organizationName: org.name,
+            amount: invoice.amount,
+            plan: org.plan,
+            nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 jours
+            invoiceUrl: pdfUrl,
+          })
+          console.log(`📧 Email de confirmation envoyé à ${org.billingEmail || org.ownerEmail}`)
+        } catch (emailError) {
+          console.error('⚠️ Erreur envoi email (non bloquant):', emailError)
+        }
+      }
+    } else {
+      // Si aucune facture n'existe, en créer une nouvelle avec PDF
+      console.log(`⚠️ Aucune facture trouvée pour la session ${session.id}, création d'une nouvelle`)
+      try {
+        const invoiceResult = await generateAndSaveInvoice(
+          org.id,
+          (session.amount_total || 0) / 100, // Convertir de centimes en euros
+          org.plan,
+          session.id
+        )
+        console.log(`📄 Nouvelle facture créée et PDF généré: ${invoiceResult.invoiceNumber}`)
+
+        // Envoyer l'email avec la facture
+        await sendPaymentSuccessEmail({
+          to: org.billingEmail || org.ownerEmail,
+          organizationName: org.name,
+          amount: (session.amount_total || 0) / 100,
+          plan: org.plan,
+          nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          invoiceUrl: invoiceResult.pdfUrl,
+        })
+        console.log(`📧 Email de confirmation envoyé`)
+      } catch (error) {
+        console.error('⚠️ Erreur création facture/email:', error)
+      }
+    }
+
+    // Mettre à jour l'organisation
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        status: 'ACTIVE',
+        lastPaymentDate: new Date(),
+      },
+    })
+
+    console.log(`✅ Paiement checkout réussi pour l'organisation ${organizationId}`)
+  } catch (error) {
+    console.error('Erreur traitement checkout session:', error)
   }
 }
 

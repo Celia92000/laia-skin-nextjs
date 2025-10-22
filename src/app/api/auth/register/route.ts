@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { validatePassword } from '@/lib/password-validation';
+import { sendVerificationEmail } from '@/lib/email-verification';
 
 const prisma = new PrismaClient();
 
@@ -17,6 +19,21 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'Cet email est déjà utilisé' },
+        { status: 400 }
+      );
+    }
+
+    // Valider la force du mot de passe
+    const passwordValidation = validatePassword(password, undefined, { name, email });
+
+    if (!passwordValidation.isValid) {
+      return NextResponse.json(
+        {
+          error: 'Mot de passe trop faible',
+          details: passwordValidation.errors,
+          strength: passwordValidation.strength,
+          score: passwordValidation.score
+        },
         { status: 400 }
       );
     }
@@ -114,6 +131,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Envoyer l'email de vérification
+    await sendVerificationEmail(user.id, user.email, user.name);
+
     // Générer un token JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -126,7 +146,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       token,
-      user: userWithoutPassword
+      user: userWithoutPassword,
+      message: 'Inscription réussie ! Un email de vérification a été envoyé à votre adresse.'
     });
   } catch (error) {
     console.error('Erreur lors de l\'inscription:', error);

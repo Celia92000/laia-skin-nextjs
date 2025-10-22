@@ -4,11 +4,13 @@ import { SiteConfig } from '@prisma/client';
 // Cache en mémoire pour éviter les requêtes répétées
 let configCache: SiteConfig | null = null;
 let cacheTimestamp: number = 0;
+let pendingRequest: Promise<SiteConfig> | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Récupère la configuration du site depuis la BDD
  * Utilise un cache pour optimiser les performances
+ * Promise memoization pour éviter les requêtes simultanées
  */
 export async function getSiteConfig(): Promise<SiteConfig> {
   const now = Date.now();
@@ -18,28 +20,43 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     return configCache;
   }
 
-  const prisma = await getPrismaClient();
-
-  // Récupérer la config (il devrait n'y en avoir qu'une seule)
-  let config = await prisma.siteConfig.findFirst();
-
-  // Si pas de config, créer une config par défaut
-  if (!config) {
-    config = await prisma.siteConfig.create({
-      data: {
-        siteName: "Mon Institut de Beauté",
-        siteTagline: "Institut de Beauté & Bien-être",
-        email: "contact@mon-institut.fr",
-        phone: "+33 6 00 00 00 00",
-      }
-    });
+  // Si une requête est déjà en cours, attendre son résultat
+  if (pendingRequest) {
+    return pendingRequest;
   }
 
-  // Mettre en cache
-  configCache = config;
-  cacheTimestamp = now;
+  // Créer une nouvelle requête
+  pendingRequest = (async () => {
+    try {
+      const prisma = await getPrismaClient();
 
-  return config;
+      // Récupérer la config (il devrait n'y en avoir qu'une seule)
+      let config = await prisma.siteConfig.findFirst();
+
+      // Si pas de config, créer une config par défaut
+      if (!config) {
+        config = await prisma.siteConfig.create({
+          data: {
+            siteName: "Mon Institut de Beauté",
+            siteTagline: "Institut de Beauté & Bien-être",
+            email: "contact@mon-institut.fr",
+            phone: "+33 6 00 00 00 00",
+          }
+        });
+      }
+
+      // Mettre en cache
+      configCache = config;
+      cacheTimestamp = Date.now();
+
+      return config;
+    } finally {
+      // Réinitialiser la requête en cours
+      pendingRequest = null;
+    }
+  })();
+
+  return pendingRequest;
 }
 
 /**

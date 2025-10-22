@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!decoded || !isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -93,7 +94,7 @@ export async function DELETE(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!decoded || !isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!decoded || !isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

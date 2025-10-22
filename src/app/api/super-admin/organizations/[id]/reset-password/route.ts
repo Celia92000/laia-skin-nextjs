@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { sendVerificationEmail } from '@/lib/email-verification'
 
 export async function POST(
   request: Request,
@@ -93,6 +94,15 @@ export async function POST(
       where: { id: orgAdmin.id },
       data: { password: hashedPassword }
     })
+
+    // Envoyer un email de notification à l'admin (optionnel mais recommandé)
+    try {
+      // TODO: Créer un template email spécifique pour reset password par super-admin
+      console.log(`✅ Mot de passe réinitialisé pour ${orgAdmin.email} par le super-admin`)
+    } catch (emailError) {
+      console.error('Erreur envoi email notification:', emailError)
+      // Ne pas bloquer la réponse si l'email échoue
+    }
 
     return NextResponse.json({
       message: 'Mot de passe réinitialisé avec succès',

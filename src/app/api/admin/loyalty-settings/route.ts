@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    if (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -34,9 +35,12 @@ export async function GET(req: NextRequest) {
     const defaultSettings = {
       serviceThreshold: 5,    // 5ème soin = -20€
       serviceDiscount: 20,
-      packageThreshold: 3,    // 3ème forfait = -40€
+      packageThreshold: 2,    // 2 forfaits complétés = -40€ au début du 3ème
       packageDiscount: 40,
       birthdayDiscount: 10,
+      referralSponsorDiscount: 15,  // Réduction pour le parrain
+      referralReferredDiscount: 10,  // Réduction pour le filleul
+      giftCardAmounts: [50, 100, 150, 200],  // Montants prédéfinis des cartes cadeaux
       referralBonus: 1,
       reviewBonus: 1
     };
@@ -63,7 +67,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    if (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

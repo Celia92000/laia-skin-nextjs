@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
+import { hasAdminAccess } from '@/lib/admin-roles';
 // GET - Récupérer les paramètres de carte cadeau
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN')) {
+    if (!hasAdminAccess(user)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getPrismaClient } from '@/lib/prisma';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, subYears } from 'date-fns';
+import { isAdminRole } from '@/lib/admin-roles';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
     }
 
-    if (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
 

@@ -56,7 +56,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
           <Link
             href="/super-admin"
-            className="style={{ color: "#b8935f" }} className=" hover:text-beige-800 underline"
+            className="text-[#b8935f] hover:text-beige-800 underline"
           >
             ← Retour au dashboard
           </Link>
@@ -402,8 +402,9 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                   <div className="flex items-center justify-between">
                     <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
                       <div
-                        className="style={{ backgroundColor: "#d4b5a0" }} className=" h-2 rounded-full"
+                        className="h-2 rounded-full"
                         style={{
+                          backgroundColor: "#d4b5a0",
                           width: `${Math.min(
                             ((organization.locations?.length || 0) / organization.maxLocations) * 100,
                             100
@@ -454,7 +455,8 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               <div className="space-y-3">
                 <Link
                   href={`/super-admin/organizations/${organization.id}/edit`}
-                  className="block w-full text-center px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 transition"
+                  className="block w-full text-center px-4 py-2 text-white rounded-lg hover:opacity-90 transition"
+                  style={{ backgroundColor: "#d4b5a0" }}
                 >
                   ✏️ Modifier
                 </Link>

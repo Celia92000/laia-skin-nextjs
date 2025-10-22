@@ -47,6 +47,17 @@ export default function ClientSpaceWrapper({ children }: ClientSpaceWrapperProps
         });
 
         if (response.ok) {
+          const data = await response.json();
+
+          // Vérifier si l'utilisateur est un admin et le rediriger vers /admin
+          const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ACCOUNTANT', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ADMIN', 'admin', 'EMPLOYEE', 'COMPTABLE', 'STAGIAIRE'];
+
+          if (adminRoles.includes(data.user.role)) {
+            // Rediriger vers l'admin
+            router.push('/admin');
+            return;
+          }
+
           setIsAuthenticated(true);
         } else {
           localStorage.removeItem('token');

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRole } from '@/lib/admin-roles';
 import jwt from 'jsonwebtoken';
 import { getPrismaClient } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
     
-    if (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!isAdminRole(decoded.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
 

@@ -89,15 +89,17 @@ export default function Header() {
         <div className="flex justify-between items-center h-20 sm:h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
-              <Image
-                src={config.logoUrl || "/logo-laia-skin.png"}
-                alt={`${config.siteName} Logo`}
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+            {config.logoUrl && (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
+                <Image
+                  src={config.logoUrl}
+                  alt={`${config.siteName} Logo`}
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            )}
             <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">{config.siteName?.toUpperCase() || 'MON INSTITUT'}</h1>
           </Link>
 

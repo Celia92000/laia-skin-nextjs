@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
@@ -41,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!isAdminRole(decoded.role) && decoded.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

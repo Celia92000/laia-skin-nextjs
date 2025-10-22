@@ -51,7 +51,7 @@ interface InvoiceSettings {
 
 export default function BillingPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'invoices' | 'settings'>('invoices')
+  const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'send-link' | 'settings'>('invoices')
 
   // Invoices state
   const [loading, setLoading] = useState(true)
@@ -72,6 +72,41 @@ export default function BillingPage() {
   const [extendTrial, setExtendTrial] = useState({
     organizationId: '',
     days: '7'
+  })
+
+  // Payment link state (pour l'envoi de lien de paiement)
+  const [paymentLinkForm, setPaymentLinkForm] = useState({
+    organizationId: '',
+    amount: '',
+    description: '',
+    customerEmail: '',
+    customerName: ''
+  })
+  const [sendingPaymentLink, setSendingPaymentLink] = useState(false)
+  const [organizations, setOrganizations] = useState<any[]>([])
+  const [organizationsLoading, setOrganizationsLoading] = useState(false)
+  const [orgSearchTerm, setOrgSearchTerm] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState<string>('')
+
+  // Prix des plans LAIA
+  const planPrices: Record<string, number> = {
+    'SOLO': 49,
+    'DUO': 99,
+    'TEAM': 199,
+    'PREMIUM': 399,
+    'CUSTOM': 0 // Montant personnalisé
+  }
+
+  // Stripe payments state (pour afficher les paiements reçus)
+  const [stripePayments, setStripePayments] = useState<any[]>([])
+  const [paymentsLoading, setPaymentsLoading] = useState(false)
+  const [paymentsStats, setPaymentsStats] = useState({
+    total: 0,
+    succeeded: 0,
+    pending: 0,
+    failed: 0,
+    totalRevenue: 0,
+    thisMonthRevenue: 0
   })
 
   // Settings state
@@ -103,8 +138,12 @@ export default function BillingPage() {
   useEffect(() => {
     if (activeTab === 'invoices') {
       fetchInvoices()
-    } else {
+    } else if (activeTab === 'settings') {
       fetchSettings()
+    } else if (activeTab === 'payments') {
+      fetchStripePayments()
+    } else if (activeTab === 'send-link') {
+      fetchOrganizations()
     }
   }, [activeTab, pagination.page, statusFilter])
 
@@ -148,6 +187,103 @@ export default function BillingPage() {
       console.error('Erreur chargement paramètres:', error)
     } finally {
       setSettingsLoading(false)
+    }
+  }
+
+  // Récupérer les organisations
+  async function fetchOrganizations() {
+    setOrganizationsLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/super-admin/organizations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setOrganizations(data.organizations || [])
+      }
+    } catch (error) {
+      console.error('Error fetching organizations:', error)
+    } finally {
+      setOrganizationsLoading(false)
+    }
+  }
+
+  // Récupérer les paiements Stripe depuis l'API
+  async function fetchStripePayments() {
+    setPaymentsLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/super-admin/billing/stripe-payments', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setStripePayments(data.payments)
+        setPaymentsStats(data.stats)
+      } else if (response.status === 401) {
+        router.push('/login?redirect=/super-admin')
+      } else if (response.status === 403) {
+        router.push('/admin')
+      }
+    } catch (error) {
+      console.error('Error fetching stripe payments:', error)
+    } finally {
+      setPaymentsLoading(false)
+    }
+  }
+
+  // Envoyer un lien de paiement à un client
+  async function sendPaymentLink() {
+    // Vérifier que tous les champs obligatoires sont remplis
+    if (!paymentLinkForm.organizationId || !paymentLinkForm.amount || !paymentLinkForm.customerEmail) {
+      alert('⚠️ Veuillez remplir tous les champs obligatoires (Organisation, Montant, Email)')
+      return
+    }
+
+    setSendingPaymentLink(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/super-admin/billing/create-payment-link', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...paymentLinkForm,
+          amount: parseFloat(paymentLinkForm.amount)
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`✅ Lien de paiement envoyé avec succès à ${paymentLinkForm.customerEmail}!\n\nLien: ${data.paymentLink}`)
+        // Réinitialiser le formulaire
+        setPaymentLinkForm({
+          organizationId: '',
+          amount: '',
+          description: '',
+          customerEmail: '',
+          customerName: ''
+        })
+        // Rafraîchir les factures pour voir la nouvelle facture créée
+        fetchInvoices()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error sending payment link:', error)
+      alert('❌ Erreur lors de l\'envoi du lien')
+    } finally {
+      setSendingPaymentLink(false)
     }
   }
 
@@ -324,9 +460,10 @@ export default function BillingPage() {
               onClick={() => setActiveTab('invoices')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'invoices'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
+              style={activeTab === 'invoices' ? { color: '#b8935f' } : {}}
             >
               📄 Factures
             </button>
@@ -334,11 +471,34 @@ export default function BillingPage() {
               onClick={() => setActiveTab('settings')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'settings'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
+              style={activeTab === 'settings' ? { color: '#b8935f' } : {}}
             >
               ⚙️ Paramètres
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'payments'
+                  ? 'bg-white shadow-lg'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+              style={activeTab === 'payments' ? { color: '#b8935f' } : {}}
+            >
+              💳 Paiements Stripe
+            </button>
+            <button
+              onClick={() => setActiveTab('send-link')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'send-link'
+                  ? 'bg-white shadow-lg'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+              style={activeTab === 'send-link' ? { color: '#b8935f' } : {}}
+            >
+              📧 Envoyer lien
             </button>
           </div>
         </div>
@@ -520,6 +680,291 @@ export default function BillingPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Stripe Payments Tab Content */}
+      {activeTab === 'payments' && (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="text-sm text-gray-600 mb-1">Total paiements</div>
+              <div className="text-3xl font-bold text-gray-800">{paymentsStats.total}</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-6">
+              <div className="text-sm text-green-700 mb-1">Réussis</div>
+              <div className="text-3xl font-bold text-green-800">{paymentsStats.succeeded}</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6">
+              <div className="text-sm text-purple-700 mb-1">Revenus total</div>
+              <div className="text-2xl font-bold text-purple-800">{paymentsStats.totalRevenue.toFixed(2)}€</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6">
+              <div className="text-sm text-blue-700 mb-1">Ce mois</div>
+              <div className="text-2xl font-bold text-blue-800">{paymentsStats.thisMonthRevenue.toFixed(2)}€</div>
+            </div>
+          </div>
+
+          {/* Payments List */}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {paymentsLoading ? (
+              <div className="p-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#d4b5a0" }}></div>
+                <p className="text-gray-600">Chargement...</p>
+              </div>
+            ) : stripePayments.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-6xl mb-4">💳</div>
+                <p className="text-gray-600">Aucun paiement trouvé</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organisation</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {stripePayments.map((payment) => (
+                      <tr key={payment.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-mono text-gray-900">
+                            {payment.id.substring(0, 20)}...
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {payment.invoice?.organization ? (
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {payment.invoice.organization.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                Plan: {payment.invoice.organization.plan}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {payment.amount.toFixed(2)} {payment.currency}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            payment.status === 'succeeded' ? 'bg-green-100 text-green-800' :
+                            payment.status === 'processing' || payment.status === 'requires_payment_method' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {payment.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(payment.created).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {payment.customerEmail || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Send Payment Link Tab Content */}
+      {activeTab === 'send-link' && (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              📧 Envoyer un lien de paiement
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Organisation *
+                </label>
+                {organizationsLoading ? (
+                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                    Chargement des organisations...
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={orgSearchTerm}
+                      onChange={(e) => setOrgSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 mb-2"
+                      placeholder="🔍 Rechercher par nom..."
+                    />
+                    <select
+                      value={paymentLinkForm.organizationId}
+                      onChange={(e) => {
+                        const org = organizations.find(o => o.id === e.target.value)
+                        setPaymentLinkForm({
+                          ...paymentLinkForm,
+                          organizationId: e.target.value,
+                          customerEmail: org?.ownerEmail || paymentLinkForm.customerEmail,
+                          customerName: org?.name || paymentLinkForm.customerName
+                        })
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                      required
+                    >
+                      <option value="">-- Sélectionner une organisation --</option>
+                      {organizations
+                        .filter(org =>
+                          org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
+                          org.slug?.toLowerCase().includes(orgSearchTerm.toLowerCase())
+                        )
+                        .map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.name} ({org.slug}) - {org.plan}
+                          </option>
+                        ))}
+                    </select>
+                    {paymentLinkForm.organizationId && (
+                      <div className="mt-2 text-xs text-gray-500 font-mono bg-gray-50 p-2 rounded">
+                        ID: {paymentLinkForm.organizationId}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Plan / Montant *
+                </label>
+                <select
+                  value={selectedPlan}
+                  onChange={(e) => {
+                    setSelectedPlan(e.target.value)
+                    if (e.target.value !== 'CUSTOM') {
+                      setPaymentLinkForm({
+                        ...paymentLinkForm,
+                        amount: planPrices[e.target.value].toString()
+                      })
+                    } else {
+                      setPaymentLinkForm({
+                        ...paymentLinkForm,
+                        amount: ''
+                      })
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  required
+                >
+                  <option value="">-- Sélectionner un plan --</option>
+                  <option value="SOLO">Plan SOLO - 49,00€/mois</option>
+                  <option value="DUO">Plan DUO - 99,00€/mois</option>
+                  <option value="TEAM">Plan TEAM - 199,00€/mois</option>
+                  <option value="PREMIUM">Plan PREMIUM - 399,00€/mois</option>
+                  <option value="CUSTOM">💰 Montant personnalisé</option>
+                </select>
+              </div>
+
+              {selectedPlan === 'CUSTOM' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Montant personnalisé (€) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.5"
+                    value={paymentLinkForm.amount}
+                    onChange={(e) => setPaymentLinkForm({ ...paymentLinkForm, amount: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              )}
+
+              {selectedPlan && selectedPlan !== 'CUSTOM' && (
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm text-green-800">
+                    <strong>Montant sélectionné :</strong> {paymentLinkForm.amount}€
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email client *
+                </label>
+                <input
+                  type="email"
+                  value={paymentLinkForm.customerEmail}
+                  onChange={(e) => setPaymentLinkForm({ ...paymentLinkForm, customerEmail: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="client@example.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom du client
+                </label>
+                <input
+                  type="text"
+                  value={paymentLinkForm.customerName}
+                  onChange={(e) => setPaymentLinkForm({ ...paymentLinkForm, customerName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="Nom de l'institut..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={paymentLinkForm.description}
+                  onChange={(e) => setPaymentLinkForm({ ...paymentLinkForm, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  rows={3}
+                  placeholder="Abonnement mensuel LAIA..."
+                />
+              </div>
+
+              <button
+                onClick={sendPaymentLink}
+                disabled={sendingPaymentLink}
+                className="w-full px-6 py-3 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
+                style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
+              >
+                {sendingPaymentLink ? '⏳ Envoi en cours...' : '📧 Créer et envoyer le lien'}
+              </button>
+            </div>
+
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-blue-900 mb-2">ℹ️ Information</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Le client recevra un email avec un lien de paiement sécurisé</li>
+                <li>• Le lien est valable 24 heures</li>
+                <li>• Une facture sera automatiquement créée</li>
+                <li>• Le webhook Stripe mettra à jour le statut automatiquement</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
 

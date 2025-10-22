@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRole } from '@/lib/admin-roles';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
@@ -44,7 +45,7 @@ export async function GET(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      if (decoded.role !== 'admin' && decoded.role !== 'ADMIN') {
+      if (decoded.role !== 'admin' && !isAdminRole(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
     } catch (error) {
@@ -228,7 +229,7 @@ export async function POST(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      if (decoded.role !== 'admin' && decoded.role !== 'ADMIN') {
+      if (decoded.role !== 'admin' && !isAdminRole(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
     } catch (error) {

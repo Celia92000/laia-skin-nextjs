@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
+import { hasAdminAccess } from '@/lib/admin-roles';
 // GET - Récupérer un service spécifique par ID
 export async function GET(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+    if (!hasAdminAccess(user)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -80,7 +81,7 @@ export async function PUT(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+    if (!hasAdminAccess(user)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -127,7 +128,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+    if (!hasAdminAccess(user)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
