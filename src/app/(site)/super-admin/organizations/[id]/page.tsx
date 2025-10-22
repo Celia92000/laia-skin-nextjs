@@ -402,8 +402,9 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                   <div className="flex items-center justify-between">
                     <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
                       <div
-                        className="style={{ backgroundColor: "#d4b5a0" }} className=" h-2 rounded-full"
+                        className="h-2 rounded-full"
                         style={{
+                          backgroundColor: "#d4b5a0",
                           width: `${Math.min(
                             ((organization.locations?.length || 0) / organization.maxLocations) * 100,
                             100
