@@ -42,7 +42,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#d4b5a0" }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -455,7 +455,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               <div className="space-y-3">
                 <Link
                   href={`/super-admin/organizations/${organization.id}/edit`}
-                  className="block w-full text-center px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 transition"
+                  className="block w-full text-center px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a084] transition"
                 >
                   ✏️ Modifier
                 </Link>
