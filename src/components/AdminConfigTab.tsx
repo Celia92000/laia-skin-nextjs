@@ -6,6 +6,8 @@ import {
   MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
   Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart
 } from 'lucide-react';
+import SocialMediaAPISync from './SocialMediaAPISync';
+import SocialMediaPreferences from './admin/SocialMediaPreferences';
 
 interface SiteConfig {
   id?: string;
@@ -677,6 +679,19 @@ export default function AdminConfigTab() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                 placeholder="https://youtube.com/@votre-chaine"
               />
+            </div>
+
+            {/* Configuration API pour publication automatique */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Configuration API pour publication automatique</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Configurez vos tokens API pour publier automatiquement sur Instagram et Facebook depuis l'onglet Réseaux Sociaux
+              </p>
+
+              <div className="space-y-6">
+                <SocialMediaAPISync />
+                <SocialMediaPreferences />
+              </div>
             </div>
           </div>
         )}
