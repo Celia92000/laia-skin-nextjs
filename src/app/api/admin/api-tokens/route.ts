@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { verifyAuth } from '@/lib/auth';
 import { listApiTokens, storeApiToken } from '@/lib/api-token-manager';
-
-const prisma = new PrismaClient();
 
 // GET - Liste tous les tokens (sans les déchiffrer)
 export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification admin
     const auth = await verifyAuth(request);
-    if (!auth.isValid || auth.user?.role !== 'ADMIN') {
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const tokens = await listApiTokens();
+    // Récupérer les tokens de l'organisation de l'utilisateur
+    const organizationId = auth.user.organizationId;
+    const tokens = await listApiTokens(organizationId);
 
     // Ne jamais renvoyer les tokens déchiffrés
     const sanitizedTokens = tokens.map(token => ({
@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    if (!auth.isValid || auth.user?.role !== 'ADMIN') {
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -56,7 +57,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Valider le service
-    const validServices = ['WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'STRIPE', 'RESEND', 'OTHER'];
+    const validServices = [
+      'WHATSAPP', 'INSTAGRAM', 'FACEBOOK', 'STRIPE', 'RESEND',
+      'SNAPCHAT', 'TIKTOK', 'LINKEDIN', 'TWITTER', 'OTHER'
+    ];
     if (!validServices.includes(service)) {
       return NextResponse.json(
         { error: 'Service invalide' },
@@ -64,8 +68,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Déterminer l'organizationId
+    // Si SUPER_ADMIN, peut créer des tokens globaux (null) ou pour une org spécifique
+    // Sinon, utilise l'organizationId de l'utilisateur
+    const organizationId = auth.user.role === 'SUPER_ADMIN'
+      ? (body.organizationId !== undefined ? body.organizationId : null)
+      : auth.user.organizationId;
+
     // Stocker le token (sera chiffré automatiquement)
     const storedToken = await storeApiToken({
+      organizationId,
       service,
       name,
       token,

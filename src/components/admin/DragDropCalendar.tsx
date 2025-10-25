@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaInstagram, FaFacebook, FaTiktok } from 'react-icons/fa';
 import { Plus, Image, Video, FileText, Upload, Download } from 'lucide-react';
+import CanvaIntegration from './CanvaIntegration';
+import MediaCropModal from './MediaCropModal';
 
 interface Post {
   id: string;
@@ -62,6 +64,9 @@ const defaultDayCategories: DayCategory[] = [
 export default function DragDropCalendar() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'week' | 'month' | 'year'>('week');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedYear, setSelectedYear] = useState<Date>(new Date());
   const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState<{
@@ -80,11 +85,12 @@ export default function DragDropCalendar() {
   const [isUploading, setIsUploading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [cropModalMedia, setCropModalMedia] = useState<{url: string, type: 'image' | 'video', index: number} | null>(null);
 
   useEffect(() => {
     loadPosts();
     loadPreferencesFromStorage();
-  }, [selectedWeek]);
+  }, [selectedWeek, selectedMonth, selectedYear, viewMode]);
 
   const loadPreferencesFromStorage = () => {
     const saved = localStorage.getItem('socialMediaPreferences');
@@ -145,13 +151,30 @@ export default function DragDropCalendar() {
 
       if (response.ok) {
         const allPosts = await response.json();
-        const weekPosts = allPosts.filter((post: any) => {
-          const date = new Date(post.scheduledDate);
-          const start = getStartOfWeek(selectedWeek);
-          const end = getEndOfWeek(selectedWeek);
-          return date >= start && date <= end;
-        });
-        setPosts(weekPosts);
+
+        let filteredPosts = allPosts;
+
+        if (viewMode === 'week') {
+          filteredPosts = allPosts.filter((post: any) => {
+            const date = new Date(post.scheduledDate);
+            const start = getStartOfWeek(selectedWeek);
+            const end = getEndOfWeek(selectedWeek);
+            return date >= start && date <= end;
+          });
+        } else if (viewMode === 'month') {
+          filteredPosts = allPosts.filter((post: any) => {
+            const date = new Date(post.scheduledDate);
+            return date.getMonth() === selectedMonth.getMonth() &&
+                   date.getFullYear() === selectedMonth.getFullYear();
+          });
+        } else if (viewMode === 'year') {
+          filteredPosts = allPosts.filter((post: any) => {
+            const date = new Date(post.scheduledDate);
+            return date.getFullYear() === selectedYear.getFullYear();
+          });
+        }
+
+        setPosts(filteredPosts);
       }
     } catch (error) {
       console.error('Erreur chargement posts:', error);
@@ -191,6 +214,56 @@ export default function DragDropCalendar() {
     });
   };
 
+  const getMonthDays = () => {
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Trouver le lundi précédant le 1er du mois
+    const startDay = new Date(firstDay);
+    const dayOfWeek = firstDay.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    startDay.setDate(firstDay.getDate() + diff);
+
+    // Créer un tableau de 42 jours (6 semaines)
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDay);
+      day.setDate(startDay.getDate() + i);
+      days.push(day);
+    }
+
+    return days;
+  };
+
+  const getPostsForMonth = (month: number, year: number) => {
+    return posts.filter(post => {
+      const postDate = new Date(post.scheduledDate);
+      return postDate.getMonth() === month && postDate.getFullYear() === year;
+    });
+  };
+
+  const getPostsCountByMonth = () => {
+    const year = selectedYear.getFullYear();
+    const monthsData = [];
+
+    for (let month = 0; month < 12; month++) {
+      const monthPosts = posts.filter(post => {
+        const postDate = new Date(post.scheduledDate);
+        return postDate.getMonth() === month && postDate.getFullYear() === year;
+      });
+
+      monthsData.push({
+        month,
+        count: monthPosts.length,
+        posts: monthPosts
+      });
+    }
+
+    return monthsData;
+  };
+
   const previousWeek = () => {
     const newDate = new Date(selectedWeek);
     newDate.setDate(newDate.getDate() - 7);
@@ -201,6 +274,30 @@ export default function DragDropCalendar() {
     const newDate = new Date(selectedWeek);
     newDate.setDate(newDate.getDate() + 7);
     setSelectedWeek(newDate);
+  };
+
+  const previousMonth = () => {
+    const newDate = new Date(selectedMonth);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setSelectedMonth(newDate);
+  };
+
+  const nextMonth = () => {
+    const newDate = new Date(selectedMonth);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setSelectedMonth(newDate);
+  };
+
+  const previousYear = () => {
+    const newDate = new Date(selectedYear);
+    newDate.setFullYear(newDate.getFullYear() - 1);
+    setSelectedYear(newDate);
+  };
+
+  const nextYear = () => {
+    const newDate = new Date(selectedYear);
+    newDate.setFullYear(newDate.getFullYear() + 1);
+    setSelectedYear(newDate);
   };
 
   const handleDragStart = (item: DragItem) => {
@@ -266,6 +363,56 @@ export default function DragDropCalendar() {
       setUploadedMedia(prev => prev.filter(m => m.publicId !== publicId));
     } catch (error) {
       console.error('Erreur suppression média:', error);
+    }
+  };
+
+  const handleSaveCroppedMedia = async (croppedDataUrl: string) => {
+    if (!cropModalMedia) return;
+
+    try {
+      // Convertir le data URL en Blob
+      const response = await fetch(croppedDataUrl);
+      const blob = await response.blob();
+
+      // Créer un fichier à partir du Blob
+      const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+
+      // Supprimer l'ancien média de Cloudinary
+      const oldMedia = uploadedMedia[cropModalMedia.index];
+      if (oldMedia && oldMedia.publicId) {
+        await handleRemoveMedia(oldMedia.publicId);
+      }
+
+      // Upload le nouveau média recadré
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      const uploadResponse = await fetch('/api/admin/social-media/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (uploadResponse.ok) {
+        const data = await uploadResponse.json();
+
+        // Mettre à jour le média dans la liste
+        setUploadedMedia(prev => {
+          const newMedia = [...prev];
+          newMedia[cropModalMedia.index] = {
+            url: data.url,
+            type: data.type,
+            publicId: data.publicId
+          };
+          return newMedia;
+        });
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde média recadré:', error);
+      alert('Erreur lors du recadrage du média');
     }
   };
 
@@ -382,19 +529,48 @@ export default function DragDropCalendar() {
     link.click();
   };
 
+  // Get compatible platforms based on content type
+  const getCompatiblePlatforms = (contentType: 'post' | 'reel' | 'story') => {
+    const platformsByType: Record<string, string[]> = {
+      post: ['instagram', 'facebook', 'tiktok', 'linkedin', 'twitter'],
+      reel: ['instagram', 'facebook', 'tiktok'],
+      story: ['instagram', 'facebook', 'snapchat']
+    };
+    return platformsByType[contentType] || [];
+  };
+
+  // Check if a platform is compatible with the content type
+  const isPlatformCompatible = (platform: string, contentType: 'post' | 'reel' | 'story') => {
+    const compatible = getCompatiblePlatforms(contentType);
+    return compatible.includes(platform);
+  };
+
   const handleCreatePost = async (formData: any) => {
     try {
       const token = localStorage.getItem('token');
 
-      // Combine date and time
-      const scheduledDate = new Date(modalData?.date || new Date());
-      if (formData.scheduledTime) {
-        const [hours, minutes] = formData.scheduledTime.split(':');
-        scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      // Validation selon le type de contenu
+      if ((modalData?.contentType === 'story' || modalData?.contentType === 'reel') && uploadedMedia.length === 0) {
+        alert(`❌ Un média est obligatoire pour ${modalData.contentType === 'story' ? 'une story' : 'un reel'}`);
+        return;
       }
 
-      // Determine status
-      const status = formData.saveAsDraft ? 'draft' : 'scheduled';
+      if (modalData?.contentType === 'post' && !formData.content?.trim()) {
+        alert('❌ Veuillez rédiger un message pour votre post');
+        return;
+      }
+
+      // Combine date and time
+      const scheduledDate = new Date(modalData?.date || new Date());
+      let hasTime = false;
+      if (formData.scheduledTime && formData.scheduledTime.trim() !== '') {
+        const [hours, minutes] = formData.scheduledTime.split(':');
+        scheduledDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        hasTime = true;
+      }
+
+      // Determine status automatically: if time is provided → scheduled, otherwise → draft
+      const status = hasTime ? 'scheduled' : 'draft';
 
       // Parse links if provided
       let linksArray = [];
@@ -506,7 +682,14 @@ export default function DragDropCalendar() {
     return optimalTimes[platforms[0]] || [];
   };
 
-  const generateContentSuggestions = (contentType: 'post' | 'reel' | 'story', category: string) => {
+  // Fonction pour générer des suggestions de contenu
+  const generateContentSuggestions = async (contentType: 'post' | 'reel' | 'story', category: string) => {
+    // Utilise directement les suggestions hardcodées
+    useFallbackSuggestions(contentType, category);
+  };
+
+  // Fonction de fallback avec suggestions hardcodées
+  const useFallbackSuggestions = (contentType: 'post' | 'reel' | 'story', category: string) => {
     const trendingSuggestions: Record<string, Record<string, Array<{title: string, content: string, trending: string}>>> = {
       post: {
         prestations: [
@@ -687,13 +870,14 @@ export default function DragDropCalendar() {
       }
     };
 
-    return trendingSuggestions[contentType]?.[category] || [
+    const suggestions = trendingSuggestions[contentType]?.[category] || [
       {
         title: "Créez un contenu unique",
         content: "Partagez votre expertise avec authenticité",
         trending: "💡 Personnalisez votre message"
       }
     ];
+    setContentSuggestions(suggestions);
   };
 
   const getOptimalPostingTimes = (platforms: string[], dayOfWeek: number) => {
@@ -917,26 +1101,108 @@ export default function DragDropCalendar() {
           </div>
         </div>
 
-        {/* Week navigation */}
-        <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-4 mb-6 flex items-center justify-between">
-          <button
-            onClick={previousWeek}
-            className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
-          >
-            ← Précédent
-          </button>
-          <h2 className="text-xl font-bold text-[#8B6F5C]">
-            Semaine du {formatDate(weekDays[0])} au {formatDate(weekDays[6])}
-          </h2>
-          <button
-            onClick={nextWeek}
-            className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
-          >
-            Suivant →
-          </button>
+        {/* View mode selector & Navigation */}
+        <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-4 mb-6">
+          {/* View mode buttons */}
+          <div className="flex items-center justify-center gap-2 mb-4 pb-4 border-b border-amber-200">
+            <button
+              onClick={() => setViewMode('week')}
+              className={`px-4 py-2 rounded-lg transition-all font-medium ${
+                viewMode === 'week'
+                  ? 'bg-[#8B6F5C] text-white shadow-md'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              📅 Semaine
+            </button>
+            <button
+              onClick={() => setViewMode('month')}
+              className={`px-4 py-2 rounded-lg transition-all font-medium ${
+                viewMode === 'month'
+                  ? 'bg-[#8B6F5C] text-white shadow-md'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              📆 Mois
+            </button>
+            <button
+              onClick={() => setViewMode('year')}
+              className={`px-4 py-2 rounded-lg transition-all font-medium ${
+                viewMode === 'year'
+                  ? 'bg-[#8B6F5C] text-white shadow-md'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              🗓️ Année
+            </button>
+          </div>
+
+          {/* Navigation controls */}
+          <div className="flex items-center justify-between">
+            {viewMode === 'week' && (
+              <>
+                <button
+                  onClick={previousWeek}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  ← Précédent
+                </button>
+                <h2 className="text-xl font-bold text-[#8B6F5C]">
+                  Semaine du {formatDate(weekDays[0])} au {formatDate(weekDays[6])}
+                </h2>
+                <button
+                  onClick={nextWeek}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  Suivant →
+                </button>
+              </>
+            )}
+
+            {viewMode === 'month' && (
+              <>
+                <button
+                  onClick={previousMonth}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  ← Précédent
+                </button>
+                <h2 className="text-xl font-bold text-[#8B6F5C]">
+                  {selectedMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                </h2>
+                <button
+                  onClick={nextMonth}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  Suivant →
+                </button>
+              </>
+            )}
+
+            {viewMode === 'year' && (
+              <>
+                <button
+                  onClick={previousYear}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  ← Précédent
+                </button>
+                <h2 className="text-xl font-bold text-[#8B6F5C]">
+                  {selectedYear.getFullYear()}
+                </h2>
+                <button
+                  onClick={nextYear}
+                  className="px-4 py-2 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors"
+                >
+                  Suivant →
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Calendar grid */}
+        {viewMode === 'week' && (
         <div className="grid grid-cols-7 gap-4">
           {weekDays.map((day, index) => {
             const dayPosts = getPostsForDay(day);
@@ -1023,53 +1289,131 @@ export default function DragDropCalendar() {
                     </p>
                   )}
                   {dayPosts.map((post) => {
-                    const contentTypeColor =
-                      post.contentType === 'post' ? 'bg-blue-50 border-blue-200' :
-                      post.contentType === 'reel' ? 'bg-purple-50 border-purple-200' :
-                      'bg-pink-50 border-pink-200';
+                    // Type de contenu avec couleur et emoji
+                    const contentTypeConfig = {
+                      post: {
+                        emoji: '📄',
+                        label: 'Post',
+                        bgColor: 'bg-blue-50',
+                        borderColor: 'border-blue-300',
+                        textColor: 'text-blue-800',
+                        accentColor: 'bg-blue-500'
+                      },
+                      reel: {
+                        emoji: '🎬',
+                        label: 'Reel',
+                        bgColor: 'bg-purple-50',
+                        borderColor: 'border-purple-300',
+                        textColor: 'text-purple-800',
+                        accentColor: 'bg-purple-500'
+                      },
+                      story: {
+                        emoji: '📸',
+                        label: 'Story',
+                        bgColor: 'bg-pink-50',
+                        borderColor: 'border-pink-300',
+                        textColor: 'text-pink-800',
+                        accentColor: 'bg-pink-500'
+                      }
+                    };
 
+                    const contentType = contentTypeConfig[post.contentType as keyof typeof contentTypeConfig] || contentTypeConfig.post;
+
+                    // Statut avec badge
                     const statusConfig = {
                       draft: {
                         emoji: '📝',
                         label: 'Brouillon',
-                        badgeColor: 'bg-gray-200 text-gray-800 border border-gray-400',
-                        borderColor: 'border-l-4 border-l-gray-500'
+                        badgeColor: 'bg-gray-100 text-gray-700 border border-gray-300'
                       },
                       scheduled: {
                         emoji: '📅',
                         label: 'Planifié',
-                        badgeColor: 'bg-amber-200 text-amber-900 border border-amber-400',
-                        borderColor: 'border-l-4 border-l-amber-600'
+                        badgeColor: 'bg-amber-100 text-amber-700 border border-amber-300'
                       },
                       published: {
                         emoji: '✅',
                         label: 'Publié',
-                        badgeColor: 'bg-green-200 text-green-900 border border-green-400',
-                        borderColor: 'border-l-4 border-l-green-600'
+                        badgeColor: 'bg-green-100 text-green-700 border border-green-300'
                       }
                     };
 
                     const status = statusConfig[post.status as keyof typeof statusConfig] || statusConfig.draft;
 
+                    // Icônes de plateformes
+                    const platformIcons: Record<string, { icon?: any; emoji?: string; label: string; color: string }> = {
+                      instagram: { icon: FaInstagram, label: 'IG', color: 'text-pink-600' },
+                      facebook: { icon: FaFacebook, label: 'FB', color: 'text-blue-600' },
+                      tiktok: { icon: FaTiktok, label: 'TT', color: 'text-gray-800' },
+                      linkedin: { emoji: '💼', label: 'IN', color: 'text-blue-700' },
+                      twitter: { emoji: '🐦', label: 'TW', color: 'text-blue-400' },
+                      snapchat: { emoji: '👻', label: 'SC', color: 'text-yellow-400' }
+                    };
+
+                    // Récupérer la catégorie du post
+                    const postCategory = categories.find(cat => cat.id === post.category);
+
+                    // Extraire le premier bout de texte du contenu
+                    const contentPreview = post.content
+                      ? post.content.substring(0, 40) + (post.content.length > 40 ? '...' : '')
+                      : post.title.substring(0, 40) + (post.title.length > 40 ? '...' : '');
+
                     return (
                       <div
                         key={post.id}
                         onClick={() => setEditingPost(post)}
-                        className={`${contentTypeColor} border rounded-lg p-3 cursor-pointer hover:shadow-lg transition-all ${status.borderColor}`}
+                        className={`${contentType.bgColor} border-2 ${contentType.borderColor} rounded-xl p-3 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200`}
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <p className="text-xs font-bold text-gray-700">
-                            {formatTime(new Date(post.scheduledDate))}
-                          </p>
-                          <div className="flex gap-1">
-                            <span className={`text-xs px-2 py-1 rounded-lg font-bold shadow-sm ${status.badgeColor}`}>
-                              {status.emoji} {status.label}
+                        {/* En-tête : Type + Heure + Statut */}
+                        <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xl ${contentType.textColor}`}>
+                              {contentType.emoji}
+                            </span>
+                            <span className={`text-sm font-bold ${contentType.textColor}`}>
+                              {formatTime(new Date(post.scheduledDate))}
                             </span>
                           </div>
+                          <span className={`text-xs px-2 py-1 rounded-md font-semibold ${status.badgeColor}`}>
+                            {status.emoji}
+                          </span>
                         </div>
-                        <p className="text-sm text-gray-800 font-medium truncate mb-2">
-                          {post.title}
+
+                        {/* Plateformes */}
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {post.platform?.split(',').map((p) => {
+                            const platformInfo = platformIcons[p.trim().toLowerCase()];
+                            if (!platformInfo) return null;
+                            const PlatformIcon = platformInfo.icon;
+                            return (
+                              <span
+                                key={p}
+                                className={`text-xs px-2 py-1 bg-white rounded-md font-medium flex items-center gap-1 shadow-sm ${platformInfo.color}`}
+                              >
+                                {PlatformIcon ? (
+                                  <PlatformIcon className="w-3 h-3" />
+                                ) : (
+                                  <span className="text-sm">{platformInfo.emoji}</span>
+                                )}
+                                {platformInfo.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        {/* Aperçu du contenu */}
+                        <p className="text-sm text-gray-700 font-medium mb-2 leading-tight">
+                          "{contentPreview}"
                         </p>
+
+                        {/* Catégorie */}
+                        {postCategory && (
+                          <div className="flex items-center gap-1 mb-2">
+                            <span className={`text-xs px-2 py-1 rounded-md font-medium ${postCategory.color}`}>
+                              {postCategory.emoji} {postCategory.label}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Media Preview */}
                         {post.mediaUrls && (() => {
@@ -1077,14 +1421,14 @@ export default function DragDropCalendar() {
                             const mediaArray = JSON.parse(post.mediaUrls);
                             if (mediaArray.length > 0) {
                               return (
-                                <div className="mb-2 relative">
+                                <div className="relative rounded-lg overflow-hidden">
                                   <img
                                     src={mediaArray[0]}
                                     alt="Preview"
-                                    className="w-full h-24 object-cover rounded-lg"
+                                    className="w-full h-20 object-cover"
                                   />
                                   {mediaArray.length > 1 && (
-                                    <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                                    <span className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full font-bold">
                                       +{mediaArray.length - 1}
                                     </span>
                                   )}
@@ -1095,20 +1439,6 @@ export default function DragDropCalendar() {
                             return null;
                           }
                         })()}
-
-                        <div className="flex flex-wrap gap-1">
-                          {post.platform?.split(',').map((p) => (
-                            <span
-                              key={p}
-                              className="text-xs px-2 py-1 bg-white rounded text-gray-600 flex items-center gap-1"
-                            >
-                              {p === 'instagram' && <FaInstagram className="w-3 h-3" />}
-                              {p === 'facebook' && <FaFacebook className="w-3 h-3" />}
-                              {p === 'tiktok' && <FaTiktok className="w-3 h-3" />}
-                              {p}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     );
                   })}
@@ -1117,6 +1447,188 @@ export default function DragDropCalendar() {
             );
           })}
         </div>
+        )}
+
+        {/* Month view */}
+        {viewMode === 'month' && (
+          <div>
+            {/* Days of week header */}
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
+                <div key={day} className="text-center font-bold text-[#8B6F5C] text-sm py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {getMonthDays().map((day, index) => {
+                const dayPosts = getPostsForDay(day);
+                const isCurrentMonth = day.getMonth() === selectedMonth.getMonth();
+                const isToday = day.toDateString() === new Date().toDateString();
+
+                return (
+                  <div
+                    key={index}
+                    className={`bg-white rounded-lg p-2 border min-h-[120px] transition-all ${
+                      isToday
+                        ? 'border-[#8B6F5C] border-2 shadow-md'
+                        : isCurrentMonth
+                        ? 'border-amber-200 hover:border-amber-400 hover:shadow-sm'
+                        : 'border-stone-200 bg-stone-50'
+                    }`}
+                  >
+                    <div className={`text-center mb-1 ${isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
+                      <p className={`text-sm font-semibold ${isToday ? 'text-[#8B6F5C] bg-amber-100 rounded-full w-6 h-6 flex items-center justify-center mx-auto' : ''}`}>
+                        {day.getDate()}
+                      </p>
+                    </div>
+
+                    {isCurrentMonth && dayPosts.length > 0 && (
+                      <div className="space-y-1">
+                        {dayPosts.slice(0, 3).map((post) => {
+                          const typeEmoji =
+                            post.contentType === 'post' ? '📄' :
+                            post.contentType === 'reel' ? '🎬' : '📸';
+
+                          const statusColor =
+                            post.status === 'published' ? 'bg-green-100 text-green-800' :
+                            post.status === 'scheduled' ? 'bg-amber-100 text-amber-800' :
+                            'bg-gray-100 text-gray-800';
+
+                          return (
+                            <div
+                              key={post.id}
+                              onClick={() => setEditingPost(post)}
+                              className={`text-xs px-1.5 py-1 rounded cursor-pointer hover:shadow-md transition-all ${statusColor}`}
+                              title={post.title}
+                            >
+                              <span>{typeEmoji}</span>
+                              <span className="ml-1 truncate block">{post.title.substring(0, 15)}...</span>
+                            </div>
+                          );
+                        })}
+                        {dayPosts.length > 3 && (
+                          <p className="text-xs text-gray-500 text-center font-semibold">
+                            +{dayPosts.length - 3}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {isCurrentMonth && dayPosts.length === 0 && (
+                      <p className="text-xs text-gray-300 text-center mt-2">-</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Year view */}
+        {viewMode === 'year' && (
+          <div className="grid grid-cols-3 gap-4">
+            {getPostsCountByMonth().map((monthData) => {
+              const monthName = new Date(selectedYear.getFullYear(), monthData.month, 1).toLocaleDateString('fr-FR', { month: 'long' });
+              const isCurrentMonth = new Date().getMonth() === monthData.month && new Date().getFullYear() === selectedYear.getFullYear();
+
+              // Count by content type
+              const postCount = monthData.posts.filter((p: Post) => p.contentType === 'post').length;
+              const reelCount = monthData.posts.filter((p: Post) => p.contentType === 'reel').length;
+              const storyCount = monthData.posts.filter((p: Post) => p.contentType === 'story').length;
+
+              // Count by status
+              const publishedCount = monthData.posts.filter((p: Post) => p.status === 'published').length;
+              const scheduledCount = monthData.posts.filter((p: Post) => p.status === 'scheduled').length;
+              const draftCount = monthData.posts.filter((p: Post) => p.status === 'draft').length;
+
+              return (
+                <div
+                  key={monthData.month}
+                  onClick={() => {
+                    setSelectedMonth(new Date(selectedYear.getFullYear(), monthData.month, 1));
+                    setViewMode('month');
+                  }}
+                  className={`bg-white rounded-2xl p-6 border-2 transition-all cursor-pointer hover:shadow-lg ${
+                    isCurrentMonth
+                      ? 'border-[#8B6F5C] shadow-md'
+                      : 'border-amber-200 hover:border-amber-400'
+                  }`}
+                >
+                  <h3 className={`text-xl font-bold capitalize mb-4 text-center ${isCurrentMonth ? 'text-[#8B6F5C]' : 'text-gray-700'}`}>
+                    {monthName}
+                    {isCurrentMonth && <span className="ml-2 text-sm">🎯</span>}
+                  </h3>
+
+                  {/* Total count */}
+                  <div className="text-center mb-4">
+                    <p className="text-4xl font-bold text-[#8B6F5C]">{monthData.count}</p>
+                    <p className="text-sm text-gray-600">posts au total</p>
+                  </div>
+
+                  {/* Content type breakdown */}
+                  {monthData.count > 0 && (
+                    <div className="space-y-3">
+                      <div className="border-t border-amber-200 pt-3">
+                        <p className="text-xs text-gray-500 mb-2 font-semibold">Par type :</p>
+                        <div className="flex justify-around">
+                          {postCount > 0 && (
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-blue-600">📄 {postCount}</p>
+                              <p className="text-xs text-gray-600">Posts</p>
+                            </div>
+                          )}
+                          {reelCount > 0 && (
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-purple-600">🎬 {reelCount}</p>
+                              <p className="text-xs text-gray-600">Reels</p>
+                            </div>
+                          )}
+                          {storyCount > 0 && (
+                            <div className="text-center">
+                              <p className="text-lg font-bold text-pink-600">📸 {storyCount}</p>
+                              <p className="text-xs text-gray-600">Stories</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-amber-200 pt-3">
+                        <p className="text-xs text-gray-500 mb-2 font-semibold">Par statut :</p>
+                        <div className="space-y-1">
+                          {publishedCount > 0 && (
+                            <div className="flex items-center justify-between bg-green-50 rounded px-2 py-1">
+                              <span className="text-xs text-green-800">✅ Publiés</span>
+                              <span className="text-sm font-bold text-green-800">{publishedCount}</span>
+                            </div>
+                          )}
+                          {scheduledCount > 0 && (
+                            <div className="flex items-center justify-between bg-amber-50 rounded px-2 py-1">
+                              <span className="text-xs text-amber-800">📅 Planifiés</span>
+                              <span className="text-sm font-bold text-amber-800">{scheduledCount}</span>
+                            </div>
+                          )}
+                          {draftCount > 0 && (
+                            <div className="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
+                              <span className="text-xs text-gray-800">📝 Brouillons</span>
+                              <span className="text-sm font-bold text-gray-800">{draftCount}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {monthData.count === 0 && (
+                    <p className="text-center text-gray-400 text-sm py-4">Aucun post</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Create Post Modal */}
@@ -1156,14 +1668,12 @@ export default function DragDropCalendar() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
-                const saveAsDraft = (e.nativeEvent as any).submitter?.name === 'draft';
                 handleCreatePost({
                   title: formData.get('title'),
                   content: formData.get('content'),
                   platform: Array.from(formData.getAll('platforms')).join(','),
                   category: formData.get('category'),
-                  scheduledTime: formData.get('time'),
-                  saveAsDraft: saveAsDraft
+                  scheduledTime: formData.get('time')
                 });
               }}
               className="p-6 space-y-4"
@@ -1177,8 +1687,8 @@ export default function DragDropCalendar() {
                   required
                   onChange={(e) => {
                     if (modalData) {
-                      const suggestions = generateContentSuggestions(modalData.contentType, e.target.value);
-                      setContentSuggestions(suggestions);
+                      // Appel async de la génération de suggestions
+                      generateContentSuggestions(modalData.contentType, e.target.value);
                     }
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B6F5C] focus:border-transparent"
@@ -1234,21 +1744,54 @@ export default function DragDropCalendar() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contenu *
+                  {modalData.contentType === 'story' ? '📝 Texte court (optionnel)' :
+                   modalData.contentType === 'reel' ? '✏️ Légende' :
+                   '✍️ Message'}
+                  {modalData.contentType !== 'story' && ' *'}
                 </label>
                 <textarea
                   name="content"
-                  required
-                  rows={6}
+                  required={modalData.contentType !== 'story'}
+                  rows={modalData.contentType === 'story' ? 3 : 6}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B6F5C] focus:border-transparent"
-                  placeholder="Rédigez votre contenu..."
+                  placeholder={
+                    modalData.contentType === 'story' ? 'Texte court pour votre story... (optionnel)' :
+                    modalData.contentType === 'reel' ? 'Écrivez la légende de votre reel... 🎬' :
+                    'Rédigez votre contenu...'
+                  }
+                />
+              </div>
+
+              {/* Alerte format selon type */}
+              {modalData.contentType === 'story' && (
+                <div className="mb-4 p-4 bg-pink-50 border-2 border-pink-300 rounded-xl">
+                  <p className="text-sm font-medium text-pink-800">
+                    ⚠️ <strong>Story</strong> : Format vertical 9:16 • Visible 24h • Média OBLIGATOIRE
+                  </p>
+                </div>
+              )}
+              {modalData.contentType === 'reel' && (
+                <div className="mb-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-xl">
+                  <p className="text-sm font-medium text-purple-800">
+                    ⚠️ <strong>Reel</strong> : Format vertical 9:16 • Vidéo 15s-90s • Vidéo OBLIGATOIRE
+                  </p>
+                </div>
+              )}
+
+              {/* Canva Integration */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-stone-100 rounded-xl border border-amber-200">
+                <CanvaIntegration
+                  platform={selectedPlatforms[0]}
+                  contentType={modalData?.contentType}
                 />
               </div>
 
               {/* Media Upload Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Médias (images/vidéos)
+                  {modalData.contentType === 'story' ? '📸 Média (OBLIGATOIRE)' :
+                   modalData.contentType === 'reel' ? '🎥 Vidéo (OBLIGATOIRE)' :
+                   '📷 Photos/Vidéos (optionnel)'}
                 </label>
                 <div className="space-y-3">
                   {/* Upload button */}
@@ -1274,37 +1817,70 @@ export default function DragDropCalendar() {
                   </div>
 
                   {/* Preview uploaded media */}
-                  {uploadedMedia.length > 0 && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {uploadedMedia.map((media, idx) => (
-                        <div key={idx} className="relative group">
-                          {media.type === 'image' ? (
-                            <img
-                              src={media.url}
-                              alt="Preview"
-                              className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                            />
-                          ) : (
-                            <video
-                              src={media.url}
-                              className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                              controls
-                            />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMedia(media.publicId)}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                          <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                            {media.type === 'video' ? '🎬' : '📸'}
+                  {uploadedMedia.length > 0 && modalData && (
+                    <div className="space-y-3">
+                      {uploadedMedia.map((media, idx) => {
+                        // Déterminer l'aspect ratio selon le type de contenu
+                        const getAspectRatioClass = () => {
+                          if (modalData.contentType === 'reel' || modalData.contentType === 'story') {
+                            return 'aspect-[9/16]'; // Format vertical 9:16
+                          }
+                          return 'aspect-square'; // Format carré 1:1 pour les posts
+                        };
+
+                        const getFormatLabel = () => {
+                          if (modalData.contentType === 'reel') return '9:16 (Reel)';
+                          if (modalData.contentType === 'story') return '9:16 (Story)';
+                          return '1:1 (Post)';
+                        };
+
+                        return (
+                          <div key={idx} className="relative group">
+                            <div className={`relative ${getAspectRatioClass()} w-full max-w-sm mx-auto bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-300`}>
+                              {media.type === 'image' ? (
+                                <img
+                                  src={media.url}
+                                  alt="Preview"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              ) : (
+                                <video
+                                  src={media.url}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  controls
+                                />
+                              )}
+                              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                {media.type === 'image' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCropModalMedia({ url: media.url, type: media.type, index: idx })}
+                                    className="bg-blue-500 text-white p-1.5 rounded-full hover:bg-blue-600 shadow-lg"
+                                    title="Recadrer"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+                                    </svg>
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveMedia(media.publicId)}
+                                  className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-lg"
+                                  title="Supprimer"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                              <div className="absolute bottom-2 left-2 bg-black/80 text-white text-xs px-2 py-1 rounded z-10">
+                                {media.type === 'video' ? '🎬 Vidéo' : '📸 Image'} • {getFormatLabel()}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -1320,51 +1896,149 @@ export default function DragDropCalendar() {
                   Plateformes *
                 </label>
                 <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      name="platforms"
-                      value="instagram"
-                      className="w-4 h-4"
-                      onChange={(e) => {
-                        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
-                          .map(el => el.value);
-                        setSelectedPlatforms(selected);
-                      }}
-                    />
-                    <FaInstagram className="text-pink-600" />
-                    <span>Instagram</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      name="platforms"
-                      value="facebook"
-                      className="w-4 h-4"
-                      onChange={(e) => {
-                        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
-                          .map(el => el.value);
-                        setSelectedPlatforms(selected);
-                      }}
-                    />
-                    <FaFacebook className="text-blue-600" />
-                    <span>Facebook</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      name="platforms"
-                      value="tiktok"
-                      className="w-4 h-4"
-                      onChange={(e) => {
-                        const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
-                          .map(el => el.value);
-                        setSelectedPlatforms(selected);
-                      }}
-                    />
-                    <FaTiktok className="text-gray-900" />
-                    <span>TikTok</span>
-                  </label>
+                  {/* Instagram */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('instagram', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="instagram"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <FaInstagram className="text-pink-600" />
+                        <span>Instagram</span>
+                      </label>
+                    );
+                  })()}
+
+                  {/* Facebook */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('facebook', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="facebook"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <FaFacebook className="text-blue-600" />
+                        <span>Facebook</span>
+                      </label>
+                    );
+                  })()}
+
+                  {/* TikTok */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('tiktok', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="tiktok"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <FaTiktok className="text-gray-900" />
+                        <span>TikTok</span>
+                      </label>
+                    );
+                  })()}
+
+                  {/* LinkedIn */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('linkedin', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="linkedin"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <svg className="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                        <span>LinkedIn</span>
+                      </label>
+                    );
+                  })()}
+
+                  {/* Twitter */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('twitter', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="twitter"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <svg className="w-4 h-4 text-sky-500" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                        </svg>
+                        <span>Twitter</span>
+                      </label>
+                    );
+                  })()}
+
+                  {/* Snapchat */}
+                  {(() => {
+                    const compatible = isPlatformCompatible('snapchat', modalData.contentType);
+                    return (
+                      <label className={`flex items-center gap-2 ${!compatible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} title={!compatible ? `Non compatible avec ${modalData.contentType}` : ''}>
+                        <input
+                          type="checkbox"
+                          name="platforms"
+                          value="snapchat"
+                          className="w-4 h-4"
+                          disabled={!compatible}
+                          onChange={(e) => {
+                            const selected = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="platforms"]:checked'))
+                              .map(el => el.value);
+                            setSelectedPlatforms(selected);
+                          }}
+                        />
+                        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.06-1.274.135-.209.043-.388.074-.523.074-.36 0-.554-.149-.644-.405-.058-.193-.104-.374-.133-.553-.06-.195-.12-.479-.179-.57-1.857-.283-2.891-.702-3.131-1.271-.029-.076-.044-.15-.044-.225.015-.24.194-.465.45-.509 3.264-.54 4.73-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.044-.24-.074-.346-.119-1.107-.435-1.257-.93-1.197-1.273.09-.479.674-.793 1.168-.793.146 0 .27.029.383.074.42.194.789.3 1.104.3.234 0 .384-.06.465-.105l-.046-.569c-.098-1.626-.225-3.651.307-4.837C7.392 1.077 10.739.807 11.727.807l.419-.015h.06z"/>
+                        </svg>
+                        <span>Snapchat</span>
+                      </label>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1421,7 +2095,7 @@ export default function DragDropCalendar() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
-                  <span>Heure de publication *</span>
+                  <span>⏰ Heure de publication (optionnel)</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -1438,9 +2112,11 @@ export default function DragDropCalendar() {
                 <input
                   type="time"
                   name="time"
-                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B6F5C] focus:border-transparent"
                 />
+                <p className="text-xs text-gray-600 mt-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                  💡 <strong>Astuce :</strong> Si vous renseignez une heure, le post sera <strong>planifié</strong>. Sinon, il restera en <strong>brouillon</strong>.
+                </p>
               </div>
 
               {/* Advanced Options Toggle */}
@@ -1487,20 +2163,23 @@ export default function DragDropCalendar() {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      # Hashtags
-                    </label>
-                    <input
-                      type="text"
-                      name="hashtags"
-                      placeholder="#laiaskin #beaute #skincare #bienetre"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B6F5C] focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Préparez vos hashtags à l'avance
-                    </p>
-                  </div>
+                  {/* Hashtags - Masqué pour les stories */}
+                  {modalData?.contentType !== 'story' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        # Hashtags
+                      </label>
+                      <input
+                        type="text"
+                        name="hashtags"
+                        placeholder="#laiaskin #beaute #skincare #bienetre"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B6F5C] focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Préparez vos hashtags à l'avance
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1511,21 +2190,59 @@ export default function DragDropCalendar() {
                     setShowModal(false);
                     setModalData(null);
                   }}
-                  className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 >
-                  Annuler
+                  ✕ Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const form = e.currentTarget.closest('form');
+                    if (form) {
+                      const formData = new FormData(form);
+                      // Créer un post avec statut "published" pour publication immédiate
+                      fetch('/api/admin/social-media/publish', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          title: formData.get('title'),
+                          content: formData.get('content'),
+                          platform: Array.from(formData.getAll('platforms')).join(','),
+                          category: formData.get('category'),
+                          contentType: modalData?.contentType,
+                          mediaUrls: uploadedMedia.length > 0 ? JSON.stringify(uploadedMedia.map(m => m.url)) : null,
+                          instagramType: modalData?.contentType === 'reel' ? 'reel' : modalData?.contentType === 'story' ? 'story' : 'post',
+                          facebookType: modalData?.contentType === 'reel' ? 'video' : 'post'
+                        })
+                      })
+                      .then(async (response) => {
+                        if (response.ok) {
+                          alert('✅ Publication en cours sur les réseaux sociaux!');
+                          await loadPosts();
+                          setShowModal(false);
+                          setModalData(null);
+                          setUploadedMedia([]);
+                        } else {
+                          const error = await response.json();
+                          alert('❌ Erreur: ' + (error.error || 'Erreur lors de la publication'));
+                        }
+                      })
+                      .catch(error => {
+                        console.error('Erreur publication:', error);
+                        alert('❌ Erreur lors de la publication');
+                      });
+                    }
+                  }}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                >
+                  🚀 Publier maintenant
                 </button>
                 <button
                   type="submit"
-                  name="draft"
-                  className="flex-1 px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
-                >
-                  💾 Enregistrer en brouillon
-                </button>
-                <button
-                  type="submit"
-                  name="schedule"
-                  className="flex-1 px-4 py-3 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors font-medium"
+                  className="flex-1 px-6 py-3 bg-[#8B6F5C] text-white rounded-lg hover:bg-[#6d5847] transition-colors font-medium shadow-md hover:shadow-lg"
                 >
                   📅 Planifier
                 </button>
@@ -1846,6 +2563,17 @@ export default function DragDropCalendar() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de recadrage */}
+      {cropModalMedia && modalData && (
+        <MediaCropModal
+          mediaUrl={cropModalMedia.url}
+          mediaType={cropModalMedia.type}
+          contentType={modalData.contentType}
+          onSave={handleSaveCroppedMedia}
+          onClose={() => setCropModalMedia(null)}
+        />
       )}
     </div>
   );

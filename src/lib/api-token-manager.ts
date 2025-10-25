@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from './encryption-service';
-
-const prisma = new PrismaClient();
+import prisma from './prisma';
 
 export interface ApiToken {
   id: string;
@@ -15,6 +13,7 @@ export interface ApiToken {
 }
 
 export interface StoreApiTokenParams {
+  organizationId?: string | null;  // Support multi-tenant
   service: string;
   name: string;
   token: string;
@@ -23,19 +22,30 @@ export interface StoreApiTokenParams {
 }
 
 /**
- * Liste tous les tokens API (sans les déchiffrer)
+ * Liste tous les tokens API d'une organisation (sans les déchiffrer)
  */
-export async function listApiTokens(): Promise<ApiToken[]> {
+export async function listApiTokens(organizationId?: string | null): Promise<ApiToken[]> {
   try {
+    console.log('📡 [listApiTokens] Récupération des tokens...');
+    if (organizationId) {
+      console.log(`🏢 [listApiTokens] Organization ID: ${organizationId}`);
+    }
+
+    // Récupérer uniquement les tokens de l'organisation (multi-tenant strict)
     const tokens = await prisma.apiToken.findMany({
+      where: {
+        organizationId: organizationId || null
+      },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
+    console.log(`📊 [listApiTokens] ${tokens.length} token(s) trouvé(s) pour l'organisation`);
+
     return tokens;
   } catch (error) {
-    console.error('Erreur lors de la récupération des tokens:', error);
+    console.error('❌ [listApiTokens] Erreur lors de la récupération des tokens:', error);
     throw error;
   }
 }
@@ -44,15 +54,16 @@ export async function listApiTokens(): Promise<ApiToken[]> {
  * Stocke un nouveau token API (chiffré)
  */
 export async function storeApiToken(params: StoreApiTokenParams): Promise<ApiToken> {
-  const { service, name, token, expiresAt, metadata } = params;
+  const { organizationId, service, name, token, expiresAt, metadata } = params;
 
   try {
     // Chiffrer le token avant de le stocker
     const encryptedToken = encrypt(token);
 
-    // Vérifier si un token existe déjà pour ce service/nom
+    // Vérifier si un token existe déjà pour cette organisation/service/nom
     const existing = await prisma.apiToken.findFirst({
       where: {
+        organizationId: organizationId || null,
         service,
         name,
       },
@@ -70,11 +81,12 @@ export async function storeApiToken(params: StoreApiTokenParams): Promise<ApiTok
           metadata,
         },
       });
-      console.log(`✅ Token ${service}/${name} mis à jour`);
+      console.log(`✅ Token ${organizationId ? `[${organizationId}]` : '[global]'} ${service}/${name} mis à jour`);
     } else {
       // Créer un nouveau token
       savedToken = await prisma.apiToken.create({
         data: {
+          organizationId: organizationId || null,
           service,
           name,
           encryptedToken,
@@ -82,7 +94,7 @@ export async function storeApiToken(params: StoreApiTokenParams): Promise<ApiTok
           metadata,
         },
       });
-      console.log(`✅ Token ${service}/${name} créé`);
+      console.log(`✅ Token ${organizationId ? `[${organizationId}]` : '[global]'} ${service}/${name} créé`);
     }
 
     return savedToken;
@@ -94,22 +106,68 @@ export async function storeApiToken(params: StoreApiTokenParams): Promise<ApiTok
 
 /**
  * Récupère un token API spécifique (déchiffré)
+ * @param service - Le service (INSTAGRAM, FACEBOOK, etc.)
+ * @param name - Le nom du token (access_token, page_id, etc.)
+ * @param organizationId - L'ID de l'organisation (optionnel, null = global)
  */
-export async function getApiToken(service: string, name: string): Promise<string | null> {
+export async function getApiToken(
+  service: string,
+  name: string,
+  organizationId?: string | null
+): Promise<string | null> {
   try {
     const token = await prisma.apiToken.findFirst({
       where: {
+        organizationId: organizationId || null,
         service,
         name,
       },
     });
 
     if (!token) {
+      console.log(`⚠️  Token ${service}/${name} non trouvé pour l'organisation`);
       return null;
     }
 
     // Déchiffrer le token
     return decrypt(token.encryptedToken);
+  } catch (error) {
+    console.error(`Erreur lors de la récupération du token ${service}/${name}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Récupère un token API avec ses metadata complètes
+ * @param service - Le service (INSTAGRAM, FACEBOOK, etc.)
+ * @param name - Le nom du token (access_token, page_access_token, etc.)
+ * @param organizationId - L'ID de l'organisation (optionnel, null = global)
+ * @returns {token: string, metadata: any} ou null
+ */
+export async function getApiTokenWithMetadata(
+  service: string,
+  name: string,
+  organizationId?: string | null
+): Promise<{ token: string; metadata: any } | null> {
+  try {
+    const tokenRecord = await prisma.apiToken.findFirst({
+      where: {
+        organizationId: organizationId || null,
+        service,
+        name,
+      },
+    });
+
+    if (!tokenRecord) {
+      console.log(`⚠️  Token ${service}/${name} non trouvé pour l'organisation`);
+      return null;
+    }
+
+    // Déchiffrer le token et retourner avec metadata
+    return {
+      token: decrypt(tokenRecord.encryptedToken),
+      metadata: tokenRecord.metadata || {}
+    };
   } catch (error) {
     console.error(`Erreur lors de la récupération du token ${service}/${name}:`, error);
     throw error;

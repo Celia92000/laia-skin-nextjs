@@ -24,6 +24,13 @@ export default function ApiTokensManager() {
   const [selectedToken, setSelectedToken] = useState<ApiToken | null>(null);
   const [renewalStatus, setRenewalStatus] = useState<Record<string, string>>({});
 
+  // Form state
+  const [formService, setFormService] = useState('WHATSAPP');
+  const [formName, setFormName] = useState('access_token');
+  const [formToken, setFormToken] = useState('');
+  const [formExpiresAt, setFormExpiresAt] = useState('');
+  const [formSaving, setFormSaving] = useState(false);
+
   useEffect(() => {
     fetchTokens();
   }, []);
@@ -32,16 +39,25 @@ export default function ApiTokensManager() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      console.log('🔑 Token JWT présent:', !!token);
+
       const response = await fetch('/api/admin/api-tokens', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
+      console.log('📡 Réponse API:', response.status, response.statusText);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Tokens récupérés:', data.length, 'token(s)');
+        console.log('📦 Données:', data);
         setTokens(data);
+      } else {
+        const error = await response.json();
+        console.error('❌ Erreur API:', error);
       }
     } catch (error) {
-      console.error('Erreur chargement tokens:', error);
+      console.error('❌ Erreur chargement tokens:', error);
     } finally {
       setLoading(false);
     }
@@ -123,9 +139,53 @@ export default function ApiTokensManager() {
       FACEBOOK: '👥',
       STRIPE: '💳',
       RESEND: '📧',
+      SNAPCHAT: '👻',
+      TIKTOK: '🎵',
+      LINKEDIN: '💼',
+      TWITTER: '🐦',
       OTHER: '🔑'
     };
     return icons[service] || '🔑';
+  };
+
+  const handleAddToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormSaving(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/api-tokens', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service: formService,
+          name: formName,
+          token: formToken,
+          expiresAt: formExpiresAt || null,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchTokens();
+        setShowAddModal(false);
+        setFormService('WHATSAPP');
+        setFormName('access_token');
+        setFormToken('');
+        setFormExpiresAt('');
+        alert('Token ajouté avec succès !');
+      } else {
+        const error = await response.json();
+        alert(`Erreur : ${error.error || 'Erreur lors de l\'ajout du token'}`);
+      }
+    } catch (error) {
+      console.error('Erreur ajout token:', error);
+      alert('Erreur lors de l\'ajout du token');
+    } finally {
+      setFormSaving(false);
+    }
   };
 
   if (loading) {
@@ -291,7 +351,7 @@ export default function ApiTokensManager() {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Shield className="w-5 h-5 text-blue-600" />
-          Guide de renouvellement des tokens
+          Guide de configuration des tokens
         </h3>
 
         <div className="space-y-3 text-sm text-gray-700">
@@ -311,7 +371,8 @@ export default function ApiTokensManager() {
             <span className="text-2xl">📷</span>
             <div>
               <strong className="text-gray-900">Instagram :</strong> Les tokens Instagram expirent tous les 60 jours.
-              Renouvelez-les via{' '}
+              Ajoutez 2 tokens : <code className="bg-white px-1 rounded">access_token</code> et{' '}
+              <code className="bg-white px-1 rounded">account_id</code>. Obtenez-les via{' '}
               <a href="https://developers.facebook.com/" target="_blank" className="text-blue-600 underline">
                 Facebook Developers
               </a>
@@ -322,8 +383,57 @@ export default function ApiTokensManager() {
           <div className="flex gap-3">
             <span className="text-2xl">👥</span>
             <div>
-              <strong className="text-gray-900">Facebook :</strong> Les tokens de page Facebook expirent également tous les 60 jours.
-              Même processus que pour Instagram.
+              <strong className="text-gray-900">Facebook :</strong> Ajoutez 2 tokens :{' '}
+              <code className="bg-white px-1 rounded">page_access_token</code> et{' '}
+              <code className="bg-white px-1 rounded">page_id</code>. Même processus que pour Instagram.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-2xl">👻</span>
+            <div>
+              <strong className="text-gray-900">Snapchat :</strong> Ajoutez un token{' '}
+              <code className="bg-white px-1 rounded">access_token</code>. Obtenez-le depuis{' '}
+              <a href="https://businesshelp.snapchat.com/" target="_blank" className="text-blue-600 underline">
+                Snapchat Business Manager
+              </a>
+              {' '}→ API → Tokens.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-2xl">🎵</span>
+            <div>
+              <strong className="text-gray-900">TikTok :</strong> Ajoutez un token{' '}
+              <code className="bg-white px-1 rounded">access_token</code>. Créez une app sur{' '}
+              <a href="https://developers.tiktok.com/" target="_blank" className="text-blue-600 underline">
+                TikTok for Developers
+              </a>
+              {' '}pour obtenir vos clés.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-2xl">💼</span>
+            <div>
+              <strong className="text-gray-900">LinkedIn :</strong> Ajoutez 2 tokens :{' '}
+              <code className="bg-white px-1 rounded">access_token</code> et{' '}
+              <code className="bg-white px-1 rounded">person_id</code>. Créez une app sur{' '}
+              <a href="https://www.linkedin.com/developers/" target="_blank" className="text-blue-600 underline">
+                LinkedIn Developers
+              </a>.
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <span className="text-2xl">🐦</span>
+            <div>
+              <strong className="text-gray-900">Twitter :</strong> Ajoutez un token{' '}
+              <code className="bg-white px-1 rounded">bearer_token</code>. Obtenez-le depuis{' '}
+              <a href="https://developer.twitter.com/" target="_blank" className="text-blue-600 underline">
+                Twitter Developer Portal
+              </a>
+              {' '}→ Votre App → Keys and tokens.
             </div>
           </div>
 
@@ -336,6 +446,106 @@ export default function ApiTokensManager() {
           </div>
         </div>
       </div>
+
+      {/* Modal Ajouter un token */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ajouter un token API</h3>
+
+            <form onSubmit={handleAddToken} className="space-y-4">
+              {/* Service */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service
+                </label>
+                <select
+                  value={formService}
+                  onChange={(e) => setFormService(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0]"
+                  required
+                >
+                  <option value="WHATSAPP">💬 WhatsApp</option>
+                  <option value="INSTAGRAM">📷 Instagram</option>
+                  <option value="FACEBOOK">👥 Facebook</option>
+                  <option value="SNAPCHAT">👻 Snapchat</option>
+                  <option value="TIKTOK">🎵 TikTok</option>
+                  <option value="LINKEDIN">💼 LinkedIn</option>
+                  <option value="TWITTER">🐦 Twitter</option>
+                  <option value="STRIPE">💳 Stripe</option>
+                  <option value="RESEND">📧 Resend</option>
+                  <option value="OTHER">🔑 Autre</option>
+                </select>
+              </div>
+
+              {/* Nom */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom du token
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: access_token, secret_key..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0]"
+                  required
+                />
+              </div>
+
+              {/* Token */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Token / Clé API
+                </label>
+                <textarea
+                  value={formToken}
+                  onChange={(e) => setFormToken(e.target.value)}
+                  placeholder="Collez votre token ici..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0]"
+                  required
+                />
+              </div>
+
+              {/* Date d'expiration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date d'expiration (optionnel)
+                </label>
+                <input
+                  type="date"
+                  value={formExpiresAt}
+                  onChange={(e) => setFormExpiresAt(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0]"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Laissez vide si le token n'expire pas
+                </p>
+              </div>
+
+              {/* Boutons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={formSaving}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a084] transition-colors disabled:opacity-50"
+                  disabled={formSaving}
+                >
+                  {formSaving ? 'Enregistrement...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

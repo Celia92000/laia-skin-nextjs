@@ -36,6 +36,7 @@ export default function OrganizationsPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'organizations' | 'users'>('organizations')
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
 
   // Organizations state
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -324,6 +325,37 @@ export default function OrganizationsPage() {
     }
   }
 
+  async function handleSyncTemplate() {
+    if (!confirm('🔄 Synchroniser le template LAIA Skin Institut vers toutes les organisations ?\n\nCela mettra à jour :\n- Les services\n- Les produits\n- Les formations\n- La configuration du site\n\nCette opération peut prendre quelques minutes.')) {
+      return
+    }
+
+    setSyncing(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/super-admin/sync-template', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`✅ Synchronisation réussie !\n\n${data.synced} organisation(s) mise(s) à jour`)
+        fetchData()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur : ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Erreur synchronisation:', error)
+      alert('❌ Erreur lors de la synchronisation')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -399,13 +431,35 @@ export default function OrganizationsPage() {
               </p>
             </div>
             {activeTab === 'organizations' && (
-              <Link
-                href="/super-admin/organizations/new"
-                className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
-                style={{ color: '#b8935f' }}
-              >
-                + Nouvelle organisation
-              </Link>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSyncTemplate}
+                  className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition font-semibold border-2 border-white/30 flex items-center gap-2"
+                  disabled={syncing}
+                  title="Synchroniser LAIA Skin Institut vers tous les autres instituts"
+                >
+                  {syncing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Synchronisation...
+                    </>
+                  ) : (
+                    <>
+                      🔄 Synchroniser Template
+                      <span className="ml-1 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                        LAIA Skin → Autres
+                      </span>
+                    </>
+                  )}
+                </button>
+                <Link
+                  href="/super-admin/organizations/new"
+                  className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
+                  style={{ color: '#b8935f' }}
+                >
+                  + Nouvelle organisation
+                </Link>
+              </div>
             )}
           </div>
 
@@ -558,12 +612,26 @@ export default function OrganizationsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredOrgs.map((org) => (
-                    <tr key={org.id} className="hover:bg-gray-50">
+                  {filteredOrgs.map((org) => {
+                    const isTemplate = org.slug === 'laia-skin-institut'
+                    return (
+                    <tr key={org.id} className={`hover:bg-gray-50 ${isTemplate ? 'bg-amber-50/50 border-l-4 border-amber-500' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{org.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{org.name}</span>
+                            {isTemplate && (
+                              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white flex items-center gap-1">
+                                📋 TEMPLATE
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500">@{org.slug}</div>
+                          {isTemplate && (
+                            <div className="text-xs text-amber-700 mt-1">
+                              🔄 Modèle de référence pour tous les sites clients
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -610,7 +678,8 @@ export default function OrganizationsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

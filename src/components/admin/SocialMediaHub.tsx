@@ -149,6 +149,9 @@ export default function SocialMediaHub() {
               {/* Posts tendances pour inspiration */}
               <TrendingInspirations />
 
+              {/* Générateur d'idées de contenus basé sur votre feed */}
+              <ContentIdeasGenerator />
+
               {/* Conseils personnalisés */}
               <div className="bg-white rounded-xl shadow-sm border border-amber-200 p-6">
                 <h2 className="text-xl font-serif font-bold text-[#8B6F5C] mb-6 flex items-center gap-2">
@@ -316,9 +319,6 @@ export default function SocialMediaHub() {
                   </div>
                 </div>
               )}
-
-              {/* Générateur d'idées de contenus basé sur votre feed */}
-              <ContentIdeasGenerator />
             </div>
           )}
         </div>

@@ -39,7 +39,8 @@ export async function GET(request: Request) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
 
       // Vérifier que c'est un admin ou employé
-      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE'].includes(decoded.role)) {
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE', 'COMPTABLE'];
+      if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ ...defaultStats, error: 'Accès refusé' }, { status: 200 });
       }
     } catch (error) {

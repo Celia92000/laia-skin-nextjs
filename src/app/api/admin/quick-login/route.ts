@@ -19,7 +19,8 @@ export async function POST(request: Request) {
           where: { id: decoded.userId }
         });
         
-        if (!adminUser || (adminUser.role !== 'ADMIN' && adminUser.role !== 'admin')) {
+        const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+        if (!adminUser || !adminRoles.includes(adminUser.role)) {
           return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
         }
       } catch {

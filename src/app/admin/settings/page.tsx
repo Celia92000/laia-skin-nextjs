@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Lock, Mail, User, Shield,
-  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, Plug, Key
+  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, Plug, Key, Share2
 } from 'lucide-react';
 import AdminConfigTab from '@/components/AdminConfigTab';
 import IntegrationsTab from '@/components/IntegrationsTab';
 import ApiTokensManager from '@/components/ApiTokensManager';
+import SocialMediaTokensManager from '@/components/SocialMediaTokensManager';
+import SocialMediaPublisher from '@/components/SocialMediaPublisher';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -18,7 +20,7 @@ export default function AdminSettings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'integrations' | 'api-security'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'integrations' | 'social-media' | 'api-security'>('account');
   
   const [userInfo, setUserInfo] = useState({
     email: '',
@@ -167,6 +169,20 @@ export default function AdminSettings() {
             <Plug className="w-5 h-5" />
             Intégrations
             {activeTab === 'integrations' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('social-media')}
+            className={`flex items-center gap-2 pb-4 px-4 transition relative ${
+              activeTab === 'social-media'
+                ? 'text-[#d4b5a0] font-medium'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Share2 className="w-5 h-5" />
+            Réseaux Sociaux
+            {activeTab === 'social-media' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
             )}
           </button>
@@ -379,6 +395,14 @@ export default function AdminSettings() {
       ) : activeTab === 'integrations' ? (
         <div className="max-w-7xl mx-auto">
           <IntegrationsTab />
+        </div>
+      ) : activeTab === 'social-media' ? (
+        <div className="max-w-7xl mx-auto space-y-6">
+          <SocialMediaPublisher />
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuration des Tokens</h3>
+            <SocialMediaTokensManager />
+          </div>
         </div>
       ) : activeTab === 'api-security' ? (
         <div className="max-w-7xl mx-auto">

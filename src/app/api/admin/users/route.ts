@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -165,7 +165,7 @@ export async function PATCH(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -178,8 +178,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Empêcher de se modifier soi-même
-    if (userId === decoded.userId && role && role !== 'ADMIN' && role !== 'admin') {
+    // Empêcher de se modifier soi-même (sauf pour les super admins)
+    const superAdminRoles = ['SUPER_ADMIN'];
+    if (userId === decoded.userId && role && !superAdminRoles.includes(decoded.role)) {
       return NextResponse.json(
         { error: 'Vous ne pouvez pas modifier votre propre rôle' },
         { status: 400 }
@@ -247,7 +248,7 @@ export async function DELETE(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

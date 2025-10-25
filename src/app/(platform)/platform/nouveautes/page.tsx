@@ -65,7 +65,7 @@ export default function NouveautesPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-                  LAIA Beauty
+                  LAIA Connect
                 </h1>
                 <p className="text-xs text-purple-600 font-medium">Nos Nouveautés</p>
               </div>
@@ -97,7 +97,7 @@ export default function NouveautesPage() {
               </span>
             </h2>
             <p className="text-xl text-gray-600">
-              Découvrez les dernières fonctionnalités, conseils et actualités de LAIA Beauty
+              Découvrez les dernières fonctionnalités, conseils et actualités de LAIA Connect
             </p>
           </div>
 
@@ -210,7 +210,7 @@ export default function NouveautesPage() {
             Prêt à transformer votre institut ?
           </h3>
           <p className="text-xl mb-8 text-purple-100">
-            Rejoignez des centaines d'instituts qui utilisent déjà LAIA Beauty
+            Rejoignez des centaines d'instituts qui utilisent déjà LAIA Connect
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

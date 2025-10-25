@@ -419,7 +419,7 @@ export async function sendDemoConfirmationEmail({
                                     À très bientôt !
                                 </p>
                                 <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 15px 0;">
-                                    L'équipe LAIA Beauty
+                                    L'équipe LAIA Connect
                                 </p>
                                 <div style="margin-top: 20px;">
                                     <a href="https://laia-beauty.com" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
@@ -453,7 +453,7 @@ export async function sendDemoConfirmationEmail({
     }
 
     // Envoyer l'email réel
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Beauty <demo@laia-beauty.com>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <demo@laia-beauty.com>';
 
     const { data, error } = await getResend().emails.send({
       from: fromEmail,

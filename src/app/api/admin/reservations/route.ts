@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE')) {
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -247,14 +248,16 @@ export async function GET(request: NextRequest) {
       console.warn('Erreur de connexion DB lors de la vérification utilisateur:', dbError);
       // En cas d'erreur DB, on fait confiance au token JWT qui a déjà été vérifié
       // et on utilise le rôle du token décodé
-      if (!decoded.role || (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE')) {
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      if (!decoded.role || !adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
       }
       // On continue avec les données du token
       user = { role: decoded.role };
     }
 
-    if (user && user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (user && !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

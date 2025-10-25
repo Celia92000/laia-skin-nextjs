@@ -34,15 +34,15 @@ interface CommunicationHistory {
   templateUsed?: string;
 }
 
-// Templates pour LAIA Beauty (plateforme SaaS)
+// Templates pour LAIA Connect (plateforme SaaS)
 const mockTemplates: Template[] = [
   // Bienvenue
   {
     id: 'welcome-1',
     category: 'Bienvenue',
-    title: 'Bienvenue LAIA Beauty',
+    title: 'Bienvenue LAIA Connect',
     emoji: '🎉',
-    message: 'Bonjour {{nom}}, bienvenue sur LAIA Beauty ! 🎉\n\nVotre compte est actif. Commencez à digitaliser votre institut dès maintenant !\n\n✨ Réservations en ligne\n📅 Planning optimisé\n💬 Communication clients\n\nBelle journée ! 💫',
+    message: 'Bonjour {{nom}}, bienvenue sur LAIA Connect ! 🎉\n\nVotre compte est actif. Commencez à digitaliser votre institut dès maintenant !\n\n✨ Réservations en ligne\n📅 Planning optimisé\n💬 Communication clients\n\nBelle journée ! 💫',
     variables: ['nom']
   },
   {
@@ -50,7 +50,7 @@ const mockTemplates: Template[] = [
     category: 'Bienvenue',
     title: 'Activation compte',
     emoji: '🚀',
-    message: 'Bonjour {{nom}} ! 🚀\n\nVotre compte LAIA Beauty est maintenant actif.\n\nConnectez-vous ici : https://laia-beauty.com/login\n\nBesoin d\'aide ? Notre équipe est là pour vous ! 💬',
+    message: 'Bonjour {{nom}} ! 🚀\n\nVotre compte LAIA Connect est maintenant actif.\n\nConnectez-vous ici : https://laia-beauty.com/login\n\nBesoin d\'aide ? Notre équipe est là pour vous ! 💬',
     variables: ['nom']
   },
   // Essai
@@ -59,7 +59,7 @@ const mockTemplates: Template[] = [
     category: 'Essai',
     title: 'Rappel fin d\'essai',
     emoji: '⏰',
-    message: 'Bonjour {{nom}},\n\nVotre période d\'essai se termine dans {{jours}} jours. ⏰\n\nPour continuer à profiter de LAIA Beauty, pensez à choisir votre abonnement !\n\nQuestions ? Contactez-nous ! 💬',
+    message: 'Bonjour {{nom}},\n\nVotre période d\'essai se termine dans {{jours}} jours. ⏰\n\nPour continuer à profiter de LAIA Connect, pensez à choisir votre abonnement !\n\nQuestions ? Contactez-nous ! 💬',
     variables: ['nom', 'jours']
   },
   {
@@ -67,7 +67,7 @@ const mockTemplates: Template[] = [
     category: 'Essai',
     title: 'Prolongation essai',
     emoji: '🎁',
-    message: 'Bonne nouvelle {{nom}} ! 🎁\n\nNous vous offrons {{jours}} jours supplémentaires pour tester LAIA Beauty.\n\nProfitez-en pour découvrir toutes nos fonctionnalités ! ✨',
+    message: 'Bonne nouvelle {{nom}} ! 🎁\n\nNous vous offrons {{jours}} jours supplémentaires pour tester LAIA Connect.\n\nProfitez-en pour découvrir toutes nos fonctionnalités ! ✨',
     variables: ['nom', 'jours']
   },
   // Abonnement
@@ -76,7 +76,7 @@ const mockTemplates: Template[] = [
     category: 'Abonnement',
     title: 'Confirmation abonnement',
     emoji: '✅',
-    message: 'Merci {{nom}} ! ✅\n\nVotre abonnement {{plan}} est confirmé.\n\nMontant : {{montant}}€/mois\nProchaine facturation : {{date}}\n\nBienvenue dans la famille LAIA Beauty ! 💫',
+    message: 'Merci {{nom}} ! ✅\n\nVotre abonnement {{plan}} est confirmé.\n\nMontant : {{montant}}€/mois\nProchaine facturation : {{date}}\n\nBienvenue dans la famille LAIA Connect ! 💫',
     variables: ['nom', 'plan', 'montant', 'date']
   },
   {
@@ -93,7 +93,7 @@ const mockTemplates: Template[] = [
     category: 'Nouveautés',
     title: 'Nouvelle fonctionnalité',
     emoji: '✨',
-    message: 'Nouveauté LAIA Beauty ! ✨\n\nBonjour {{nom}},\n\nDécouvrez {{feature}} : une nouvelle façon d\'optimiser votre institut ! 🚀\n\nConnectez-vous pour l\'essayer dès maintenant ! 💫',
+    message: 'Nouveauté LAIA Connect ! ✨\n\nBonjour {{nom}},\n\nDécouvrez {{feature}} : une nouvelle façon d\'optimiser votre institut ! 🚀\n\nConnectez-vous pour l\'essayer dès maintenant ! 💫',
     variables: ['nom', 'feature']
   },
   {
@@ -101,7 +101,7 @@ const mockTemplates: Template[] = [
     category: 'Nouveautés',
     title: 'Mise à jour importante',
     emoji: '🔔',
-    message: 'Mise à jour LAIA Beauty ! 🔔\n\nBonjour {{nom}},\n\nNous avons amélioré {{feature}} pour vous offrir une meilleure expérience !\n\nDécouvrez les changements dans votre espace. ✨',
+    message: 'Mise à jour LAIA Connect ! 🔔\n\nBonjour {{nom}},\n\nNous avons amélioré {{feature}} pour vous offrir une meilleure expérience !\n\nDécouvrez les changements dans votre espace. ✨',
     variables: ['nom', 'feature']
   },
   // Support
@@ -110,7 +110,7 @@ const mockTemplates: Template[] = [
     category: 'Support',
     title: 'Message support',
     emoji: '💬',
-    message: 'Bonjour {{nom}} ! 💬\n\nNotre équipe LAIA Beauty est à votre écoute.\n\nBesoin d\'aide ?\n📧 support@laia-beauty.com\n💬 Chat en ligne 7j/7\n\nNous sommes là pour vous ! 🌟',
+    message: 'Bonjour {{nom}} ! 💬\n\nNotre équipe LAIA Connect est à votre écoute.\n\nBesoin d\'aide ?\n📧 support@laia-beauty.com\n💬 Chat en ligne 7j/7\n\nNous sommes là pour vous ! 🌟',
     variables: ['nom']
   },
   {
@@ -135,7 +135,7 @@ const mockTemplates: Template[] = [
     category: 'Facturation',
     title: 'Échec de paiement',
     emoji: '⚠️',
-    message: 'Attention {{nom}}, ⚠️\n\nLe paiement de {{montant}}€ n\'a pas pu être effectué.\n\nMerci de mettre à jour vos informations de paiement pour continuer à profiter de LAIA Beauty.\n\nBesoin d\'aide ? Contactez-nous ! 💬',
+    message: 'Attention {{nom}}, ⚠️\n\nLe paiement de {{montant}}€ n\'a pas pu être effectué.\n\nMerci de mettre à jour vos informations de paiement pour continuer à profiter de LAIA Connect.\n\nBesoin d\'aide ? Contactez-nous ! 💬',
     variables: ['nom', 'montant']
   }
 ];
@@ -357,7 +357,7 @@ const SuperAdminWhatsAppSimple: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-stone-800 mb-2">
-            📱 WhatsApp LAIA Beauty
+            📱 WhatsApp LAIA Connect
           </h1>
           <p className="text-stone-600">
             Communiquez avec vos organisations via WhatsApp

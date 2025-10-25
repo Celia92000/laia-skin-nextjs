@@ -105,7 +105,7 @@ export async function PATCH(
       select: { role: true }
     });
 
-    if (admin?.role !== 'ADMIN' && admin?.role !== 'admin') {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

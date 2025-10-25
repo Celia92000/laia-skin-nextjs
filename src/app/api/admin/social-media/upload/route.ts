@@ -67,10 +67,9 @@ export async function POST(req: NextRequest) {
         {
           folder: 'laia-skin/social-media',
           resource_type: file.type.startsWith('video/') ? 'video' : 'image',
-          transformation: file.type.startsWith('image/') ? [
-            { quality: 'auto' },
-            { fetch_format: 'auto' }
-          ] : undefined
+          // Préserver les dimensions originales sans transformation
+          quality: 'auto:best',
+          flags: 'preserve_transparency'
         },
         (error, result) => {
           if (error) reject(error);

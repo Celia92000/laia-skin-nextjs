@@ -1,4 +1,5 @@
 // Service de publication automatique sur les réseaux sociaux
+import { getApiToken } from './api-token-manager';
 
 interface PublishResult {
   success: boolean;
@@ -10,20 +11,24 @@ interface PublishResult {
 export class SocialMediaPublisher {
 
   // Instagram - via Meta Graph API
-  static async publishToInstagram(post: {
-    content: string;
-    imageUrl?: string;
-    hashtags?: string;
-  }): Promise<PublishResult> {
+  static async publishToInstagram(
+    post: {
+      content: string;
+      imageUrl?: string;
+      hashtags?: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
-      const instagramAccountId = process.env.INSTAGRAM_ACCOUNT_ID;
+      const accessToken = await getApiToken('INSTAGRAM', 'access_token', organizationId);
+      const instagramAccountId = await getApiToken('INSTAGRAM', 'account_id', organizationId)
+        || process.env.INSTAGRAM_ACCOUNT_ID; // Fallback
 
       if (!accessToken || !instagramAccountId) {
         return {
           success: false,
           platform: 'Instagram',
-          error: 'Configuration Instagram manquante (INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_ACCOUNT_ID)'
+          error: 'Configuration Instagram manquante (access_token, account_id)'
         };
       }
 
@@ -85,20 +90,24 @@ export class SocialMediaPublisher {
   }
 
   // Facebook - via Graph API
-  static async publishToFacebook(post: {
-    content: string;
-    imageUrl?: string;
-    link?: string;
-  }): Promise<PublishResult> {
+  static async publishToFacebook(
+    post: {
+      content: string;
+      imageUrl?: string;
+      link?: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-      const pageId = process.env.FACEBOOK_PAGE_ID;
+      const accessToken = await getApiToken('FACEBOOK', 'page_access_token', organizationId);
+      const pageId = await getApiToken('FACEBOOK', 'page_id', organizationId)
+        || process.env.FACEBOOK_PAGE_ID; // Fallback
 
       if (!accessToken || !pageId) {
         return {
           success: false,
           platform: 'Facebook',
-          error: 'Configuration Facebook manquante (FACEBOOK_PAGE_ACCESS_TOKEN, FACEBOOK_PAGE_ID)'
+          error: 'Configuration Facebook manquante (page_access_token, page_id)'
         };
       }
 
@@ -148,19 +157,23 @@ export class SocialMediaPublisher {
   }
 
   // LinkedIn - via LinkedIn API
-  static async publishToLinkedIn(post: {
-    content: string;
-    imageUrl?: string;
-  }): Promise<PublishResult> {
+  static async publishToLinkedIn(
+    post: {
+      content: string;
+      imageUrl?: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
-      const personId = process.env.LINKEDIN_PERSON_ID;
+      const accessToken = await getApiToken('LINKEDIN', 'access_token', organizationId);
+      const personId = await getApiToken('LINKEDIN', 'person_id', organizationId)
+        || process.env.LINKEDIN_PERSON_ID; // Fallback
 
       if (!accessToken || !personId) {
         return {
           success: false,
           platform: 'LinkedIn',
-          error: 'Configuration LinkedIn manquante (LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_ID)'
+          error: 'Configuration LinkedIn manquante (access_token, person_id)'
         };
       }
 
@@ -220,19 +233,22 @@ export class SocialMediaPublisher {
   }
 
   // Snapchat - via Snap Kit API
-  static async publishToSnapchat(post: {
-    content: string;
-    imageUrl?: string;
-    videoUrl?: string;
-  }): Promise<PublishResult> {
+  static async publishToSnapchat(
+    post: {
+      content: string;
+      imageUrl?: string;
+      videoUrl?: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const accessToken = process.env.SNAPCHAT_ACCESS_TOKEN;
+      const accessToken = await getApiToken('SNAPCHAT', 'access_token', organizationId);
 
       if (!accessToken) {
         return {
           success: false,
           platform: 'Snapchat',
-          error: 'Configuration Snapchat manquante (SNAPCHAT_ACCESS_TOKEN)'
+          error: 'Configuration Snapchat manquante (access_token)'
         };
       }
 
@@ -291,18 +307,21 @@ export class SocialMediaPublisher {
   }
 
   // TikTok - via TikTok API
-  static async publishToTikTok(post: {
-    content: string;
-    videoUrl?: string;
-  }): Promise<PublishResult> {
+  static async publishToTikTok(
+    post: {
+      content: string;
+      videoUrl?: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const accessToken = process.env.TIKTOK_ACCESS_TOKEN;
+      const accessToken = await getApiToken('TIKTOK', 'access_token', organizationId);
 
       if (!accessToken) {
         return {
           success: false,
           platform: 'TikTok',
-          error: 'Configuration TikTok manquante (TIKTOK_ACCESS_TOKEN)'
+          error: 'Configuration TikTok manquante (access_token)'
         };
       }
 
@@ -360,17 +379,20 @@ export class SocialMediaPublisher {
   }
 
   // Twitter/X - via Twitter API v2
-  static async publishToTwitter(post: {
-    content: string;
-  }): Promise<PublishResult> {
+  static async publishToTwitter(
+    post: {
+      content: string;
+    },
+    organizationId?: string | null
+  ): Promise<PublishResult> {
     try {
-      const bearerToken = process.env.TWITTER_BEARER_TOKEN;
+      const bearerToken = await getApiToken('TWITTER', 'bearer_token', organizationId);
 
       if (!bearerToken) {
         return {
           success: false,
           platform: 'Twitter',
-          error: 'Configuration Twitter manquante (TWITTER_BEARER_TOKEN)'
+          error: 'Configuration Twitter manquante (bearer_token)'
         };
       }
 
@@ -415,20 +437,21 @@ export class SocialMediaPublisher {
       imageUrl?: string;
       hashtags?: string;
       link?: string;
-    }
+    },
+    organizationId?: string | null
   ): Promise<PublishResult> {
 
     const normalizedPlatform = platform.toLowerCase();
 
     switch (normalizedPlatform) {
       case 'instagram':
-        return this.publishToInstagram(post);
+        return this.publishToInstagram(post, organizationId);
 
       case 'facebook':
-        return this.publishToFacebook(post);
+        return this.publishToFacebook(post, organizationId);
 
       case 'linkedin':
-        return this.publishToLinkedIn(post);
+        return this.publishToLinkedIn(post, organizationId);
 
       case 'snapchat':
       case 'snap':
@@ -436,17 +459,17 @@ export class SocialMediaPublisher {
           content: post.content,
           imageUrl: post.imageUrl,
           videoUrl: post.imageUrl?.match(/\.(mp4|mov|avi)$/i) ? post.imageUrl : undefined
-        });
+        }, organizationId);
 
       case 'tiktok':
         return this.publishToTikTok({
           content: post.content,
           videoUrl: post.imageUrl // Pour TikTok, c'est une vidéo
-        });
+        }, organizationId);
 
       case 'twitter':
       case 'x':
-        return this.publishToTwitter(post);
+        return this.publishToTwitter(post, organizationId);
 
       default:
         return {
@@ -458,38 +481,58 @@ export class SocialMediaPublisher {
   }
 
   // Vérifier si une plateforme est configurée
-  static isPlatformConfigured(platform: string): boolean {
+  static async isPlatformConfigured(platform: string, organizationId?: string | null): Promise<boolean> {
     const normalizedPlatform = platform.toLowerCase();
 
-    switch (normalizedPlatform) {
-      case 'instagram':
-        return !!(process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_ACCOUNT_ID);
+    try {
+      switch (normalizedPlatform) {
+        case 'instagram':
+          return !!(
+            await getApiToken('INSTAGRAM', 'access_token', organizationId) &&
+            (await getApiToken('INSTAGRAM', 'account_id', organizationId) || process.env.INSTAGRAM_ACCOUNT_ID)
+          );
 
-      case 'facebook':
-        return !!(process.env.FACEBOOK_PAGE_ACCESS_TOKEN && process.env.FACEBOOK_PAGE_ID);
+        case 'facebook':
+          return !!(
+            await getApiToken('FACEBOOK', 'page_access_token', organizationId) &&
+            (await getApiToken('FACEBOOK', 'page_id', organizationId) || process.env.FACEBOOK_PAGE_ID)
+          );
 
-      case 'linkedin':
-        return !!(process.env.LINKEDIN_ACCESS_TOKEN && process.env.LINKEDIN_PERSON_ID);
+        case 'linkedin':
+          return !!(
+            await getApiToken('LINKEDIN', 'access_token', organizationId) &&
+            (await getApiToken('LINKEDIN', 'person_id', organizationId) || process.env.LINKEDIN_PERSON_ID)
+          );
 
-      case 'snapchat':
-      case 'snap':
-        return !!process.env.SNAPCHAT_ACCESS_TOKEN;
+        case 'snapchat':
+        case 'snap':
+          return !!(await getApiToken('SNAPCHAT', 'access_token', organizationId));
 
-      case 'tiktok':
-        return !!process.env.TIKTOK_ACCESS_TOKEN;
+        case 'tiktok':
+          return !!(await getApiToken('TIKTOK', 'access_token', organizationId));
 
-      case 'twitter':
-      case 'x':
-        return !!process.env.TWITTER_BEARER_TOKEN;
+        case 'twitter':
+        case 'x':
+          return !!(await getApiToken('TWITTER', 'bearer_token', organizationId));
 
-      default:
-        return false;
+        default:
+          return false;
+      }
+    } catch (error) {
+      console.error(`Erreur vérification plateforme ${platform}:`, error);
+      return false;
     }
   }
 
   // Obtenir toutes les plateformes configurées
-  static getConfiguredPlatforms(): string[] {
+  static async getConfiguredPlatforms(organizationId?: string | null): Promise<string[]> {
     const platforms = ['Instagram', 'Facebook', 'Snapchat', 'TikTok', 'LinkedIn', 'Twitter'];
-    return platforms.filter(p => this.isPlatformConfigured(p));
+    const results = await Promise.all(
+      platforms.map(async (p) => ({
+        platform: p,
+        isConfigured: await this.isPlatformConfigured(p, organizationId)
+      }))
+    );
+    return results.filter(r => r.isConfigured).map(r => r.platform);
   }
 }

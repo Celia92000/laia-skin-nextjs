@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    // Récupérer uniquement les articles publiés des nouveautés LAIA Beauty
+    // Récupérer uniquement les articles publiés des nouveautés LAIA Connect
     const posts = await prisma.platformNews.findMany({
       where: {
         status: 'PUBLISHED'

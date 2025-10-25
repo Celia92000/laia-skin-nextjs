@@ -111,7 +111,7 @@ export default function PourQuiPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
-                  LAIA Beauty
+                  LAIA Connect
                 </h1>
               </div>
             </Link>
@@ -140,14 +140,14 @@ export default function PourQuiPage() {
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
-            LAIA Beauty est fait
+            LAIA Connect est fait
             <span className="block mt-2 bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
               pour vous
             </span>
           </h2>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto mb-12">
             Chaque secteur de la beauté et du bien-être a ses spécificités.
-            Découvrez comment LAIA Beauty s'adapte parfaitement à votre métier.
+            Découvrez comment LAIA Connect s'adapte parfaitement à votre métier.
           </p>
         </div>
       </section>
@@ -211,7 +211,7 @@ export default function PourQuiPage() {
             Votre métier mérite un logiciel qui vous comprend
           </h3>
           <p className="text-xl text-white/90 mb-8">
-            Testez LAIA Beauty gratuitement pendant 30 jours et découvrez comment nous facilitons votre quotidien
+            Testez LAIA Connect gratuitement pendant 30 jours et découvrez comment nous facilitons votre quotidien
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -240,13 +240,13 @@ export default function PourQuiPage() {
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
               <span className="text-xl">🌸</span>
             </div>
-            <h4 className="text-gray-900 font-bold text-lg">LAIA Beauty</h4>
+            <h4 className="text-gray-900 font-bold text-lg">LAIA Connect</h4>
           </div>
           <p className="text-gray-600 text-sm mb-4">
             Logiciel de gestion pour professionnels de la beauté et du bien-être
           </p>
           <p className="text-gray-600 text-sm">
-            © 2025 LAIA Beauty. Tous droits réservés. Fait avec 💜 en France
+            © 2025 LAIA Connect. Tous droits réservés. Fait avec 💜 en France
           </p>
         </div>
       </footer>

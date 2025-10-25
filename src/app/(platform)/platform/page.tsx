@@ -152,7 +152,7 @@ export default function PlatformHomePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-                  LAIA Beauty
+                  LAIA Connect
                 </h1>
                 <p className="text-xs text-purple-600 font-medium">Logiciel de gestion</p>
               </div>
@@ -316,7 +316,7 @@ export default function PlatformHomePage() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-purple-900/90 to-transparent">
-                  <p className="text-lg text-purple-200">Fondatrice & CEO LAIA Beauty</p>
+                  <p className="text-lg text-purple-200">Fondatrice & CEO LAIA Connect</p>
                 </div>
               </div>
 
@@ -513,7 +513,7 @@ export default function PlatformHomePage() {
                 <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
                   <span className="text-xl">🌸</span>
                 </div>
-                <h4 className="text-gray-900 font-bold text-lg">LAIA Beauty</h4>
+                <h4 className="text-gray-900 font-bold text-lg">LAIA Connect</h4>
               </div>
               <p className="text-gray-600 text-sm font-medium">
                 Logiciel de gestion pour professionnels
@@ -546,7 +546,7 @@ export default function PlatformHomePage() {
           </div>
           <div className="border-t border-purple-200 pt-8 text-center">
             <p className="text-gray-600 text-sm">
-              &copy; 2025 LAIA Beauty. Tous droits réservés. Fait avec 💜 en France
+              &copy; 2025 LAIA Connect. Tous droits réservés. Fait avec 💜 en France
             </p>
           </div>
         </div>

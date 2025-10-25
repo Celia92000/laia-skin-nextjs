@@ -69,11 +69,11 @@ export default function EmailCompleteInterface() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([
     {
       id: 'welcome',
-      name: '🎉 Bienvenue LAIA Beauty',
-      subject: 'Bienvenue sur LAIA Beauty - Votre partenaire digital',
+      name: '🎉 Bienvenue LAIA Connect',
+      subject: 'Bienvenue sur LAIA Connect - Votre partenaire digital',
       content: `Bonjour {nom},
 
-Bienvenue sur LAIA Beauty ! 🎉
+Bienvenue sur LAIA Connect ! 🎉
 
 Nous sommes ravis de vous accompagner dans la digitalisation de votre institut.
 
@@ -86,15 +86,15 @@ Votre accès est maintenant actif et vous pouvez commencer à :
 Notre équipe est à votre disposition pour vous accompagner.
 
 Belle journée,
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     },
     {
       id: 'activation',
       name: '🚀 Activation compte',
-      subject: 'Activez votre compte LAIA Beauty',
+      subject: 'Activez votre compte LAIA Connect',
       content: `Bonjour {nom},
 
-Votre compte LAIA Beauty est prêt ! 🚀
+Votre compte LAIA Connect est prêt ! 🚀
 
 Pour commencer à utiliser notre plateforme :
 1. Cliquez sur le lien d'activation
@@ -104,32 +104,32 @@ Pour commencer à utiliser notre plateforme :
 Besoin d'aide ? Notre équipe est là pour vous guider.
 
 À très vite,
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     },
     {
       id: 'trial-reminder',
       name: '⏰ Rappel période d\'essai',
-      subject: 'Votre période d\'essai LAIA Beauty se termine bientôt',
+      subject: 'Votre période d\'essai LAIA Connect se termine bientôt',
       content: `Bonjour {nom},
 
 Votre période d'essai gratuite se termine dans {jours} jours.
 
-Pour continuer à profiter de LAIA Beauty :
+Pour continuer à profiter de LAIA Connect :
 📈 Choisissez le plan adapté à vos besoins
 💎 Bénéficiez de toutes nos fonctionnalités
 🎁 Offre spéciale : -20% sur votre premier mois
 
 Passez à la version premium dès maintenant !
 
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     },
     {
       id: 'new-feature',
       name: '✨ Nouvelle fonctionnalité',
-      subject: 'Découvrez la nouvelle fonctionnalité LAIA Beauty',
+      subject: 'Découvrez la nouvelle fonctionnalité LAIA Connect',
       content: `Bonjour {nom},
 
-Une nouvelle fonctionnalité vient d'arriver sur LAIA Beauty ! ✨
+Une nouvelle fonctionnalité vient d'arriver sur LAIA Connect ! ✨
 
 {description_feature}
 
@@ -140,7 +140,7 @@ Cette amélioration va vous permettre de :
 
 Découvrez-la dès maintenant dans votre espace.
 
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     },
     {
       id: 'support',
@@ -148,7 +148,7 @@ L'équipe LAIA Beauty`
       subject: 'Nous sommes là pour vous aider',
       content: `Bonjour {nom},
 
-Notre équipe support LAIA Beauty est à votre écoute ! 💬
+Notre équipe support LAIA Connect est à votre écoute ! 💬
 
 Vous avez une question ? Besoin d'aide ?
 📧 Email : support@laia-beauty.com
@@ -157,15 +157,15 @@ Vous avez une question ? Besoin d'aide ?
 
 Nous sommes là pour vous accompagner dans votre succès.
 
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     },
     {
       id: 'invoice',
       name: '💳 Facture mensuelle',
-      subject: 'Votre facture LAIA Beauty du mois {mois}',
+      subject: 'Votre facture LAIA Connect du mois {mois}',
       content: `Bonjour {nom},
 
-Voici votre facture LAIA Beauty pour le mois de {mois}.
+Voici votre facture LAIA Connect pour le mois de {mois}.
 
 Plan : {plan}
 Montant : {montant}€ HT
@@ -174,7 +174,7 @@ Date : {date}
 La facture est disponible en pièce jointe.
 
 Merci pour votre confiance,
-L'équipe LAIA Beauty`
+L'équipe LAIA Connect`
     }
   ]);
 

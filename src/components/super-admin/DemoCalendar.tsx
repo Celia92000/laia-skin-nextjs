@@ -343,8 +343,8 @@ export default function DemoCalendar() {
                         key={slot.id}
                         className={`p-3 border-2 rounded-lg transition cursor-pointer ${
                           isBooked
-                            ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50'
-                            : 'border-purple-200 bg-white hover:border-purple-400 hover:shadow-md'
+                            ? 'border-red-400 bg-gradient-to-br from-red-50 to-rose-50'
+                            : 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-md'
                         }`}
                         onClick={() => {
                           if (isBooked && booking) {
@@ -355,10 +355,10 @@ export default function DemoCalendar() {
                         }}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className={`text-lg font-bold ${isBooked ? 'text-green-700' : 'text-purple-600'}`}>
+                          <div className={`text-lg font-bold ${isBooked ? 'text-red-700' : 'text-green-700'}`}>
                             {formatTime(slot.date)}
                           </div>
-                          <div className={`text-xs px-2 py-1 rounded ${isBooked ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          <div className={`text-xs px-2 py-1 rounded ${isBooked ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
                             {slot.duration} min
                           </div>
                         </div>
@@ -366,8 +366,8 @@ export default function DemoCalendar() {
                         {isBooked && booking ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 mb-1">
-                              <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                              <div className="text-xs font-semibold text-green-700">RÉSERVÉ</div>
+                              <div className="w-2 h-2 bg-red-600 rounded-full"></div>
+                              <div className="text-xs font-semibold text-red-700">RÉSERVÉ</div>
                             </div>
                             <div className="font-semibold text-gray-900 text-sm truncate" title={booking?.institutName || ''}>
                               {booking?.institutName || 'N/A'}
@@ -379,8 +379,8 @@ export default function DemoCalendar() {
                         ) : (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1 mb-1">
-                              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                              <div className="text-xs font-semibold text-purple-600">
+                              <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                              <div className="text-xs font-semibold text-green-700">
                                 {slot.isAvailable ? 'DISPONIBLE' : 'INDISPONIBLE'}
                               </div>
                             </div>
@@ -811,9 +811,9 @@ function SlotManageModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full my-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b z-10">
           <h3 className="text-xl font-bold text-gray-900">Gérer le créneau</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">×</button>
         </div>
@@ -919,9 +919,9 @@ function BookingDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b z-10">
           <h3 className="text-2xl font-bold text-gray-900">Détails de la réservation</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">×</button>
         </div>
@@ -1176,9 +1176,9 @@ function FollowUpModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full my-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b z-10">
           <h3 className="text-xl font-bold text-gray-900">📅 Planifier un RDV de suivi</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-3xl">×</button>
         </div>
@@ -1349,7 +1349,9 @@ function CalendarView({ slots, onDateClick }: { slots: DemoSlot[]; onDateClick: 
                 isToday
                   ? 'border-purple-600 bg-purple-50'
                   : hasSlots
-                  ? 'border-purple-300 bg-purple-50 hover:bg-purple-100'
+                  ? bookedSlots > 0
+                    ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                    : 'border-green-300 bg-green-50 hover:bg-green-100'
                   : 'border-gray-200 bg-white hover:bg-gray-50'
               )}
             >
@@ -1358,9 +1360,12 @@ function CalendarView({ slots, onDateClick }: { slots: DemoSlot[]; onDateClick: 
               </div>
               {hasSlots && (
                 <div className="mt-1">
-                  <div className="text-xs text-purple-700 font-semibold">{daySlots.length} créneaux</div>
+                  <div className="text-xs text-gray-700 font-semibold">{daySlots.length} créneaux</div>
                   {bookedSlots > 0 && (
-                    <div className="text-xs text-green-600">{bookedSlots} réservé{bookedSlots > 1 ? 's' : ''}</div>
+                    <div className="text-xs text-red-600 font-semibold">{bookedSlots} réservé{bookedSlots > 1 ? 's' : ''}</div>
+                  )}
+                  {daySlots.length - bookedSlots > 0 && (
+                    <div className="text-xs text-green-600 font-semibold">{daySlots.length - bookedSlots} ouvert{daySlots.length - bookedSlots > 1 ? 's' : ''}</div>
                   )}
                 </div>
               )}
@@ -1375,8 +1380,12 @@ function CalendarView({ slots, onDateClick }: { slots: DemoSlot[]; onDateClick: 
           <span className="text-gray-600">Aujourd'hui</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-purple-300 bg-purple-50 rounded"></div>
-          <span className="text-gray-600">Créneaux disponibles</span>
+          <div className="w-4 h-4 border-2 border-green-400 bg-green-50 rounded"></div>
+          <span className="text-gray-600">Créneaux ouverts</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-red-400 bg-red-50 rounded"></div>
+          <span className="text-gray-600">Créneaux réservés</span>
         </div>
       </div>
     </div>

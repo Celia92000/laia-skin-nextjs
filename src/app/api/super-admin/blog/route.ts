@@ -28,7 +28,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer toutes les nouveautés LAIA Beauty
+    // Récupérer toutes les nouveautés LAIA Connect
     const posts = await prisma.platformNews.findMany({
       include: {
         author: {

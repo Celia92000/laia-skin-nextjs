@@ -28,6 +28,8 @@ export default function SecureLoginPage() {
   // Vérifier si déjà connecté
   const [alreadyLoggedIn, setAlreadyLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [savedEmails, setSavedEmails] = useState<string[]>([]);
+  const [showEmailDropdown, setShowEmailDropdown] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -37,6 +39,26 @@ export default function SecureLoginPage() {
       if (token && user) {
         setAlreadyLoggedIn(true);
         setCurrentUser(JSON.parse(user));
+      }
+
+      // Charger les emails sauvegardés
+      const savedEmailsStr = localStorage.getItem('savedEmails');
+      if (savedEmailsStr) {
+        try {
+          const emails = JSON.parse(savedEmailsStr);
+          setSavedEmails(emails);
+        } catch (e) {
+          console.error('Erreur chargement emails:', e);
+        }
+      } else {
+        // Initialiser avec les comptes prédéfinis si aucun email sauvegardé
+        const defaultEmails = [
+          'admin@laiaskin.com',
+          'superadmin@laiaskin.com',
+          'celia.ivorra95@hotmail.fr'
+        ];
+        localStorage.setItem('savedEmails', JSON.stringify(defaultEmails));
+        setSavedEmails(defaultEmails);
       }
 
       // Vérifier les deux variantes pour compatibilité
@@ -50,6 +72,19 @@ export default function SecureLoginPage() {
       localStorage.removeItem('rememberPassword');
     }
   }, []);
+
+  // Fermer le dropdown quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showEmailDropdown && !target.closest('.email-dropdown-container')) {
+        setShowEmailDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmailDropdown]);
 
   // Comptes de démonstration désactivés pour la sécurité
   const demoAccounts = false ? [
@@ -107,7 +142,19 @@ export default function SecureLoginPage() {
 
         if (response.ok) {
           const data = await response.json();
-          
+
+          // Sauvegarder l'email dans la liste des emails utilisés
+          const currentSavedEmails = [...savedEmails];
+          if (!currentSavedEmails.includes(formData.email)) {
+            currentSavedEmails.unshift(formData.email);
+            // Garder max 5 emails
+            if (currentSavedEmails.length > 5) {
+              currentSavedEmails.pop();
+            }
+            localStorage.setItem('savedEmails', JSON.stringify(currentSavedEmails));
+            setSavedEmails(currentSavedEmails);
+          }
+
           // Gérer "Se souvenir de moi" - sauvegarder uniquement l'email
           if (rememberMe) {
             localStorage.setItem('rememberedEmail', formData.email);
@@ -116,16 +163,16 @@ export default function SecureLoginPage() {
           }
           // Ne jamais sauvegarder le mot de passe
           localStorage.removeItem('rememberedPassword');
-          
+
           // Stocker le token de manière sécurisée
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('userRole', data.user.role);
-          
+
           // Cookie httpOnly serait mieux en production
           const maxAge = rememberMe ? 2592000 : 604800; // 30 jours si "Se souvenir", sinon 7 jours
           document.cookie = `token=${data.token}; path=/; max-age=${maxAge}; SameSite=Strict`;
-          
+
           // Redirection basée sur le rôle
           const roleRedirects = {
             'SUPER_ADMIN': '/super-admin',
@@ -259,6 +306,12 @@ export default function SecureLoginPage() {
   // Fonction de redirection vers l'espace approprié
   const goToSpace = () => {
     const roleRedirects: {[key: string]: string} = {
+      'SUPER_ADMIN': '/super-admin',
+      'ORG_OWNER': '/admin',
+      'ORG_ADMIN': '/admin',
+      'LOCATION_MANAGER': '/admin/planning',
+      'STAFF': '/admin/planning',
+      'RECEPTIONIST': '/admin/planning',
       'ADMIN': '/admin',
       'admin': '/admin',
       'COMPTABLE': '/admin/finances',
@@ -434,22 +487,57 @@ export default function SecureLoginPage() {
                 </div>
               )}
 
-              <div>
+              <div className="email-dropdown-container">
                 <label className="block text-sm font-medium mb-2 text-laia-dark">
                   Email
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-laia-gray" size={20} />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-laia-gray z-10" size={20} />
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:border-laia-primary focus:outline-none focus:ring-2 focus:ring-laia-primary/20"
+                    onFocus={() => setShowEmailDropdown(savedEmails.length > 0 && isLogin)}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:border-laia-primary focus:outline-none focus:ring-2 focus:ring-laia-primary/20"
                     placeholder="votre@email.com"
                     autoComplete="email"
                   />
+                  {isLogin && savedEmails.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailDropdown(!showEmailDropdown)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-laia-gray hover:text-laia-primary transition-colors z-10"
+                    >
+                      <ChevronDown size={20} className={`transition-transform ${showEmailDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                  )}
                 </div>
+
+                {/* Dropdown des emails sauvegardés */}
+                {isLogin && showEmailDropdown && savedEmails.length > 0 && (
+                  <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                      <p className="text-xs text-gray-600 font-medium">Comptes récents</p>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {savedEmails.map((email, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, email });
+                            setShowEmailDropdown(false);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-laia-nude/50 transition-colors flex items-center gap-2 group"
+                        >
+                          <User size={16} className="text-laia-gray group-hover:text-laia-primary" />
+                          <span className="text-sm text-gray-700 group-hover:text-laia-primary">{email}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>

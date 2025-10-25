@@ -44,7 +44,8 @@ export async function GET(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      if (decoded.role !== 'admin' && decoded.role !== 'ADMIN') {
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
     } catch (error) {
@@ -228,7 +229,8 @@ export async function POST(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      if (decoded.role !== 'admin' && decoded.role !== 'ADMIN') {
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
     } catch (error) {

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    if (!decoded || (decoded.role !== 'ADMIN' && decoded.role !== 'admin')) {
+    if (!decoded || (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

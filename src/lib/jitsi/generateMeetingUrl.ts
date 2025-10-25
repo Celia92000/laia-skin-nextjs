@@ -19,8 +19,30 @@ export function generateJitsiMeetingUrl(bookingId: string, institutName?: string
     ? `laia-demo-${institutName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${hash}`
     : `laia-demo-${hash}`
 
-  // URL Jitsi Meet publique et gratuite
-  return `https://meet.jit.si/${roomName}`
+  // Paramètres de configuration pour améliorer la qualité
+  const config = {
+    // Qualité vidéo
+    'config.resolution': '720',          // Résolution 720p
+    'config.constraints.video.height': '720',
+    'config.startVideoMuted': 'false',   // Vidéo activée par défaut
+    'config.startAudioMuted': 'false',   // Audio activé par défaut
+
+    // Optimisations
+    'config.enableLayerSuspension': 'true',
+    'config.disableSimulcast': 'false',
+    'config.channelLastN': '20',
+
+    // Interface
+    'config.prejoinPageEnabled': 'false', // Sauter la page de pré-jointure
+    'interfaceConfig.SHOW_JITSI_WATERMARK': 'false',
+    'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS': 'false',
+    'interfaceConfig.MOBILE_APP_PROMO': 'false'
+  }
+
+  const params = new URLSearchParams(config).toString()
+
+  // URL Jitsi Meet publique et gratuite avec paramètres de qualité
+  return `https://meet.jit.si/${roomName}#${params}`
 }
 
 /**

@@ -217,7 +217,7 @@ export default function RegisterPage() {
           <Link href="/platform" className="inline-block mb-4">
             <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-6 rounded-2xl shadow-xl inline-block">
               <h1 className="text-4xl font-bold text-white">
-                LAIA Beauty
+                LAIA Connect
               </h1>
             </div>
           </Link>
@@ -502,7 +502,7 @@ export default function RegisterPage() {
                         className="mt-1 mr-3"
                       />
                       <span className="text-sm text-gray-700">
-                        J'autorise LAIA Beauty à effectuer des prélèvements SEPA sur mon compte. Je bénéficie de <strong>30 jours d'essai gratuit</strong>, après quoi mon abonnement sera automatiquement renouvelé à <strong>{plans.find(p => p.id === formData.plan)?.price}€/mois</strong>. Je peux annuler à tout moment.
+                        J'autorise LAIA Connect à effectuer des prélèvements SEPA sur mon compte. Je bénéficie de <strong>30 jours d'essai gratuit</strong>, après quoi mon abonnement sera automatiquement renouvelé à <strong>{plans.find(p => p.id === formData.plan)?.price}€/mois</strong>. Je peux annuler à tout moment.
                       </span>
                     </label>
                   </div>

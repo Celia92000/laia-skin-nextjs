@@ -133,10 +133,10 @@ export default function ReserverDemoPage() {
             </p>
           )}
           <a
-            href="/"
+            href="/platform"
             className="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
           >
-            Retour à l'accueil
+            Retour à LAIA Connect
           </a>
         </div>
       </div>
@@ -258,8 +258,8 @@ export default function ReserverDemoPage() {
                               }}
                               className={`w-full text-left px-2 py-1 border rounded text-xs font-semibold transition ${
                                 slot.isBooked
-                                  ? 'bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed line-through'
-                                  : 'bg-purple-100 hover:bg-purple-200 border-purple-300 text-purple-900'
+                                  ? 'bg-red-100 border-red-300 text-red-700 cursor-not-allowed line-through'
+                                  : 'bg-green-100 hover:bg-green-200 border-green-300 text-green-900'
                               }`}
                             >
                               {new Date(slot.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -291,7 +291,7 @@ export default function ReserverDemoPage() {
                 <span>Aujourd'hui</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
                 <span>Créneaux disponibles</span>
               </div>
               <div className="flex items-center gap-2">
@@ -321,13 +321,13 @@ export default function ReserverDemoPage() {
                   }}
                   className={`p-4 rounded-lg border-2 transition ${
                     slot.isBooked
-                      ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-60'
+                      ? 'border-red-300 bg-red-100 cursor-not-allowed opacity-80'
                       : selectedSlot?.id === slot.id
-                      ? 'border-purple-600 bg-purple-100'
-                      : 'border-gray-300 hover:border-purple-400'
+                      ? 'border-green-600 bg-green-100'
+                      : 'border-gray-300 hover:border-green-400'
                   }`}
                 >
-                  <Clock className={`w-5 h-5 mx-auto mb-2 ${slot.isBooked ? 'text-gray-400' : 'text-purple-600'}`} />
+                  <Clock className={`w-5 h-5 mx-auto mb-2 ${slot.isBooked ? 'text-red-600' : 'text-green-600'}`} />
                   <div className={`font-bold ${slot.isBooked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                     {new Date(slot.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </div>

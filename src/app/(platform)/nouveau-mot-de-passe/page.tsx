@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
             <Link href="/platform" className="inline-block">
               <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-8 rounded-2xl shadow-xl mb-4 inline-block">
                 <h1 className="text-5xl font-bold text-white">
-                  LAIA Beauty
+                  LAIA Connect
                 </h1>
               </div>
             </Link>
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
           <Link href="/platform" className="inline-block">
             <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-8 rounded-2xl shadow-xl mb-4 inline-block">
               <h1 className="text-5xl font-bold text-white">
-                LAIA Beauty
+                LAIA Connect
               </h1>
             </div>
           </Link>

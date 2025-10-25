@@ -184,12 +184,13 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Autoriser admin ET employés
-      if (userInfo.role !== 'admin' && userInfo.role !== 'ADMIN' && userInfo.role !== 'EMPLOYEE') {
+      // Autoriser tous les rôles admin et staff
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      if (!adminRoles.includes(userInfo.role)) {
         router.push('/espace-client');
         return;
       }
-      
+
       // Stocker le rôle et les données utilisateur pour contrôler l'affichage
       setUserRole(userInfo.role);
       setUserData(userInfo);
@@ -1074,7 +1075,7 @@ export default function AdminDashboard() {
               </button>
               
               {/* Boutons visibles uniquement pour les ADMINS */}
-              {(userRole === 'ADMIN' || userRole === 'admin') && (
+              {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
                 <button
                   onClick={() => router.push('/admin/users')}
                   className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
@@ -1259,7 +1260,7 @@ export default function AdminDashboard() {
             CRM Clients
           </button>
           {/* Emailing et WhatsApp après CRM */}
-          {(userRole === 'ADMIN' || userRole === 'admin') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               <button
                 onClick={() => setActiveTab("emailing")}
@@ -1286,7 +1287,7 @@ export default function AdminDashboard() {
             </>
           )}
           {/* Services et Produits - uniquement pour ADMIN */}
-          {(userRole === 'ADMIN' || userRole === 'admin') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               <button
                 onClick={() => setActiveTab("services")}
@@ -1322,7 +1323,7 @@ export default function AdminDashboard() {
               </button>
             </>
           )}
-          {(userRole === 'ADMIN' || userRole === 'admin') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               <button
                 onClick={() => setActiveTab("comptabilite")}
@@ -1348,7 +1349,7 @@ export default function AdminDashboard() {
             <Star className="w-4 h-4 inline mr-2" />
             Avis & Photos
           </button>
-          {(userRole === 'ADMIN' || userRole === 'admin') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
             <button
               onClick={() => setActiveTab("social-media")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -2053,7 +2054,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {(userRole === 'ADMIN' || userRole === 'admin') && (
+                {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -2409,7 +2410,7 @@ export default function AdminDashboard() {
                   Gestion des Paiements & Livre de Recettes
                 </h2>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {(userRole === 'ADMIN' || userRole === 'admin') && (
+                {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -4205,7 +4206,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Bouton export - uniquement pour ADMIN */}
-                  {(userRole === 'ADMIN' || userRole === 'admin') && (
+                  {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => exportPayments('detailed')}

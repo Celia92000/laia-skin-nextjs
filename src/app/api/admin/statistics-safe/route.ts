@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
     }
 
-    if (decoded.role !== 'admin' && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
 

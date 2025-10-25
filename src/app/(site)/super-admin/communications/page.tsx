@@ -25,7 +25,7 @@ export default function CommunicationsPage() {
                 ← Retour au dashboard
               </Link>
               <h1 className="text-3xl font-bold mb-2">
-                📧 Communications LAIA Beauty
+                📧 Communications LAIA Connect
               </h1>
               <p className="text-white/90">
                 Gestion globale des emails et WhatsApp pour toutes les organisations

@@ -134,7 +134,7 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
       doc
         .fontSize(logoY === 160 ? 18 : 28)
         .fillColor(settings?.primaryColor || '#667eea')
-        .text((logoY === 160 ? '' : '🌸 ') + (settings?.companyName || 'LAIA Beauty'), 50, logoY)
+        .text((logoY === 160 ? '' : '🌸 ') + (settings?.companyName || 'LAIA Connect'), 50, logoY)
 
       const baselineY = logoY + (logoY === 160 ? 10 : 35)
 

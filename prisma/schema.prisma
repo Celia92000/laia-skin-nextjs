@@ -134,6 +134,9 @@ model Organization {
   // CRM Relations
   convertedLeads         Lead[]         // Leads convertis en clients
 
+  // API Tokens (réseaux sociaux, paiements, etc.)
+  apiTokens              ApiToken[]     // Tokens API de l'organisation
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -249,6 +252,11 @@ model OrganizationConfig {
   defaultMetaTitle String?
   defaultMetaDescription String?
   defaultMetaKeywords String?
+
+  // Template tracking (LAIA Connect) - TEMPORAIREMENT COMMENTÉ
+  // JSON object listing which fields are customized vs inherited
+  // Ex: {"primaryColor": "customized", "heroTitle": "template", ...}
+  // customizedFields String?     @default("{}") @db.Text
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -468,7 +476,7 @@ model User {
   ticketsCreated   SupportTicket[]   @relation("TicketCreator")
   ticketsAssigned  SupportTicket[]   @relation("TicketAssignee")
   ticketMessages   TicketMessage[]
-  platformNews     PlatformNews[]    // Nouveautés LAIA Beauty créées
+  platformNews     PlatformNews[]    // Nouveautés LAIA Connect créées
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -592,6 +600,11 @@ model Service {
   order             Int           @default(0)
   active            Boolean       @default(true)
   featured          Boolean       @default(false)
+
+  // Template tracking (LAIA Connect) - TEMPORAIREMENT COMMENTÉ
+  // templateSourceId  String?       // ID du service template d'origine
+  // isCustomized      Boolean       @default(false) // true si modifié par le client
+
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -677,6 +690,11 @@ model BlogPost {
   metaTitle       String?
   metaDescription String?
   publishedAt     DateTime     @default(now())
+
+  // Template tracking (LAIA Connect) - TEMPORAIREMENT COMMENTÉ
+  // templateSourceId String?      // ID de l'article template d'origine
+  // isCustomized     Boolean      @default(false) // true si modifié par le client
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -1157,6 +1175,11 @@ model Product {
   active           Boolean  @default(true)
   featured         Boolean  @default(false)
   order            Int      @default(0)
+
+  // Template tracking (LAIA Connect) - TEMPORAIREMENT COMMENTÉ
+  // templateSourceId String?  // ID du produit template d'origine
+  // isCustomized     Boolean  @default(false) // true si modifié par le client
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -1267,8 +1290,16 @@ model Formation {
   active            Boolean  @default(true)
   featured          Boolean  @default(false)
   order             Int      @default(0)
+
+  // Template tracking (LAIA Connect) - TEMPORAIREMENT COMMENTÉ
+  // templateSourceId  String?  // ID de la formation template d'origine
+  // isCustomized      Boolean  @default(false) // true si modifié par le client
+  // organizationId    String?  // Organisation propriétaire (multi-tenant)
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // @@index([organizationId])
 }
 
 model Order {
@@ -1828,6 +1859,31 @@ model PlatformConfig {
 }
 
 // ============================================
+// API TOKEN MANAGEMENT (Sécurité)
+// ============================================
+
+// Stockage sécurisé des tokens API (chiffrés)
+model ApiToken {
+  id              String        @id @default(cuid())
+
+  // Multi-tenant: chaque organisation a ses propres tokens
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  service         String        // WHATSAPP, INSTAGRAM, FACEBOOK, STRIPE, RESEND, SNAPCHAT, TIKTOK, LINKEDIN, TWITTER
+  name            String        // access_token, secret_key, page_id, account_id, etc.
+  encryptedToken  String        @db.Text
+  expiresAt       DateTime?
+  metadata        Json?         // Pour stocker des infos supplémentaires (account_id, page_id, etc.)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Unique par organisation + service + name (ou global si organizationId = null)
+  @@unique([organizationId, service, name])
+  @@map("api_tokens")
+}
+
+// ============================================
 // SUPER ADMIN - SUPPORT
 // ============================================
 
@@ -2247,5 +2303,52 @@ model PlatformNews {
   @@index([publishedAt])
   @@index([category])
   @@index([authorId])
+}
+
+// ============================================
+// AI CONTENT ANALYSIS & SUGGESTIONS
+// ============================================
+
+// Analyse IA du feed social media
+model ContentAnalysis {
+  id              String   @id @default(cuid())
+  organizationId  String?
+  platform        String   // "instagram", "facebook"
+
+  // Analyse du feed
+  toneOfVoice     String   @db.Text  // "friendly", "professional", "casual"
+  topHashtags     Json     // ["hashtag1", "hashtag2"...]
+  avgEngagement   Float
+  bestPostTypes   Json     // ["reel", "carousel", "photo"]
+  bestPostTimes   Json     // ["14:00", "18:00"]
+
+  // Exemples de posts performants
+  topPosts        Json     // [{content, likes, comments}...]
+
+  analyzedAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([platform])
+  @@index([analyzedAt])
+}
+
+// Suggestions de contenu générées par IA
+model AISuggestion {
+  id              String   @id @default(cuid())
+  organizationId  String?
+  category        String   // "conseils", "avant-apres", etc.
+  contentType     String   // "post", "story", "reel"
+
+  title           String
+  content         String   @db.Text
+  hashtags        String?
+  trendingNote    String?
+
+  generatedBy     String   @default("openai-gpt4")
+  createdAt       DateTime @default(now())
+
+  @@index([organizationId, category])
+  @@index([contentType])
+  @@index([createdAt])
 }
 

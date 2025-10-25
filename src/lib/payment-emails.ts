@@ -63,7 +63,7 @@ export async function sendPaymentSuccessEmail({
         <body>
           <div class="container">
             <div class="header">
-              <h1>🌸 LAIA Beauty</h1>
+              <h1>🌸 LAIA Connect</h1>
               <h2>Paiement confirmé</h2>
             </div>
             <div class="content">
@@ -101,7 +101,7 @@ export async function sendPaymentSuccessEmail({
               <p>L'équipe LAIA 💜</p>
             </div>
             <div class="footer">
-              <p>LAIA Beauty - Logiciel de gestion pour instituts de beauté</p>
+              <p>LAIA Connect - Logiciel de gestion pour instituts de beauté</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -158,7 +158,7 @@ export async function sendPaymentFailedEmail({
         <body>
           <div class="container">
             <div class="header">
-              <h1>🌸 LAIA Beauty</h1>
+              <h1>🌸 LAIA Connect</h1>
               <h2>Échec du prélèvement</h2>
             </div>
             <div class="content">
@@ -207,7 +207,7 @@ export async function sendPaymentFailedEmail({
               <p>L'équipe LAIA</p>
             </div>
             <div class="footer">
-              <p>LAIA Beauty - Logiciel de gestion pour instituts de beauté</p>
+              <p>LAIA Connect - Logiciel de gestion pour instituts de beauté</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export async function sendTrialEndingEmail({
         <body>
           <div class="container">
             <div class="header">
-              <h1>🌸 LAIA Beauty</h1>
+              <h1>🌸 LAIA Connect</h1>
               <h2>Votre essai touche à sa fin</h2>
             </div>
             <div class="content">
@@ -308,7 +308,7 @@ export async function sendTrialEndingEmail({
               <p>L'équipe LAIA 💜</p>
             </div>
             <div class="footer">
-              <p>LAIA Beauty - Logiciel de gestion pour instituts de beauté</p>
+              <p>LAIA Connect - Logiciel de gestion pour instituts de beauté</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>

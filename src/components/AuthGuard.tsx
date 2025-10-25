@@ -39,10 +39,13 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
         }
 
         const data = await response.json();
-        
-        if (requireAdmin && data.user.role !== 'admin' && data.user.role !== 'ADMIN' && data.user.role !== 'EMPLOYEE') {
-          router.push('/');
-          return;
+
+        if (requireAdmin) {
+          const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+          if (!adminRoles.includes(data.user.role)) {
+            router.push('/espace-client');
+            return;
+          }
         }
 
         setIsAuthenticated(true);

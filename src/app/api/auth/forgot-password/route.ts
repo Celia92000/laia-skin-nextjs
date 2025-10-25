@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     // Envoyer l'email
     await sendEmail({
       to: user.email,
-      subject: 'Réinitialisation de votre mot de passe LAIA Beauty',
+      subject: 'Réinitialisation de votre mot de passe LAIA Connect',
       html: `
         <!DOCTYPE html>
         <html>
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🌸 LAIA Beauty</h1>
+              <h1>🌸 LAIA Connect</h1>
             </div>
             <div class="content">
               <h2>Réinitialisation de votre mot de passe</h2>
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
               <p style="word-break: break-all; background: white; padding: 10px; border-radius: 4px; font-size: 12px;">${resetUrl}</p>
             </div>
             <div class="footer">
-              <p>© 2025 LAIA Beauty - Logiciel de gestion pour professionnels de la beauté</p>
+              <p>© 2025 LAIA Connect - Logiciel de gestion pour professionnels de la beauté</p>
               <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
