@@ -92,7 +92,7 @@ export default function SubscriptionPage() {
     {
       id: 'DUO',
       name: 'Duo',
-      price: 99,
+      price: 89,
       features: [
         '2 emplacements',
         '25 utilisateurs',
@@ -108,7 +108,7 @@ export default function SubscriptionPage() {
     {
       id: 'TEAM',
       name: 'Team',
-      price: 199,
+      price: 149,
       features: [
         '5 emplacements',
         '100 utilisateurs',
@@ -126,7 +126,7 @@ export default function SubscriptionPage() {
     {
       id: 'PREMIUM',
       name: 'Premium',
-      price: 399,
+      price: 249,
       features: [
         'Emplacements illimités',
         'Utilisateurs illimités',

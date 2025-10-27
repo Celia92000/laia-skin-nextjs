@@ -11,6 +11,7 @@ import { logout } from "@/lib/auth-client";
 import { getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
 import type { Client } from "@/components/UnifiedCRMTab";
+import { getActiveFeatures, type OrgFeatures } from "@/lib/features-simple";
 
 // Lazy load des composants lourds uniquement quand nécessaire
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
@@ -45,6 +46,7 @@ const AdminComptabiliteTab = dynamic(() => import("@/components/AdminComptabilit
 const AdvancedSearch = dynamic(() => import("@/components/AdvancedSearch"), { ssr: false });
 const FormationOrderSection = dynamic(() => import("@/components/FormationOrderSection"), { ssr: false });
 const AdminOrdersTab = dynamic(() => import("@/components/AdminOrdersTab"), { ssr: false });
+const AdminGiftCardsTab = dynamic(() => import("@/components/AdminGiftCardsTab"), { ssr: false });
 const SocialMediaCalendar = dynamic(() => import("@/components/admin/SocialMediaCalendar"), { ssr: false });
 const SocialMediaHub = dynamic(() => import("@/components/admin/SocialMediaHub"), { ssr: false });
 
@@ -91,6 +93,7 @@ export default function AdminDashboard() {
   const [paymentDateFilter, setPaymentDateFilter] = useState("");
   const [paymentDateStart, setPaymentDateStart] = useState("");
   const [paymentDateEnd, setPaymentDateEnd] = useState("");
+  const [orgFeatures, setOrgFeatures] = useState<OrgFeatures | null>(null);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
@@ -204,6 +207,7 @@ export default function AdminDashboard() {
 
       // Charger séquentiellement pour éviter de saturer la connection pool (1 seule connexion Supabase)
       const loadData = async () => {
+        await fetchOrganizationFeatures();
         await fetchReservations();
         await fetchClients();
         await fetchServices();
@@ -318,6 +322,29 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des commandes:', error);
+    }
+  };
+
+  const fetchOrganizationFeatures = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch('/api/admin/organization/current', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const org = await response.json();
+        // Calculer les features actives (forfait + add-ons)
+        const features = getActiveFeatures(org.plan, org.addons);
+        setOrgFeatures(features);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'organisation:', error);
     }
   };
 
@@ -1249,41 +1276,48 @@ export default function AdminDashboard() {
               })()}
             </span>
           </button>
-          <button
-            onClick={() => setActiveTab("crm")}
-            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-              activeTab === "crm"
-                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                : "bg-white text-[#2c3e50] hover:shadow-md"
-            }`}
-          >
-            CRM Clients
-          </button>
+          {/* CRM - Conditionnel selon forfait */}
+          {orgFeatures?.featureCRM && (
+            <button
+              onClick={() => setActiveTab("crm")}
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                activeTab === "crm"
+                  ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                  : "bg-white text-[#2c3e50] hover:shadow-md"
+              }`}
+            >
+              CRM Clients
+            </button>
+          )}
           {/* Emailing et WhatsApp après CRM */}
           {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
             <>
-              <button
-                onClick={() => setActiveTab("emailing")}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                  activeTab === "emailing"
-                    ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                    : "bg-white text-[#2c3e50] hover:shadow-md"
-                }`}
-              >
-                <Mail className="w-4 h-4 inline mr-2" />
-                Emailing
-              </button>
-              <button
-                onClick={() => setActiveTab("whatsapp")}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                  activeTab === "whatsapp"
-                    ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                    : "bg-white text-[#2c3e50] hover:shadow-md"
-                }`}
-              >
-                <MessageCircle className="w-4 h-4 inline mr-2" />
-                WhatsApp
-              </button>
+              {orgFeatures?.featureEmailing && (
+                <button
+                  onClick={() => setActiveTab("emailing")}
+                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                    activeTab === "emailing"
+                      ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                      : "bg-white text-[#2c3e50] hover:shadow-md"
+                  }`}
+                >
+                  <Mail className="w-4 h-4 inline mr-2" />
+                  Emailing
+                </button>
+              )}
+              {orgFeatures?.featureWhatsApp && (
+                <button
+                  onClick={() => setActiveTab("whatsapp")}
+                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                    activeTab === "whatsapp"
+                      ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                      : "bg-white text-[#2c3e50] hover:shadow-md"
+                  }`}
+                >
+                  <MessageCircle className="w-4 h-4 inline mr-2" />
+                  WhatsApp
+                </button>
+              )}
             </>
           )}
           {/* Services et Produits - uniquement pour ADMIN */}
@@ -1299,28 +1333,33 @@ export default function AdminDashboard() {
               >
                 Gestion Services
               </button>
-              <button
-                onClick={() => setActiveTab("products")}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                  activeTab === "products"
-                    ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow-lg"
-                    : "bg-white text-[#2c3e50] hover:shadow-md"
-                }`}
-              >
-                <Package className="w-4 h-4 inline mr-2" />
-                Gestion des Stocks
-              </button>
-              <button
-                onClick={() => setActiveTab("pending")}
-                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                  activeTab === "pending"
-                    ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg"
-                    : "bg-white text-[#2c3e50] hover:shadow-md"
-                }`}
-              >
-                <ShoppingBag className="w-4 h-4 inline mr-2" />
-                Commandes
-              </button>
+              {/* Boutique (Produits + Formations + Commandes) - TEAM+ uniquement */}
+              {orgFeatures?.featureShop && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("products")}
+                    className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                      activeTab === "products"
+                        ? "bg-gradient-to-r from-purple-500 to-purple-700 text-white shadow-lg"
+                        : "bg-white text-[#2c3e50] hover:shadow-md"
+                    }`}
+                  >
+                    <Package className="w-4 h-4 inline mr-2" />
+                    Produits & Stock
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("pending")}
+                    className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                      activeTab === "pending"
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg"
+                        : "bg-white text-[#2c3e50] hover:shadow-md"
+                    }`}
+                  >
+                    <ShoppingBag className="w-4 h-4 inline mr-2" />
+                    Commandes
+                  </button>
+                </>
+              )}
             </>
           )}
           {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
@@ -1349,7 +1388,7 @@ export default function AdminDashboard() {
             <Star className="w-4 h-4 inline mr-2" />
             Avis & Photos
           </button>
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureSocialMedia && (
             <button
               onClick={() => setActiveTab("social-media")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -3117,8 +3156,8 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {activeTab === "crm" && (
-            <UnifiedCRMTab 
+          {activeTab === "crm" && orgFeatures?.featureCRM && (
+            <UnifiedCRMTab
               clients={clients}
               setClients={setClients}
               loyaltyProfiles={loyaltyProfiles}
@@ -3136,7 +3175,7 @@ export default function AdminDashboard() {
             />
           )}
 
-          {activeTab === "emailing" && (
+          {activeTab === "emailing" && orgFeatures?.featureEmailing && (
             <EmailCompleteInterface />
           )}
 
@@ -3348,14 +3387,16 @@ export default function AdminDashboard() {
 
           {/* Onglet Services */}
           {activeTab === "services" && <AdminServicesTab />}
-          {activeTab === "products" && <AdminStockTab />}
-          {activeTab === "pending" && <AdminOrdersTab />}
 
-          {activeTab === "whatsapp" && <WhatsAppHub />}
+          {/* Boutique - TEAM+ uniquement */}
+          {activeTab === "products" && orgFeatures?.featureShop && <AdminStockTab />}
+          {activeTab === "pending" && orgFeatures?.featureShop && <AdminOrdersTab />}
+
+          {activeTab === "whatsapp" && orgFeatures?.featureWhatsApp && <WhatsAppHub />}
 
           {activeTab === "reviews" && <AdminReviewsManager />}
 
-          {activeTab === "social-media" && (
+          {activeTab === "social-media" && orgFeatures?.featureSocialMedia && (
             <SocialMediaHub />
           )}
         </div>

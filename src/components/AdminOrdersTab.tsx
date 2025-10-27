@@ -61,11 +61,13 @@ interface Order {
   };
 }
 
-export default function AdminOrdersTab() {
+export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard' | 'shop' } = {}) {
   const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pending-cards' | 'all-cards' | 'pending-orders' | 'settings'>('pending-cards');
+  const [activeTab, setActiveTab] = useState<'pending-cards' | 'all-cards' | 'pending-orders' | 'settings'>(
+    filterType === 'shop' ? 'pending-orders' : 'pending-cards'
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal états
@@ -452,20 +454,20 @@ export default function AdminOrdersTab() {
   const pendingCardsCount = giftCards.filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus).length;
   const pendingOrdersCount = orders.filter(o => o.paymentStatus === 'pending').length;
 
-  // Statistiques CA
-  const paidCardsRevenue = giftCards
+  // Statistiques CA (filtrées selon le type)
+  const paidCardsRevenue = filterType === 'shop' ? 0 : giftCards
     .filter(gc => gc.paymentStatus === 'paid')
     .reduce((sum, gc) => sum + gc.amount, 0);
 
-  const paidOrdersRevenue = orders
+  const paidOrdersRevenue = filterType === 'giftcard' ? 0 : orders
     .filter(o => o.paymentStatus === 'paid')
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
-  const pendingCardsRevenue = giftCards
+  const pendingCardsRevenue = filterType === 'shop' ? 0 : giftCards
     .filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus)
     .reduce((sum, gc) => sum + gc.amount, 0);
 
-  const pendingOrdersRevenue = orders
+  const pendingOrdersRevenue = filterType === 'giftcard' ? 0 : orders
     .filter(o => o.paymentStatus === 'pending')
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
@@ -487,11 +489,29 @@ export default function AdminOrdersTab() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-              <ShoppingBag className="w-8 h-8 text-pink-600" />
-              Commandes & Cartes Cadeaux
+              {filterType === 'giftcard' ? (
+                <>
+                  <Gift className="w-8 h-8 text-pink-600" />
+                  Cartes Cadeaux
+                </>
+              ) : filterType === 'shop' ? (
+                <>
+                  <ShoppingBag className="w-8 h-8 text-purple-600" />
+                  Commandes Boutique
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="w-8 h-8 text-pink-600" />
+                  Commandes & Cartes Cadeaux
+                </>
+              )}
             </h2>
             <p className="text-gray-600 mt-2">
-              Gérez les cartes cadeaux, commandes produits et formations
+              {filterType === 'giftcard'
+                ? 'Gérez vos cartes cadeaux (programme de fidélité)'
+                : filterType === 'shop'
+                ? 'Gérez vos commandes produits et formations'
+                : 'Gérez les cartes cadeaux, commandes produits et formations'}
             </p>
           </div>
           <div className="flex gap-6">
@@ -511,68 +531,74 @@ export default function AdminOrdersTab() {
       {/* Onglets */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          <button
-            onClick={() => setActiveTab('pending-cards')}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'pending-cards'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Gift className="w-4 h-4" />
-            <span className="hidden sm:inline">Cartes en attente</span>
-            <span className="sm:hidden">🎁</span>
-            {pendingCardsCount > 0 && (
-              <span className="bg-white text-orange-600 text-xs font-bold px-2 py-1 rounded-full">
-                {pendingCardsCount}
-              </span>
-            )}
-          </button>
+          {filterType !== 'shop' && (
+            <>
+              <button
+                onClick={() => setActiveTab('pending-cards')}
+                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'pending-cards'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Gift className="w-4 h-4" />
+                <span className="hidden sm:inline">Cartes en attente</span>
+                <span className="sm:hidden">🎁</span>
+                {pendingCardsCount > 0 && (
+                  <span className="bg-white text-orange-600 text-xs font-bold px-2 py-1 rounded-full">
+                    {pendingCardsCount}
+                  </span>
+                )}
+              </button>
 
-          <button
-            onClick={() => setActiveTab('pending-orders')}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'pending-orders'
-                ? 'bg-purple-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Commandes en attente</span>
-            <span className="sm:hidden">⏰</span>
-            {pendingOrdersCount > 0 && (
-              <span className="bg-white text-purple-600 text-xs font-bold px-2 py-1 rounded-full">
-                {pendingOrdersCount}
-              </span>
-            )}
-          </button>
+              <button
+                onClick={() => setActiveTab('all-cards')}
+                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'all-cards'
+                    ? 'bg-pink-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Gift className="w-4 h-4" />
+                <span className="hidden sm:inline">Toutes les cartes</span>
+                <span className="sm:hidden">💳</span>
+                <span className="text-xs opacity-75">({giftCards.length})</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('all-cards')}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'all-cards'
-                ? 'bg-pink-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Gift className="w-4 h-4" />
-            <span className="hidden sm:inline">Toutes les cartes</span>
-            <span className="sm:hidden">💳</span>
-            <span className="text-xs opacity-75">({giftCards.length})</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                  activeTab === 'settings'
+                    ? 'bg-gray-500 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Paramètres</span>
+                <span className="sm:hidden">⚙️</span>
+              </button>
+            </>
+          )}
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'settings'
-                ? 'bg-gray-500 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Paramètres</span>
-            <span className="sm:hidden">⚙️</span>
-          </button>
+          {filterType !== 'giftcard' && (
+            <button
+              onClick={() => setActiveTab('pending-orders')}
+              className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'pending-orders'
+                  ? 'bg-purple-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">Commandes en attente</span>
+              <span className="sm:hidden">⏰</span>
+              {pendingOrdersCount > 0 && (
+                <span className="bg-white text-purple-600 text-xs font-bold px-2 py-1 rounded-full">
+                  {pendingOrdersCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

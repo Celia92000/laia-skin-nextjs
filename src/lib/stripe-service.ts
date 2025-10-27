@@ -217,9 +217,9 @@ export async function processAutomaticCharges() {
         // Calculer le montant selon le plan
         const planPrices: Record<string, number> = {
           SOLO: 49,
-          DUO: 99,
-          TEAM: 199,
-          PREMIUM: 399,
+          DUO: 89,
+          TEAM: 149,
+          PREMIUM: 249,
         }
 
         const amount = planPrices[org.plan] || 0

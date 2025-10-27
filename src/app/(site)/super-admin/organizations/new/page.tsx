@@ -2,15 +2,21 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
+import AddonSelector from '@/components/super-admin/AddonSelector'
+import { OrgPlan } from '@prisma/client'
 
 export default function NewOrganizationPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<any>(null)
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([])
   const [formData, setFormData] = useState({
     // Informations essentielles
     name: '',               // Nom de l'institut
+    ownerFirstName: '',     // Prénom du propriétaire
+    ownerLastName: '',      // Nom du propriétaire
     ownerEmail: '',         // Email du propriétaire
     ownerPhone: '',         // Téléphone (optionnel)
     plan: 'SOLO',          // Plan d'abonnement
@@ -19,8 +25,12 @@ export default function NewOrganizationPage() {
     // Informations légales/facturation (essentielles pour vous)
     legalName: '',         // Raison sociale (si différente du nom commercial)
     siret: '',             // SIRET obligatoire pour facturation
+    tvaNumber: '',         // Numéro TVA intracommunautaire (optionnel)
     billingEmail: '',      // Email de facturation (peut être différent)
-    billingAddress: '',    // Adresse de facturation
+    billingAddress: '',    // Adresse de facturation (rue, numéro)
+    billingPostalCode: '', // Code postal
+    billingCity: '',       // Ville de facturation
+    billingCountry: 'France', // Pays (par défaut France)
 
     // Mandat SEPA pour prélèvement automatique
     sepaIban: '',          // IBAN
@@ -58,7 +68,10 @@ export default function NewOrganizationPage() {
       const response = await fetch('/api/super-admin/organizations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          selectedAddons // Ajouter les add-ons sélectionnés
+        })
       })
 
       if (response.ok) {
@@ -220,10 +233,42 @@ export default function NewOrganizationPage() {
                   </p>
                 </div>
 
-                {/* 2. Email propriétaire */}
+                {/* 2. Prénom propriétaire */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    2️⃣ Email du propriétaire *
+                    2️⃣ Prénom du propriétaire *
+                  </label>
+                  <input
+                    type="text"
+                    name="ownerFirstName"
+                    value={formData.ownerFirstName}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="Marie"
+                  />
+                </div>
+
+                {/* 3. Nom propriétaire */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    3️⃣ Nom du propriétaire *
+                  </label>
+                  <input
+                    type="text"
+                    name="ownerLastName"
+                    value={formData.ownerLastName}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="Dupont"
+                  />
+                </div>
+
+                {/* 4. Email propriétaire */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    4️⃣ Email du propriétaire *
                   </label>
                   <input
                     type="email"
@@ -239,10 +284,10 @@ export default function NewOrganizationPage() {
                   </p>
                 </div>
 
-                {/* 3. Téléphone */}
+                {/* 5. Téléphone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    3️⃣ Téléphone (optionnel)
+                    5️⃣ Téléphone (optionnel)
                   </label>
                   <input
                     type="tel"
@@ -286,11 +331,24 @@ export default function NewOrganizationPage() {
                     style={{ backgroundColor: 'white' }}
                   >
                     <option value="SOLO">SOLO - 49€/mois (1 emplacement, 1 admin)</option>
-                    <option value="DUO">DUO - 99€/mois (1 emplacement, 3 utilisateurs)</option>
-                    <option value="TEAM">TEAM - 199€/mois (3 emplacements, 10 utilisateurs)</option>
-                    <option value="PREMIUM">PREMIUM - 399€/mois (illimité)</option>
+                    <option value="DUO">DUO - 89€/mois (1 emplacement, 3 utilisateurs)</option>
+                    <option value="TEAM">TEAM - 149€/mois (3 emplacements, 10 utilisateurs)</option>
+                    <option value="PREMIUM">PREMIUM - 249€/mois (illimité)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Prévisualisation des fonctionnalités selon le plan */}
+              <div className="mt-6">
+                <PlanFeaturesPreview selectedPlan={formData.plan as OrgPlan} />
+              </div>
+
+              {/* Sélection des options supplémentaires (add-ons) */}
+              <div className="mt-6">
+                <AddonSelector
+                  selectedPlan={formData.plan as OrgPlan}
+                  onAddonsChange={setSelectedAddons}
+                />
               </div>
 
               {/* Auto-généré */}
@@ -319,7 +377,7 @@ export default function NewOrganizationPage() {
                 Informations Légales & Facturation
               </h2>
               <p className="text-sm text-gray-600 mb-4">
-                Ces informations sont nécessaires pour la facturation et votre comptabilité
+                Ces informations sont nécessaires pour facturer le client et votre comptabilité
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -380,22 +438,86 @@ export default function NewOrganizationPage() {
                   </p>
                 </div>
 
-                {/* Adresse de facturation */}
+                {/* Numéro TVA */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse de facturation
+                    Numéro TVA Intracommunautaire
+                  </label>
+                  <input
+                    type="text"
+                    name="tvaNumber"
+                    value={formData.tvaNumber}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="FR12345678901"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Optionnel - Si le client assujetti à la TVA
+                  </p>
+                </div>
+
+                {/* Adresse de facturation - Rue */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Adresse de facturation * 🏠
                   </label>
                   <input
                     type="text"
                     name="billingAddress"
                     value={formData.billingAddress}
                     onChange={handleChange}
+                    required
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    placeholder="123 Rue de la Beauté, 75001 Paris"
+                    placeholder="123 Rue de la Beauté"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Adresse complète pour les factures
-                  </p>
+                </div>
+
+                {/* Code postal */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Code postal * 📮
+                  </label>
+                  <input
+                    type="text"
+                    name="billingPostalCode"
+                    value={formData.billingPostalCode}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="75001"
+                  />
+                </div>
+
+                {/* Ville de facturation */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ville de facturation * 🏙️
+                  </label>
+                  <input
+                    type="text"
+                    name="billingCity"
+                    value={formData.billingCity}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="Paris"
+                  />
+                </div>
+
+                {/* Pays */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pays * 🌍
+                  </label>
+                  <input
+                    type="text"
+                    name="billingCountry"
+                    value={formData.billingCountry}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="France"
+                  />
                 </div>
               </div>
 
@@ -403,7 +525,7 @@ export default function NewOrganizationPage() {
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
                   <strong>⚠️ Important :</strong> Ces informations apparaîtront sur les factures mensuelles envoyées au client.
-                  Assurez-vous qu'elles sont correctes.
+                  Vérifiez qu'elles sont correctes.
                 </p>
               </div>
             </div>
@@ -499,9 +621,9 @@ export default function NewOrganizationPage() {
                     </p>
                     <ul className="text-gray-700 space-y-1 ml-4 mb-2">
                       <li>• <strong>SOLO</strong> : 49€/mois</li>
-                      <li>• <strong>DUO</strong> : 99€/mois</li>
-                      <li>• <strong>TEAM</strong> : 199€/mois</li>
-                      <li>• <strong>PREMIUM</strong> : 399€/mois</li>
+                      <li>• <strong>DUO</strong> : 89€/mois</li>
+                      <li>• <strong>TEAM</strong> : 149€/mois</li>
+                      <li>• <strong>PREMIUM</strong> : 249€/mois</li>
                     </ul>
                     <p className="text-gray-700 text-xs">
                       Le premier prélèvement aura lieu automatiquement à la fin de la période d'essai de 30 jours.

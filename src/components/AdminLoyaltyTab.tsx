@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Gift, Star, Award, TrendingUp, Calendar, User, CheckCircle, Euro, Cake, Heart, Users, AlertCircle, Download, Plus, Edit2, X, Settings, Save, FileText, Search, Filter, ArrowUpDown, Eye, RotateCcw, Check, Percent } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const AdminGiftCardsTab = dynamic(() => import('./AdminGiftCardsTab'), { ssr: false });
 
 interface LoyaltyProfile {
   id: string;
@@ -62,6 +65,9 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
   const [levelFilter, setLevelFilter] = useState<'all' | 'new' | 'fidele' | 'premium' | 'vip'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'services' | 'packages' | 'spent' | 'lastVisit'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Onglets de navigation
+  const [activeTab, setActiveTab] = useState<'program' | 'giftcards'>('program');
 
   // Charger les paramètres de fidélité au montage
   useEffect(() => {
@@ -486,6 +492,40 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
           Gérer les réductions
         </button>
       </div>
+
+      {/* Onglets de navigation */}
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setActiveTab('program')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'program'
+                ? 'bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            Réductions & Fidélité
+          </button>
+          <button
+            onClick={() => setActiveTab('giftcards')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'giftcards'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Gift className="w-4 h-4" />
+            Cartes Cadeaux
+          </button>
+        </div>
+      </div>
+
+      {/* Contenu selon l'onglet */}
+      {activeTab === 'giftcards' ? (
+        <AdminGiftCardsTab />
+      ) : (
+        <div>
 
       {/* Statistiques rapides */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -1650,6 +1690,8 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
         </div>
       )}
 
+      </div>
+      )}
     </div>
   );
 }

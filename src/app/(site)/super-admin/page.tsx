@@ -639,7 +639,7 @@ export default function SuperAdminPage() {
                     </div>
                     <h4 className="font-semibold text-gray-700 mb-3 mt-6">Revenu moyen par plan :</h4>
                     {analytics.revenue.byPlan.map(plan => {
-                      const planPrices: {[key: string]: number} = { SOLO: 49, DUO: 99, TEAM: 199, PREMIUM: 399 }
+                      const planPrices: {[key: string]: number} = { SOLO: 49, DUO: 89, TEAM: 149, PREMIUM: 249 }
                       return (
                         <div key={plan.plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="font-medium text-gray-700">{plan.plan}</div>

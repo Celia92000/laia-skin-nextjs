@@ -12,9 +12,9 @@ const PLAN_LIMITS = {
 
 const PLAN_PRICES = {
   SOLO: 49,
-  DUO: 99,
-  TEAM: 199,
-  PREMIUM: 399
+  DUO: 89,
+  TEAM: 149,
+  PREMIUM: 249
 }
 
 export async function PATCH(
