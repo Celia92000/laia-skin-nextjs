@@ -515,7 +515,7 @@ model UserLocation {
 
 model Reservation {
   id              String    @id @default(cuid())
-  organizationId  String?   // Nullable temporairement pour migration
+  organizationId  String
   locationId      String?   // null si la réservation n'est pas liée à un emplacement spécifique
   userId          String
   staffId         String?   // Praticien assigné
@@ -567,7 +567,7 @@ model Reservation {
 
 model Service {
   id                String        @id @default(cuid())
-  organizationId    String?       // Nullable temporairement pour migration
+  organizationId    String
   slug              String        @default("")
   name              String
   shortDescription  String        @default("")
@@ -674,7 +674,7 @@ model Referral {
 
 model BlogPost {
   id              String       @id @default(cuid())
-  organizationId  String?      // Nullable temporairement pour migration
+  organizationId  String
   slug            String
   title           String
   excerpt         String
@@ -774,7 +774,7 @@ model Setting {
 
 model BlockedSlot {
   id         String    @id @default(cuid())
-  locationId String?   // Nullable temporairement pour migration
+  locationId String
   date       DateTime
   time       String?   // Si null, toute la journée est bloquée
   allDay     Boolean   @default(false)
@@ -787,7 +787,7 @@ model BlockedSlot {
 
 model WorkingHours {
   id         String    @id @default(cuid())
-  locationId String?   // Nullable temporairement pour migration
+  locationId String
   dayOfWeek  Int       // 0 = Dimanche, 1 = Lundi, etc.
   startTime  String    // Format: "14:00"
   endTime    String    // Format: "20:00"
@@ -1152,7 +1152,7 @@ model CommunicationHistory {
 
 model Product {
   id               String            @id @default(cuid())
-  organizationId   String?           // Nullable temporairement pour migration
+  organizationId   String
   slug             String            @default("")
   name             String
   description      String
