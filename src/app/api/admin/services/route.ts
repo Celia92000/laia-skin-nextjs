@@ -20,15 +20,22 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer tous les services triés par ordre d'affichage
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer tous les services DE CETTE ORGANISATION triés par ordre d'affichage
     const services = await prisma.service.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         serviceCategory: {
           select: {
@@ -74,21 +81,28 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
-    
+
     // Supprimer l'id s'il existe (pour la création)
     delete body.id;
 
-    // Créer le service
+    // Créer le service POUR CETTE ORGANISATION
     const service = await prisma.service.create({
-      data: body
+      data: {
+        ...body,
+        organizationId: user.organizationId
+      }
     });
 
     return NextResponse.json(service);

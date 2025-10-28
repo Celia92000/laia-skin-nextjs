@@ -27,6 +27,12 @@ interface AnalyticsData {
     cancellationRate: number
     retentionRate: number
   }
+  trial?: {
+    count: number
+    potentialRevenue: number
+    estimatedRevenue: number
+    conversionRate: number
+  }
   topOrganizations: {
     byRevenue: { id: string; name: string; revenue: number }[]
     byReservations: { id: string; name: string; reservations: number }[]
@@ -201,6 +207,39 @@ export default function SuperAdminPage() {
             </div>
           </div>
         </div>
+
+        {/* Statistiques des essais gratuits */}
+        {analytics.trial && analytics.trial.count > 0 && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md p-6 mb-8 border-2 border-blue-200">
+            <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+              🎁 Période d&apos;essai gratuite - Potentiel de conversion
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-blue-600 mb-1">Organisations en essai</p>
+                <p className="text-3xl font-bold text-blue-900">{analytics.trial.count}</p>
+                <p className="text-xs text-blue-500 mt-1">1er mois gratuit</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-blue-600 mb-1">Revenus potentiels max</p>
+                <p className="text-3xl font-bold text-blue-900">{formatCurrency(analytics.trial.potentialRevenue)}</p>
+                <p className="text-xs text-blue-500 mt-1">Si 100% convertissent</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow">
+                <p className="text-sm text-green-600 mb-1">Revenus estimés ({analytics.trial.conversionRate}%)</p>
+                <p className="text-3xl font-bold text-green-900">{formatCurrency(analytics.trial.estimatedRevenue)}</p>
+                <p className="text-xs text-green-500 mt-1">Basé sur taux de conversion</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-400 to-green-500 rounded-lg p-4 shadow text-white">
+                <p className="text-sm mb-1 opacity-90">Impact sur MRR</p>
+                <p className="text-3xl font-bold">
+                  +{analytics.revenue.mrr > 0 ? Math.round((analytics.trial.estimatedRevenue / analytics.revenue.mrr) * 100) : 0}%
+                </p>
+                <p className="text-xs mt-1 opacity-90">Augmentation potentielle</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Statistiques globales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

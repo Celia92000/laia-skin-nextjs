@@ -139,6 +139,14 @@ export default function OrganizationsPage() {
     }
 
     filtered.sort((a, b) => {
+      // Toujours mettre le template en premier
+      const aIsTemplate = a.slug === 'laia-skin-institut'
+      const bIsTemplate = b.slug === 'laia-skin-institut'
+
+      if (aIsTemplate && !bIsTemplate) return -1
+      if (!aIsTemplate && bIsTemplate) return 1
+
+      // Si aucun des deux n'est le template, appliquer le tri normal
       let aVal: any = a[orgSortBy as keyof Organization]
       let bVal: any = b[orgSortBy as keyof Organization]
 
@@ -432,26 +440,6 @@ export default function OrganizationsPage() {
             </div>
             {activeTab === 'organizations' && (
               <div className="flex gap-3">
-                <button
-                  onClick={handleSyncTemplate}
-                  className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition font-semibold border-2 border-white/30 flex items-center gap-2"
-                  disabled={syncing}
-                  title="Synchroniser LAIA Skin Institut vers tous les autres instituts"
-                >
-                  {syncing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Synchronisation...
-                    </>
-                  ) : (
-                    <>
-                      🔄 Synchroniser Template
-                      <span className="ml-1 text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                        LAIA Skin → Autres
-                      </span>
-                    </>
-                  )}
-                </button>
                 <Link
                   href="/super-admin/organizations/new"
                   className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
@@ -494,6 +482,39 @@ export default function OrganizationsPage() {
       {/* Organizations Tab */}
       {activeTab === 'organizations' && (
         <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Note explicative sur le modèle */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-600 rounded-lg p-6 mb-6 shadow-md">
+            <div className="flex items-start gap-4">
+              <div className="text-4xl">⭐</div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-amber-900 mb-2">
+                  🏆 Organisation Modèle : Laia Skin Institut
+                </h3>
+                <p className="text-amber-800 mb-3">
+                  <strong>Laia Skin Institut</strong> est l&apos;organisation de référence qui sert de modèle pour générer les templates personnalisés de tous les nouveaux sites clients.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-amber-700">
+                  <div className="flex items-start gap-2">
+                    <span>✓</span>
+                    <span>Toutes les modifications apportées à ce site servent de base pour les nouveaux clients</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span>✓</span>
+                    <span>Le design, les fonctionnalités et les paramètres sont dupliqués lors de la création</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span>✓</span>
+                    <span>Cette organisation apparaît toujours en premier dans la liste avec un fond ambré</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span>✓</span>
+                    <span>Cliquez sur le bouton &quot;🔄 Synchroniser&quot; directement sur la ligne pour propager les changements</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Filtres */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -615,21 +636,24 @@ export default function OrganizationsPage() {
                   {filteredOrgs.map((org) => {
                     const isTemplate = org.slug === 'laia-skin-institut'
                     return (
-                    <tr key={org.id} className={`hover:bg-gray-50 ${isTemplate ? 'bg-amber-50/50 border-l-4 border-amber-500' : ''}`}>
+                    <tr key={org.id} className={`hover:bg-gray-50 ${isTemplate ? 'bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border-l-4 border-amber-600 shadow-sm' : ''}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">{org.name}</span>
                             {isTemplate && (
-                              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white flex items-center gap-1">
-                                📋 TEMPLATE
+                              <span className="text-2xl" title="Organisation modèle">⭐</span>
+                            )}
+                            <span className={`text-sm font-medium ${isTemplate ? 'text-amber-900 font-bold' : 'text-gray-900'}`}>{org.name}</span>
+                            {isTemplate && (
+                              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center gap-1 shadow-md animate-pulse">
+                                📋 MODÈLE TEMPLATE
                               </span>
                             )}
                           </div>
-                          <div className="text-sm text-gray-500">@{org.slug}</div>
+                          <div className={`text-sm ${isTemplate ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>@{org.slug}</div>
                           {isTemplate && (
-                            <div className="text-xs text-amber-700 mt-1">
-                              🔄 Modèle de référence pour tous les sites clients
+                            <div className="text-xs text-amber-800 mt-1 font-semibold bg-amber-200 px-2 py-1 rounded inline-block">
+                              🔄 Modèle de référence • Génère les templates personnalisés
                             </div>
                           )}
                         </div>
@@ -656,7 +680,25 @@ export default function OrganizationsPage() {
                         {new Date(org.createdAt).toLocaleDateString('fr-FR')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {isTemplate && (
+                            <button
+                              onClick={handleSyncTemplate}
+                              disabled={syncing}
+                              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:from-amber-600 hover:to-orange-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {syncing ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                  Sync...
+                                </>
+                              ) : (
+                                <>
+                                  🔄 Synchroniser
+                                </>
+                              )}
+                            </button>
+                          )}
                           <Link
                             href={`/super-admin/organizations/${org.id}`}
                             className="text-indigo-600 hover:text-indigo-900"
@@ -669,12 +711,14 @@ export default function OrganizationsPage() {
                           >
                             ✏️ Modifier
                           </Link>
-                          <button
-                            onClick={() => handleDelete(org)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            🗑️ Supprimer
-                          </button>
+                          {!isTemplate && (
+                            <button
+                              onClick={() => handleDelete(org)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              🗑️ Supprimer
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

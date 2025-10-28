@@ -41,6 +41,7 @@ export default function NewOrganizationPage() {
     // Auto-générés
     slug: '',
     subdomain: '',
+    domain: '',            // Domaine personnalisé (optionnel)
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -335,6 +336,24 @@ export default function NewOrganizationPage() {
                     <option value="TEAM">TEAM - 149€/mois (3 emplacements, 10 utilisateurs)</option>
                     <option value="PREMIUM">PREMIUM - 249€/mois (illimité)</option>
                   </select>
+                </div>
+
+                {/* 6. Domaine personnalisé (optionnel) */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    6️⃣ Domaine personnalisé (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    name="domain"
+                    value={formData.domain}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="exemple: mon-institut-beaute.fr"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    🌐 Si le client a déjà un nom de domaine, indiquez-le ici. Sinon, un sous-domaine sera créé automatiquement ({formData.slug || 'exemple'}.laia-connect.fr)
+                  </p>
                 </div>
               </div>
 

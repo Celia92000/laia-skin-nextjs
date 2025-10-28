@@ -85,7 +85,7 @@ export function encrypt(text: string): string {
  * @param encryptedText Texte chiffré en base64
  * @returns Texte en clair
  */
-export function decrypt(encryptedText: string): string {
+export function decrypt(encryptedText: string): string | null {
   if (!encryptedText) return encryptedText
 
   try {
@@ -113,8 +113,8 @@ export function decrypt(encryptedText: string): string {
 
     return decrypted.toString('utf8')
   } catch (error) {
-    console.error('Erreur déchiffrement:', error)
-    throw new Error('Erreur lors du déchiffrement des données')
+    // Token probablement chiffré avec une clé différente ou corrompu
+    return null
   }
 }
 

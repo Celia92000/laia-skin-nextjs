@@ -10,17 +10,31 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const token = authHeader.substring(7);
-    const user = verifyToken(token);
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role) && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
+    const decoded = verifyToken(token);
+    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role) && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    const where = status && status !== 'all' 
-      ? { status } 
-      : {};
+    const where: any = {
+      organizationId: user.organizationId
+    };
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
 
     const leads = await prisma.lead.findMany({
       where,
@@ -36,14 +50,14 @@ export async function GET(request: Request) {
       }
     });
 
-    // Ajouter des statistiques
+    // Ajouter des statistiques DE CETTE ORGANISATION
     const stats = {
-      total: await prisma.lead.count(),
-      new: await prisma.lead.count({ where: { status: 'new' } }),
-      contacted: await prisma.lead.count({ where: { status: 'contacted' } }),
-      qualified: await prisma.lead.count({ where: { status: 'qualified' } }),
-      converted: await prisma.lead.count({ where: { status: 'converted' } }),
-      lost: await prisma.lead.count({ where: { status: 'lost' } })
+      total: await prisma.lead.count({ where: { organizationId: user.organizationId } }),
+      new: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'new' } }),
+      contacted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'contacted' } }),
+      qualified: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'qualified' } }),
+      converted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'converted' } }),
+      lost: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'lost' } })
     };
 
     return NextResponse.json({ leads, stats });
@@ -61,9 +75,19 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const token = authHeader.substring(7);
-    const user = verifyToken(token);
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role) && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
+    const decoded = verifyToken(token);
+    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role) && decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -71,6 +95,18 @@ export async function PUT(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
+    }
+
+    // Vérifier que le lead appartient à cette organisation
+    const existingLead = await prisma.lead.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingLead) {
+      return NextResponse.json({ error: 'Lead non trouvé' }, { status: 404 });
     }
 
     const updateData: any = {};
@@ -155,7 +191,7 @@ export async function POST(request: Request) {
         name: lead.name,
         phone: lead.phone || undefined,
         password: '', // Le client devra réinitialiser son mot de passe
-        role: 'client'
+        role: 'CLIENT'
       }
     });
 

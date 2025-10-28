@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const clientsWithoutProfile = await prisma.user.findMany({
       where: {
         OR: [
-          { role: 'client' },
+          { role: 'CLIENT' },
           { role: 'CLIENT' }
         ],
         loyaltyProfile: null
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const allUsers = await prisma.user.findMany({
       where: {
         OR: [
-          { role: 'client' },
+          { role: 'CLIENT' },
           { role: 'CLIENT' }
         ]
       },
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     const totalClients = await prisma.user.count({
       where: {
         OR: [
-          { role: 'client' },
+          { role: 'CLIENT' },
           { role: 'CLIENT' }
         ]
       }

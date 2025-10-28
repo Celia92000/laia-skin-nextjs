@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { getPrismaClient } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, subYears } from 'date-fns';
 
 export async function GET(request: NextRequest) {
@@ -13,23 +13,28 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
 
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
-    } catch (jwtError: any) {
-      // Log moins verbeux pour les tokens mal formés (ne pas polluer les logs)
-      if (jwtError.name === 'JsonWebTokenError' && jwtError.message === 'jwt malformed') {
-        // Token mal formé, probablement ancien token après déploiement
-        return NextResponse.json({ error: 'Session expirée, veuillez vous reconnecter' }, { status: 401 });
-      }
-      console.error('JWT verification error:', jwtError.name, jwtError.message);
-      return NextResponse.json({ error: 'Token invalide ou expiré' }, { status: 401 });
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
+
+    // Filtre de base pour cette organisation
+    const orgFilter = { user: { organizationId: user.organizationId } };
 
     const searchParams = request.nextUrl.searchParams;
     const viewMode = searchParams.get('viewMode') || 'month';
@@ -99,7 +104,7 @@ export async function GET(request: NextRequest) {
       const lastMonth = new Date(now);
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       
-      // Récupérer toutes les données nécessaires
+      // Récupérer toutes les données nécessaires DE CETTE ORGANISATION
       const [
         totalReservations,
         todayReservations,
@@ -110,9 +115,10 @@ export async function GET(request: NextRequest) {
         lastMonthReservations,
         currentReservations
       ] = await Promise.all([
-        prisma.reservation.count().catch(() => 0),
+        prisma.reservation.count({ where: orgFilter }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: startOfDay(now),
               lte: endOfDay(now)
@@ -121,6 +127,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: startOfDay(yesterday),
               lte: endOfDay(yesterday)
@@ -129,6 +136,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: startOfWeek(now, { weekStartsOn: 1 }),
               lte: endOfWeek(now, { weekStartsOn: 1 })
@@ -137,6 +145,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: lastWeekStart,
               lte: lastWeekEnd
@@ -145,6 +154,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: startOfMonth(now),
               lte: endOfMonth(now)
@@ -153,6 +163,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: startOfMonth(lastMonth),
               lte: endOfMonth(lastMonth)
@@ -161,6 +172,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => 0),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: {
               gte: startDate,
               lte: endDate
@@ -173,10 +185,11 @@ export async function GET(request: NextRequest) {
         }).catch(() => [])
       ]);
 
-      // Récupérer toutes les réservations pour calculer les revenus
+      // Récupérer toutes les réservations pour calculer les revenus DE CETTE ORGANISATION
       const [todayRevRes, yesterdayRevRes, weekRevRes, lastWeekRevRes, monthRevRes, lastMonthRevRes, yearRevRes] = await Promise.all([
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfDay(now), lte: endOfDay(now) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -184,6 +197,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfDay(yesterday), lte: endOfDay(yesterday) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -191,6 +205,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfWeek(now, { weekStartsOn: 1 }), lte: endOfWeek(now, { weekStartsOn: 1 }) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -198,6 +213,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: lastWeekStart, lte: lastWeekEnd },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -205,6 +221,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfMonth(now), lte: endOfMonth(now) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -212,6 +229,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfMonth(lastMonth), lte: endOfMonth(lastMonth) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -219,6 +237,7 @@ export async function GET(request: NextRequest) {
         }).catch(() => []),
         prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: startOfYear(now), lte: endOfYear(now) },
             status: { in: ['confirmed', 'completed'] }
           },
@@ -242,9 +261,10 @@ export async function GET(request: NextRequest) {
         return sum + (typeof price === 'number' ? price : parseFloat(price) || 0);
       }, 0);
 
-      // Ajouter les revenus des cartes cadeaux et commandes
+      // Ajouter les revenus des cartes cadeaux et commandes DE CETTE ORGANISATION
       const paidGiftCards = await prisma.giftCard.findMany({
         where: {
+          organizationId: user.organizationId,
           paymentStatus: 'paid',
           createdAt: {
             gte: startDate,
@@ -255,6 +275,7 @@ export async function GET(request: NextRequest) {
 
       const paidOrders = await prisma.order.findMany({
         where: {
+          organizationId: user.organizationId,
           paymentStatus: 'paid',
           createdAt: {
             gte: startDate,
@@ -263,9 +284,10 @@ export async function GET(request: NextRequest) {
         }
       }).catch(() => []);
 
-      // Récupérer aussi les commandes en attente
+      // Récupérer aussi les commandes en attente DE CETTE ORGANISATION
       const pendingGiftCards = await prisma.giftCard.findMany({
         where: {
+          organizationId: user.organizationId,
           paymentStatus: 'pending',
           createdAt: {
             gte: startDate,
@@ -276,6 +298,7 @@ export async function GET(request: NextRequest) {
 
       const pendingOrders = await prisma.order.findMany({
         where: {
+          organizationId: user.organizationId,
           paymentStatus: 'pending',
           createdAt: {
             gte: startDate,
@@ -333,9 +356,12 @@ export async function GET(request: NextRequest) {
       const pendingReservations = currentReservations.filter(r => r.status === 'pending').length;
       const cancelledReservations = currentReservations.filter(r => r.status === 'cancelled').length;
 
-      // Récupérer les vraies notes clients
+      // Récupérer les vraies notes clients DE CETTE ORGANISATION
       const reviews = await prisma.review.findMany({
-        where: { approved: true },
+        where: {
+          organizationId: user.organizationId,
+          approved: true
+        },
         include: {
           user: {
             select: { name: true }
@@ -366,8 +392,10 @@ export async function GET(request: NextRequest) {
         }))
       };
 
-      // Calculer les revenus par service
-      const services = await prisma.service.findMany().catch(() => []);
+      // Calculer les revenus par service DE CETTE ORGANISATION
+      const services = await prisma.service.findMany({
+        where: { organizationId: user.organizationId }
+      }).catch(() => []);
       const serviceRevenue: Record<string, { count: number; revenue: number }> = {};
       
       // Initialiser avec tous les services
@@ -402,21 +430,22 @@ export async function GET(request: NextRequest) {
         percentage: totalServiceRevenue > 0 ? Math.round((s.revenue / totalServiceRevenue) * 100) : 0
       }));
       
-      // Calculer les revenus par mois pour 2025
+      // Calculer les revenus par mois pour 2025 DE CETTE ORGANISATION
       const monthlyRevenue = [];
       const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-      
+
       for (let month = 0; month < 12; month++) {
         const monthStart = new Date(2025, month, 1);
         const monthEnd = new Date(2025, month + 1, 0);
-        
+
         const monthRes = await prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             date: { gte: monthStart, lte: monthEnd },
             status: { in: ['confirmed', 'completed'] }
           }
         }).catch(() => []);
-        
+
         const monthTotal = monthRes.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
         monthlyRevenue.push({
           month: months[month],
@@ -441,9 +470,10 @@ export async function GET(request: NextRequest) {
       nextWeekEnd.setDate(now.getDate() + 7);
       
       const [nextWeekReservations, noShowReservations, lastMinuteReservations] = await Promise.all([
-        // Réservations de la semaine prochaine
+        // Réservations de la semaine prochaine DE CETTE ORGANISATION
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: {
               gte: nextWeekStart,
               lte: nextWeekEnd
@@ -451,18 +481,20 @@ export async function GET(request: NextRequest) {
             status: { in: ['pending', 'confirmed'] }
           }
         }).catch(() => 0),
-        
-        // No-shows (réservations confirmées dans le passé mais marquées comme cancelled)
+
+        // No-shows (réservations confirmées dans le passé mais marquées comme cancelled) DE CETTE ORGANISATION
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             date: { lt: now },
             status: 'cancelled'
           }
         }).catch(() => 0),
-        
-        // Réservations de dernière minute (créées moins de 24h avant)
+
+        // Réservations de dernière minute (créées moins de 24h avant) DE CETTE ORGANISATION
         prisma.reservation.count({
           where: {
+            ...orgFilter,
             createdAt: {
               gte: new Date(now.getTime() - 24 * 60 * 60 * 1000)
             }
@@ -541,8 +573,12 @@ export async function GET(request: NextRequest) {
         topFormations
       };
       
-      // Calculer les statistiques de fidélisation
+      // Calculer les statistiques de fidélisation DE CETTE ORGANISATION
       const users = await prisma.user.findMany({
+        where: {
+          organizationId: user.organizationId,
+          role: 'CLIENT'
+        },
         include: {
           reservations: true
         }

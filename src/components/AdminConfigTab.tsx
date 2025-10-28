@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import {
   Save, Settings, Mail, Phone, MapPin, Facebook, Instagram,
   MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
-  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart
+  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart, Zap, Key
 } from 'lucide-react';
 import SocialMediaAPISync from './SocialMediaAPISync';
 import SocialMediaPreferences from './admin/SocialMediaPreferences';
+import IntegrationsTab from './IntegrationsTab';
+import SocialMediaTokensManager from './SocialMediaTokensManager';
+import SocialMediaPublisher from './SocialMediaPublisher';
+import ApiTokensManager from './ApiTokensManager';
 
 interface SiteConfig {
   id?: string;
@@ -100,6 +104,10 @@ interface SiteConfig {
   defaultMetaTitle?: string;
   defaultMetaDescription?: string;
   defaultMetaKeywords?: string;
+
+  // Chat en direct
+  crispWebsiteId?: string;
+  crispEnabled?: boolean;
 }
 
 export default function AdminConfigTab() {
@@ -112,7 +120,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -218,6 +226,8 @@ export default function AdminConfigTab() {
           { id: 'about', label: 'À propos', icon: User },
           { id: 'location', label: 'Localisation', icon: Map },
           { id: 'seo', label: 'SEO & Tracking', icon: Search },
+          { id: 'integrations', label: 'Intégrations', icon: Zap },
+          { id: 'api', label: 'API & Sécurité', icon: Key },
           { id: 'finances', label: 'Finances', icon: CreditCard },
           { id: 'legal', label: 'Légal', icon: Shield }
         ].map((tab) => (
@@ -692,6 +702,17 @@ export default function AdminConfigTab() {
                 <SocialMediaAPISync />
                 <SocialMediaPreferences />
               </div>
+            </div>
+
+            {/* Publication sur réseaux sociaux */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <SocialMediaPublisher />
+            </div>
+
+            {/* Gestion des tokens API réseaux sociaux */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Gestion des Tokens API</h3>
+              <SocialMediaTokensManager />
             </div>
           </div>
         )}
@@ -1428,6 +1449,16 @@ export default function AdminConfigTab() {
                 Assurez-vous de les saisir correctement et de ne jamais les partager publiquement.
               </p>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'integrations' && (
+          <IntegrationsTab />
+        )}
+
+        {activeTab === 'api' && (
+          <div className="space-y-4">
+            <ApiTokensManager />
           </div>
         )}
 

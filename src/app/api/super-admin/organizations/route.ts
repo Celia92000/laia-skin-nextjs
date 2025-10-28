@@ -3,10 +3,17 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { seedOrganization } from '@/lib/seed-organization'
+import { generateOrganizationTemplate } from '@/lib/template-generator'
 import { createStripeCustomer } from '@/lib/stripe-service'
 import { encrypt, validateIban, validateBic } from '@/lib/encryption-service'
 import bcrypt from 'bcryptjs'
 import { getAllOrganizations } from '@/lib/tenant-service'
+import { getFeaturesForPlan } from '@/lib/features'
+import { serializeOrganizationAddons, getAddonById, calculateRecurringAddons, calculateOneTimeAddons } from '@/lib/addons'
+import type { OrganizationAddons, AddonPurchaseHistory } from '@/lib/addons'
+import { OrgPlan } from '@prisma/client'
+import { generateInvoiceNumber, getCurrentBillingPeriod, getNextBillingDate } from '@/lib/subscription-billing'
+import { sendInvoiceEmail } from '@/lib/email-service'
 
 export async function GET() {
   try {
@@ -41,13 +48,140 @@ export async function GET() {
     const totalReservations = await prisma.reservation.count()
     const totalServices = await prisma.service.count()
 
+    // Enrichir chaque organisation avec les statistiques utilisateurs
+    const organizationsWithUserStats = await Promise.all(
+      organizations.map(async (org) => {
+        // Récupérer tous les utilisateurs de cette organisation avec leur rôle
+        const users = await prisma.user.findMany({
+          where: { organizationId: org.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            createdAt: true,
+            lastLogin: true,
+            _count: {
+              select: {
+                reservations: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+
+        // Séparer les clients des membres de l'équipe (staff)
+        const clients = users.filter(u => u.role === 'CLIENT')
+        const staffMembers = users.filter(u => u.role !== 'CLIENT')
+
+        // Compter les utilisateurs par rôle
+        const usersByRole = users.reduce((acc, user) => {
+          acc[user.role] = (acc[user.role] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        // Mapper les rôles vers des labels français pour l'équipe
+        const roleLabels: Record<string, string> = {
+          'ORG_OWNER': 'Propriétaire',
+          'ORG_ADMIN': 'Administrateur',
+          'LOCATION_MANAGER': 'Responsable d\'établissement',
+          'STAFF': 'Praticien(ne)',
+          'EMPLOYEE': 'Employé(e)',
+          'RECEPTIONIST': 'Réceptionniste',
+          'ACCOUNTANT': 'Comptable',
+          'SUPER_ADMIN': 'Super Admin LAIA'
+        }
+
+        // Statistiques d'activité pour cette organisation
+        const [
+          totalOrgReservations,
+          totalOrgServices,
+          activeOrgServices,
+          totalOrgProducts
+        ] = await Promise.all([
+          prisma.reservation.count({
+            where: { user: { organizationId: org.id } }
+          }),
+          prisma.service.count({
+            where: { organizationId: org.id }
+          }),
+          prisma.service.count({
+            where: { organizationId: org.id, active: true }
+          }),
+          prisma.product.count({
+            where: { organizationId: org.id }
+          })
+        ])
+
+        return {
+          ...org,
+          userStats: {
+            total: users.length,
+            byRole: usersByRole,
+            totalClients: clients.length,
+            totalStaff: staffMembers.length
+          },
+          // 👥 ÉQUIPE DE L'INSTITUT (Staff accounts)
+          staffAccounts: staffMembers.map(staff => ({
+            id: staff.id,
+            name: staff.name,
+            email: staff.email,
+            phone: staff.phone,
+            role: staff.role,
+            roleLabel: roleLabels[staff.role] || staff.role,
+            createdAt: staff.createdAt,
+            lastLogin: staff.lastLogin
+          })),
+          // 👤 CLIENTS DE L'INSTITUT
+          topClients: clients
+            .sort((a, b) => b._count.reservations - a._count.reservations)
+            .slice(0, 5)
+            .map(client => ({
+              id: client.id,
+              name: client.name,
+              email: client.email,
+              reservationCount: client._count.reservations,
+              createdAt: client.createdAt,
+              lastLogin: client.lastLogin
+            })),
+          activityStats: {
+            reservations: totalOrgReservations,
+            services: totalOrgServices,
+            activeServices: activeOrgServices,
+            products: totalOrgProducts
+          }
+        }
+      })
+    )
+
+    // Calculer les statistiques globales des comptes staff
+    const globalStaffCount = organizationsWithUserStats.reduce((sum, org) => sum + org.userStats.totalStaff, 0)
+    const globalClientCount = organizationsWithUserStats.reduce((sum, org) => sum + org.userStats.totalClients, 0)
+
+    // Compter les rôles staff globalement
+    const globalStaffByRole = organizationsWithUserStats.reduce((acc, org) => {
+      Object.entries(org.userStats.byRole).forEach(([role, count]) => {
+        if (role !== 'CLIENT') {
+          acc[role] = (acc[role] || 0) + count
+        }
+      })
+      return acc
+    }, {} as Record<string, number>)
+
     return NextResponse.json({
       user,
-      organizations,
+      organizations: organizationsWithUserStats,
       stats: {
         totalUsers,
         totalReservations,
-        totalServices
+        totalServices,
+        totalOrganizations: organizations.length,
+        activeOrganizations: organizations.filter(o => o.status === 'ACTIVE' || o.status === 'TRIAL').length,
+        // 📊 Statistiques des comptes
+        totalClients: globalClientCount,
+        totalStaff: globalStaffCount,
+        staffByRole: globalStaffByRole
       }
     })
 
@@ -106,13 +240,21 @@ export async function POST(request: Request) {
     }
 
     // Calculer le montant mensuel selon le plan
+    // Prix adaptés aux revenus des instituts esthétiques
     const planPrices = {
-      SOLO: 49,
-      DUO: 99,
-      TEAM: 199,
-      PREMIUM: 399
+      SOLO: 49,      // 3% du revenu moyen
+      DUO: 89,       // 4% du revenu moyen
+      TEAM: 149,     // 5% du revenu moyen
+      PREMIUM: 249   // <3% du revenu moyen
     }
-    const monthlyAmount = planPrices[data.plan as keyof typeof planPrices] || 49
+    const basePlanPrice = planPrices[data.plan as keyof typeof planPrices] || 49
+
+    // Calculer le coût total des add-ons récurrents
+    const selectedAddonsArray: string[] = data.selectedAddons || []
+    const recurringAddonsTotal = calculateRecurringAddons(selectedAddonsArray)
+
+    // Montant mensuel total = forfait de base + add-ons récurrents
+    const monthlyAmount = basePlanPrice + recurringAddonsTotal
 
     // Date de fin d'essai (30 jours)
     const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -146,7 +288,45 @@ export async function POST(request: Request) {
     // Générer une référence unique de mandat SEPA (RUM)
     const sepaMandateRef = `LAIA-${data.slug.toUpperCase()}-${Date.now()}`
 
-    // Créer l'organisation avec les informations minimales + facturation + SEPA
+    // Obtenir les features selon le plan choisi
+    const planFeatures = getFeaturesForPlan(data.plan as OrgPlan)
+
+    // Traiter les add-ons sélectionnés
+    const selectedAddons: string[] = data.selectedAddons || []
+    const addonsHistory: AddonPurchaseHistory[] = []
+    const recurringAddons: string[] = []
+    const oneTimeAddons: string[] = []
+
+    // Trier les addons par type et créer l'historique
+    for (const addonId of selectedAddons) {
+      const addon = getAddonById(addonId)
+      if (addon) {
+        if (addon.type === 'recurring') {
+          recurringAddons.push(addonId)
+        } else {
+          oneTimeAddons.push(addonId)
+        }
+
+        addonsHistory.push({
+          addonId: addon.id,
+          purchaseDate: new Date().toISOString(),
+          price: addon.price,
+          type: addon.type,
+          status: addon.type === 'recurring' ? 'active' : 'completed',
+        })
+      }
+    }
+
+    // Créer l'objet addons à stocker
+    const organizationAddons: OrganizationAddons = {
+      recurring: recurringAddons,
+      oneTime: oneTimeAddons,
+      history: addonsHistory,
+    }
+
+    const serializedAddons = serializeOrganizationAddons(organizationAddons)
+
+    // Créer l'organisation avec les informations minimales + facturation + SEPA + addons
     const organization = await prisma.organization.create({
       data: {
         name: data.name,
@@ -178,6 +358,16 @@ export async function POST(request: Request) {
         maxUsers: data.plan === 'SOLO' ? 1 : data.plan === 'DUO' ? 3 : data.plan === 'TEAM' ? 10 : 999,
         maxStorage: data.plan === 'SOLO' ? 5 : data.plan === 'DUO' ? 10 : data.plan === 'TEAM' ? 50 : 999,
         trialEndsAt: trialEndsAt,
+
+        // Features activées selon le forfait
+        featureBlog: planFeatures.featureBlog,
+        featureProducts: planFeatures.featureProducts,
+        featureCRM: planFeatures.featureCRM,
+        featureStock: planFeatures.featureStock,
+        featureFormations: planFeatures.featureFormations,
+
+        // Add-ons sélectionnés
+        addons: serializedAddons,
       }
     })
 
@@ -300,13 +490,83 @@ export async function POST(request: Request) {
       }
     }
 
-    // Seed l'organisation avec des données de démonstration
+    // Générer une facture immédiate pour les add-ons ponctuels (Migration Assistée, etc.)
+    const oneTimeTotal = calculateOneTimeAddons(selectedAddonsArray)
+
+    if (oneTimeTotal > 0) {
+      try {
+        const invoiceNumber = generateInvoiceNumber()
+        const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours pour payer
+
+        // Créer les lignes de la facture pour les add-ons ponctuels
+        const lineItems = oneTimeAddons.map(addonId => {
+          const addon = getAddonById(addonId)
+          if (!addon) return null
+
+          return {
+            description: addon.name,
+            quantity: 1,
+            unitPrice: addon.price,
+            total: addon.price
+          }
+        }).filter(Boolean)
+
+        // Créer la facture
+        const oneTimeInvoice = await prisma.invoice.create({
+          data: {
+            organizationId: organization.id,
+            invoiceNumber,
+            amount: oneTimeTotal,
+            plan: data.plan,
+            status: 'PENDING',
+            issueDate: new Date(),
+            dueDate,
+            description: 'Services ponctuels (aide au démarrage)',
+            metadata: {
+              type: 'one-time-addons',
+              lineItems: lineItems
+            } as any
+          }
+        })
+
+        console.log(`✅ Facture ${invoiceNumber} générée pour les services ponctuels : ${oneTimeTotal}€`)
+
+        // Envoyer la facture immédiatement par email
+        try {
+          await sendInvoiceEmail({
+            organizationName: data.name,
+            ownerEmail: data.billingEmail || data.ownerEmail,
+            invoiceNumber,
+            amount: oneTimeTotal,
+            dueDate,
+            plan: data.plan,
+            lineItems: lineItems as any,
+          })
+          console.log(`📧 Facture ${invoiceNumber} envoyée par email à ${data.billingEmail || data.ownerEmail}`)
+        } catch (emailError) {
+          console.error('⚠️ Erreur envoi email facture (non bloquant):', emailError)
+          // Ne pas bloquer la création si l'email échoue
+        }
+      } catch (invoiceError) {
+        console.error('⚠️ Erreur génération facture services ponctuels (non bloquant):', invoiceError)
+      }
+    }
+
+    // Générer le template LAIA SKIN INSTITUT pour la nouvelle organisation
     try {
-      const seedResult = await seedOrganization(organization.id, organization.name)
-      console.log('✅ Organisation seedée avec succès:', seedResult)
-    } catch (seedError) {
-      console.error('⚠️ Erreur lors du seed (non bloquant):', seedError)
-      // On ne bloque pas la création même si le seed échoue
+      const templateResult = await generateOrganizationTemplate({
+        organizationId: organization.id,
+        organizationName: data.name,
+        plan: data.plan,
+        ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
+        ownerLastName: data.ownerLastName || '',
+        primaryColor: data.primaryColor,
+        secondaryColor: data.secondaryColor
+      })
+      console.log('✅ Template LAIA généré:', templateResult)
+    } catch (templateError) {
+      console.error('⚠️ Erreur lors de la génération du template (non bloquant):', templateError)
+      // On ne bloque pas la création même si le template échoue
     }
 
     return NextResponse.json({

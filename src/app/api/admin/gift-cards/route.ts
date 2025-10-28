@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
           name: senderName,
           email: `gift_sender_${Date.now()}@temp.com`,
           password: 'temp_password',
-          role: 'client'
+          role: 'CLIENT'
         }
       });
       purchaserId = purchaser.id;

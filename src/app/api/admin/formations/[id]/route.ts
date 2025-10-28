@@ -23,18 +23,25 @@ export async function GET(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
 
-    // Récupérer la formation
-    const formation = await prisma.formation.findUnique({
-      where: { id }
+    // Récupérer la formation DE CETTE ORGANISATION
+    const formation = await prisma.formation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
     });
 
     if (!formation) {
@@ -69,11 +76,15 @@ export async function PUT(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { id } = await params;
@@ -81,6 +92,18 @@ export async function PUT(
 
     // Supprimer l'id du body s'il existe
     delete body.id;
+
+    // Vérifier que la formation appartient à cette organisation
+    const existingFormation = await prisma.formation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingFormation) {
+      return NextResponse.json({ error: 'Formation non trouvée' }, { status: 404 });
+    }
 
     // Mettre à jour la formation
     const formation = await prisma.formation.update({
@@ -116,14 +139,30 @@ export async function DELETE(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // Vérifier que la formation appartient à cette organisation avant de la supprimer
+    const existingFormation = await prisma.formation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingFormation) {
+      return NextResponse.json({ error: 'Formation non trouvée' }, { status: 404 });
+    }
 
     // Supprimer la formation
     await prisma.formation.delete({

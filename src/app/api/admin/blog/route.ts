@@ -1,15 +1,42 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
+import { verifyToken } from '@/lib/auth';
 
 // GET - Récupérer tous les articles
 export async function GET(request: Request) {
   const prisma = await getPrismaClient();
   try {
-    // Récupération sans authentification pour debug
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    // Récupérer les articles DE CETTE ORGANISATION
     const posts = await prisma.blogPost.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       orderBy: { publishedAt: 'desc' }
     });
 
@@ -31,10 +58,28 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
 
     const data = await request.json();
-    
+
     // Générer le slug si non fourni
     if (!data.slug && data.title) {
       data.slug = data.title
@@ -49,9 +94,11 @@ export async function POST(request: Request) {
         .replace(/^-|-$/g, '');
     }
 
+    // Créer l'article POUR CETTE ORGANISATION
     const post = await prisma.blogPost.create({
       data: {
         ...data,
+        organizationId: user.organizationId,
         publishedAt: data.published ? new Date() : null
       }
     });

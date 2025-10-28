@@ -32,6 +32,13 @@ export default function AdminComptabiliteTab({ reservations, fetchReservations, 
     export: true
   });
 
+  const [showCreditNoteModal, setShowCreditNoteModal] = useState(false);
+  const [selectedInvoiceForAction, setSelectedInvoiceForAction] = useState<any>(null);
+  const [creditNoteData, setCreditNoteData] = useState({
+    reason: '',
+    partialAmount: ''
+  });
+
   const [stats, setStats] = useState({
     totalRevenue: 0,
     paidAmount: 0,
@@ -665,6 +672,128 @@ Pour toute question: contact@laia-skin-institut.com`;
     }));
   };
 
+  // Créer un avoir
+  async function createCreditNote() {
+    if (!selectedInvoiceForAction) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/invoices/${selectedInvoiceForAction.id}/credit-note`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: creditNoteData.reason || 'Annulation',
+          partialAmount: creditNoteData.partialAmount ? parseFloat(creditNoteData.partialAmount) : undefined
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ Avoir ${data.creditNote.invoiceNumber} créé avec succès`);
+        setShowCreditNoteModal(false);
+        setSelectedInvoiceForAction(null);
+        setCreditNoteData({ reason: '', partialAmount: '' });
+        fetchReservations(); // Rafraîchir les données
+
+        // Télécharger le PDF
+        if (data.pdfBuffer) {
+          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Avoir_${data.creditNote.invoiceNumber}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } else {
+        const error = await response.json();
+        alert(`❌ Erreur: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Erreur création avoir:', error);
+      alert('❌ Erreur serveur');
+    }
+  }
+
+  // Régénérer une facture
+  async function regenerateInvoice(reservation: any) {
+    if (!confirm('Créer une nouvelle facture et marquer l\'ancienne comme remplacée ?')) {
+      return;
+    }
+
+    const reason = prompt('Motif de la régénération (optionnel):');
+
+    try {
+      const token = localStorage.getItem('token');
+
+      // Si la réservation n'a pas encore d'invoice dans Invoice model, on ne peut pas régénérer
+      // On va d'abord chercher l'invoice correspondante
+      const invoicesResponse = await fetch('/api/admin/invoices', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!invoicesResponse.ok) {
+        alert('❌ Impossible de récupérer les factures');
+        return;
+      }
+
+      const { invoices } = await invoicesResponse.json();
+
+      // Trouver la facture correspondant à cette réservation
+      const matchingInvoice = invoices.find((inv: any) =>
+        inv.invoiceNumber === reservation.invoiceNumber ||
+        inv.metadata?.reservationId === reservation.id
+      );
+
+      if (!matchingInvoice) {
+        alert('⚠️ Aucune facture trouvée pour cette réservation. Veuillez d\'abord générer une facture.');
+        return;
+      }
+
+      const response = await fetch(`/api/admin/invoices/${matchingInvoice.id}/regenerate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: reason || undefined })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.message}`);
+        fetchReservations();
+
+        // Télécharger le PDF
+        if (data.pdfBuffer) {
+          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Facture_${data.newInvoice.invoiceNumber}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } else {
+        const error = await response.json();
+        alert(`❌ Erreur: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Erreur régénération facture:', error);
+      alert('❌ Erreur serveur');
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount);
+  };
+
   return (
     <div className="space-y-6">
       {/* Période et Actions Rapides */}
@@ -1103,6 +1232,7 @@ Pour toute question: contact@laia-skin-institut.com`;
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
+                          {/* Voir */}
                           <button
                             onClick={() => {
                               generateInvoice(reservation);
@@ -1113,6 +1243,7 @@ Pour toute question: contact@laia-skin-institut.com`;
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          {/* Télécharger */}
                           <button
                             onClick={() => {
                               generateInvoice(reservation);
@@ -1123,6 +1254,43 @@ Pour toute question: contact@laia-skin-institut.com`;
                           >
                             <Download className="w-4 h-4" />
                           </button>
+                          {/* Créer un avoir (si payée) */}
+                          {reservation.paymentStatus === 'paid' && (
+                            <button
+                              onClick={async () => {
+                                const token = localStorage.getItem('token');
+                                const invoicesResponse = await fetch('/api/admin/invoices', {
+                                  headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                if (invoicesResponse.ok) {
+                                  const { invoices } = await invoicesResponse.json();
+                                  const matchingInvoice = invoices.find((inv: any) =>
+                                    inv.invoiceNumber === reservation.invoiceNumber
+                                  );
+                                  if (matchingInvoice) {
+                                    setSelectedInvoiceForAction(matchingInvoice);
+                                    setShowCreditNoteModal(true);
+                                  } else {
+                                    alert('⚠️ Aucune facture trouvée');
+                                  }
+                                }
+                              }}
+                              className="p-1 text-gray-400 hover:text-orange-600"
+                              title="Créer un avoir"
+                            >
+                              <span className="text-sm">📝</span>
+                            </button>
+                          )}
+                          {/* Régénérer (si en attente) */}
+                          {reservation.paymentStatus !== 'paid' && (
+                            <button
+                              onClick={() => regenerateInvoice(reservation)}
+                              className="p-1 text-gray-400 hover:text-blue-600"
+                              title="Régénérer la facture"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1349,11 +1517,11 @@ Pour toute question: contact@laia-skin-institut.com`;
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div dangerouslySetInnerHTML={{ __html: formatInvoiceHTML(currentInvoice) }} />
             </div>
-            
+
             <div className="p-6 border-t flex gap-3 justify-end">
               <button
                 onClick={printInvoice}
@@ -1368,6 +1536,87 @@ Pour toute question: contact@laia-skin-institut.com`;
               >
                 <Download className="w-4 h-4" />
                 Télécharger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Créer un Avoir */}
+      {showCreditNoteModal && selectedInvoiceForAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-bold mb-2">📝 Créer un avoir</h2>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Facture d'origine</p>
+                <p className="font-bold">{selectedInvoiceForAction.invoiceNumber}</p>
+                <p className="text-gray-700">
+                  {formatCurrency(selectedInvoiceForAction.amount)}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motif de l'avoir *
+                </label>
+                <textarea
+                  value={creditNoteData.reason}
+                  onChange={(e) => setCreditNoteData({ ...creditNoteData, reason: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+                  placeholder="Ex: Annulation de l'abonnement, Erreur de facturation..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Montant de l'avoir
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={creditNoteData.partialAmount}
+                  onChange={(e) => setCreditNoteData({ ...creditNoteData, partialAmount: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+                  placeholder={`Laisser vide pour un avoir complet (${formatCurrency(selectedInvoiceForAction.amount)})`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Laisser vide pour créer un avoir du montant total
+                </p>
+              </div>
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  ⚠️ <strong>Règles légales :</strong><br />
+                  • Un avoir annule ou corrige une facture<br />
+                  • Il référence la facture d'origine<br />
+                  • La facture d'origine reste dans l'historique<br />
+                  • Un PDF sera automatiquement généré
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={createCreditNote}
+                disabled={!creditNoteData.reason.trim()}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Créer l'avoir
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreditNoteModal(false);
+                  setSelectedInvoiceForAction(null);
+                  setCreditNoteData({ reason: '', partialAmount: '' });
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                Annuler
               </button>
             </div>
           </div>

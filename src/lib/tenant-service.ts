@@ -1,6 +1,7 @@
 // Service de gestion des tenants (organisations)
 import { PrismaClient, Organization } from '@prisma/client'
 import { cache } from 'react'
+import { getActiveFeatures, type OrgFeatures } from './features-simple'
 
 const prisma = new PrismaClient()
 
@@ -174,3 +175,23 @@ export function clearOrganizationCache(host?: string) {
  * Version cachée de getOrganizationByHost pour Next.js
  */
 export const getCachedOrganizationByHost = cache(getOrganizationByHost)
+
+/**
+ * 🎯 Récupère les features actives d'une organisation
+ * Prend en compte le forfait de base + les add-ons achetés
+ */
+export function getOrganizationActiveFeatures(organization: Organization): OrgFeatures {
+  return getActiveFeatures(organization.plan, organization.addons)
+}
+
+/**
+ * ✅ Vérifie si une organisation a accès à une feature spécifique
+ * (forfait de base ou add-on)
+ */
+export function organizationHasFeature(
+  organization: Organization,
+  feature: keyof OrgFeatures
+): boolean {
+  const activeFeatures = getOrganizationActiveFeatures(organization)
+  return activeFeatures[feature]
+}

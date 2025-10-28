@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           email: email || `client_${Date.now()}@temp.com`,
           phone: phone || '',
           password: 'temp_password', // Le client pourra créer son mot de passe plus tard
-          role: 'client'
+          role: 'CLIENT'
         }
       });
     } else if (phone && !clientUser.phone) {
@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
     try {
       user = await prisma.user.findUnique({
         where: { id: decoded.userId },
-        select: { role: true }
+        select: { role: true, organizationId: true }
       });
     } catch (dbError) {
       console.warn('Erreur de connexion DB lors de la vérification utilisateur:', dbError);
@@ -261,17 +261,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Vérifier le cache
-    const cacheKey = 'admin:reservations';
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Vérifier le cache (par organisation)
+    const cacheKey = `admin:reservations:${user.organizationId}`;
     const cachedReservations = cache.get(cacheKey);
     if (cachedReservations) {
       return NextResponse.json(cachedReservations);
     }
 
-    // Récupérer toutes les réservations avec les infos clients et services
+    // Récupérer toutes les réservations DE CETTE ORGANISATION avec les infos clients et services
     let reservations = [];
     try {
       reservations = await prisma.reservation.findMany({
+      where: {
+        user: {
+          organizationId: user.organizationId
+        }
+      },
       select: {
         id: true,
         date: true,
@@ -327,8 +336,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Récupérer tous les services une seule fois
+    // Récupérer tous les services DE CETTE ORGANISATION une seule fois
     const allServices = await prisma.service.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       select: {
         id: true,
         slug: true,

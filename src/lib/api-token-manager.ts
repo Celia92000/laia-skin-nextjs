@@ -130,10 +130,15 @@ export async function getApiToken(
     }
 
     // Déchiffrer le token
-    return decrypt(token.encryptedToken);
+    const decrypted = decrypt(token.encryptedToken);
+    if (!decrypted) {
+      console.log(`⚠️  Token ${service}/${name} ne peut pas être déchiffré (clé invalide ou corrompu)`);
+      return null;
+    }
+    return decrypted;
   } catch (error) {
     console.error(`Erreur lors de la récupération du token ${service}/${name}:`, error);
-    throw error;
+    return null;
   }
 }
 

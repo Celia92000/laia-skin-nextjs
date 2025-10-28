@@ -21,27 +21,29 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role) && user.role !== 'ADMIN' && user.role !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     // Vérifier le cache
-    const cacheKey = 'admin:clients';
+    const cacheKey = `admin:clients:${user.organizationId}`;
     const cachedClients = cache.get(cacheKey);
     if (cachedClients) {
       return NextResponse.json(cachedClients);
     }
 
-    // Récupérer tous les clients avec leurs stats
+    // Récupérer tous les clients DE CETTE ORGANISATION avec leurs stats
     const clients = await prisma.user.findMany({
       where: {
-        OR: [
-          { role: 'CLIENT' },
-          { role: 'client' }
-        ]
+        role: 'CLIENT',
+        organizationId: user.organizationId
       },
       select: {
         id: true,

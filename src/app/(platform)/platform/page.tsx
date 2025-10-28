@@ -36,7 +36,7 @@ export default function PlatformHomePage() {
     {
       id: 'DUO',
       name: 'Duo',
-      price: 99,
+      price: 89,
       description: 'Le plus populaire',
       features: [
         '1 emplacement',
@@ -53,7 +53,7 @@ export default function PlatformHomePage() {
     {
       id: 'TEAM',
       name: 'Team',
-      price: 199,
+      price: 149,
       description: 'Pour les équipes',
       features: [
         '3 emplacements',
@@ -71,7 +71,7 @@ export default function PlatformHomePage() {
     {
       id: 'PREMIUM',
       name: 'Premium',
-      price: 399,
+      price: 249,
       description: 'Solution complète',
       features: [
         'Emplacements illimités',
@@ -183,7 +183,7 @@ export default function PlatformHomePage() {
                 🎯 Réserver une démo
               </button>
               <Link
-                href="/register"
+                href="/onboarding?plan=DUO"
                 className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
               >
                 Essayer gratuitement
@@ -228,7 +228,7 @@ export default function PlatformHomePage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/register"
+                href="/onboarding?plan=DUO"
                 className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-lg font-semibold hover:shadow-xl hover:shadow-purple-500/50 transition-all flex items-center gap-2"
               >
                 Essayer gratuitement 30 jours
@@ -425,7 +425,7 @@ export default function PlatformHomePage() {
                   </div>
 
                   <Link
-                    href="/register"
+                    href={`/onboarding?plan=${plan.id}`}
                     className={`block w-full py-3 px-4 rounded-xl font-semibold text-center transition-all ${
                       plan.popular
                         ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/50'
@@ -490,7 +490,7 @@ export default function PlatformHomePage() {
             Rejoignez des centaines de professionnels qui ont choisi l'excellence
           </p>
           <Link
-            href="/register"
+            href="/onboarding?plan=DUO"
             className="inline-flex items-center gap-3 px-12 py-6 bg-white text-purple-600 rounded-full text-2xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all transform hover:scale-105"
           >
             <span>🚀 Commencer mon essai gratuit</span>
@@ -524,7 +524,7 @@ export default function PlatformHomePage() {
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="text-gray-600 hover:text-purple-600 transition">Fonctionnalités</a></li>
                 <li><a href="#pricing" className="text-gray-600 hover:text-purple-600 transition">Tarifs</a></li>
-                <li><Link href="/register" className="text-gray-600 hover:text-purple-600 transition">Essai gratuit</Link></li>
+                <li><Link href="/onboarding?plan=DUO" className="text-gray-600 hover:text-purple-600 transition">Essai gratuit</Link></li>
               </ul>
             </div>
             <div>

@@ -21,15 +21,22 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer toutes les commandes avec les informations utilisateur
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer toutes les commandes DE CETTE ORGANISATION avec les informations utilisateur
     const orders = await prisma.order.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         user: {
           select: {
@@ -69,11 +76,15 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -83,9 +94,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
-    // Récupérer les infos du client
-    const customer = await prisma.user.findUnique({
-      where: { id: userId },
+    // Récupérer les infos du client et vérifier qu'il appartient à cette organisation
+    const customer = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: user.organizationId
+      },
       select: { name: true, email: true }
     });
 
@@ -97,9 +111,10 @@ export async function POST(request: NextRequest) {
     const orderCount = await prisma.order.count();
     const orderNumber = `ORD-${new Date().getFullYear()}-${String(orderCount + 1).padStart(5, '0')}`;
 
-    // Créer la commande
+    // Créer la commande POUR CETTE ORGANISATION
     const order = await prisma.order.create({
       data: {
+        organizationId: user.organizationId,
         orderNumber,
         userId,
         customerName: customer.name,
@@ -151,11 +166,15 @@ export async function PUT(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -163,6 +182,18 @@ export async function PUT(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    }
+
+    // Vérifier que la commande appartient à cette organisation
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: 'Commande non trouvée' }, { status: 404 });
     }
 
     // Mettre à jour la commande

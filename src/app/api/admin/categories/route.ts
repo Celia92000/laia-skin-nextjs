@@ -13,7 +13,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const categories = await prisma.serviceCategory.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         subcategories: {
           orderBy: { order: 'asc' },
@@ -41,8 +54,22 @@ export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     const auth = verifyToken(token || '');
-    if (!auth || auth.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -56,9 +83,12 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
 
-    // Vérifier si le slug existe déjà
-    const existingCategory = await prisma.serviceCategory.findUnique({
-      where: { slug }
+    // Vérifier si le slug existe déjà DANS CETTE ORGANISATION
+    const existingCategory = await prisma.serviceCategory.findFirst({
+      where: {
+        slug,
+        organizationId: user.organizationId
+      }
     });
 
     if (existingCategory) {
@@ -68,8 +98,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Obtenir le prochain ordre
+    // Obtenir le prochain ordre POUR CETTE ORGANISATION
     const lastCategory = await prisma.serviceCategory.findFirst({
+      where: { organizationId: user.organizationId },
       orderBy: { order: 'desc' }
     });
     const order = (lastCategory?.order ?? -1) + 1;
@@ -86,7 +117,8 @@ export async function POST(request: NextRequest) {
         metaDescription,
         keywords,
         featured: featured || false,
-        order
+        order,
+        organizationId: user.organizationId
       }
     });
 

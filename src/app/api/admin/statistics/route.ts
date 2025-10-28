@@ -1,11 +1,39 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, subDays, differenceInDays } from 'date-fns';
 import { formatDateLocal } from "@/lib/date-utils";
 
 export async function GET(request: Request) {
   const prisma = await getPrismaClient();
   try {
+    // Authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const viewMode = searchParams.get('viewMode') || 'month';
     const selectedDate = searchParams.get('selectedDate') || new Date().toISOString();
@@ -39,7 +67,10 @@ export async function GET(request: Request) {
       previousEndDate = endOfYear(subYears(date, 1));
     }
 
-    // Récupérer toutes les réservations
+    // Filtre de base pour cette organisation
+    const orgFilter = { user: { organizationId: user.organizationId } };
+
+    // Récupérer toutes les réservations DE CETTE ORGANISATION
     const [
       totalReservations,
       currentReservations,
@@ -58,154 +89,137 @@ export async function GET(request: Request) {
       recentReviews,
       clientRetentionData
     ] = await Promise.all([
-      // Total des réservations
-      prisma.reservation.count(),
+      // Total des réservations DE CETTE ORGANISATION
+      prisma.reservation.count({ where: orgFilter }),
       
-      // Réservations période actuelle
+      // Réservations période actuelle DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
-          date: {
-            gte: startDate,
-            lte: endDate
-          }
+          ...orgFilter,
+          date: { gte: startDate, lte: endDate }
         },
-        include: {
-          user: true,
-          service: true
-        }
+        include: { user: true, service: true }
       }),
 
-      // Réservations période précédente
+      // Réservations période précédente DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
-          date: {
-            gte: previousStartDate,
-            lte: previousEndDate
-          }
+          ...orgFilter,
+          date: { gte: previousStartDate, lte: previousEndDate }
         },
-        include: {
-          service: true
+        include: { service: true }
+      }),
+
+      // Réservations d'aujourd'hui DE CETTE ORGANISATION
+      prisma.reservation.count({
+        where: {
+          ...orgFilter,
+          date: { gte: startOfDay(now), lte: endOfDay(now) }
         }
       }),
 
-      // Réservations d'aujourd'hui
+      // Réservations de la semaine DE CETTE ORGANISATION
       prisma.reservation.count({
         where: {
-          date: {
-            gte: startOfDay(now),
-            lte: endOfDay(now)
-          }
+          ...orgFilter,
+          date: { gte: startOfWeek(now, { weekStartsOn: 1 }), lte: endOfWeek(now, { weekStartsOn: 1 }) }
         }
       }),
 
-      // Réservations de la semaine
+      // Réservations du mois DE CETTE ORGANISATION
       prisma.reservation.count({
         where: {
-          date: {
-            gte: startOfWeek(now, { weekStartsOn: 1 }),
-            lte: endOfWeek(now, { weekStartsOn: 1 })
-          }
+          ...orgFilter,
+          date: { gte: startOfMonth(now), lte: endOfMonth(now) }
         }
       }),
 
-      // Réservations du mois
+      // Réservations en attente DE CETTE ORGANISATION
       prisma.reservation.count({
         where: {
-          date: {
-            gte: startOfMonth(now),
-            lte: endOfMonth(now)
-          }
-        }
-      }),
-
-      // Réservations en attente
-      prisma.reservation.count({
-        where: {
+          ...orgFilter,
           status: 'pending',
-          date: {
-            gte: now
-          }
+          date: { gte: now }
         }
       }),
 
-      // Réservations confirmées
+      // Réservations confirmées DE CETTE ORGANISATION
       prisma.reservation.count({
         where: {
+          ...orgFilter,
           status: 'confirmed',
-          date: {
-            gte: startDate,
-            lte: endDate
-          }
+          date: { gte: startDate, lte: endDate }
         }
       }),
 
-      // Réservations annulées
+      // Réservations annulées DE CETTE ORGANISATION
       prisma.reservation.count({
         where: {
+          ...orgFilter,
           status: 'cancelled',
-          date: {
-            gte: startDate,
-            lte: endDate
-          }
+          date: { gte: startDate, lte: endDate }
         }
       }),
 
-      // Total des clients
-      prisma.user.count(),
-
-      // Clients actifs (avec réservation dans les 3 derniers mois)
+      // Total des clients DE CETTE ORGANISATION
       prisma.user.count({
         where: {
+          organizationId: user.organizationId,
+          role: 'CLIENT'
+        }
+      }),
+
+      // Clients actifs DE CETTE ORGANISATION
+      prisma.user.count({
+        where: {
+          organizationId: user.organizationId,
+          role: 'CLIENT',
           reservations: {
-            some: {
-              date: {
-                gte: subMonths(now, 3)
-              }
-            }
+            some: { date: { gte: subMonths(now, 3) } }
           }
         }
       }),
 
-      // Nouveaux clients du mois
+      // Nouveaux clients du mois DE CETTE ORGANISATION
       prisma.user.count({
         where: {
-          createdAt: {
-            gte: startOfMonth(now)
-          }
+          organizationId: user.organizationId,
+          role: 'CLIENT',
+          createdAt: { gte: startOfMonth(now) }
         }
       }),
 
-      // Tous les services
-      prisma.service.findMany(),
+      // Tous les services DE CETTE ORGANISATION
+      prisma.service.findMany({
+        where: { organizationId: user.organizationId }
+      }),
 
-      // Toutes les réservations avec services pour calculer les revenus
+      // Toutes les réservations avec services DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          ...orgFilter,
           status: 'confirmed'
         },
-        include: {
-          service: true
-        }
+        include: { service: true }
       }),
 
-      // Avis récents
+      // Avis récents DE CETTE ORGANISATION
       prisma.review.findMany({
-        orderBy: {
-          createdAt: 'desc'
-        },
+        where: { organizationId: user.organizationId },
+        orderBy: { createdAt: 'desc' },
         take: 10,
-        include: {
-          user: true
-        }
+        include: { user: true }
       }),
 
-      // Données de rétention
+      // Données de rétention DE CETTE ORGANISATION
       prisma.user.findMany({
+        where: {
+          organizationId: user.organizationId,
+          role: 'CLIENT'
+        },
         include: {
           reservations: {
-            orderBy: {
-              date: 'desc'
-            }
+            orderBy: { date: 'desc' }
           }
         }
       })

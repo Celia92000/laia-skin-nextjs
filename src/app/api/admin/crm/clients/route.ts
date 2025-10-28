@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       where: {
         OR: [
           { role: 'CLIENT' },
-          { role: 'client' }
+          { role: 'CLIENT' }
         ]
       },
       select: {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         email,
         phone: phone || null,
         password: `temp_${Date.now()}`, // Mot de passe temporaire
-        role: 'client',
+        role: 'CLIENT',
         birthDate: birthDate ? new Date(birthDate) : null,
         skinType: skinType || null,
         allergies: allergies || null,

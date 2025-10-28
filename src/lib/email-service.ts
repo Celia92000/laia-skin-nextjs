@@ -430,7 +430,7 @@ export async function sendDemoConfirmationEmail({
                                         Contact
                                     </a>
                                 </div>
-                            </td>
+            </td>
                         </tr>
                     </table>
                 </td>
@@ -471,6 +471,260 @@ export async function sendDemoConfirmationEmail({
     return { success: true, data };
   } catch (error) {
     console.error('Erreur envoi email de démo:', error);
+    return { success: false, error };
+  }
+}
+
+interface SendInvoiceEmailParams {
+  organizationName: string
+  ownerEmail: string
+  invoiceNumber: string
+  amount: number
+  dueDate: Date
+  plan: string
+  lineItems: Array<{
+    description: string
+    quantity: number
+    unitPrice: number
+    total: number
+  }>
+  changeType?: 'upgrade' | 'downgrade' | 'addon_added' | 'addon_removed'
+  prorata?: {
+    creditAmount?: number
+    chargeAmount?: number
+  }
+}
+
+export async function sendInvoiceEmail({
+  organizationName,
+  ownerEmail,
+  invoiceNumber,
+  amount,
+  dueDate,
+  plan,
+  lineItems,
+  changeType,
+  prorata
+}: SendInvoiceEmailParams) {
+  const formattedDueDate = new Intl.DateTimeFormat('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(new Date(dueDate));
+
+  // Générer le tableau des lignes de facturation
+  const lineItemsHtml = lineItems.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #666;">${item.description}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #666;">${item.quantity}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #666;">${item.unitPrice.toFixed(2)} €</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #9333ea; font-weight: 600;">${item.total.toFixed(2)} €</td>
+    </tr>
+  `).join('');
+
+  // Message de prorata si applicable
+  let prorataMessageHtml = '';
+  if (prorata && (prorata.creditAmount || prorata.chargeAmount)) {
+    if (prorata.creditAmount) {
+      prorataMessageHtml = `
+        <div style="background-color: #f0fdf4; padding: 20px; border-left: 4px solid #10b981; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #047857; font-size: 14px; margin: 0;">
+            ✅ <strong>Crédit au prorata :</strong> ${prorata.creditAmount.toFixed(2)} € déduit de votre ancien forfait
+          </p>
+        </div>
+      `;
+    }
+    if (prorata.chargeAmount) {
+      prorataMessageHtml += `
+        <div style="background-color: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #92400e; font-size: 14px; margin: 0;">
+            ℹ️ <strong>Facturation au prorata :</strong> ${prorata.chargeAmount.toFixed(2)} € pour la période restante
+          </p>
+        </div>
+      `;
+    }
+  }
+
+  // Message selon le type de changement
+  let changeTypeMessage = '';
+  if (changeType === 'upgrade') {
+    changeTypeMessage = '🎉 <strong>Mise à niveau de votre forfait</strong>';
+  } else if (changeType === 'downgrade') {
+    changeTypeMessage = '📉 <strong>Changement de forfait</strong>';
+  } else if (changeType === 'addon_added') {
+    changeTypeMessage = '✨ <strong>Nouvelles options ajoutées</strong>';
+  } else if (changeType === 'addon_removed') {
+    changeTypeMessage = '🔄 <strong>Options modifiées</strong>';
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Facture ${invoiceNumber}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="650" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #9333ea, #ec4899); padding: 40px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">💼 LAIA Connect</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Votre partenaire digital pour la beauté</p>
+                            </td>
+                        </tr>
+
+                        <!-- Numéro de facture -->
+                        <tr>
+                            <td style="padding: 30px 40px 10px 40px;">
+                                <table width="100%">
+                                    <tr>
+                                        <td>
+                                            <h2 style="color: #2c3e50; font-size: 24px; margin: 0;">
+                                                📄 Facture ${invoiceNumber}
+                                            </h2>
+                                            ${changeTypeMessage ? `<p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">${changeTypeMessage}</p>` : ''}
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <p style="color: #666; font-size: 14px; margin: 0;">Date d'échéance</p>
+                                            <p style="color: #9333ea; font-size: 18px; font-weight: 700; margin: 5px 0 0 0;">${formattedDueDate}</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Informations client -->
+                        <tr>
+                            <td style="padding: 20px 40px;">
+                                <div style="background-color: #fdfbf7; padding: 20px; border-radius: 8px;">
+                                    <p style="color: #666; font-size: 14px; margin: 0 0 5px 0;"><strong>Facturé à :</strong></p>
+                                    <p style="color: #2c3e50; font-size: 16px; margin: 0; font-weight: 600;">${organizationName}</p>
+                                    <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">Forfait : ${plan}</p>
+                                </div>
+                            </td>
+                        </tr>
+
+                        ${prorataMessageHtml ? `<tr><td style="padding: 0 40px;">${prorataMessageHtml}</td></tr>` : ''}
+
+                        <!-- Détails de la facture -->
+                        <tr>
+                            <td style="padding: 20px 40px;">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                                    <thead>
+                                        <tr style="background-color: #f9fafb;">
+                                            <th style="padding: 15px; text-align: left; color: #2c3e50; font-size: 14px; font-weight: 600;">Description</th>
+                                            <th style="padding: 15px; text-align: center; color: #2c3e50; font-size: 14px; font-weight: 600;">Qté</th>
+                                            <th style="padding: 15px; text-align: right; color: #2c3e50; font-size: 14px; font-weight: 600;">Prix unitaire</th>
+                                            <th style="padding: 15px; text-align: right; color: #2c3e50; font-size: 14px; font-weight: 600;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${lineItemsHtml}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" style="padding: 20px; text-align: right; background-color: #f9fafb; color: #2c3e50; font-size: 18px; font-weight: 600;">
+                                                Total à payer
+                                            </td>
+                                            <td style="padding: 20px; text-align: right; background-color: #f9fafb; color: #9333ea; font-size: 24px; font-weight: 700;">
+                                                ${amount.toFixed(2)} €
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <!-- Instructions de paiement -->
+                        <tr>
+                            <td style="padding: 20px 40px;">
+                                <div style="background-color: #eff6ff; padding: 20px; border-left: 4px solid #3b82f6; border-radius: 8px;">
+                                    <h4 style="color: #1e40af; font-size: 16px; margin: 0 0 10px 0;">💳 Modalités de paiement</h4>
+                                    <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0;">
+                                        Cette facture sera prélevée automatiquement à la date d'échéance via votre mode de paiement enregistré.
+                                        Pour toute question concernant votre facturation, contactez-nous à <a href="mailto:billing@laia-connect.com" style="color: #9333ea;">billing@laia-connect.com</a>
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Message de remerciement -->
+                        <tr>
+                            <td style="padding: 30px 40px;">
+                                <p style="color: #666; font-size: 15px; line-height: 1.6; margin: 0;">
+                                    Merci de votre confiance ! Nous sommes ravis de vous accompagner dans la gestion de votre activité.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
+                                <p style="color: #fff; font-size: 14px; margin: 0 0 10px 0;">
+                                    LAIA Connect
+                                </p>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 15px 0;">
+                                    Votre solution tout-en-un pour les instituts de beauté
+                                </p>
+                                <div style="margin-top: 20px;">
+                                    <a href="https://laia-connect.com" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
+                                        Site web
+                                    </a>
+                                    <span style="color: rgba(255,255,255,0.3);">|</span>
+                                    <a href="mailto:support@laia-connect.com" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
+                                        Support
+                                    </a>
+                                    <span style="color: rgba(255,255,255,0.3);">|</span>
+                                    <a href="https://laia-connect.com/billing" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
+                                        Gérer ma facturation
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    // Si pas de clé API configurée, simuler l'envoi
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
+      console.log('\n📧 SIMULATION D\'ENVOI DE FACTURE');
+      console.log('Destinataire:', ownerEmail);
+      console.log('Organisation:', organizationName);
+      console.log('Facture:', invoiceNumber);
+      console.log('Montant:', amount, '€');
+      console.log('\n');
+      return { success: true, simulated: true };
+    }
+
+    // Envoyer l'email réel
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <billing@laia-connect.com>';
+
+    const { data, error } = await getResend().emails.send({
+      from: fromEmail,
+      to: ownerEmail,
+      subject: `📄 Nouvelle facture ${invoiceNumber} - ${amount.toFixed(2)} € - LAIA Connect`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Erreur Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Facture envoyée par email:', ownerEmail);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erreur envoi facture par email:', error);
     return { success: false, error };
   }
 }

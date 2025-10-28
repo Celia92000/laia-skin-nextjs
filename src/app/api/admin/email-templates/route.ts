@@ -18,9 +18,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Récupérer tous les templates actifs
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer tous les templates actifs DE CETTE ORGANISATION
     const templates = await prisma.emailTemplate.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        organizationId: user.organizationId
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -54,11 +67,15 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { name, subject, content, category } = await request.json();
@@ -67,13 +84,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
     }
 
-    // Créer le template
+    // Créer le template POUR CETTE ORGANISATION
     const template = await prisma.emailTemplate.create({
       data: {
         name,
         subject,
         content,
-        category: category || 'general'
+        category: category || 'general',
+        organizationId: admin.organizationId
       }
     });
 

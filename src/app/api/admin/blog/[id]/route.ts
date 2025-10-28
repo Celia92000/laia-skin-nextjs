@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
+import { verifyToken } from '@/lib/auth';
 
 // GET - Récupérer un article spécifique
 export async function GET(
@@ -17,12 +15,30 @@ export async function GET(
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
 
     const { id } = await params;
 
-    const post = await prisma.blogPost.findUnique({
-      where: { id }
+    // Récupérer l'article DE CETTE ORGANISATION
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
     });
 
     if (!post) {
@@ -49,11 +65,37 @@ export async function PUT(
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
 
     const { id } = await params;
     const data = await request.json();
-    
+
+    // Vérifier que l'article appartient à cette organisation
+    const existingPost = await prisma.blogPost.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingPost) {
+      return NextResponse.json({ error: 'Article non trouvé' }, { status: 404 });
+    }
+
     // Générer le slug si non fourni
     if (!data.slug && data.title) {
       data.slug = data.title

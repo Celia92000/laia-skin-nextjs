@@ -139,7 +139,7 @@ export async function PATCH(
             name: purchaserName,
             email: `gift_purchaser_${Date.now()}@temp.com`,
             password: 'temp_password',
-            role: 'client'
+            role: 'CLIENT'
           }
         });
         updateData.purchasedBy = newPurchaser.id;

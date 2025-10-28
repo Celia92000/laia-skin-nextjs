@@ -13,11 +13,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
 
     const subcategories = await prisma.serviceSubcategory.findMany({
-      where: categoryId ? { categoryId } : undefined,
+      where: {
+        organizationId: user.organizationId,
+        ...(categoryId ? { categoryId } : {})
+      },
       include: {
         category: {
           select: {
@@ -48,8 +61,22 @@ export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     const auth = verifyToken(token || '');
-    if (!auth || auth.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    if (!auth) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -62,9 +89,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que la catégorie parente existe
-    const category = await prisma.serviceCategory.findUnique({
-      where: { id: categoryId }
+    // Vérifier que la catégorie parente existe ET appartient à cette organisation
+    const category = await prisma.serviceCategory.findFirst({
+      where: {
+        id: categoryId,
+        organizationId: user.organizationId
+      }
     });
 
     if (!category) {
@@ -82,9 +112,12 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
 
-    // Vérifier si le slug existe déjà
-    const existingSubcategory = await prisma.serviceSubcategory.findUnique({
-      where: { slug }
+    // Vérifier si le slug existe déjà DANS CETTE ORGANISATION
+    const existingSubcategory = await prisma.serviceSubcategory.findFirst({
+      where: {
+        slug,
+        organizationId: user.organizationId
+      }
     });
 
     if (existingSubcategory) {
@@ -94,9 +127,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Obtenir le prochain ordre pour cette catégorie
+    // Obtenir le prochain ordre pour cette catégorie DANS CETTE ORGANISATION
     const lastSubcategory = await prisma.serviceSubcategory.findFirst({
-      where: { categoryId },
+      where: {
+        categoryId,
+        organizationId: user.organizationId
+      },
       orderBy: { order: 'desc' }
     });
     const order = (lastSubcategory?.order ?? -1) + 1;
@@ -109,7 +145,8 @@ export async function POST(request: NextRequest) {
         description,
         icon,
         image,
-        order
+        order,
+        organizationId: user.organizationId
       },
       include: {
         category: {

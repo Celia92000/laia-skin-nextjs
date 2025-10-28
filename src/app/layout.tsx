@@ -134,6 +134,24 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     // Catégorie du site
     category: "beauty",
+    // PWA - Manifest
+    manifest: "/manifest.json",
+    // PWA - Apple
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: siteName,
+    },
+    // PWA - Icons
+    icons: {
+      icon: [
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      ],
+    },
   };
 }
 
@@ -146,6 +164,36 @@ export default async function RootLayout({
     <html lang="fr" className={`${inter.variable} ${poppins.variable} ${cormorant.variable} ${playfair.variable} ${lora.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+
+        {/* PWA - Theme Color */}
+        <meta name="theme-color" content="#d4b5a0" />
+
+        {/* PWA - Apple */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* PWA - Microsoft */}
+        <meta name="msapplication-TileColor" content="#d4b5a0" />
+        <meta name="msapplication-tap-highlight" content="no" />
+
+        {/* Service Worker Registration */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('[PWA] Service Worker enregistré:', registration.scope);
+                  },
+                  function(err) {
+                    console.log('[PWA] Erreur Service Worker:', err);
+                  }
+                );
+              });
+            }
+          `
+        }} />
       </head>
       <body
         className={`${inter.className} antialiased`}

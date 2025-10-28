@@ -22,17 +22,24 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer les dernières campagnes (limitées pour la performance)
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer les dernières campagnes DE CETTE ORGANISATION (limitées pour la performance)
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
 
     const campaigns = await prisma.emailCampaign.findMany({
+      where: {
+        organizationId: admin.organizationId
+      },
       take: limit,
       orderBy: {
         createdAt: 'desc'

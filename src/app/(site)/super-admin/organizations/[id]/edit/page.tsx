@@ -3,6 +3,9 @@
 import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AddonSelector from '@/components/super-admin/AddonSelector'
+import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
+import { OrgPlan } from '@prisma/client'
 
 interface Organization {
   id: string
@@ -20,6 +23,21 @@ interface Organization {
   maxUsers: number
   maxStorage: number
   trialEndsAt: string | null
+  addons: string | null
+}
+
+const PLAN_PRICES = {
+  SOLO: 49,
+  DUO: 89,
+  TEAM: 149,
+  PREMIUM: 249,
+}
+
+const PLAN_DESCRIPTIONS = {
+  SOLO: 'Esthéticienne indépendante seule',
+  DUO: 'Petit institut 2-3 personnes',
+  TEAM: 'Institut établi, multi-emplacements',
+  PREMIUM: 'Chaîne/Franchise',
 }
 
 export default function EditOrganizationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +46,10 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [organization, setOrganization] = useState<Organization | null>(null)
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<'plan' | 'info' | 'billing' | 'invoices'>('plan')
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [invoiceStats, setInvoiceStats] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -44,6 +66,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
 
   useEffect(() => {
     fetchOrganization()
+    fetchInvoices()
   }, [id])
 
   async function fetchOrganization() {
@@ -66,6 +89,20 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
           ownerPhone: org.ownerPhone || '',
           trialEndsAt: org.trialEndsAt ? new Date(org.trialEndsAt).toISOString().split('T')[0] : ''
         })
+
+        // Charger les add-ons actifs
+        if (org.addons) {
+          try {
+            const addons = JSON.parse(org.addons)
+            const activeAddons = [
+              ...(addons.recurring || []),
+              ...(addons.oneTime || [])
+            ]
+            setSelectedAddons(activeAddons)
+          } catch (e) {
+            console.error('Error parsing addons:', e)
+          }
+        }
       } else if (response.status === 401) {
         router.push('/login?redirect=/super-admin')
       } else if (response.status === 403) {
@@ -78,6 +115,19 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
     }
   }
 
+  async function fetchInvoices() {
+    try {
+      const response = await fetch(`/api/super-admin/organizations/${id}/invoices`)
+      if (response.ok) {
+        const data = await response.json()
+        setInvoices(data.invoices || [])
+        setInvoiceStats(data.stats || null)
+      }
+    } catch (error) {
+      console.error('Error fetching invoices:', error)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -86,29 +136,87 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
       const response = await fetch(`/api/super-admin/organizations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          selectedAddons
+        })
       })
 
       if (response.ok) {
-        alert('Organisation mise à jour avec succès')
+        const data = await response.json()
+        alert('✅ Organisation mise à jour avec succès' + (data.invoice ? '\n💰 Facture générée automatiquement' : ''))
+
+        // Rafraîchir les factures si une nouvelle a été générée
+        if (data.invoice) {
+          await fetchInvoices()
+        }
+
         router.push(`/super-admin/organizations/${id}`)
       } else {
         const error = await response.json()
-        alert(`Erreur: ${error.error}`)
+        alert(`❌ Erreur: ${error.error}`)
       }
     } catch (error) {
       console.error('Error updating organization:', error)
-      alert('Erreur lors de la mise à jour')
+      alert('❌ Erreur lors de la mise à jour')
     } finally {
       setSaving(false)
     }
   }
 
+  async function generateInvoice() {
+    if (!confirm('Générer une nouvelle facture pour cette organisation ?')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/super-admin/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: id })
+      })
+
+      if (response.ok) {
+        alert('✅ Facture générée avec succès')
+        await fetchInvoices()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error generating invoice:', error)
+      alert('❌ Erreur lors de la génération de la facture')
+    }
+  }
+
+  async function deleteInvoice(invoiceId: string) {
+    if (!confirm('Supprimer cette facture ?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/super-admin/invoices/${invoiceId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        alert('✅ Facture supprimée')
+        await fetchInvoices()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting invoice:', error)
+      alert('❌ Erreur lors de la suppression')
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0] mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -117,10 +225,10 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
 
   if (!organization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
-          <Link href="/super-admin" className="style={{ color: "#b8935f" }} className=" hover:text-beige-800 underline">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">❌ Organisation non trouvée</h1>
+          <Link href="/super-admin" className="text-[#b8935f] hover:text-[#d4b5a0] underline">
             ← Retour au dashboard
           </Link>
         </div>
@@ -129,219 +237,301 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header moderne */}
+      <div className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a589] text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-8">
           <Link
             href={`/super-admin/organizations/${id}`}
-            className="text-white/80 hover:text-white mb-2 inline-block"
+            className="inline-flex items-center text-white/90 hover:text-white mb-4 text-sm font-medium transition"
           >
             ← Retour à l'organisation
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Modifier - {organization.name}</h1>
-          <p className="text-white/90">Configuration de l'organisation</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">⚙️ {organization.name}</h1>
+              <p className="text-white/90">Gestion du forfait et des options</p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-white/80">Forfait actuel</div>
+              <div className="text-2xl font-bold">{formData.plan}</div>
+              <div className="text-lg text-white/90">{PLAN_PRICES[formData.plan as keyof typeof PLAN_PRICES]}€/mois</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-6">
-          {/* Informations générales */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
-              Informations générales
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de l'organisation *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom légal
-                </label>
-                <input
-                  type="text"
-                  value={formData.legalName}
-                  onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Slug *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Utilisé dans l'URL: /{formData.slug}</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                >
-                  <option value="SINGLE_LOCATION">Mono-emplacement</option>
-                  <option value="MULTI_LOCATION">Multi-emplacements</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Domaines */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
-              Domaines
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subdomain *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.subdomain}
-                  onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">{formData.subdomain}.platform.com</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Domaine personnalisé
-                </label>
-                <input
-                  type="text"
-                  value={formData.domain}
-                  onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                  placeholder="www.exemple.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Propriétaire */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
-              Propriétaire
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email du propriétaire *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.ownerEmail}
-                  onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Téléphone du propriétaire
-                </label>
-                <input
-                  type="tel"
-                  value={formData.ownerPhone}
-                  onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Abonnement */}
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b">
-              Abonnement
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Plan *
-                </label>
-                <select
-                  value={formData.plan}
-                  onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                >
-                  <option value="SOLO">SOLO - 49€/mois</option>
-                  <option value="DUO">DUO - 99€/mois</option>
-                  <option value="TEAM">TEAM - 199€/mois</option>
-                  <option value="PREMIUM">PREMIUM - 399€/mois</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Statut *
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                >
-                  <option value="TRIAL">Essai</option>
-                  <option value="ACTIVE">Actif</option>
-                  <option value="SUSPENDED">Suspendu</option>
-                  <option value="CANCELLED">Annulé</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Fin d'essai
-                </label>
-                <input
-                  type="date"
-                  value={formData.trialEndsAt}
-                  onChange={(e) => setFormData({ ...formData, trialEndsAt: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-4 pt-4">
-            <Link
-              href={`/super-admin/organizations/${id}`}
-              className="flex-1 text-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-            >
-              Annuler
-            </Link>
+      {/* Onglets */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-1">
             <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-6 py-3 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setActiveTab('plan')}
+              className={`px-6 py-4 font-medium transition relative ${
+                activeTab === 'plan'
+                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              💳 Forfait & Options
             </button>
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`px-6 py-4 font-medium transition ${
+                activeTab === 'info'
+                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📋 Informations
+            </button>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`px-6 py-4 font-medium transition ${
+                activeTab === 'billing'
+                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🏢 Facturation
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* Onglet Forfait & Options */}
+          {activeTab === 'plan' && (
+            <>
+              {/* Sélection du forfait */}
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">📦 Choisir un forfait</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {Object.entries(PLAN_PRICES).map(([planKey, price]) => (
+                    <button
+                      key={planKey}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, plan: planKey })}
+                      className={`relative p-6 rounded-xl border-2 transition-all ${
+                        formData.plan === planKey
+                          ? 'border-[#d4b5a0] bg-[#d4b5a0]/5 shadow-lg scale-105'
+                          : 'border-gray-200 hover:border-[#d4b5a0]/50 hover:shadow-md'
+                      }`}
+                    >
+                      {formData.plan === planKey && (
+                        <div className="absolute -top-3 -right-3 bg-[#d4b5a0] text-white rounded-full w-8 h-8 flex items-center justify-center text-xl">
+                          ✓
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-800 mb-1">{planKey}</div>
+                        <div className="text-3xl font-bold text-[#d4b5a0] mb-2">{price}€</div>
+                        <div className="text-xs text-gray-500">/mois</div>
+                        <div className="mt-3 text-xs text-gray-600 line-clamp-2">
+                          {PLAN_DESCRIPTIONS[planKey as keyof typeof PLAN_DESCRIPTIONS]}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aperçu des fonctionnalités */}
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">✨ Fonctionnalités incluses</h2>
+                <PlanFeaturesPreview plan={formData.plan as OrgPlan} />
+              </div>
+
+              {/* Add-ons */}
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">🎁 Options supplémentaires</h2>
+                <p className="text-gray-600 mb-6">
+                  Ajoutez des fonctionnalités à la carte ou retirez celles dont vous n'avez plus besoin
+                </p>
+                <AddonSelector
+                  selectedPlan={formData.plan as OrgPlan}
+                  selectedAddons={selectedAddons}
+                  onAddonsChange={setSelectedAddons}
+                />
+              </div>
+
+              {/* Statut */}
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">🔔 Statut de l'abonnement</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Statut
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    >
+                      <option value="TRIAL">🔵 Essai</option>
+                      <option value="ACTIVE">🟢 Actif</option>
+                      <option value="SUSPENDED">🟠 Suspendu</option>
+                      <option value="CANCELLED">🔴 Annulé</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fin de la période d'essai
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.trialEndsAt}
+                      onChange={(e) => setFormData({ ...formData, trialEndsAt: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Onglet Informations */}
+          {activeTab === 'info' && (
+            <>
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">🏢 Informations générales</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom de l'organisation *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom légal
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.legalName}
+                      onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Slug *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">URL: /{formData.slug}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Type *
+                    </label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    >
+                      <option value="SINGLE_LOCATION">🏪 Mono-emplacement</option>
+                      <option value="MULTI_LOCATION">🏢 Multi-emplacements</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border p-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">🌐 Domaines</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subdomain *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.subdomain}
+                      onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">{formData.subdomain}.laiaconnect.fr</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Domaine personnalisé
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.domain}
+                      onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                      placeholder="www.exemple.com"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Onglet Facturation */}
+          {activeTab === 'billing' && (
+            <div className="bg-white rounded-2xl shadow-sm border p-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">👤 Propriétaire & Contact</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email du propriétaire *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.ownerEmail}
+                    onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Téléphone du propriétaire
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.ownerPhone}
+                    onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Actions fixes en bas */}
+          <div className="sticky bottom-0 bg-white border-t shadow-lg p-6 rounded-t-2xl">
+            <div className="max-w-7xl mx-auto flex gap-4">
+              <Link
+                href={`/super-admin/organizations/${id}`}
+                className="flex-1 text-center px-6 py-4 border-2 border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition"
+              >
+                Annuler
+              </Link>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-[#d4b5a0] to-[#c9a589] text-white rounded-xl hover:shadow-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? '⏳ Enregistrement...' : '✅ Enregistrer les modifications'}
+              </button>
+            </div>
           </div>
         </form>
       </div>

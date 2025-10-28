@@ -60,15 +60,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
+    // Récupérer l'utilisateur avec son organizationId
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { organizationId: true, role: true }
     });
 
-    if (user?.role !== 'ADMIN') {
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
+
+    // Filtre de base pour cette organisation
+    const orgFilter = { user: { organizationId: user.organizationId } };
 
     // Récupérer le type d'export depuis les paramètres
     const { searchParams } = new URL(request.url);
@@ -90,7 +97,10 @@ export async function GET(request: NextRequest) {
     switch (exportType) {
       case 'reservations':
         const reservations = await prisma.reservation.findMany({
-          where: dateFilter,
+          where: {
+            ...orgFilter,
+            ...dateFilter
+          },
           include: {
             user: {
               select: {
@@ -143,6 +153,7 @@ export async function GET(request: NextRequest) {
       case 'clients':
         const clients = await prisma.user.findMany({
           where: {
+            organizationId: user.organizationId,
             role: 'CLIENT',
             ...dateFilter
           },
@@ -190,6 +201,9 @@ export async function GET(request: NextRequest) {
 
       case 'services':
         const services = await prisma.service.findMany({
+          where: {
+            organizationId: user.organizationId
+          },
           include: {
             _count: {
               select: {
@@ -230,6 +244,7 @@ export async function GET(request: NextRequest) {
         // Export financier : revenus par mois, par service, etc.
         const financialData = await prisma.reservation.findMany({
           where: {
+            ...orgFilter,
             status: 'CONFIRMED',
             ...dateFilter
           },
@@ -266,7 +281,7 @@ export async function GET(request: NextRequest) {
 
       case 'all':
       default:
-        // Export complet : statistiques générales
+        // Export complet : statistiques générales DE CETTE ORGANISATION
         const [
           totalReservations,
           totalClients,
@@ -274,12 +289,12 @@ export async function GET(request: NextRequest) {
           confirmedReservations,
           totalRevenue
         ] = await Promise.all([
-          prisma.reservation.count(),
-          prisma.user.count({ where: { role: 'CLIENT' } }),
-          prisma.service.count({ where: { active: true } }),
-          prisma.reservation.count({ where: { status: 'CONFIRMED' } }),
+          prisma.reservation.count({ where: orgFilter }),
+          prisma.user.count({ where: { organizationId: user.organizationId, role: 'CLIENT' } }),
+          prisma.service.count({ where: { organizationId: user.organizationId, active: true } }),
+          prisma.reservation.count({ where: { ...orgFilter, status: 'CONFIRMED' } }),
           prisma.reservation.findMany({
-            where: { status: 'CONFIRMED' },
+            where: { ...orgFilter, status: 'CONFIRMED' },
             include: { service: true }
           })
         ]);

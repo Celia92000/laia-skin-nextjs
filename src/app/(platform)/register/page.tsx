@@ -47,20 +47,20 @@ export default function RegisterPage() {
     {
       id: 'DUO',
       name: 'Duo',
-      price: 99,
+      price: 89,
       popular: true,
       features: ['1 emplacement', '3 utilisateurs', '10 GB stockage']
     },
     {
       id: 'TEAM',
       name: 'Team',
-      price: 199,
+      price: 149,
       features: ['3 emplacements', '10 utilisateurs', '50 GB stockage']
     },
     {
       id: 'PREMIUM',
       name: 'Premium',
-      price: 399,
+      price: 249,
       features: ['Illimité', 'Illimité', '999 GB stockage']
     }
   ]

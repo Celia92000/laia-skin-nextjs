@@ -487,33 +487,45 @@ export class SocialMediaPublisher {
     try {
       switch (normalizedPlatform) {
         case 'instagram':
-          return !!(
-            await getApiToken('INSTAGRAM', 'access_token', organizationId) &&
-            (await getApiToken('INSTAGRAM', 'account_id', organizationId) || process.env.INSTAGRAM_ACCOUNT_ID)
-          );
+          try {
+            return !!(
+              await getApiToken('INSTAGRAM', 'access_token', organizationId) &&
+              (await getApiToken('INSTAGRAM', 'account_id', organizationId) || process.env.INSTAGRAM_ACCOUNT_ID)
+            );
+          } catch { return false; }
 
         case 'facebook':
-          return !!(
-            await getApiToken('FACEBOOK', 'page_access_token', organizationId) &&
-            (await getApiToken('FACEBOOK', 'page_id', organizationId) || process.env.FACEBOOK_PAGE_ID)
-          );
+          try {
+            return !!(
+              await getApiToken('FACEBOOK', 'page_access_token', organizationId) &&
+              (await getApiToken('FACEBOOK', 'page_id', organizationId) || process.env.FACEBOOK_PAGE_ID)
+            );
+          } catch { return false; }
 
         case 'linkedin':
-          return !!(
-            await getApiToken('LINKEDIN', 'access_token', organizationId) &&
-            (await getApiToken('LINKEDIN', 'person_id', organizationId) || process.env.LINKEDIN_PERSON_ID)
-          );
+          try {
+            return !!(
+              await getApiToken('LINKEDIN', 'access_token', organizationId) &&
+              (await getApiToken('LINKEDIN', 'person_id', organizationId) || process.env.LINKEDIN_PERSON_ID)
+            );
+          } catch { return false; }
 
         case 'snapchat':
         case 'snap':
-          return !!(await getApiToken('SNAPCHAT', 'access_token', organizationId));
+          try {
+            return !!(await getApiToken('SNAPCHAT', 'access_token', organizationId));
+          } catch { return false; }
 
         case 'tiktok':
-          return !!(await getApiToken('TIKTOK', 'access_token', organizationId));
+          try {
+            return !!(await getApiToken('TIKTOK', 'access_token', organizationId));
+          } catch { return false; }
 
         case 'twitter':
         case 'x':
-          return !!(await getApiToken('TWITTER', 'bearer_token', organizationId));
+          try {
+            return !!(await getApiToken('TWITTER', 'bearer_token', organizationId));
+          } catch { return false; }
 
         default:
           return false;

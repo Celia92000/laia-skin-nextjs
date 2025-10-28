@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/auth';
 import { formatDateLocal } from '@/lib/date-utils';
 
 export async function GET(request: Request) {
@@ -12,16 +12,25 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-      
-      // Vérifier que c'est un admin ou employé
-      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE'].includes(decoded.role)) {
-        return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
-      }
-    } catch (error) {
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const prisma = await getPrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
     // Récupérer la période demandée
@@ -57,10 +66,10 @@ export async function GET(request: Request) {
       endDate = now;
     }
 
-    // Récupérer toutes les réservations et commandes dans la période
-    const prisma = await getPrismaClient();
+    // Récupérer toutes les réservations et commandes dans la période DE CETTE ORGANISATION
     const reservations = await prisma.reservation.findMany({
       where: {
+        user: { organizationId: user.organizationId },
         date: {
           gte: startDate,
           lte: endDate
@@ -73,6 +82,7 @@ export async function GET(request: Request) {
 
     const orders = await prisma.order.findMany({
       where: {
+        organizationId: user.organizationId,
         createdAt: {
           gte: startDate,
           lte: endDate
@@ -87,7 +97,7 @@ export async function GET(request: Request) {
     const chartData = {
       dailyRevenue: calculateDailyRevenue(reservations, orders, period),
       monthlyRevenue: calculateMonthlyRevenue(reservations, orders),
-      serviceDistribution: await calculateServiceDistribution(),
+      serviceDistribution: await calculateServiceDistribution(user.organizationId),
       statusDistribution: calculateStatusDistribution(reservations),
       hourlyDistribution: calculateHourlyDistribution(reservations),
       orderTypeDistribution: calculateOrderTypeDistribution(orders)
@@ -238,14 +248,21 @@ function calculateMonthlyRevenue(reservations: any[], orders: any[]) {
     .slice(-12); // Garder les 12 derniers mois
 }
 
-async function calculateServiceDistribution() {
+async function calculateServiceDistribution(organizationId: string) {
   try {
     const prisma = await getPrismaClient();
     const services = await prisma.service.findMany({
-      where: { active: true }
+      where: {
+        organizationId,
+        active: true
+      }
     });
 
-    const reservations = await prisma.reservation.findMany();
+    const reservations = await prisma.reservation.findMany({
+      where: {
+        user: { organizationId }
+      }
+    });
     
     // Compter les réservations par service (approximation basée sur le prix)
     const serviceCount = new Map<string, number>();

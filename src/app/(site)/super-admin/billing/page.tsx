@@ -61,6 +61,8 @@ export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showExtendTrialModal, setShowExtendTrialModal] = useState(false)
+  const [showCreditNoteModal, setShowCreditNoteModal] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
 
   const [newInvoice, setNewInvoice] = useState({
     organizationId: '',
@@ -72,6 +74,11 @@ export default function BillingPage() {
   const [extendTrial, setExtendTrial] = useState({
     organizationId: '',
     days: '7'
+  })
+
+  const [creditNoteData, setCreditNoteData] = useState({
+    reason: '',
+    partialAmount: ''
   })
 
   // Settings state
@@ -112,16 +119,29 @@ export default function BillingPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.append('page', pagination.page.toString())
-      params.append('limit', pagination.limit.toString())
       if (statusFilter) params.append('status', statusFilter)
 
-      const response = await fetch(`/api/super-admin/billing/invoices?${params.toString()}`)
+      const response = await fetch(`/api/super-admin/invoices?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
-        setInvoices(data.invoices)
-        setPagination(data.pagination)
-        setStats(data.stats)
+        setInvoices(data.invoices || [])
+
+        // Adapter les stats au format attendu
+        setStats({
+          total: data.stats?.total || 0,
+          pending: data.stats?.pending || 0,
+          paid: data.stats?.paid || 0,
+          failed: data.stats?.overdue || 0,
+          totalRevenue: data.stats?.totalAmount || 0
+        })
+
+        // Pagination simplifiée (toutes les factures pour l'instant)
+        setPagination({
+          page: 1,
+          limit: 50,
+          total: data.invoices?.length || 0,
+          totalPages: 1
+        })
       } else if (response.status === 401) {
         router.push('/login?redirect=/super-admin')
       } else if (response.status === 403) {
@@ -131,6 +151,53 @@ export default function BillingPage() {
       console.error('Error fetching invoices:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function generateInvoiceForOrg(organizationId: string) {
+    try {
+      const response = await fetch('/api/super-admin/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId })
+      })
+
+      if (response.ok) {
+        alert('✅ Facture générée avec succès')
+        fetchInvoices()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error generating invoice:', error)
+      alert('❌ Erreur lors de la génération')
+    }
+  }
+
+  async function generateAllInvoices() {
+    if (!confirm('Générer les factures pour toutes les organisations actives ?')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/super-admin/invoices/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generateForAllOrganizations: true })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`✅ ${data.invoices?.length || 0} factures générées`)
+        fetchInvoices()
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error generating invoices:', error)
+      alert('❌ Erreur lors de la génération')
     }
   }
 
@@ -246,6 +313,86 @@ export default function BillingPage() {
     } catch (error) {
       console.error('Error extending trial:', error)
       alert('Erreur serveur')
+    }
+  }
+
+  async function createCreditNote() {
+    if (!selectedInvoice) return
+
+    try {
+      const response = await fetch(`/api/super-admin/invoices/${selectedInvoice.id}/credit-note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: creditNoteData.reason || 'Annulation',
+          partialAmount: creditNoteData.partialAmount ? parseFloat(creditNoteData.partialAmount) : undefined
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`✅ Avoir ${data.creditNote.invoiceNumber} créé avec succès`)
+        setShowCreditNoteModal(false)
+        setSelectedInvoice(null)
+        setCreditNoteData({ reason: '', partialAmount: '' })
+        fetchInvoices()
+
+        // Télécharger le PDF de l'avoir
+        if (data.pdfBuffer) {
+          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `Avoir_${data.creditNote.invoiceNumber}.pdf`
+          a.click()
+          window.URL.revokeObjectURL(url)
+        }
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error creating credit note:', error)
+      alert('❌ Erreur serveur')
+    }
+  }
+
+  async function regenerateInvoice(invoiceId: string) {
+    if (!confirm('Créer une nouvelle facture et marquer l\'ancienne comme remplacée ?')) {
+      return
+    }
+
+    const reason = prompt('Motif de la régénération (optionnel):')
+
+    try {
+      const response = await fetch(`/api/super-admin/invoices/${invoiceId}/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason || undefined })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`✅ ${data.message}`)
+        fetchInvoices()
+
+        // Télécharger le PDF de la nouvelle facture
+        if (data.pdfBuffer) {
+          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `Facture_${data.newInvoice.invoiceNumber}.pdf`
+          a.click()
+          window.URL.revokeObjectURL(url)
+        }
+      } else {
+        const error = await response.json()
+        alert(`❌ Erreur: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error regenerating invoice:', error)
+      alert('❌ Erreur serveur')
     }
   }
 
@@ -448,12 +595,33 @@ export default function BillingPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex gap-2">
                             {invoice.status === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={() => markAsPaid(invoice.id)}
+                                  className="text-green-600 hover:text-green-800"
+                                  title="Marquer comme payée"
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={() => regenerateInvoice(invoice.id)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                  title="Régénérer (nouvelle facture)"
+                                >
+                                  🔄
+                                </button>
+                              </>
+                            )}
+                            {(invoice.status === 'PAID' || invoice.status === 'PENDING') && (
                               <button
-                                onClick={() => markAsPaid(invoice.id)}
-                                className="text-green-600 hover:text-green-800"
-                                title="Marquer comme payée"
+                                onClick={() => {
+                                  setSelectedInvoice(invoice)
+                                  setShowCreditNoteModal(true)
+                                }}
+                                className="text-orange-600 hover:text-orange-800"
+                                title="Créer un avoir"
                               >
-                                ✓
+                                📝
                               </button>
                             )}
                             {invoice.pdfPath ? (
@@ -476,13 +644,15 @@ export default function BillingPage() {
                                 👁️
                               </Link>
                             )}
-                            <button
-                              onClick={() => deleteInvoice(invoice.id)}
-                              className="text-red-600 hover:text-red-800"
-                              title="Supprimer"
-                            >
-                              🗑️
-                            </button>
+                            {invoice.status !== 'PAID' && (
+                              <button
+                                onClick={() => deleteInvoice(invoice.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Supprimer (uniquement si non payée)"
+                              >
+                                🗑️
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -973,6 +1143,85 @@ export default function BillingPage() {
               </button>
               <button
                 onClick={() => setShowExtendTrialModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Note Modal */}
+      {showCreditNoteModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4">📝 Créer un avoir</h2>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">Facture d'origine</p>
+              <p className="font-bold text-lg">{selectedInvoice.invoiceNumber || `#${selectedInvoice.id.substring(0, 8)}`}</p>
+              <p className="text-gray-700">
+                {selectedInvoice.organization.name} - {formatCurrency(selectedInvoice.amount, selectedInvoice.currency)}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motif de l'avoir *
+                </label>
+                <textarea
+                  value={creditNoteData.reason}
+                  onChange={(e) => setCreditNoteData({ ...creditNoteData, reason: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="Ex: Annulation de l'abonnement, Erreur de facturation..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Montant de l'avoir
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={creditNoteData.partialAmount}
+                  onChange={(e) => setCreditNoteData({ ...creditNoteData, partialAmount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder={`Laisser vide pour un avoir complet (${formatCurrency(selectedInvoice.amount, selectedInvoice.currency)})`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Laisser vide pour créer un avoir du montant total de la facture
+                </p>
+              </div>
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  ⚠️ <strong>Règles légales :</strong><br />
+                  • Un avoir annule ou corrige une facture<br />
+                  • Il référence la facture d'origine<br />
+                  • La facture d'origine reste dans l'historique<br />
+                  • Un PDF sera automatiquement généré
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={createCreditNote}
+                disabled={!creditNoteData.reason.trim()}
+                className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Créer l'avoir
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreditNoteModal(false)
+                  setSelectedInvoice(null)
+                  setCreditNoteData({ reason: '', partialAmount: '' })
+                }}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
               >
                 Annuler

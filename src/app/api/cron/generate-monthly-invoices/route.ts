@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { generateAndSaveInvoice } from '@/lib/invoice-service'
-
-const PLAN_PRICES = {
-  SOLO: 49,
-  DUO: 99,
-  TEAM: 199,
-  PREMIUM: 399
-}
+import {
+  generateInvoiceNumber,
+  generateInvoiceMetadata,
+  calculateInvoiceTotal,
+  getCurrentBillingPeriod,
+  getNextBillingDate
+} from '@/lib/subscription-billing'
+import { sendInvoiceEmail } from '@/lib/email-service'
 
 /**
  * Cron job pour générer les factures mensuelles automatiquement
@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         plan: true,
-        subscriptionStartDate: true
+        addons: true,
+        ownerEmail: true,
+        trialEndsAt: true
       }
     })
 
@@ -62,6 +64,13 @@ export async function GET(request: NextRequest) {
 
     for (const org of organizations) {
       try {
+        // Vérifier si l'organisation est en période d'essai
+        if (org.trialEndsAt && new Date(org.trialEndsAt) > now) {
+          console.log(`⏭️  ${org.name} - En période d'essai jusqu'au ${new Date(org.trialEndsAt).toLocaleDateString('fr-FR')}`)
+          results.skipped.push(org.name)
+          continue
+        }
+
         // Vérifier si une facture existe déjà pour ce mois
         const existingInvoice = await prisma.invoice.findFirst({
           where: {
@@ -74,42 +83,66 @@ export async function GET(request: NextRequest) {
         })
 
         if (existingInvoice) {
-          console.log(`⏭️  Facture déjà existante pour ${org.name}`)
+          console.log(`⏭️  Facture déjà existante pour ${org.name} (${existingInvoice.invoiceNumber})`)
           results.skipped.push(org.name)
           continue
         }
 
-        // Vérifier que l'organisation a dépassé la période d'essai
-        if (org.subscriptionStartDate) {
-          const subscriptionStart = new Date(org.subscriptionStartDate)
-          if (subscriptionStart > now) {
-            console.log(`⏭️  ${org.name} - Abonnement pas encore démarré`)
-            results.skipped.push(org.name)
-            continue
-          }
-        }
+        // On ne vérifie plus subscriptionStartDate car ce champ n'existe pas
+        // L'organisation active avec période d'essai terminée est facturée
 
-        // Récupérer le prix du plan
-        const amount = PLAN_PRICES[org.plan as keyof typeof PLAN_PRICES]
+        // Générer la facture avec notre nouveau système
+        const billingPeriod = getCurrentBillingPeriod()
+        const dueDate = getNextBillingDate()
 
-        if (!amount) {
-          console.log(`⚠️  Plan inconnu pour ${org.name}: ${org.plan}`)
-          results.errors.push({ org: org.name, error: 'Plan inconnu' })
-          continue
-        }
-
-        // Générer la facture
-        console.log(`💰 Génération facture pour ${org.name} - ${org.plan} (${amount}€)`)
-
-        await generateAndSaveInvoice(
-          org.id,
-          amount,
+        const metadata = generateInvoiceMetadata(
           org.plan,
-          undefined // Pas de Stripe payment intent pour facture automatique
+          org.addons,
+          billingPeriod.start,
+          billingPeriod.end
         )
 
+        const amount = calculateInvoiceTotal(org.plan, org.addons)
+        const invoiceNumber = generateInvoiceNumber()
+
+        console.log(`💰 Génération facture pour ${org.name} - ${org.plan} (${amount}€)`)
+
+        // Créer la facture dans la base de données
+        const invoice = await prisma.invoice.create({
+          data: {
+            organizationId: org.id,
+            invoiceNumber,
+            amount,
+            plan: org.plan,
+            status: 'PENDING',
+            issueDate: new Date(),
+            dueDate,
+            description: `Abonnement ${org.plan} - ${billingPeriod.start.toLocaleDateString('fr-FR')} au ${billingPeriod.end.toLocaleDateString('fr-FR')}`,
+            metadata: metadata as any
+          }
+        })
+
+        console.log(`✅ Facture ${invoiceNumber} créée pour ${org.name}`)
+
+        // Envoyer la facture par email automatiquement
+        try {
+          await sendInvoiceEmail({
+            organizationName: org.name,
+            ownerEmail: org.ownerEmail,
+            invoiceNumber,
+            amount,
+            dueDate,
+            plan: org.plan,
+            lineItems: metadata.lineItems,
+            prorata: metadata.prorata
+          })
+          console.log(`📧 Email envoyé à ${org.ownerEmail}`)
+        } catch (emailError) {
+          console.error(`⚠️  Erreur envoi email pour ${org.name}:`, emailError)
+          // On continue même si l'email échoue
+        }
+
         results.success.push(org.name)
-        console.log(`✅ Facture créée pour ${org.name}`)
 
       } catch (error) {
         console.error(`❌ Erreur pour ${org.name}:`, error)
@@ -136,23 +169,9 @@ export async function GET(request: NextRequest) {
     console.log(`   - Ignorées: ${results.skipped.length}`)
     console.log(`   - Erreurs: ${results.errors.length}`)
 
-    // Logger l'activité
-    await prisma.activityLog.create({
-      data: {
-        userId: 'system',
-        action: 'MONTHLY_INVOICES_GENERATED',
-        entityType: 'INVOICE',
-        entityId: 'cron',
-        description: `Génération automatique des factures mensuelles`,
-        metadata: {
-          total: organizations.length,
-          success: results.success.length,
-          skipped: results.skipped.length,
-          errors: results.errors.length,
-          date: now.toISOString()
-        }
-      }
-    })
+    // Logger l'activité (ActivityLog n'existe pas encore dans le schéma)
+    // TODO: Créer le modèle ActivityLog si nécessaire
+    // await prisma.activityLog.create({ ... })
 
     return NextResponse.json({
       success: true,

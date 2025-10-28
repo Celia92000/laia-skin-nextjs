@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
 // Fonction pour vérifier l'authentification admin
 async function verifyAdmin(request: NextRequest) {
-  const token = request.headers.get('authorization')?.replace('Bearer ', '');
+  // Vérifier d'abord les cookies, puis les headers
+  const cookieStore = await cookies();
+  let token = cookieStore.get('auth-token')?.value;
+
+  if (!token) {
+    token = request.headers.get('authorization')?.replace('Bearer ', '');
+  }
 
   if (!token) {
     return null;
@@ -32,22 +39,34 @@ async function verifyAdmin(request: NextRequest) {
 // GET - Récupérer la configuration du site
 export async function GET(request: NextRequest) {
   try {
+    const admin = await verifyAdmin(request);
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json(
+        { error: 'Non autorisé' },
+        { status: 401 }
+      );
+    }
+
     const prisma = await getPrismaClient();
 
-    // Récupérer ou créer la configuration
-    let config = await prisma.siteConfig.findFirst();
+    // Récupérer ou créer la configuration de l'organisation
+    let config = await prisma.organizationConfig.findUnique({
+      where: { organizationId: admin.organizationId }
+    });
 
     if (!config) {
       // Créer une configuration par défaut
-      config = await prisma.siteConfig.create({
+      config = await prisma.organizationConfig.create({
         data: {
-          siteName: 'Laia Skin Institut',
+          organizationId: admin.organizationId,
+          siteName: 'Mon Institut de Beauté',
           siteTagline: 'Institut de Beauté & Bien-être',
-          email: 'contact@laiaskin.com',
-          phone: '+33 6 XX XX XX XX',
+          email: 'contact@mon-institut.fr',
+          phone: '+33 6 00 00 00 00',
           primaryColor: '#d4b5a0',
           secondaryColor: '#2c3e50',
-          accentColor: '#20b2aa'
+          accentColor: '#20b2aa',
+          crispEnabled: false
         }
       });
     }
@@ -65,7 +84,7 @@ export async function GET(request: NextRequest) {
 // PUT - Mettre à jour la configuration
 export async function PUT(request: NextRequest) {
   const admin = await verifyAdmin(request);
-  if (!admin) {
+  if (!admin || !admin.organizationId) {
     return NextResponse.json(
       { error: 'Non autorisé' },
       { status: 401 }
@@ -76,19 +95,27 @@ export async function PUT(request: NextRequest) {
     const prisma = await getPrismaClient();
     const data = await request.json();
 
+    // Retirer l'id et organizationId du data pour éviter les erreurs
+    const { id, organizationId, ...updateData } = data;
+
     // Récupérer la config existante
-    let config = await prisma.siteConfig.findFirst();
+    let config = await prisma.organizationConfig.findUnique({
+      where: { organizationId: admin.organizationId }
+    });
 
     if (config) {
       // Mettre à jour
-      config = await prisma.siteConfig.update({
-        where: { id: config.id },
-        data
+      config = await prisma.organizationConfig.update({
+        where: { organizationId: admin.organizationId },
+        data: updateData
       });
     } else {
       // Créer
-      config = await prisma.siteConfig.create({
-        data
+      config = await prisma.organizationConfig.create({
+        data: {
+          ...updateData,
+          organizationId: admin.organizationId
+        }
       });
     }
 

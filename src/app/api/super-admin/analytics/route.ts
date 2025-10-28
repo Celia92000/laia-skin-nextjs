@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { calculateInvoiceTotal } from '@/lib/subscription-billing'
+import { getPlanPrice } from '@/lib/features-simple'
 
 export async function GET(request: Request) {
   try {
@@ -146,33 +148,34 @@ export async function GET(request: Request) {
       ? Math.round((cancelledOrgs.length / allOrgs.length) * 100)
       : 0
 
-    // Revenus
-    const planPrices: { [key: string]: number } = {
-      SOLO: 49,
-      DUO: 99,
-      TEAM: 199,
-      PREMIUM: 399
-    }
+    // Revenus - Calcul avec add-ons inclus
+    const activeOrgsWithDetails = await prisma.organization.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true, name: true, plan: true, addons: true }
+    })
 
-    const revenueByPlan = Object.keys(planPrices).map(plan => {
-      const orgsWithPlan = allOrgs.filter(o => o.plan === plan && o.status === 'ACTIVE')
+    const revenueByPlan = ['SOLO', 'DUO', 'TEAM', 'PREMIUM'].map(plan => {
+      const orgsWithPlan = activeOrgsWithDetails.filter(o => o.plan === plan)
+      const totalRevenue = orgsWithPlan.reduce((sum, org) => {
+        return sum + calculateInvoiceTotal(org.plan as any, org.addons)
+      }, 0)
+
       return {
         plan,
         count: orgsWithPlan.length,
-        revenue: orgsWithPlan.length * planPrices[plan]
+        revenue: totalRevenue
       }
     })
 
     const mrr = revenueByPlan.reduce((sum, p) => sum + p.revenue, 0)
     const arr = mrr * 12
 
-    // Top organisations par revenus
-    const topByRevenue = allOrgs
-      .filter(o => o.status === 'ACTIVE')
+    // Top organisations par revenus (avec add-ons)
+    const topByRevenue = activeOrgsWithDetails
       .map(o => ({
         id: o.id,
         name: o.name,
-        revenue: planPrices[o.plan] || 0
+        revenue: calculateInvoiceTotal(o.plan as any, o.addons)
       }))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
@@ -195,9 +198,27 @@ export async function GET(request: Request) {
       .sort((a, b) => b.reservations - a.reservations)
       .slice(0, 5)
 
+    // Statistiques des essais gratuits
+    const trialOrgsWithDetails = await prisma.organization.findMany({
+      where: { status: 'TRIAL' },
+      select: { id: true, name: true, plan: true, addons: true, trialEndsAt: true }
+    })
+
+    const trialPotentialRevenue = trialOrgsWithDetails.reduce((sum, org) => {
+      return sum + calculateInvoiceTotal(org.plan as any, org.addons)
+    }, 0)
+
+    // Taux de conversion estimé à 70% (vous pouvez ajuster)
+    const estimatedConversionRate = 0.70
+    const trialEstimatedRevenue = trialPotentialRevenue * estimatedConversionRate
+
     // Statistiques détaillées par organisation
+    const allOrgsWithAddons = await prisma.organization.findMany({
+      select: { id: true, name: true, slug: true, status: true, plan: true, addons: true, createdAt: true }
+    })
+
     const organizationsStats = await Promise.all(
-      allOrgs.map(async org => {
+      allOrgsWithAddons.map(async org => {
         const [clientCount, reservationCount, totalRevenue, lastReservation] = await Promise.all([
           prisma.user.count({
             where: { organizationId: org.id, role: 'CLIENT' }
@@ -229,7 +250,7 @@ export async function GET(request: Request) {
           reservations: reservationCount,
           revenue: totalRevenue._sum.totalPrice || 0,
           lastActivity: lastReservation?.createdAt || org.createdAt,
-          monthlyFee: planPrices[org.plan] || 0,
+          monthlyFee: calculateInvoiceTotal(org.plan as any, org.addons),
           createdAt: org.createdAt
         }
       })
@@ -246,6 +267,12 @@ export async function GET(request: Request) {
         mrr,
         arr,
         byPlan: revenueByPlan
+      },
+      trial: {
+        count: trialOrgsWithDetails.length,
+        potentialRevenue: trialPotentialRevenue,
+        estimatedRevenue: trialEstimatedRevenue,
+        conversionRate: estimatedConversionRate * 100
       },
       topOrganizations: {
         byRevenue: topByRevenue,

@@ -49,6 +49,7 @@ const AdminOrdersTab = dynamic(() => import("@/components/AdminOrdersTab"), { ss
 const AdminGiftCardsTab = dynamic(() => import("@/components/AdminGiftCardsTab"), { ssr: false });
 const SocialMediaCalendar = dynamic(() => import("@/components/admin/SocialMediaCalendar"), { ssr: false });
 const SocialMediaHub = dynamic(() => import("@/components/admin/SocialMediaHub"), { ssr: false });
+const AdminNotificationsTab = dynamic(() => import("@/components/AdminNotificationsTab"), { ssr: false });
 
 interface Reservation {
   id: string;
@@ -1399,6 +1400,19 @@ export default function AdminDashboard() {
             >
               <Calendar className="w-4 h-4 inline mr-2" />
               Réseaux Sociaux
+            </button>
+          )}
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (orgFeatures?.plan === 'TEAM' || orgFeatures?.plan === 'PREMIUM') && (
+            <button
+              onClick={() => setActiveTab("notifications")}
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                activeTab === "notifications"
+                  ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg"
+                  : "bg-white text-[#2c3e50] hover:shadow-md"
+              }`}
+            >
+              <Send className="w-4 h-4 inline mr-2" />
+              Notifications
             </button>
           )}
           </div>
@@ -3398,6 +3412,10 @@ export default function AdminDashboard() {
 
           {activeTab === "social-media" && orgFeatures?.featureSocialMedia && (
             <SocialMediaHub />
+          )}
+
+          {activeTab === "notifications" && (orgFeatures?.plan === 'TEAM' || orgFeatures?.plan === 'PREMIUM') && (
+            <AdminNotificationsTab />
           )}
         </div>
 

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
             email: client.email,
             phone: client.phone || null,
             password: hashedPassword,
-            role: 'client',
+            role: 'CLIENT',
             birthDate: client.birthDate ? new Date(client.birthDate) : null,
             skinType: client.skinType || null,
             allergies: client.allergies || null,

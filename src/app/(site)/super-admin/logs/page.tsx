@@ -186,7 +186,7 @@ export default function AuditLogsPage() {
             </div>
             <button
               onClick={exportToCSV}
-              className="px-6 py-3 bg-white className=" style={{ color: "#b8935f" }}rounded-lg font-medium hover:bg-gray-50"
+              className="px-6 py-3 bg-white text-[#b8935f] rounded-lg font-medium hover:bg-gray-50"
             >
               📥 Exporter CSV
             </button>

@@ -24,18 +24,25 @@ export async function GET(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
 
-    // Récupérer le service avec ses relations
-    const service = await prisma.service.findUnique({
-      where: { id },
+    // Récupérer le service DE CETTE ORGANISATION avec ses relations
+    const service = await prisma.service.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         stockLinks: {
           include: {
@@ -77,18 +84,34 @@ export async function PUT(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
     const body = await request.json();
-    
+
     // Supprimer l'id du body s'il existe
     delete body.id;
+
+    // Vérifier que le service appartient à cette organisation
+    const existingService = await prisma.service.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingService) {
+      return NextResponse.json({ error: 'Service non trouvé' }, { status: 404 });
+    }
 
     // Mettre à jour le service
     const service = await prisma.service.update({
@@ -124,14 +147,30 @@ export async function DELETE(
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // Vérifier que le service appartient à cette organisation avant de le supprimer
+    const existingService = await prisma.service.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingService) {
+      return NextResponse.json({ error: 'Service non trouvé' }, { status: 404 });
+    }
 
     // Supprimer le service
     await prisma.service.delete({

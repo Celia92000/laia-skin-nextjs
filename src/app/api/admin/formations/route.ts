@@ -20,15 +20,22 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer toutes les formations
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer toutes les formations DE CETTE ORGANISATION
     const formations = await prisma.formation.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       orderBy: { createdAt: 'asc' }
     });
 
@@ -57,11 +64,15 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const body = await request.json();
@@ -85,9 +96,12 @@ export async function POST(request: NextRequest) {
         .replace(/^-+|-+$/g, '');
     }
 
-    // Créer la formation
+    // Créer la formation POUR CETTE ORGANISATION
     const formation = await prisma.formation.create({
-      data: body
+      data: {
+        ...body,
+        organizationId: user.organizationId
+      }
     });
 
     return NextResponse.json(formation);

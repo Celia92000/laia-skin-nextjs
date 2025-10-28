@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -17,8 +17,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Récupérer tous les produits
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer tous les produits DE CETTE ORGANISATION
     const products = await prisma.product.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       orderBy: { order: 'asc' }
     });
 
@@ -34,7 +47,7 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -44,11 +57,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
-    
-    // Créer le produit
+
+    // Créer le produit POUR CETTE ORGANISATION
     const product = await prisma.product.create({
       data: {
+        organizationId: user.organizationId,
         slug: body.slug || body.name.toLowerCase().replace(/\s+/g, '-'),
         name: body.name,
         description: body.description || '',
@@ -81,7 +105,7 @@ export async function PUT(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -91,11 +115,33 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    }
+
+    // Vérifier que le produit appartient à cette organisation
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: 'Produit non trouvé' }, { status: 404 });
     }
 
     // Mettre à jour le produit
@@ -119,7 +165,7 @@ export async function DELETE(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -129,11 +175,33 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
       return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    }
+
+    // Vérifier que le produit appartient à cette organisation avant de le supprimer
+    const existingProduct = await prisma.product.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json({ error: 'Produit non trouvé' }, { status: 404 });
     }
 
     await prisma.product.delete({
