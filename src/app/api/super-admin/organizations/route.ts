@@ -61,7 +61,7 @@ export async function GET() {
             phone: true,
             role: true,
             createdAt: true,
-            lastLogin: true,
+            lastLoginAt: true,
             _count: {
               select: {
                 reservations: true

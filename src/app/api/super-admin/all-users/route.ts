@@ -28,9 +28,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer tous les utilisateurs
+    // Récupérer tous les utilisateurs - optimisé avec select
     const users = await prisma.user.findMany({
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        lastLoginAt: true,
         organization: {
           select: {
             id: true,
@@ -39,7 +46,7 @@ export async function GET() {
           }
         },
         locations: {
-          include: {
+          select: {
             location: {
               select: {
                 id: true,

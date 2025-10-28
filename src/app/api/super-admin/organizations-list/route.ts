@@ -28,17 +28,40 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer toutes les organisations avec toutes les infos nécessaires
+    // Récupérer toutes les organisations - optimisé avec juste le count des locations
     const organizations = await prisma.organization.findMany({
-      include: {
-        locations: true
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        plan: true,
+        status: true,
+        subdomain: true,
+        domain: true,
+        createdAt: true,
+        _count: {
+          select: { locations: true }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
 
-    return NextResponse.json({ organizations })
+    // Transformer pour garder la même structure (locations comme array avec length = count)
+    const organizationsWithLocations = organizations.map(org => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      plan: org.plan,
+      status: org.status,
+      subdomain: org.subdomain,
+      domain: org.domain,
+      createdAt: org.createdAt,
+      locations: Array(org._count.locations).fill({}) // Compatibilité: array vide avec la bonne longueur
+    }))
+
+    return NextResponse.json({ organizations: organizationsWithLocations })
 
   } catch (error) {
     console.error('Erreur récupération organisations:', error)

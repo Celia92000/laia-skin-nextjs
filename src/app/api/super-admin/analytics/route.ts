@@ -180,23 +180,27 @@ export async function GET(request: Request) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
 
-    // Top organisations par réservations
-    const orgsWithReservations = await Promise.all(
-      allOrgs.slice(0, 20).map(async org => {
-        const count = await prisma.reservation.count({
-          where: { organizationId: org.id }
+    // Top organisations par réservations - optimisé avec groupBy
+    const reservationsByOrg = await prisma.reservation.groupBy({
+      by: ['organizationId'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 5
+    })
+
+    const topByReservations = await Promise.all(
+      reservationsByOrg.map(async item => {
+        const org = await prisma.organization.findUnique({
+          where: { id: item.organizationId },
+          select: { id: true, name: true }
         })
         return {
-          id: org.id,
-          name: org.name,
-          reservations: count
+          id: org?.id || '',
+          name: org?.name || '',
+          reservations: item._count.id
         }
       })
     )
-
-    const topByReservations = orgsWithReservations
-      .sort((a, b) => b.reservations - a.reservations)
-      .slice(0, 5)
 
     // Statistiques des essais gratuits
     const trialOrgsWithDetails = await prisma.organization.findMany({
@@ -212,49 +216,32 @@ export async function GET(request: Request) {
     const estimatedConversionRate = 0.70
     const trialEstimatedRevenue = trialPotentialRevenue * estimatedConversionRate
 
-    // Statistiques détaillées par organisation
+    // Statistiques simplifiées par organisation
     const allOrgsWithAddons = await prisma.organization.findMany({
-      select: { id: true, name: true, slug: true, status: true, plan: true, addons: true, createdAt: true }
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        plan: true,
+        addons: true,
+        createdAt: true
+      }
     })
 
-    const organizationsStats = await Promise.all(
-      allOrgsWithAddons.map(async org => {
-        const [clientCount, reservationCount, totalRevenue, lastReservation] = await Promise.all([
-          prisma.user.count({
-            where: { organizationId: org.id, role: 'CLIENT' }
-          }),
-          prisma.reservation.count({
-            where: { organizationId: org.id }
-          }),
-          prisma.reservation.aggregate({
-            where: {
-              organizationId: org.id,
-              status: { in: ['CONFIRMED', 'COMPLETED'] }
-            },
-            _sum: { totalPrice: true }
-          }),
-          prisma.reservation.findFirst({
-            where: { organizationId: org.id },
-            orderBy: { createdAt: 'desc' },
-            select: { createdAt: true }
-          })
-        ])
-
-        return {
-          id: org.id,
-          name: org.name,
-          slug: org.slug,
-          status: org.status,
-          plan: org.plan,
-          clients: clientCount,
-          reservations: reservationCount,
-          revenue: totalRevenue._sum.totalPrice || 0,
-          lastActivity: lastReservation?.createdAt || org.createdAt,
-          monthlyFee: calculateInvoiceTotal(org.plan as any, org.addons),
-          createdAt: org.createdAt
-        }
-      })
-    )
+    const organizationsStats = allOrgsWithAddons.map(org => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      status: org.status,
+      plan: org.plan,
+      clients: 0, // Pas calculé pour performance
+      reservations: 0, // Pas calculé pour performance
+      revenue: 0, // Pas calculé pour performance
+      lastActivity: org.createdAt,
+      monthlyFee: calculateInvoiceTotal(org.plan as any, org.addons),
+      createdAt: org.createdAt
+    }))
 
     return NextResponse.json({
       growth,

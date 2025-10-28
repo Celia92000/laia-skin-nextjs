@@ -140,8 +140,8 @@ export default function OrganizationsPage() {
 
     filtered.sort((a, b) => {
       // Toujours mettre le template en premier
-      const aIsTemplate = a.slug === 'laia-skin-institut'
-      const bIsTemplate = b.slug === 'laia-skin-institut'
+      const aIsTemplate = a.slug === 'laia-skin'
+      const bIsTemplate = b.slug === 'laia-skin'
 
       if (aIsTemplate && !bIsTemplate) return -1
       if (!aIsTemplate && bIsTemplate) return 1
@@ -482,39 +482,6 @@ export default function OrganizationsPage() {
       {/* Organizations Tab */}
       {activeTab === 'organizations' && (
         <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Note explicative sur le modèle */}
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-600 rounded-lg p-6 mb-6 shadow-md">
-            <div className="flex items-start gap-4">
-              <div className="text-4xl">⭐</div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-amber-900 mb-2">
-                  🏆 Organisation Modèle : Laia Skin Institut
-                </h3>
-                <p className="text-amber-800 mb-3">
-                  <strong>Laia Skin Institut</strong> est l&apos;organisation de référence qui sert de modèle pour générer les templates personnalisés de tous les nouveaux sites clients.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-amber-700">
-                  <div className="flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Toutes les modifications apportées à ce site servent de base pour les nouveaux clients</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Le design, les fonctionnalités et les paramètres sont dupliqués lors de la création</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Cette organisation apparaît toujours en premier dans la liste avec un fond ambré</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span>✓</span>
-                    <span>Cliquez sur le bouton &quot;🔄 Synchroniser&quot; directement sur la ligne pour propager les changements</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Filtres */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -603,136 +570,217 @@ export default function OrganizationsPage() {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Organisation
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Emplacements
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Domaine
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Créé le
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredOrgs.map((org) => {
-                    const isTemplate = org.slug === 'laia-skin-institut'
-                    return (
-                    <tr key={org.id} className={`hover:bg-gray-50 ${isTemplate ? 'bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 border-l-4 border-amber-600 shadow-sm' : ''}`}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            {isTemplate && (
-                              <span className="text-2xl" title="Organisation modèle">⭐</span>
-                            )}
-                            <span className={`text-sm font-medium ${isTemplate ? 'text-amber-900 font-bold' : 'text-gray-900'}`}>{org.name}</span>
-                            {isTemplate && (
-                              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center gap-1 shadow-md animate-pulse">
-                                📋 MODÈLE TEMPLATE
-                              </span>
-                            )}
-                          </div>
-                          <div className={`text-sm ${isTemplate ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>@{org.slug}</div>
-                          {isTemplate && (
-                            <div className="text-xs text-amber-800 mt-1 font-semibold bg-amber-200 px-2 py-1 rounded inline-block">
-                              🔄 Modèle de référence • Génère les templates personnalisés
+          {/* Organisation Modèle - Section séparée */}
+          {filteredOrgs.find(org => org.slug === 'laia-skin') && (
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-2">
+                ⭐ Organisation Modèle
+              </h3>
+              <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-amber-100 rounded-lg shadow-lg overflow-hidden border-2 border-amber-600">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gradient-to-r from-amber-200 to-orange-200">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Organisation
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Plan
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Emplacements
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Domaine
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Créé le
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-amber-900 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOrgs.filter(org => org.slug === 'laia-skin').map((org) => (
+                        <tr key={org.id} className="bg-white hover:bg-amber-50/50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl" title="Organisation modèle">⭐</span>
+                                <span className="text-sm font-bold text-amber-900">{org.name}</span>
+                                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center gap-1 shadow-md animate-pulse">
+                                  📋 MODÈLE TEMPLATE
+                                </span>
+                              </div>
+                              <div className="text-sm text-amber-700 font-medium">@{org.slug}</div>
+                              <div className="text-xs text-amber-800 mt-1 font-semibold bg-amber-200 px-2 py-1 rounded inline-block">
+                                🔄 Modèle de référence • Génère les templates personnalisés
+                              </div>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
+                              {org.plan}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[org.status]}`}>
+                              {org.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {org.locations?.length || 0} emplacements
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {org.domain || (
+                              <span className="text-gray-400">{org.subdomain}.platform.com</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <button
+                                onClick={handleSyncTemplate}
+                                disabled={syncing}
+                                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:from-amber-600 hover:to-orange-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {syncing ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    Sync...
+                                  </>
+                                ) : (
+                                  <>
+                                    🔄 Synchroniser
+                                  </>
+                                )}
+                              </button>
+                              <Link
+                                href={`/super-admin/organizations/${org.id}`}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                👁️ Voir
+                              </Link>
+                              <Link
+                                href={`/super-admin/organizations/${org.id}/edit`}
+                                className="text-blue-600 hover:text-blue-900"
+                              >
+                                ✏️ Modifier
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Table des organisations clientes */}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              🏢 Organisations Clientes
+            </h3>
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Organisation
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Plan
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Emplacements
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Domaine
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Créé le
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredOrgs.filter(org => org.slug !== 'laia-skin').map((org) => (
+                      <tr key={org.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{org.name}</div>
+                            <div className="text-sm text-gray-500">@{org.slug}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
+                            {org.plan}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[org.status]}`}>
+                            {org.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {org.locations?.length || 0} emplacements
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {org.domain || (
+                            <span className="text-gray-400">{org.subdomain}.platform.com</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
-                          {org.plan}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[org.status]}`}>
-                          {org.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {org.locations?.length || 0} emplacements
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {org.domain || (
-                          <span className="text-gray-400">{org.subdomain}.platform.com</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(org.createdAt).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {isTemplate && (
-                            <button
-                              onClick={handleSyncTemplate}
-                              disabled={syncing}
-                              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:from-amber-600 hover:to-orange-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <Link
+                              href={`/super-admin/organizations/${org.id}`}
+                              className="text-indigo-600 hover:text-indigo-900"
                             >
-                              {syncing ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                  Sync...
-                                </>
-                              ) : (
-                                <>
-                                  🔄 Synchroniser
-                                </>
-                              )}
-                            </button>
-                          )}
-                          <Link
-                            href={`/super-admin/organizations/${org.id}`}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            👁️ Voir
-                          </Link>
-                          <Link
-                            href={`/super-admin/organizations/${org.id}/edit`}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            ✏️ Modifier
-                          </Link>
-                          {!isTemplate && (
+                              👁️ Voir
+                            </Link>
+                            <Link
+                              href={`/super-admin/organizations/${org.id}/edit`}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              ✏️ Modifier
+                            </Link>
                             <button
                               onClick={() => handleDelete(org)}
                               className="text-red-600 hover:text-red-900"
                             >
                               🗑️ Supprimer
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {(filteredOrgs?.length || 0) === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Aucune organisation trouvée</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              {(filteredOrgs?.length || 0) === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Aucune organisation trouvée</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ export default function PlatformHomePage() {
   const [scrollY, setScrollY] = useState(0)
   const [activeTab, setActiveTab] = useState('reservations')
   const [showDemoModal, setShowDemoModal] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -157,40 +158,170 @@ export default function PlatformHomePage() {
                 <p className="text-xs text-purple-600 font-medium">Logiciel de gestion</p>
               </div>
             </Link>
-            <nav className="hidden md:flex items-center gap-8">
-              <Link href="/pour-qui" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+            {/* Navigation Desktop */}
+            <nav className="hidden md:flex items-center gap-5 flex-nowrap">
+              <Link href="/pour-qui" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Pour qui ?
               </Link>
-              <a href="#features" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+              <a href="#features" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Fonctionnalités
               </a>
-              <a href="#pricing" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+              <a href="#pricing" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Tarifs
               </a>
-              <Link href="/platform/nouveautes" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+              <Link href="/platform/nouveautes" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Nouveautés
               </Link>
               <Link
                 href="/connexion"
-                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap"
               >
                 Connexion
               </Link>
               <button
                 onClick={() => setShowDemoModal(true)}
-                className="px-6 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-all"
+                className="px-5 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-50 transition-all text-base whitespace-nowrap"
               >
                 🎯 Réserver une démo
               </button>
               <Link
                 href="/onboarding?plan=DUO"
-                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all text-base whitespace-nowrap"
               >
                 Essayer gratuitement
               </Link>
             </nav>
+
+            {/* Bouton Menu Mobile */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Menu Mobile - Full Screen Overlay */}
+        {mobileMenuOpen && (
+          <>
+            {/* Overlay sombre */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Menu Panel */}
+            <div className="fixed top-0 right-0 bottom-0 w-80 bg-gradient-to-br from-purple-50 via-white to-pink-50 shadow-2xl z-50 md:hidden overflow-y-auto">
+              {/* Header du menu */}
+              <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-white p-2 rounded-lg">
+                      <span className="text-xl">🌸</span>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-bold text-lg">LAIA Connect</h3>
+                      <p className="text-white/80 text-xs">Menu</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="bg-white/20 p-2 rounded-lg hover:bg-white/30 transition-all"
+                  >
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Contenu du menu */}
+              <div className="p-6 space-y-3">
+                <Link
+                  href="/pour-qui"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
+                >
+                  <span className="text-2xl">👥</span>
+                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Pour qui ?</span>
+                </Link>
+
+                <a
+                  href="#features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
+                >
+                  <span className="text-2xl">✨</span>
+                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Fonctionnalités</span>
+                </a>
+
+                <a
+                  href="#pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
+                >
+                  <span className="text-2xl">💎</span>
+                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Tarifs</span>
+                </a>
+
+                <Link
+                  href="/platform/nouveautes"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
+                >
+                  <span className="text-2xl">🎉</span>
+                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Nouveautés</span>
+                </Link>
+
+                <Link
+                  href="/connexion"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
+                >
+                  <span className="text-2xl">🔐</span>
+                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Connexion</span>
+                </Link>
+
+                {/* Divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-purple-200 to-transparent my-4"></div>
+
+                {/* CTA Buttons */}
+                <button
+                  onClick={() => {
+                    setShowDemoModal(true)
+                    setMobileMenuOpen(false)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-5 py-4 border-2 border-purple-600 text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition-all shadow-md"
+                >
+                  <span className="text-xl">🎯</span>
+                  <span>Réserver une démo</span>
+                </button>
+
+                <Link
+                  href="/onboarding?plan=DUO"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-bold hover:shadow-xl hover:shadow-purple-500/50 transition-all"
+                >
+                  <span className="text-xl">🚀</span>
+                  <span>Essayer gratuitement</span>
+                </Link>
+
+                {/* Info */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                  <p className="text-center text-green-700 text-sm font-semibold">
+                    ✅ 30 jours gratuits
+                  </p>
+                  <p className="text-center text-green-600 text-xs mt-1">
+                    Sans carte bancaire
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </header>
 
       {/* Hero Section - Modern & Professional */}

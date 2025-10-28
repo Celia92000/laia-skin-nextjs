@@ -33,14 +33,14 @@ export default function SuperAdminNav() {
   }
 
   return (
-    <div className="sticky top-0 z-50 shadow-lg" style={{ backgroundColor: '#d4b5a0' }}>
+    <div className="sticky top-0 z-50 shadow-lg" style={{ backgroundColor: '#7c3aed' }}>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between py-4">
           <div>
             <h1 className="text-2xl font-bold text-white" style={{
               fontFamily: 'Playfair Display, serif'
             }}>
-              LAIA
+              LAIA Connect
             </h1>
             <p className="text-sm text-white/90">Super Admin</p>
           </div>
@@ -81,8 +81,8 @@ export default function SuperAdminNav() {
                 rel={tab.external ? 'noopener noreferrer' : undefined}
                 className={`flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-lg transition-all`}
                 style={{
-                  color: active ? '#2c1810' : 'rgba(255, 255, 255, 0.85)',
-                  backgroundColor: active ? 'white' : 'rgba(255, 255, 255, 0.1)',
+                  color: active ? '#6b21a8' : 'rgba(255, 255, 255, 0.85)',
+                  backgroundColor: active ? 'white' : 'rgba(255, 255, 255, 0.15)',
                   fontWeight: active ? '600' : '500',
                   boxShadow: active ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none'
                 }}
