@@ -1776,6 +1776,8 @@ enum InvoiceStatus {
   FAILED
   REFUNDED
   CANCELLED
+  REPLACED
+  OVERDUE
 }
 
 enum PaymentMethod {
