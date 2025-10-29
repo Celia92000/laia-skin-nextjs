@@ -1,7 +1,7 @@
-import { getSiteConfig } from '@/lib/config-service';
+import { getSiteConfigFull } from '@/lib/config-service';
 
 export default async function CGV() {
-  const config = await getSiteConfig();
+  const config = await getSiteConfigFull();
 
   return (
     <main className="pt-36 pb-20 min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">

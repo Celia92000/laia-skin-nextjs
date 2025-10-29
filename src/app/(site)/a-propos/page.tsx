@@ -1,10 +1,10 @@
 import { Heart, Award, Users, Sparkles, Shield, Star, CheckCircle, GraduationCap, Briefcase, Target } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { getSiteConfig } from '@/lib/config-service';
+import { getSiteConfigFull } from '@/lib/config-service';
 
 export default async function APropos() {
-  const config = await getSiteConfig();
+  const config = await getSiteConfigFull();
 
   // Parse formations from config (JSON)
   let formations: any[] = [];
