@@ -37,9 +37,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
 
     const campaigns = await prisma.emailCampaign.findMany({
-      where: {
-        organizationId: admin.organizationId
-      },
       take: limit,
       orderBy: {
         createdAt: 'desc'
