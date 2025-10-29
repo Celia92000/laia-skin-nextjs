@@ -384,15 +384,10 @@ export async function POST(request: Request) {
         userId: reservation.userId
       }
     });
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       success: true,
       message: 'Email d\'avis envoyé'
-    });
-
-    return NextResponse.json({ 
-      success: false,
-      message: 'Service email non configuré'
     });
 
   } catch (error) {
