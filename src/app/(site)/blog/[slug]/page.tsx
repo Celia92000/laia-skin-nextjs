@@ -192,13 +192,31 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   let article: any = null;
   
   try {
-    // Récupérer l'article depuis la base de données
-    article = await prisma.blogPost.findFirst({
-      where: { 
+    // Récupérer l'article depuis platformNews
+    article = await prisma.platformNews.findFirst({
+      where: {
         slug,
-        published: true 
+        status: 'PUBLISHED'
+      },
+      include: {
+        author: {
+          select: {
+            name: true
+          }
+        }
       }
     });
+
+    if (article) {
+      // Transformer pour correspondre au format attendu
+      article = {
+        ...article,
+        published: true,
+        readTime: '5 min',
+        author: article.author?.name || 'LAIA',
+        mainImage: article.featuredImage
+      };
+    }
   } catch (error) {
     console.error('Error fetching blog post:', error);
     notFound();
@@ -213,12 +231,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       {/* Header */}
       <div className="bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 py-24">
         <div className="max-w-4xl mx-auto px-4">
-          <Link 
+          <Link
             href="/blog"
             className="inline-flex items-center gap-2 text-[#d4b5a0] hover:text-[#c9a084] mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour au blog
+            Retour aux nouveautés
           </Link>
           
           <div className="flex items-center gap-4 text-sm text-[#2c3e50]/60 mb-4">
@@ -251,11 +269,28 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
       {/* Content */}
       <article className="max-w-4xl mx-auto px-4 py-12">
-        <div 
-          className="prose prose-lg max-w-none article-content"
-          dangerouslySetInnerHTML={{ __html: article.content }}
-        />
+        <div className="prose prose-lg max-w-none article-content">
+          <div
+            className="text-[#2c3e50] leading-relaxed whitespace-pre-wrap"
+            dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }}
+          />
+        </div>
         
+        {/* Tags */}
+        {article.tags && Array.isArray(article.tags) && article.tags.length > 0 && (
+          <div className="mt-8 flex items-center gap-2 flex-wrap">
+            <BookOpen className="w-5 h-5 text-[#d4b5a0]" />
+            {article.tags.map((tag: string, idx: number) => (
+              <span
+                key={idx}
+                className="px-3 py-1 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-full text-sm font-medium"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Author */}
         <div className="mt-12 pt-8 border-t border-[#d4b5a0]/20">
           <div className="flex items-center justify-between">
@@ -263,7 +298,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               <p className="text-sm text-[#2c3e50]/60">Écrit par</p>
               <p className="font-semibold text-[#2c3e50]">{article.author}</p>
             </div>
-            
+
             <div className="flex gap-3">
               <button className="p-3 bg-[#d4b5a0]/10 rounded-full hover:bg-[#d4b5a0]/20 transition-colors">
                 <Share2 className="w-5 h-5 text-[#d4b5a0]" />
