@@ -551,8 +551,10 @@ export default function PlatformHomePage() {
                   <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
 
                   <div className="mb-8">
-                    <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{plan.price}€</span>
-                    <span className="text-gray-600">/mois</span>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{plan.price}€</span>
+                      <span className="text-gray-600 text-lg">/mois</span>
+                    </div>
                   </div>
 
                   <Link
