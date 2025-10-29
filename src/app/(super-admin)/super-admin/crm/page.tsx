@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AddLeadModal from '@/components/crm/AddLeadModal'
 import LeadDetailModal from '@/components/crm/LeadDetailModal'
+import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core'
+import { SortableContext, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'DEMO_SCHEDULED' | 'DEMO_DONE' | 'PROPOSAL_SENT' | 'NEGOTIATION' | 'CONTRACT_SIGNED' | 'WON' | 'LOST' | 'ON_HOLD'
 type LeadSource = 'WEBSITE' | 'REFERRAL' | 'LINKEDIN' | 'INSTAGRAM' | 'FACEBOOK' | 'GOOGLE_ADS' | 'EMAIL_CAMPAIGN' | 'COLD_EMAIL' | 'COLD_CALL' | 'NETWORKING' | 'PARTNER' | 'OTHER'
@@ -45,6 +48,75 @@ const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; emoji: s
   ON_HOLD: { label: 'En attente', color: 'bg-gray-100 text-gray-800', emoji: '⏸️' }
 }
 
+// Composant carte draggable
+function DraggableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: lead.id,
+    data: { lead }
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+      className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-400 hover:shadow-md transition cursor-move touch-none"
+    >
+      <div className="font-medium text-gray-900 text-sm mb-1">
+        {lead.institutName}
+      </div>
+      <div className="text-xs text-gray-600 mb-2">
+        {lead.contactName}
+      </div>
+      {lead.city && (
+        <div className="text-xs text-gray-500 mb-2">
+          📍 {lead.city}
+        </div>
+      )}
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-gray-500">Score: {lead.score}/100</span>
+        {lead.estimatedValue && (
+          <span className="font-semibold" style={{ color: "#7c3aed" }}>
+            {lead.estimatedValue.toLocaleString('fr-FR')}€
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Composant colonne droppable
+function DroppableColumn({
+  id,
+  children,
+  className
+}: {
+  id: string
+  children: React.ReactNode
+  className?: string
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: id
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className} ${isOver ? 'bg-purple-50 ring-2 ring-purple-400' : ''}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function CRMPage() {
   const router = useRouter()
   const [view, setView] = useState<'pipeline' | 'list'>('pipeline')
@@ -53,6 +125,15 @@ export default function CRMPage() {
   const [stats, setStats] = useState<any>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+
+  // Configuration du sensor pour le drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Empêche le drag accidentel lors du clic
+      },
+    })
+  )
 
   useEffect(() => {
     fetchLeads()
@@ -73,6 +154,54 @@ export default function CRMPage() {
       console.error('Error fetching leads:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Gérer le drag & drop
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (!over) return
+
+    const leadId = active.id as string
+    const newStatus = over.id as LeadStatus
+
+    // Trouver le lead déplacé
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead || lead.status === newStatus) return
+
+    // Mise à jour optimiste de l'interface
+    setLeads(prevLeads =>
+      prevLeads.map(l =>
+        l.id === leadId ? { ...l, status: newStatus } : l
+      )
+    )
+
+    // Mise à jour dans la base de données
+    try {
+      const response = await fetch(`/api/super-admin/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) {
+        // Rollback en cas d'erreur
+        setLeads(prevLeads =>
+          prevLeads.map(l =>
+            l.id === leadId ? { ...l, status: lead.status } : l
+          )
+        )
+        alert('Erreur lors de la mise à jour du statut')
+      }
+    } catch (error) {
+      console.error('Error updating lead status:', error)
+      // Rollback en cas d'erreur
+      setLeads(prevLeads =>
+        prevLeads.map(l =>
+          l.id === leadId ? { ...l, status: lead.status } : l
+        )
+      )
     }
   }
 
@@ -179,76 +308,65 @@ export default function CRMPage() {
         </div>
       </div>
 
-        {/* Vue Pipeline Kanban */}
+        {/* Vue Pipeline Kanban avec Drag & Drop */}
         {view === 'pipeline' && (
-          <div className="space-y-6">
-            {/* Pipeline principal */}
-            <div className="overflow-x-auto pb-4">
-              <div className="flex gap-4 min-w-max">
-                {pipelineStages.map(status => {
-                const stageLeads = getLeadsByStatus(status)
-                const config = STATUS_CONFIG[status]
-                const totalValue = stageLeads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="space-y-6">
+              {/* Pipeline principal */}
+              <div className="overflow-x-auto pb-4">
+                <div className="flex gap-4 min-w-max">
+                  {pipelineStages.map(status => {
+                  const stageLeads = getLeadsByStatus(status)
+                  const config = STATUS_CONFIG[status]
+                  const totalValue = stageLeads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
 
-                return (
-                  <div key={status} className="flex-shrink-0 w-80">
-                    <div className="bg-white rounded-lg shadow-md">
-                      <div className="p-4 border-b">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                            <span>{config.emoji}</span>
-                            <span>{config.label}</span>
-                          </h3>
-                          <span className="text-sm font-bold text-gray-500">{stageLeads.length}</span>
-                        </div>
-                        {totalValue > 0 && (
-                          <div className="text-xs text-gray-500">
-                            {totalValue.toLocaleString('fr-FR')}€
+                  return (
+                    <div key={status} className="flex-shrink-0 w-80">
+                      <div className="bg-white rounded-lg shadow-md">
+                        <div className="p-4 border-b">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                              <span>{config.emoji}</span>
+                              <span>{config.label}</span>
+                            </h3>
+                            <span className="text-sm font-bold text-gray-500">{stageLeads.length}</span>
                           </div>
-                        )}
-                      </div>
+                          {totalValue > 0 && (
+                            <div className="text-xs text-gray-500">
+                              {totalValue.toLocaleString('fr-FR')}€
+                            </div>
+                          )}
+                        </div>
 
-                      <div className="p-2 space-y-2 max-h-[600px] overflow-y-auto">
-                        {stageLeads.map(lead => (
-                          <div
-                            key={lead.id}
-                            onClick={() => setSelectedLead(lead)}
-                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-400 hover:shadow-md transition cursor-pointer"
+                        <DroppableColumn
+                          id={status}
+                          className="p-2 space-y-2 max-h-[600px] overflow-y-auto min-h-[200px] transition-colors"
+                        >
+                          <SortableContext
+                            id={status}
+                            items={stageLeads.map(l => l.id)}
                           >
-                            <div className="font-medium text-gray-900 text-sm mb-1">
-                              {lead.institutName}
-                            </div>
-                            <div className="text-xs text-gray-600 mb-2">
-                              {lead.contactName}
-                            </div>
-                            {lead.city && (
-                              <div className="text-xs text-gray-500 mb-2">
-                                📍 {lead.city}
+                            {stageLeads.map(lead => (
+                              <DraggableLeadCard
+                                key={lead.id}
+                                lead={lead}
+                                onClick={() => setSelectedLead(lead)}
+                              />
+                            ))}
+
+                            {stageLeads.length === 0 && (
+                              <div className="text-center py-8 text-gray-400 text-sm">
+                                Glissez une entreprise ici
                               </div>
                             )}
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-500">Score: {lead.score}/100</span>
-                              {lead.estimatedValue && (
-                                <span className="font-semibold" style={{ color: "#7c3aed" }}>
-                                  {lead.estimatedValue.toLocaleString('fr-FR')}€
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-
-                        {stageLeads.length === 0 && (
-                          <div className="text-center py-8 text-gray-400 text-sm">
-                            Aucun lead
-                          </div>
-                        )}
+                          </SortableContext>
+                        </DroppableColumn>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+                </div>
               </div>
-            </div>
 
             {/* Section séparée pour Gagnés et Perdus */}
             <div>
@@ -343,7 +461,8 @@ export default function CRMPage() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </DndContext>
         )}
 
       {/* Vue Liste */}
