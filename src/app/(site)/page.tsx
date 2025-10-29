@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, getDiscountPercentage } from '@/lib/price-utils';
@@ -10,6 +12,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function Home() {
+  // Routing par domaine : laiaconnect.fr → /platform
+  const headersList = await headers();
+  const host = headersList.get('host') || '';
+
+  if (host.includes('laiaconnect.fr')) {
+    redirect('/platform');
+  }
   const config = await getSiteConfig();
   let services: any[] = [];
 
