@@ -144,29 +144,29 @@ export default function CRMPage() {
 
       {/* Stats globales */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
-          <div className="text-sm text-gray-600 mb-1">Total Leads</div>
-          <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{stats?.total || 0}</div>
+        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="text-sm text-white/80 mb-1">Total Leads</div>
+          <div className="text-3xl font-bold text-white">{stats?.total || 0}</div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
-          <div className="text-sm text-gray-600 mb-1">En cours</div>
-          <div className="text-3xl font-bold text-blue-600">
+        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="text-sm text-white/80 mb-1">En cours</div>
+          <div className="text-3xl font-bold text-white">
             {leads.filter(l => !['WON', 'LOST'].includes(l.status)).length}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
-          <div className="text-sm text-gray-600 mb-1">Gagnés</div>
-          <div className="text-3xl font-bold text-green-600">{wonLeads.length}</div>
+        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="text-sm text-white/80 mb-1">Gagnés</div>
+          <div className="text-3xl font-bold text-white">{wonLeads.length}</div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
-          <div className="text-sm text-gray-600 mb-1">Valeur pipeline</div>
-          <div className="text-2xl font-bold text-orange-600">
+        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="text-sm text-white/80 mb-1">Valeur pipeline</div>
+          <div className="text-2xl font-bold text-white">
             {(stats?.totalValue?._sum?.estimatedValue || 0).toLocaleString('fr-FR')}€
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
-          <div className="text-sm text-gray-600 mb-1">Prob. moyenne</div>
-          <div className="text-3xl font-bold text-indigo-600">
+        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="text-sm text-white/80 mb-1">Prob. moyenne</div>
+          <div className="text-3xl font-bold text-white">
             {Math.round(stats?.avgProbability?._avg?.probability || 0)}%
           </div>
         </div>
