@@ -7,12 +7,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier l'authentification
+    // VÃ©rifier l'authentification
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
 
     if (!token) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
@@ -20,17 +20,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
+    // VÃ©rifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
     });
 
     if (!user || user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+      return NextResponse.json({ error: 'AccÃ¨s refusÃ©' }, { status: 403 });
     }
 
-    // Récupérer le fichier
+    // RÃ©cupÃ©rer le fichier
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -38,12 +38,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 });
     }
 
-    // Vérifier le type de fichier
+    // VÃ©rifier le type de fichier
     if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Le fichier doit être une image' }, { status: 400 });
+      return NextResponse.json({ error: 'Le fichier doit Ãªtre une image' }, { status: 400 });
     }
 
-    // Générer un nom unique pour le fichier
+    // GÃ©nÃ©rer un nom unique pour le fichier
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
