@@ -471,10 +471,10 @@ export default function BillingPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('invoices')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             activeTab === 'invoices'
               ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'invoices' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
@@ -482,10 +482,10 @@ export default function BillingPage() {
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             activeTab === 'settings'
               ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'settings' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >

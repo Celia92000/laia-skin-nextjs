@@ -454,10 +454,10 @@ export default function OrganizationsPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('organizations')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             activeTab === 'organizations'
               ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'organizations' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
@@ -465,10 +465,10 @@ export default function OrganizationsPage() {
         </button>
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             activeTab === 'users'
               ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'users' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >

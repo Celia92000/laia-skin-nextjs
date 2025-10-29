@@ -34,10 +34,10 @@ export default function CommunicationsPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('emailing')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 border-2 ${
             activeTab === 'emailing'
-              ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'emailing' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
@@ -46,10 +46,10 @@ export default function CommunicationsPage() {
         </button>
         <button
           onClick={() => setActiveTab('whatsapp')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 border-2 ${
             activeTab === 'whatsapp'
-              ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={activeTab === 'whatsapp' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >

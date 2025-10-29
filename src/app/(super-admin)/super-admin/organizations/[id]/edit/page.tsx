@@ -261,30 +261,30 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setActiveTab('plan')}
-          className={`px-6 py-3 rounded-lg font-medium transition ${
+          className={`px-6 py-3 rounded-lg font-medium transition border-2 ${
             activeTab === 'plan'
-              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
         >
           Forfait & Options
         </button>
         <button
           onClick={() => setActiveTab('info')}
-          className={`px-6 py-3 rounded-lg font-medium transition ${
+          className={`px-6 py-3 rounded-lg font-medium transition border-2 ${
             activeTab === 'info'
-              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
         >
           Informations
         </button>
         <button
           onClick={() => setActiveTab('billing')}
-          className={`px-6 py-3 rounded-lg font-medium transition ${
+          className={`px-6 py-3 rounded-lg font-medium transition border-2 ${
             activeTab === 'billing'
-              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
         >
           Facturation
