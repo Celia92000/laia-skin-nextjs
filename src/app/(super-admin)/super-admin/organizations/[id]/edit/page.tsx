@@ -333,7 +333,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
               {/* Aperçu des fonctionnalités */}
               <div className="bg-white rounded-2xl shadow-sm border p-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">✨ Fonctionnalités incluses</h2>
-                <PlanFeaturesPreview plan={formData.plan as OrgPlan} />
+                <PlanFeaturesPreview selectedPlan={formData.plan as OrgPlan} />
               </div>
 
               {/* Add-ons */}
