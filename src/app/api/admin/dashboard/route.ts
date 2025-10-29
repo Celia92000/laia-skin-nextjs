@@ -182,11 +182,8 @@ export async function GET(request: Request) {
         }
       }),
 
-      // Avis récents DE CETTE ORGANISATION
+      // Avis récents
       prisma.review.findMany({
-        where: {
-          organizationId: user.organizationId
-        },
         orderBy: {
           createdAt: 'desc'
         },
@@ -196,10 +193,9 @@ export async function GET(request: Request) {
         }
       }),
 
-      // Créneaux bloqués DE CETTE ORGANISATION
+      // Créneaux bloqués
       prisma.blockedSlot.findMany({
         where: {
-          organizationId: user.organizationId,
           date: {
             gte: now
           }
