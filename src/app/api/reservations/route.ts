@@ -189,7 +189,7 @@ export async function POST(request: Request) {
         // Déterminer le nom du service pour un message plus clair
         const serviceName = dbServices[0]?.name || 'le soin';
         const existingServiceName = existingServices.length > 0 ? 
-          (await prisma.service.findUnique({ where: { slug: existingServices[0] } }))?.name || 'un soin' : 
+          (await prisma.service.findFirst({ where: { slug: existingServices[0] } }))?.name || 'un soin' : 
           'un soin';
         
         return NextResponse.json({ 
