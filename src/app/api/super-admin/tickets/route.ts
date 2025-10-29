@@ -5,12 +5,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    // Vérifier l'authentification
+    // VÃ©rifier l'authentification
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+      return NextResponse.json({ error: 'Non authentifiÃ©' }, { status: 401 })
     }
 
     const decoded = verifyToken(token)
@@ -18,17 +18,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur est SUPER_ADMIN
+    // VÃ©rifier que l'utilisateur est SUPER_ADMIN
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { role: true }
     })
 
     if (!user || user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+      return NextResponse.json({ error: 'AccÃ¨s refusÃ©' }, { status: 403 })
     }
 
-    // Récupérer tous les tickets avec leurs relations
+    // RÃ©cupÃ©rer tous les tickets avec leurs relations
     const tickets = await prisma.supportTicket.findMany({
       include: {
         organization: {
@@ -58,7 +58,7 @@ export async function GET() {
     return NextResponse.json(tickets)
 
   } catch (error) {
-    console.error('Erreur récupération tickets:', error)
+    console.error('Erreur rÃ©cupÃ©ration tickets:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
