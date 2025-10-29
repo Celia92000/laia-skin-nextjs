@@ -95,9 +95,13 @@ export async function POST(request: NextRequest) {
 
     // Si la campagne doit être envoyée immédiatement
     if (data.status === 'sent' && data.sendNow) {
+      // Récupérer les informations de l'organisation
+      const siteName = 'LAIA Institut';
+      const email = 'contact@laia-institut.fr';
+
       // Envoyer les emails et créer l'historique
       const recipients = JSON.parse(campaign.recipients);
-      
+
       for (const recipient of recipients) {
         try {
           // Envoyer via EmailJS
