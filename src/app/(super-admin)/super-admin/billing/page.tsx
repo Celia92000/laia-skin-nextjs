@@ -426,7 +426,7 @@ export default function BillingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#7c3aed" }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -700,7 +700,7 @@ export default function BillingPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {settingsLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#7c3aed" }}></div>
               <p className="text-gray-600">Chargement...</p>
             </div>
           ) : (
