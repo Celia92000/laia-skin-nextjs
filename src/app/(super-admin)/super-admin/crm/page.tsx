@@ -142,36 +142,35 @@ export default function CRMPage() {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats globales */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Total Leads</div>
-            <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{stats?.total || 0}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">En cours</div>
-            <div className="text-3xl font-bold text-blue-600">
-              {leads.filter(l => !['WON', 'LOST'].includes(l.status)).length}
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Gagnés</div>
-            <div className="text-3xl font-bold text-green-600">{wonLeads.length}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Valeur pipeline</div>
-            <div className="text-2xl font-bold text-orange-600">
-              {(stats?.totalValue?._sum?.estimatedValue || 0).toLocaleString('fr-FR')}€
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Prob. moyenne</div>
-            <div className="text-3xl font-bold text-indigo-600">
-              {Math.round(stats?.avgProbability?._avg?.probability || 0)}%
-            </div>
+      {/* Stats globales */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
+          <div className="text-sm text-gray-600 mb-1">Total Leads</div>
+          <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{stats?.total || 0}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
+          <div className="text-sm text-gray-600 mb-1">En cours</div>
+          <div className="text-3xl font-bold text-blue-600">
+            {leads.filter(l => !['WON', 'LOST'].includes(l.status)).length}
           </div>
         </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
+          <div className="text-sm text-gray-600 mb-1">Gagnés</div>
+          <div className="text-3xl font-bold text-green-600">{wonLeads.length}</div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
+          <div className="text-sm text-gray-600 mb-1">Valeur pipeline</div>
+          <div className="text-2xl font-bold text-orange-600">
+            {(stats?.totalValue?._sum?.estimatedValue || 0).toLocaleString('fr-FR')}€
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-2" style={{ borderColor: '#7c3aed' }}>
+          <div className="text-sm text-gray-600 mb-1">Prob. moyenne</div>
+          <div className="text-3xl font-bold text-indigo-600">
+            {Math.round(stats?.avgProbability?._avg?.probability || 0)}%
+          </div>
+        </div>
+      </div>
 
         {/* Vue Pipeline Kanban */}
         {view === 'pipeline' && (
@@ -340,65 +339,64 @@ export default function CRMPage() {
           </div>
         )}
 
-        {/* Vue Liste */}
-        {view === 'list' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Institut</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ville</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valeur</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prochaine action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {leads.map(lead => {
-                    const config = STATUS_CONFIG[lead.status]
-                    return (
-                      <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="hover:bg-gray-50 cursor-pointer">
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">{lead.institutName}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{lead.contactName}</div>
-                          <div className="text-xs text-gray-500">{lead.contactEmail}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{lead.city || '-'}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded ${config.color}`}>
-                            {config.emoji} {config.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{lead.score}/100</td>
-                        <td className="px-6 py-4 text-sm font-medium" style={{ color: "#7c3aed" }}>
-                          {lead.estimatedValue ? `${lead.estimatedValue.toLocaleString('fr-FR')}€` : '-'}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-gray-500">
-                          {lead.nextFollowUpDate
-                            ? new Date(lead.nextFollowUpDate).toLocaleDateString('fr-FR')
-                            : '-'
-                          }
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+      {/* Vue Liste */}
+      {view === 'list' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Institut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ville</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valeur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prochaine action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {leads.map(lead => {
+                  const config = STATUS_CONFIG[lead.status]
+                  return (
+                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="hover:bg-gray-50 cursor-pointer">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{lead.institutName}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{lead.contactName}</div>
+                        <div className="text-xs text-gray-500">{lead.contactEmail}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{lead.city || '-'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded ${config.color}`}>
+                          {config.emoji} {config.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{lead.score}/100</td>
+                      <td className="px-6 py-4 text-sm font-medium" style={{ color: "#7c3aed" }}>
+                        {lead.estimatedValue ? `${lead.estimatedValue.toLocaleString('fr-FR')}€` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">
+                        {lead.nextFollowUpDate
+                          ? new Date(lead.nextFollowUpDate).toLocaleDateString('fr-FR')
+                          : '-'
+                        }
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
 
-              {leads.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  Aucun lead. Cliquez sur "+ Nouveau lead" pour commencer.
-                </div>
-              )}
-            </div>
+            {leads.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                Aucun lead. Cliquez sur "+ Nouveau lead" pour commencer.
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Modal détail lead */}
       {selectedLead && (
