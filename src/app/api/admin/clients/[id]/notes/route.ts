@@ -34,7 +34,7 @@ export async function POST(
           where: { id: decoded.userId }
         });
 
-        if (!adminUser || adminUser.role !== 'ADMIN') {
+        if (!adminUser || (adminUser.role as string) !== 'ADMIN') {
           return NextResponse.json({ error: 'Non autorisé - accès admin requis' }, { status: 403 });
         }
       } catch (dbError) {
@@ -117,7 +117,7 @@ export async function GET(
           where: { id: decoded.userId }
         });
 
-        if (!adminUser || adminUser.role !== 'ADMIN') {
+        if (!adminUser || (adminUser.role as string) !== 'ADMIN') {
           return NextResponse.json({ error: 'Non autorisé - accès admin requis' }, { status: 403 });
         }
       } catch (dbError) {

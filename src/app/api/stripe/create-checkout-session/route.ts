@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       }
 
       // Vérifier que l'utilisateur a le droit de payer cette réservation
-      if (reservation.userId !== decoded.userId && decoded.role !== 'ADMIN') {
+      if (reservation.userId !== decoded.userId && (decoded.role as string) !== 'ADMIN') {
         return NextResponse.json({
           error: 'Non autorisé à payer cette réservation'
         }, { status: 403 });

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== 'ADMIN') {
+    if (!decoded || (decoded.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== 'ADMIN') {
+    if (!decoded || (decoded.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -175,7 +175,7 @@ export async function PUT(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== 'ADMIN') {
+    if (!decoded || (decoded.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -237,7 +237,7 @@ export async function DELETE(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== 'ADMIN') {
+    if (!decoded || (decoded.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

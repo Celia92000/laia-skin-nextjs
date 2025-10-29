@@ -78,7 +78,7 @@ export async function PUT(
 
     // Vérifier que l'utilisateur a le droit de modifier
     // Les admins peuvent modifier toutes les réservations
-    const isAdmin = decoded.role === 'admin' || decoded.role === 'ADMIN';
+    const isAdmin = (decoded.role as string) === 'admin' || (decoded.role as string) === 'ADMIN';
     const isOwner = existingReservation.userId === decoded.userId;
 
     if (!isAdmin && !isOwner) {

@@ -60,7 +60,7 @@ export async function PATCH(
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     const auth = verifyToken(token || '');
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
@@ -136,7 +136,7 @@ export async function DELETE(
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     const auth = verifyToken(token || '');
-    if (!auth || auth.role !== 'ADMIN') {
+    if (!auth || (auth.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 

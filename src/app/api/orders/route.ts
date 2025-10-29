@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
 
     let orders;
 
-    if (user?.role === 'admin' || user?.role === 'ADMIN') {
+    if ((user?.role as string) === 'admin' || (user?.role as string) === 'ADMIN') {
       // Admin voit toutes les commandes
       orders = await prisma.order.findMany({
         orderBy: { createdAt: 'desc' },

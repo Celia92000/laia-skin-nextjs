@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
 
-    if (!decoded || (decoded.role !== 'admin' && decoded.role !== 'ADMIN')) {
+    if (!decoded || (decoded.role !== 'admin' && (decoded.role as string) !== 'ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

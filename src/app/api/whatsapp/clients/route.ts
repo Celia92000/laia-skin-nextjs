@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ADMIN' && user.role !== 'employee' && user.role !== 'EMPLOYEE')) {
+    if (!user || (user.role !== 'admin' && (user.role as string) !== 'ADMIN' && user.role !== 'employee' && (user.role as string) !== 'EMPLOYEE')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

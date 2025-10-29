@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if (decoded.role !== 'ADMIN' && decoded.role !== 'EMPLOYEE') {
+    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

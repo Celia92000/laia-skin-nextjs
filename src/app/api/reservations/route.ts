@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         };
         
         // S'assurer que l'utilisateur est un CLIENT (pas ADMIN ou autre)
-        if (user.role !== 'CLIENT' && user.role !== 'ADMIN') {
+        if (user.role !== 'CLIENT' && (user.role as string) !== 'ADMIN') {
           updateData.role = 'CLIENT';
         }
         

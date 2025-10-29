@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (user.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

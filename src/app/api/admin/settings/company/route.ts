@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = verifyToken(token);
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (user.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = verifyToken(token);
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (user.role as string) !== 'ADMIN') {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
