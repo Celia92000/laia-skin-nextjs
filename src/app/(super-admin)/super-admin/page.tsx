@@ -243,7 +243,7 @@ export default function SuperAdminPage() {
 
         {/* Statistiques globales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Link href="/super-admin/organizations" className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
+          <Link href="/super-admin/organizations" className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105 border-2 border-purple-200 hover:border-purple-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Organisations</p>
@@ -257,7 +257,7 @@ export default function SuperAdminPage() {
             </div>
           </Link>
 
-          <Link href="/super-admin/organizations?tab=users" className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
+          <Link href="/super-admin/organizations?tab=users" className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105 border-2 border-pink-200 hover:border-pink-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Utilisateurs</p>
