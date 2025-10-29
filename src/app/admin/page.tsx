@@ -3416,7 +3416,7 @@ export default function AdminDashboard() {
             <SocialMediaHub />
           )}
 
-          {activeTab === "notifications" && (orgFeatures?.plan === 'TEAM' || orgFeatures?.plan === 'PREMIUM') && (
+          {activeTab === "notifications" && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
             <AdminNotificationsTab />
           )}
         </div>
