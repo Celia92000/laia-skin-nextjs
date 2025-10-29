@@ -39,3 +39,8 @@ export function decodeToken(token: string): JWTPayload | null {
     return null;
   }
 }
+
+/**
+ * Alias pour verifyJWT (compatibilité avec code existant)
+ */
+export const verifyToken = verifyJWT;
