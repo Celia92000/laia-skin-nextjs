@@ -95,6 +95,7 @@ export default function AdminDashboard() {
   const [paymentDateStart, setPaymentDateStart] = useState("");
   const [paymentDateEnd, setPaymentDateEnd] = useState("");
   const [orgFeatures, setOrgFeatures] = useState<OrgFeatures | null>(null);
+  const [orgPlan, setOrgPlan] = useState<string | null>(null);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
@@ -343,6 +344,7 @@ export default function AdminDashboard() {
         // Calculer les features actives (forfait + add-ons)
         const features = getActiveFeatures(org.plan, org.addons);
         setOrgFeatures(features);
+        setOrgPlan(org.plan);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'organisation:', error);
@@ -1402,7 +1404,7 @@ export default function AdminDashboard() {
               Réseaux Sociaux
             </button>
           )}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (orgFeatures?.plan === 'TEAM' || orgFeatures?.plan === 'PREMIUM') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
             <button
               onClick={() => setActiveTab("notifications")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
