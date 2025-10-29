@@ -88,7 +88,7 @@ export default function CRMPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }}></div>
       </div>
     )
   }
@@ -96,7 +96,7 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -109,7 +109,7 @@ export default function CRMPage() {
             <button
               onClick={() => setShowAddModal(true)}
               className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
-              style={{ color: "#b8935f" }}
+              style={{ color: "#7c3aed" }}
             >
               + Nouveau lead
             </button>
@@ -124,7 +124,7 @@ export default function CRMPage() {
                   ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              style={view === 'pipeline' ? { color: "#b8935f" } : {}}
+              style={view === 'pipeline' ? { color: "#7c3aed" } : {}}
             >
               📊 Pipeline
             </button>
@@ -135,7 +135,7 @@ export default function CRMPage() {
                   ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              style={view === 'list' ? { color: "#b8935f" } : {}}
+              style={view === 'list' ? { color: "#7c3aed" } : {}}
             >
               📋 Liste
             </button>
@@ -148,7 +148,7 @@ export default function CRMPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">Total Leads</div>
-            <div className="text-3xl font-bold" style={{ color: "#b8935f" }}>{stats?.total || 0}</div>
+            <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{stats?.total || 0}</div>
           </div>
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">En cours</div>
@@ -224,7 +224,7 @@ export default function CRMPage() {
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-gray-500">Score: {lead.score}/100</span>
                               {lead.estimatedValue && (
-                                <span className="font-semibold" style={{ color: "#b8935f" }}>
+                                <span className="font-semibold" style={{ color: "#7c3aed" }}>
                                   {lead.estimatedValue.toLocaleString('fr-FR')}€
                                 </span>
                               )}
@@ -376,7 +376,7 @@ export default function CRMPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">{lead.score}/100</td>
-                        <td className="px-6 py-4 text-sm font-medium" style={{ color: "#b8935f" }}>
+                        <td className="px-6 py-4 text-sm font-medium" style={{ color: "#7c3aed" }}>
                           {lead.estimatedValue ? `${lead.estimatedValue.toLocaleString('fr-FR')}€` : '-'}
                         </td>
                         <td className="px-6 py-4 text-xs text-gray-500">

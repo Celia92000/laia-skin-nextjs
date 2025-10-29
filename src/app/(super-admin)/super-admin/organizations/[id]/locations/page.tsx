@@ -147,7 +147,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -173,7 +173,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#d4b5a0' }}>
+      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#7c3aed' }}>
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Link
             href={`/super-admin/organizations/${id}`}
@@ -202,12 +202,12 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
 
         {/* Limite du forfait */}
         <div className="mb-8 p-6 rounded-xl border-2" style={{
-          borderColor: usagePercent >= 100 ? '#ef4444' : '#d4b5a0',
+          borderColor: usagePercent >= 100 ? '#ef4444' : '#7c3aed',
           backgroundColor: usagePercent >= 100 ? '#fef2f2' : '#faf7f3'
         }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#d4b5a0' }}>
+              <h3 className="text-lg font-semibold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#7c3aed' }}>
                 {usagePercent >= 100 ? '⚠️ Limite atteinte' : '📊 Utilisation du forfait'}
               </h3>
               <p className="text-gray-700 mt-1">
@@ -215,7 +215,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
               </p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#d4b5a0' }}>
+              <p className="text-3xl font-bold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#7c3aed' }}>
                 {usagePercent.toFixed(0)}%
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
             disabled={!canAddLocation}
             className="px-6 py-2 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              background: canAddLocation ? 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)' : '#9ca3af'
+              background: canAddLocation ? 'linear-gradient(135deg, #7c3aed 0%, #e8b4b8 100%)' : '#9ca3af'
             }}
           >
             + Créer un emplacement
@@ -265,7 +265,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
                 <div className="flex gap-2">
                   {location.isMainLocation && (
                     <span className="px-2 py-1 text-xs font-semibold rounded-full" style={{
-                      backgroundColor: '#d4b5a0',
+                      backgroundColor: '#7c3aed',
                       color: 'white'
                     }}>
                       Principal
@@ -325,7 +325,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8">
-            <h2 className="text-2xl font-bold mb-6" style={{ color: '#d4b5a0' }}>
+            <h2 className="text-2xl font-bold mb-6" style={{ color: '#7c3aed' }}>
               {editingLocation ? 'Modifier l\'emplacement' : 'Créer un emplacement'}
             </h2>
 
@@ -439,7 +439,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
                       checked={formData.isMainLocation}
                       onChange={(e) => setFormData({ ...formData, isMainLocation: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300"
-                      style={{ accentColor: '#d4b5a0' }}
+                      style={{ accentColor: '#7c3aed' }}
                     />
                     <span className="ml-2 text-sm text-gray-700">Emplacement principal</span>
                   </label>
@@ -450,7 +450,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
                       checked={formData.active}
                       onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300"
-                      style={{ accentColor: '#d4b5a0' }}
+                      style={{ accentColor: '#7c3aed' }}
                     />
                     <span className="ml-2 text-sm text-gray-700">Actif</span>
                   </label>
@@ -472,7 +472,7 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
                   type="submit"
                   className="px-6 py-2 text-white rounded-lg font-semibold transition"
                   style={{
-                    background: 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)'
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #e8b4b8 100%)'
                   }}
                 >
                   {editingLocation ? 'Modifier' : 'Créer'}

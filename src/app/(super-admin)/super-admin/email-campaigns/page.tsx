@@ -143,7 +143,7 @@ export default function EmailCampaignsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }}></div>
       </div>
     )
   }
@@ -168,7 +168,7 @@ export default function EmailCampaignsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total Clients</p>
-          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{totalClients}</p>
+          <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{totalClients}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Organisations</p>
@@ -320,7 +320,7 @@ export default function EmailCampaignsPage() {
             <button
               onClick={handlePreview}
               className="w-full py-3 rounded-lg font-semibold border-2 hover:bg-gray-50 transition-all"
-              style={{ color: "#b8935f", borderColor: "#d4b5a0" }}
+              style={{ color: "#7c3aed", borderColor: "#7c3aed" }}
             >
               👁️ Prévisualiser l'email
             </button>
@@ -331,7 +331,7 @@ export default function EmailCampaignsPage() {
               className={`w-full py-4 rounded-lg font-semibold text-white text-lg transition-all ${
                 sending || !emailSubject.trim()
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }} className=" hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+                  : 'bg-gradient-to-r style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }} className=" hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
               }`}
             >
               {sending ? (
@@ -381,7 +381,7 @@ export default function EmailCampaignsPage() {
                 }}
                 disabled={sending}
                 className="px-4 py-2 text-white rounded-lg"
-                style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
+                style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
               >
                 Envoyer maintenant
               </button>

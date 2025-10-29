@@ -17,7 +17,7 @@ export default function CommunicationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -39,7 +39,7 @@ export default function CommunicationsPage() {
               onClick={() => setActiveTab('emailing')}
               className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 activeTab === 'emailing'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -50,7 +50,7 @@ export default function CommunicationsPage() {
               onClick={() => setActiveTab('whatsapp')}
               className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 activeTab === 'whatsapp'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >

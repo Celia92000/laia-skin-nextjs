@@ -45,7 +45,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#d4b5a0" }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#7c3aed" }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">Organisation non trouvée</h1>
-          <Link href="/super-admin" className="text-[#d4b5a0] hover:text-[#c9a084] underline">
+          <Link href="/super-admin" className="text-[#7c3aed] hover:text-[#c9a084] underline">
             ← Retour au dashboard
           </Link>
         </div>
@@ -89,7 +89,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-[#d4b5a0] to-[#c9a589] rounded-xl flex items-center justify-center">
+              <div className="w-14 h-14 bg-gradient-to-br from-[#7c3aed] to-[#6b46c1] rounded-xl flex items-center justify-center">
                 <Building2 className="w-7 h-7 text-white" />
               </div>
               <div>
@@ -155,7 +155,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               onClick={() => setActiveTab('overview')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
                 activeTab === 'overview'
-                  ? 'border-[#d4b5a0] text-[#d4b5a0]'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -165,7 +165,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               onClick={() => setActiveTab('team')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
                 activeTab === 'team'
-                  ? 'border-[#d4b5a0] text-[#d4b5a0]'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -175,7 +175,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               onClick={() => setActiveTab('config')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
                 activeTab === 'config'
-                  ? 'border-[#d4b5a0] text-[#d4b5a0]'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -185,7 +185,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               onClick={() => setActiveTab('access')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
                 activeTab === 'access'
-                  ? 'border-[#d4b5a0] text-[#d4b5a0]'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -195,7 +195,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               onClick={() => setActiveTab('billing')}
               className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
                 activeTab === 'billing'
-                  ? 'border-[#d4b5a0] text-[#d4b5a0]'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -364,7 +364,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                 <h2 className="text-lg font-bold text-gray-900">Comptes de l'équipe ({staff.length})</h2>
                 <Link
                   href={`/super-admin/organizations/${organization.id}/users`}
-                  className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a589] transition text-sm font-medium"
+                  className="px-4 py-2 bg-[#7c3aed] text-white rounded-lg hover:bg-[#6b46c1] transition text-sm font-medium"
                 >
                   Gérer les utilisateurs
                 </Link>
@@ -380,7 +380,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                   {staff.map((member: any) => (
                     <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#d4b5a0] to-[#c9a589] rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#7c3aed] to-[#6b46c1] rounded-full flex items-center justify-center">
                           <span className="text-white font-bold text-sm">
                             {member.name.charAt(0).toUpperCase()}
                           </span>
@@ -872,7 +872,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                           alert('❌ Erreur')
                         }
                       }}
-                      className="w-full px-4 py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a589] font-medium"
+                      className="w-full px-4 py-3 bg-[#7c3aed] text-white rounded-lg hover:bg-[#6b46c1] font-medium"
                     >
                       🔐 Accéder à l'admin
                     </button>
@@ -1202,14 +1202,14 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             <div className="flex gap-4">
               <Link
                 href={`/super-admin/organizations/${organization.id}/edit`}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a589] font-medium"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#7c3aed] text-white rounded-lg hover:bg-[#6b46c1] font-medium"
               >
                 <CreditCard className="w-4 h-4" />
                 Modifier les informations
               </Link>
               <Link
                 href={`/super-admin/billing?organization=${organization.id}`}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-[#d4b5a0] text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0] hover:text-white font-medium"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-[#7c3aed] text-[#7c3aed] rounded-lg hover:bg-[#7c3aed] hover:text-white font-medium"
               >
                 Voir toutes les factures
               </Link>

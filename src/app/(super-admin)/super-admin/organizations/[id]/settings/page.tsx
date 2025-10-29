@@ -76,7 +76,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#d4b5a0' }}>
+      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#7c3aed' }}>
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Link
             href={`/super-admin/organizations/${id}`}
@@ -127,8 +127,8 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
         )}
 
         {/* Info importante */}
-        <div className="mb-8 p-6 rounded-xl border-2" style={{ borderColor: '#d4b5a0', backgroundColor: '#faf7f3' }}>
-          <h3 className="text-lg font-semibold mb-3" style={{ color: '#d4b5a0' }}>
+        <div className="mb-8 p-6 rounded-xl border-2" style={{ borderColor: '#7c3aed', backgroundColor: '#faf7f3' }}>
+          <h3 className="text-lg font-semibold mb-3" style={{ color: '#7c3aed' }}>
             🔐 Contrôle Super Admin
           </h3>
           <p className="text-gray-700 mb-2">
@@ -142,7 +142,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
         <div className="space-y-8">
           {/* Informations de base */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Informations de base
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -155,7 +155,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
                   value={config.siteName || ''}
                   onChange={(e) => setConfig({ ...config, siteName: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ focusRingColor: '#d4b5a0' }}
+                  style={{ focusRingColor: '#7c3aed' }}
                 />
               </div>
 
@@ -187,7 +187,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Informations légales et facturation */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Informations légales & Facturation
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -272,7 +272,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Contact */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Coordonnées
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -340,7 +340,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Réseaux sociaux */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Réseaux sociaux
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -400,7 +400,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Couleurs du site */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Apparence du site
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -411,16 +411,16 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
                 <div className="flex gap-2">
                   <input
                     type="color"
-                    value={config.primaryColor || '#d4b5a0'}
+                    value={config.primaryColor || '#7c3aed'}
                     onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
                     className="h-12 w-16 border-2 border-gray-300 rounded cursor-pointer"
                   />
                   <input
                     type="text"
-                    value={config.primaryColor || '#d4b5a0'}
+                    value={config.primaryColor || '#7c3aed'}
                     onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
                     className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    placeholder="#d4b5a0"
+                    placeholder="#7c3aed"
                   />
                 </div>
               </div>
@@ -471,7 +471,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Horaires d'ouverture */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Horaires d'ouverture
             </h2>
             <div className="space-y-4">
@@ -535,7 +535,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Paramètres de paiement */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Paramètres de paiement
             </h2>
             <div className="space-y-6">
@@ -589,7 +589,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Programme de fidélité */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Programme de fidélité
             </h2>
             <div className="space-y-6">
@@ -653,7 +653,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
 
           {/* Paramètres de réservation */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
               Paramètres de réservation
             </h2>
             <div className="grid grid-cols-2 gap-6">
@@ -747,7 +747,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
           {/* Établissements */}
           {locations.length > 0 && (
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#d4b5a0' }}>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
                 Établissements ({locations.length})
               </h2>
               <div className="space-y-4">
@@ -800,7 +800,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
               disabled={saving}
               className="px-6 py-2 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                background: 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)'
+                background: 'linear-gradient(135deg, #7c3aed 0%, #e8b4b8 100%)'
               }}
             >
               {saving ? 'Sauvegarde en cours...' : 'Sauvegarder les paramètres'}

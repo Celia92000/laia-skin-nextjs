@@ -195,7 +195,7 @@ export default function GlobalUsersPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function GlobalUsersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
             ← Retour au dashboard
@@ -249,7 +249,7 @@ export default function GlobalUsersPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">Total Utilisateurs</div>
-            <div className="text-3xl font-bold" style={{ color: "#b8935f" }}>{users.length}</div>
+            <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{users.length}</div>
             <div className="flex gap-3 mt-2 text-xs">
               <span className="text-green-600">✓ {activeUsers} actifs</span>
               <span className="text-red-600">✗ {inactiveUsers} inactifs</span>
@@ -258,7 +258,7 @@ export default function GlobalUsersPage() {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="text-sm text-gray-600 mb-1">Propriétaires</div>
-            <div className="text-3xl font-bold" style={{ color: "#b8935f" }}>{roleStats.ORG_OWNER}</div>
+            <div className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{roleStats.ORG_OWNER}</div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -427,7 +427,7 @@ export default function GlobalUsersPage() {
                         {user.organization && (
                           <Link
                             href={`/super-admin/organizations/${user.organization.id}`}
-                            className="style={{ color: "#b8935f" }} className=" hover-text-beige-900"
+                            className="style={{ color: "#7c3aed" }} className=" hover-text-beige-900"
                           >
                             Org
                           </Link>

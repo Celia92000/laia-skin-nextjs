@@ -167,7 +167,7 @@ export default function TicketsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }}></div>
       </div>
     )
   }
@@ -212,7 +212,7 @@ export default function TicketsPage() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total</p>
-          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{tickets.length}</p>
+          <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{tickets.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Ouverts</p>
@@ -294,7 +294,7 @@ export default function TicketsPage() {
                       <button
                         onClick={() => setSelectedTicket(ticket)}
                         className="hover:text-beige-900"
-                        style={{ color: "#b8935f" }}
+                        style={{ color: "#7c3aed" }}
                       >
                         Voir
                       </button>
@@ -416,7 +416,7 @@ export default function TicketsPage() {
                   onClick={() => handleReply(selectedTicket.id)}
                   disabled={!replyMessage.trim()}
                   className="mt-2 px-6 py-2 rounded-lg font-semibold text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: "#d4b5a0" }}
+                  style={{ backgroundColor: "#7c3aed" }}
                 >
                   Envoyer la réponse
                 </button>

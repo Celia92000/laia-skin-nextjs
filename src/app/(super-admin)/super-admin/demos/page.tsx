@@ -7,7 +7,7 @@ export default function DemosPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
             ← Retour au dashboard

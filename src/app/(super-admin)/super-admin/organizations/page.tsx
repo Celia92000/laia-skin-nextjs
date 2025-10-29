@@ -368,7 +368,7 @@ export default function OrganizationsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -421,7 +421,7 @@ export default function OrganizationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div style={{ background: 'linear-gradient(to right, #d4b5a0, #c9a589)' }} className="text-white">
+      <div style={{ background: 'linear-gradient(to right, #7c3aed, #6b46c1)' }} className="text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -443,7 +443,7 @@ export default function OrganizationsPage() {
                 <Link
                   href="/super-admin/organizations/new"
                   className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
-                  style={{ color: '#b8935f' }}
+                  style={{ color: '#7c3aed' }}
                 >
                   + Nouvelle organisation
                 </Link>
@@ -460,7 +460,7 @@ export default function OrganizationsPage() {
                   ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              style={activeTab === 'organizations' ? { color: '#b8935f' } : {}}
+              style={activeTab === 'organizations' ? { color: '#7c3aed' } : {}}
             >
               🏢 Organisations
             </button>
@@ -471,7 +471,7 @@ export default function OrganizationsPage() {
                   ? 'bg-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
-              style={activeTab === 'users' ? { color: '#b8935f' } : {}}
+              style={activeTab === 'users' ? { color: '#7c3aed' } : {}}
             >
               👥 Utilisateurs
             </button>
@@ -792,7 +792,7 @@ export default function OrganizationsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-sm text-gray-600 mb-1">Total Utilisateurs</div>
-              <div className="text-3xl font-bold" style={{ color: '#b8935f' }}>{users?.length || 0}</div>
+              <div className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{users?.length || 0}</div>
               <div className="flex gap-3 mt-2 text-xs">
                 <span className="text-green-600">✓ {activeUsers} actifs</span>
                 <span className="text-red-600">✗ {inactiveUsers} inactifs</span>
@@ -801,7 +801,7 @@ export default function OrganizationsPage() {
 
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-sm text-gray-600 mb-1">Propriétaires</div>
-              <div className="text-3xl font-bold" style={{ color: '#b8935f' }}>{roleStats.ORG_OWNER}</div>
+              <div className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{roleStats.ORG_OWNER}</div>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -970,9 +970,9 @@ export default function OrganizationsPage() {
                           {user.organization && (
                             <Link
                               href={`/super-admin/organizations/${user.organization.id}`}
-                              style={{ color: '#b8935f' }}
+                              style={{ color: '#7c3aed' }}
                               onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = '#b8935f'}
+                              onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
                             >
                               Org
                             </Link>

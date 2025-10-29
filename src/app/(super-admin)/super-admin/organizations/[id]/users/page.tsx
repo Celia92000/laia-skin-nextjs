@@ -119,7 +119,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#d4b5a0' }}>
+      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#7c3aed' }}>
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Link
             href={`/super-admin/organizations/${id}`}
@@ -194,12 +194,12 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
 
         {/* Limite du forfait */}
         <div className="mb-8 p-6 rounded-xl border-2" style={{
-          borderColor: usagePercent >= 100 ? '#ef4444' : '#d4b5a0',
+          borderColor: usagePercent >= 100 ? '#ef4444' : '#7c3aed',
           backgroundColor: usagePercent >= 100 ? '#fef2f2' : '#faf7f3'
         }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-semibold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#d4b5a0' }}>
+              <h3 className="text-lg font-semibold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#7c3aed' }}>
                 {usagePercent >= 100 ? '⚠️ Limite atteinte' : '📊 Utilisation du forfait'}
               </h3>
               <p className="text-gray-700 mt-1">
@@ -207,7 +207,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
               </p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#d4b5a0' }}>
+              <p className="text-3xl font-bold" style={{ color: usagePercent >= 100 ? '#dc2626' : '#7c3aed' }}>
                 {usagePercent.toFixed(0)}%
               </p>
             </div>
@@ -238,7 +238,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
             disabled={!canAddUser}
             className="px-6 py-2 text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              background: canAddUser ? 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)' : '#9ca3af'
+              background: canAddUser ? 'linear-gradient(135deg, #7c3aed 0%, #e8b4b8 100%)' : '#9ca3af'
             }}
           >
             + Créer un utilisateur
@@ -314,7 +314,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-8">
-            <h2 className="text-2xl font-bold mb-6" style={{ color: '#d4b5a0' }}>
+            <h2 className="text-2xl font-bold mb-6" style={{ color: '#7c3aed' }}>
               {editingUser ? 'Modifier l\'utilisateur' : 'Créer un utilisateur'}
             </h2>
 
@@ -404,7 +404,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
                   type="submit"
                   className="px-6 py-2 text-white rounded-lg font-semibold transition"
                   style={{
-                    background: 'linear-gradient(135deg, #d4b5a0 0%, #e8b4b8 100%)'
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #e8b4b8 100%)'
                   }}
                 >
                   {editingUser ? 'Modifier' : 'Créer'}

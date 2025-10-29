@@ -109,7 +109,7 @@ export default function SettingsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -119,7 +119,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div style={{ background: 'linear-gradient(to right, #d4b5a0, #c9a589)' }} className="text-white">
+      <div style={{ background: 'linear-gradient(to right, #7c3aed, #6b46c1)' }} className="text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -133,7 +133,7 @@ export default function SettingsPage() {
               onClick={handleSaveAll}
               disabled={saving}
               className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
-              style={{ color: '#b8935f' }}
+              style={{ color: '#7c3aed' }}
             >
               {saving ? '💾 Enregistrement...' : '💾 Enregistrer tout'}
             </button>
@@ -263,7 +263,7 @@ export default function SettingsPage() {
               checked={settings.maintenanceMode}
               onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
               className="w-5 h-5 rounded focus:ring-2 focus:ring-amber-500 mt-0.5"
-              style={{ color: '#b8935f' }}
+              style={{ color: '#7c3aed' }}
             />
             <div className="ml-3">
               <label className="text-sm font-medium text-gray-700">

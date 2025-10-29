@@ -216,7 +216,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7c3aed] mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">❌ Organisation non trouvée</h1>
-          <Link href="/super-admin" className="text-[#b8935f] hover:text-[#d4b5a0] underline">
+          <Link href="/super-admin" className="text-[#7c3aed] hover:text-[#7c3aed] underline">
             ← Retour au dashboard
           </Link>
         </div>
@@ -239,7 +239,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header moderne */}
-      <div className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a589] text-white shadow-lg">
+      <div className="bg-gradient-to-r from-[#7c3aed] to-[#6b46c1] text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <Link
             href={`/super-admin/organizations/${id}`}
@@ -269,7 +269,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
               onClick={() => setActiveTab('plan')}
               className={`px-6 py-4 font-medium transition relative ${
                 activeTab === 'plan'
-                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -279,7 +279,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
               onClick={() => setActiveTab('info')}
               className={`px-6 py-4 font-medium transition ${
                 activeTab === 'info'
-                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -289,7 +289,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
               onClick={() => setActiveTab('billing')}
               className={`px-6 py-4 font-medium transition ${
                 activeTab === 'billing'
-                  ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
+                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -316,18 +316,18 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       onClick={() => setFormData({ ...formData, plan: planKey })}
                       className={`relative p-6 rounded-xl border-2 transition-all ${
                         formData.plan === planKey
-                          ? 'border-[#d4b5a0] bg-[#d4b5a0]/5 shadow-lg scale-105'
-                          : 'border-gray-200 hover:border-[#d4b5a0]/50 hover:shadow-md'
+                          ? 'border-[#7c3aed] bg-[#7c3aed]/5 shadow-lg scale-105'
+                          : 'border-gray-200 hover:border-[#7c3aed]/50 hover:shadow-md'
                       }`}
                     >
                       {formData.plan === planKey && (
-                        <div className="absolute -top-3 -right-3 bg-[#d4b5a0] text-white rounded-full w-8 h-8 flex items-center justify-center text-xl">
+                        <div className="absolute -top-3 -right-3 bg-[#7c3aed] text-white rounded-full w-8 h-8 flex items-center justify-center text-xl">
                           ✓
                         </div>
                       )}
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-800 mb-1">{planKey}</div>
-                        <div className="text-3xl font-bold text-[#d4b5a0] mb-2">{price}€</div>
+                        <div className="text-3xl font-bold text-[#7c3aed] mb-2">{price}€</div>
                         <div className="text-xs text-gray-500">/mois</div>
                         <div className="mt-3 text-xs text-gray-600 line-clamp-2">
                           {PLAN_DESCRIPTIONS[planKey as keyof typeof PLAN_DESCRIPTIONS]}
@@ -368,7 +368,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     >
                       <option value="TRIAL">🔵 Essai</option>
                       <option value="ACTIVE">🟢 Actif</option>
@@ -384,7 +384,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       type="date"
                       value={formData.trialEndsAt}
                       onChange={(e) => setFormData({ ...formData, trialEndsAt: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                   </div>
                 </div>
@@ -407,7 +407,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                   </div>
                   <div>
@@ -418,7 +418,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       type="text"
                       value={formData.legalName}
                       onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                   </div>
                   <div>
@@ -430,7 +430,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       required
                       value={formData.slug}
                       onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                     <p className="text-xs text-gray-500 mt-1">URL: /{formData.slug}</p>
                   </div>
@@ -441,7 +441,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     >
                       <option value="SINGLE_LOCATION">🏪 Mono-emplacement</option>
                       <option value="MULTI_LOCATION">🏢 Multi-emplacements</option>
@@ -462,7 +462,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       required
                       value={formData.subdomain}
                       onChange={(e) => setFormData({ ...formData, subdomain: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                     <p className="text-xs text-gray-500 mt-1">{formData.subdomain}.laiaconnect.fr</p>
                   </div>
@@ -475,7 +475,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                       value={formData.domain}
                       onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                       placeholder="www.exemple.com"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                     />
                   </div>
                 </div>
@@ -497,7 +497,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                     required
                     value={formData.ownerEmail}
                     onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                   />
                 </div>
                 <div>
@@ -508,7 +508,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                     type="tel"
                     value={formData.ownerPhone}
                     onChange={(e) => setFormData({ ...formData, ownerPhone: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent transition"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#7c3aed] focus:border-transparent transition"
                   />
                 </div>
               </div>
@@ -527,7 +527,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 px-6 py-4 bg-gradient-to-r from-[#d4b5a0] to-[#c9a589] text-white rounded-xl hover:shadow-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-[#7c3aed] to-[#6b46c1] text-white rounded-xl hover:shadow-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? '⏳ Enregistrement...' : '✅ Enregistrer les modifications'}
               </button>

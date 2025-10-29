@@ -98,7 +98,7 @@ export default function BillingPage() {
     phone: 'À remplir',
     website: 'https://laia-skin-institut.com',
     logoUrl: '',
-    primaryColor: '#d4b5a0',
+    primaryColor: '#7c3aed',
     secondaryColor: '#c9a88e',
     invoicePrefix: 'LAIA',
     tvaRate: 20.0,
@@ -426,7 +426,7 @@ export default function BillingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -436,7 +436,7 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -457,7 +457,7 @@ export default function BillingPage() {
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50"
-                  style={{ color: "#b8935f" }}
+                  style={{ color: "#7c3aed" }}
                 >
                   ➕ Créer facture
                 </button>
@@ -471,7 +471,7 @@ export default function BillingPage() {
               onClick={() => setActiveTab('invoices')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'invoices'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -481,7 +481,7 @@ export default function BillingPage() {
               onClick={() => setActiveTab('settings')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === 'settings'
-                  ? 'bg-white style={{ color: "#b8935f" }} className="shadow-lg'
+                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
@@ -630,7 +630,7 @@ export default function BillingPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="hover:text-beige-800"
-                                style={{ color: "#b8935f" }}
+                                style={{ color: "#7c3aed" }}
                                 title="Voir la facture PDF"
                               >
                                 📄
@@ -682,7 +682,7 @@ export default function BillingPage() {
                     onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                     disabled={pagination.page === pagination.totalPages}
                     className="px-4 py-2 text-white rounded-lg disabled:opacity-50"
-                    style={{ backgroundColor: "#d4b5a0" }}
+                    style={{ backgroundColor: "#7c3aed" }}
                   >
                     Suivant →
                   </button>
@@ -698,7 +698,7 @@ export default function BillingPage() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           {settingsLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
               <p className="text-gray-600">Chargement...</p>
             </div>
           ) : (
@@ -1088,7 +1088,7 @@ export default function BillingPage() {
               <button
                 onClick={createInvoice}
                 className="flex-1 px-4 py-2 text-white rounded-lg"
-                style={{ backgroundColor: "#d4b5a0" }}
+                style={{ backgroundColor: "#7c3aed" }}
               >
                 Créer
               </button>

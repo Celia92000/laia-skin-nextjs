@@ -26,7 +26,7 @@ export default function InvoiceSettingsPage() {
 
     // Design
     logoUrl: '',
-    primaryColor: '#d4b5a0',
+    primaryColor: '#7c3aed',
     secondaryColor: '#c9a88e',
 
     // Paramètres

@@ -111,7 +111,7 @@ export default function SuperAdminPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d4b5a0' }}></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#7c3aed' }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -133,13 +133,13 @@ export default function SuperAdminPage() {
     <div className="px-4 py-8 min-h-screen bg-gray-50">
         {/* Bienvenue */}
         <div className="mb-8 p-8 rounded-2xl shadow-lg bg-white border-2" style={{
-          borderColor: '#d4b5a0'
+          borderColor: '#7c3aed'
         }}>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold mb-2" style={{
                 fontFamily: 'Playfair Display, serif',
-                color: '#d4b5a0'
+                color: '#7c3aed'
               }}>
                 👋 Bienvenue {user.name}
               </h2>
@@ -247,7 +247,7 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Organisations</p>
-                <p className="text-3xl font-bold" style={{ color: '#d4b5a0' }}>{organizations.length}</p>
+                <p className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{organizations.length}</p>
                 <div className="flex gap-2 mt-2">
                   <span className="text-xs text-green-600">✓ {activeOrgs} actives</span>
                   <span className="text-xs text-blue-600">△ {trialOrgs} essais</span>
@@ -272,7 +272,7 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Réservations</p>
-                <p className="text-3xl font-bold" style={{ color: '#b8935f' }}>{stats.totalReservations}</p>
+                <p className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{stats.totalReservations}</p>
                 <p className="text-xs mt-2 text-gray-500">Total plateforme</p>
               </div>
               <div className="text-5xl opacity-20">📅</div>
@@ -319,7 +319,7 @@ export default function SuperAdminPage() {
             {analytics.revenue.byPlan.map(plan => (
               <div key={plan.plan} className="border-2 rounded-lg p-4 hover:shadow-lg transition-all">
                 <div className="text-sm text-gray-600 mb-1">{plan.plan}</div>
-                <div className="text-2xl font-bold" style={{ color: '#b8935f' }}>{formatCurrency(plan.revenue)}/mois</div>
+                <div className="text-2xl font-bold" style={{ color: '#7c3aed' }}>{formatCurrency(plan.revenue)}/mois</div>
                 <div className="text-xs text-gray-500 mt-1">{plan.count} organisations</div>
               </div>
             ))}
@@ -343,9 +343,9 @@ export default function SuperAdminPage() {
                   <Link
                     href={`/super-admin/organizations/${org.id}`}
                     className="text-sm"
-                    style={{ color: '#b8935f' }}
+                    style={{ color: '#7c3aed' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#b8935f'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
                   >
                     Voir →
                   </Link>
@@ -369,9 +369,9 @@ export default function SuperAdminPage() {
                   <Link
                     href={`/super-admin/organizations/${org.id}`}
                     className="text-sm"
-                    style={{ color: '#b8935f' }}
+                    style={{ color: '#7c3aed' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#b8935f'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
                   >
                     Voir →
                   </Link>
@@ -390,7 +390,7 @@ export default function SuperAdminPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-gray-700">📈 Organisations</h3>
-                <span className="text-sm font-medium" style={{ color: '#b8935f' }}>
+                <span className="text-sm font-medium" style={{ color: '#7c3aed' }}>
                   Total: {analytics.growth.organizations.reduce((sum, i) => sum + i.count, 0)}
                 </span>
               </div>
@@ -402,14 +402,14 @@ export default function SuperAdminPage() {
                     <div key={idx} className="group">
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-xs text-gray-600">{item.month}</div>
-                        <div className="text-xs font-semibold" style={{ color: '#b8935f' }}>{item.count}</div>
+                        <div className="text-xs font-semibold" style={{ color: '#7c3aed' }}>{item.count}</div>
                       </div>
                       <div className="relative h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#f5e6d3' }}>
                         <div
                           className="absolute h-full rounded-full transition-all duration-500"
                           style={{
                             width: `${percentage}%`,
-                            background: 'linear-gradient(to right, #b8935f, #8B7355)'
+                            background: 'linear-gradient(to right, #7c3aed, #8B7355)'
                           }}
                         />
                       </div>
@@ -549,7 +549,7 @@ export default function SuperAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                         {formatCurrency(org.revenue)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#b8935f' }}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: '#7c3aed' }}>
                         {formatCurrency(org.monthlyFee)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -558,9 +558,9 @@ export default function SuperAdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <Link
                           href={`/super-admin/organizations/${org.id}`}
-                          style={{ color: '#b8935f' }}
+                          style={{ color: '#7c3aed' }}
                           onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#b8935f'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
                         >
                           Voir détails →
                         </Link>
@@ -653,7 +653,7 @@ export default function SuperAdminPage() {
                     <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
                   </div>
                   <div className="mb-6">
-                    <div className="text-4xl font-bold mb-2" style={{ color: '#b8935f' }}>
+                    <div className="text-4xl font-bold mb-2" style={{ color: '#7c3aed' }}>
                       {formatCurrency(analytics.revenue.byPlan.reduce((acc, p) => acc + p.revenue, 0) /
                         Math.max(analytics.revenue.byPlan.reduce((acc, p) => acc + p.count, 0), 1))}
                     </div>
@@ -663,14 +663,14 @@ export default function SuperAdminPage() {
                     <div className="p-4 rounded-lg" style={{ background: 'linear-gradient(to right, #f5e6d3, #fef3e2)' }}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-700 font-medium">Revenus totaux (MRR)</span>
-                        <span className="text-lg font-semibold" style={{ color: '#b8935f' }}>{formatCurrency(analytics.revenue.mrr)}</span>
+                        <span className="text-lg font-semibold" style={{ color: '#7c3aed' }}>{formatCurrency(analytics.revenue.mrr)}</span>
                       </div>
                       <div className="flex items-center justify-center my-2">
                         <span className="text-gray-400">÷ {analytics.revenue.byPlan.reduce((acc, p) => acc + p.count, 0)} organisations</span>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: '#d4b5a0' }}>
+                      <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: '#7c3aed' }}>
                         <span className="text-gray-700 font-medium">ARPU</span>
-                        <span className="text-2xl font-bold" style={{ color: '#b8935f' }}>
+                        <span className="text-2xl font-bold" style={{ color: '#7c3aed' }}>
                           {formatCurrency(analytics.revenue.byPlan.reduce((acc, p) => acc + p.revenue, 0) /
                             Math.max(analytics.revenue.byPlan.reduce((acc, p) => acc + p.count, 0), 1))}
                         </span>
@@ -682,7 +682,7 @@ export default function SuperAdminPage() {
                       return (
                         <div key={plan.plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="font-medium text-gray-700">{plan.plan}</div>
-                          <div className="text-lg font-semibold" style={{ color: '#b8935f' }}>{formatCurrency(planPrices[plan.plan] || 0)}/mois</div>
+                          <div className="text-lg font-semibold" style={{ color: '#7c3aed' }}>{formatCurrency(planPrices[plan.plan] || 0)}/mois</div>
                         </div>
                       )
                     })}

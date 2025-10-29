@@ -128,7 +128,7 @@ export default function PromoCodesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }}></div>
       </div>
     )
   }
@@ -142,7 +142,7 @@ export default function PromoCodesPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
+          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
         >
           + Nouveau Code Promo
         </button>
@@ -152,7 +152,7 @@ export default function PromoCodesPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total codes</p>
-          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{promoCodes.length}</p>
+          <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{promoCodes.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Actifs</p>
@@ -204,7 +204,7 @@ export default function PromoCodesPage() {
                   <tr key={promo.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-bold" style={{ color: "#b8935f" }}>{promo.code}</div>
+                        <div className="text-sm font-bold" style={{ color: "#7c3aed" }}>{promo.code}</div>
                         <div className="text-sm text-gray-500">{promo.description}</div>
                       </div>
                     </td>
@@ -233,7 +233,7 @@ export default function PromoCodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleToggleStatus(promo.id, promo.status)}
-                        className="style={{ color: "#b8935f" }} className=" hover-text-beige-900"
+                        className="style={{ color: "#7c3aed" }} className=" hover-text-beige-900"
                       >
                         {promo.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
                       </button>
@@ -357,7 +357,7 @@ export default function PromoCodesPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
+                  className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
                 >
                   Créer le code
                 </button>

@@ -162,7 +162,7 @@ export default function TestimonialsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }}></div>
       </div>
     )
   }
@@ -176,7 +176,7 @@ export default function TestimonialsPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}
+          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
         >
           + Nouveau Témoignage
         </button>
@@ -200,7 +200,7 @@ export default function TestimonialsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">Total témoignages</p>
-          <p className="text-3xl font-bold" style={{ color: "#b8935f" }}>{testimonials.length}</p>
+          <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{testimonials.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <p className="text-sm text-gray-600 mb-1">En attente</p>
@@ -242,7 +242,7 @@ export default function TestimonialsPage() {
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                        <span className="style={{ color: "#b8935f" }} className=" font-bold text-lg">
+                        <span className="style={{ color: "#7c3aed" }} className=" font-bold text-lg">
                           {testimonial.clientName.charAt(0)}
                         </span>
                       </div>
@@ -330,7 +330,7 @@ export default function TestimonialsPage() {
                   )}
                   <button
                     onClick={() => setSelectedTestimonial(testimonial)}
-                    className="text-xs className=" style={{ backgroundColor: "#d4b5a0" }}text-white px-3 py-1 rounded hover:bg-purple-700"
+                    className="text-xs className=" style={{ backgroundColor: "#7c3aed" }}text-white px-3 py-1 rounded hover:bg-purple-700"
                   >
                     Voir détails
                   </button>
@@ -422,7 +422,7 @@ export default function TestimonialsPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
+                  className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
                 >
                   Créer le témoignage
                 </button>

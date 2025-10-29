@@ -164,7 +164,7 @@ export default function AuditLogsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#d4b5a0" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement des logs...</p>
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function AuditLogsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #d4b5a0, #c9a589)" }}>
+      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
             <div>
@@ -186,7 +186,7 @@ export default function AuditLogsPage() {
             </div>
             <button
               onClick={exportToCSV}
-              className="px-6 py-3 bg-white text-[#b8935f] rounded-lg font-medium hover:bg-gray-50"
+              className="px-6 py-3 bg-white text-[#7c3aed] rounded-lg font-medium hover:bg-gray-50"
             >
               📥 Exporter CSV
             </button>
@@ -212,7 +212,7 @@ export default function AuditLogsPage() {
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md p-6">
             <div className="text-sm text-purple-700 mb-1">Cette semaine</div>
             <div className="text-3xl font-bold text-beige-800">{stats.thisWeek}</div>
-            <div className="text-xs className=" style={{ color: "#b8935f" }} mt-1">actions</div>
+            <div className="text-xs className=" style={{ color: "#7c3aed" }} mt-1">actions</div>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md p-6">
@@ -342,7 +342,7 @@ export default function AuditLogsPage() {
                         <div className="mt-3">
                           <button
                             onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
-                            className="text-sm className=" style={{ color: "#b8935f" }} hover:text-beige-800"
+                            className="text-sm className=" style={{ color: "#7c3aed" }} hover:text-beige-800"
                           >
                             {expandedLog === log.id ? '▼ Masquer détails' : '▶ Voir détails'}
                           </button>
@@ -403,7 +403,7 @@ export default function AuditLogsPage() {
                 <button
                   onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                   disabled={pagination.page === pagination.totalPages}
-                  className="px-4 py-2 className=" style={{ backgroundColor: "#d4b5a0" }}text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 className=" style={{ backgroundColor: "#7c3aed" }}text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Suivant →
                 </button>
