@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -13,6 +13,16 @@ export default function UniversalLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  // Charger l'email sauvegardé au chargement de la page
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail')
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail }))
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +38,14 @@ export default function UniversalLoginPage() {
 
       if (response.ok) {
         const data = await response.json()
+
+        // Sauvegarder ou supprimer l'email selon la checkbox
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', formData.email)
+        } else {
+          localStorage.removeItem('rememberedEmail')
+        }
+
         // Redirection automatique selon le rôle
         window.location.href = data.redirect
       } else {
@@ -120,6 +138,21 @@ export default function UniversalLoginPage() {
                 {error}
               </div>
             )}
+
+            {/* Checkbox Se souvenir de moi */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 focus:ring-2 focus:ring-purple-500"
+                style={{ accentColor: '#7c3aed' }}
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                Se souvenir de mon adresse email
+              </label>
+            </div>
 
             <button
               type="submit"
