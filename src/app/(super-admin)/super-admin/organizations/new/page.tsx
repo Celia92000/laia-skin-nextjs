@@ -229,8 +229,7 @@ export default function NewOrganizationPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    style={{ focusRingColor: '#7c3aed' }}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                     placeholder="Ex: Beauté Parisienne"
                   />
                   <p className="mt-1 text-xs text-gray-500">

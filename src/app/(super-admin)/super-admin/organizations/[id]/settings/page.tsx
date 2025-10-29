@@ -152,8 +152,7 @@ export default function OrganizationSettingsPage({ params }: { params: Promise<{
                   type="text"
                   value={config.siteName || ''}
                   onChange={(e) => setConfig({ ...config, siteName: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ focusRingColor: '#7c3aed' }}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
                 />
               </div>
 
