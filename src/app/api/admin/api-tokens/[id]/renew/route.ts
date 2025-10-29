@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 // POST - Renouveler un token
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await verifyAuth(request);
@@ -14,6 +14,7 @@ export async function POST(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    const params = await context.params;
     const tokenId = params.id;
     const body = await request.json();
     const { service } = body;

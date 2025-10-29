@@ -5,9 +5,10 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: Request,
-  { params }: { params: { key: string } }
+  context: { params: Promise<{ key: string }> }
 ) {
   try {
+    const params = await context.params;
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 
@@ -50,7 +51,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { key: string } }
+  context: { params: Promise<{ key: string }> }
 ) {
   try {
     const cookieStore = await cookies()
