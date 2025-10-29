@@ -430,7 +430,8 @@ export default function GlobalUsersPage() {
                         {user.organization && (
                           <Link
                             href={`/super-admin/organizations/${user.organization.id}`}
-                            className="style={{ color: "#7c3aed" }} className=" hover-text-beige-900"
+                            className="hover-text-beige-900"
+                            style={{ color: "#7c3aed" }}
                           >
                             Org
                           </Link>

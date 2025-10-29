@@ -243,7 +243,7 @@ export default function TestimonialsPage() {
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                        <span className="style={{ color: "#7c3aed" }} className=" font-bold text-lg">
+                        <span className="font-bold text-lg" style={{ color: "#7c3aed" }}>
                           {testimonial.clientName.charAt(0)}
                         </span>
                       </div>
