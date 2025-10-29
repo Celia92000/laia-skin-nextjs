@@ -132,24 +132,56 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { workingHours } = body;
+    const { workingHours, locationId } = body;
+
+    // Obtenir le locationId par défaut si non fourni
+    let actualLocationId = locationId;
+    if (!actualLocationId) {
+      // Récupérer la première location par défaut
+      const defaultLocation = await prisma.location.findFirst({
+        where: { isMainLocation: true }
+      });
+      actualLocationId = defaultLocation?.id;
+
+      // Si pas de location principale, prendre la première
+      if (!actualLocationId) {
+        const firstLocation = await prisma.location.findFirst();
+        actualLocationId = firstLocation?.id;
+      }
+    }
 
     // Mettre à jour chaque jour
     for (const hours of workingHours) {
-      await prisma.workingHours.upsert({
-        where: { dayOfWeek: hours.dayOfWeek },
-        update: {
-          startTime: hours.startTime,
-          endTime: hours.endTime,
-          isOpen: hours.isOpen
-        },
-        create: {
+      // Chercher si l'enregistrement existe déjà
+      const existing = await prisma.workingHours.findFirst({
+        where: {
           dayOfWeek: hours.dayOfWeek,
-          startTime: hours.startTime,
-          endTime: hours.endTime,
-          isOpen: hours.isOpen
+          locationId: actualLocationId || 'default'
         }
       });
+
+      if (existing) {
+        // Mettre à jour l'enregistrement existant
+        await prisma.workingHours.update({
+          where: { id: existing.id },
+          data: {
+            startTime: hours.startTime,
+            endTime: hours.endTime,
+            isOpen: hours.isOpen
+          }
+        });
+      } else {
+        // Créer un nouvel enregistrement
+        await prisma.workingHours.create({
+          data: {
+            dayOfWeek: hours.dayOfWeek,
+            startTime: hours.startTime,
+            endTime: hours.endTime,
+            isOpen: hours.isOpen,
+            locationId: actualLocationId || 'default'
+          }
+        });
+      }
     }
 
     return NextResponse.json({ message: 'Horaires mis à jour avec succès' });
