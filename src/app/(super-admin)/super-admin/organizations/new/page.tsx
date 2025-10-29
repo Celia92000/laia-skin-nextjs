@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
 import AddonSelector from '@/components/super-admin/AddonSelector'
 import { OrgPlan } from '@prisma/client'
@@ -91,13 +92,16 @@ export default function NewOrganizationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#7c3aed' }}>
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold mb-2 text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
-            ➕ Nouvelle Organisation
-          </h1>
-          <p className="text-white/90">Créer un nouvel institut avec le modèle LAIA</p>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin/organizations" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour aux organisations
+        </Link>
+        <div>
+          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+            Nouvelle Organisation
+          </h2>
+          <p className="text-gray-700">Créer un nouvel institut avec le modèle LAIA</p>
         </div>
       </div>
 

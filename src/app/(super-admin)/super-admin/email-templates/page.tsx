@@ -125,23 +125,22 @@ export default function EmailTemplatesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-                ← Retour au dashboard
-              </Link>
-              <h1 className="text-3xl font-bold mb-2">📧 Templates d'Emails</h1>
-              <p className="text-white/90">Gestion des emails automatiques de la plateforme</p>
-            </div>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              Templates d'Emails
+            </h2>
+            <p className="text-gray-700">Gestion des emails automatiques de la plateforme</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
         {/* Templates List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {templates.map((template) => (

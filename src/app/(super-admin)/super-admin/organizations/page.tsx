@@ -419,64 +419,61 @@ export default function OrganizationsPage() {
   const totalPages = Math.ceil((filteredUsers?.length || 0) / usersPerPage)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(to right, #7c3aed, #6b46c1)' }} className="text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-                ← Retour au dashboard
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              {activeTab === 'organizations' ? 'Organisations' : 'Utilisateurs'}
+            </h2>
+            <p className="text-gray-700">
+              {activeTab === 'organizations'
+                ? `${filteredOrgs?.length || 0} organisation${(filteredOrgs?.length || 0) > 1 ? 's' : ''}`
+                : `${users?.length || 0} utilisateurs au total`
+              }
+            </p>
+          </div>
+          {activeTab === 'organizations' && (
+            <div className="flex gap-3">
+              <Link
+                href="/super-admin/organizations/new"
+                className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold border-2 shadow-sm"
+                style={{ color: '#7c3aed', borderColor: '#7c3aed' }}
+              >
+                + Nouvelle organisation
               </Link>
-              <h1 className="text-3xl font-bold mb-2">
-                {activeTab === 'organizations' ? '🏢 Organisations' : '👥 Utilisateurs'}
-              </h1>
-              <p className="text-white/90">
-                {activeTab === 'organizations'
-                  ? `${filteredOrgs?.length || 0} organisation${(filteredOrgs?.length || 0) > 1 ? 's' : ''}`
-                  : `${users?.length || 0} utilisateurs au total`
-                }
-              </p>
             </div>
-            {activeTab === 'organizations' && (
-              <div className="flex gap-3">
-                <Link
-                  href="/super-admin/organizations/new"
-                  className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold"
-                  style={{ color: '#7c3aed' }}
-                >
-                  + Nouvelle organisation
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Tabs */}
-          <div className="mt-6 flex gap-2">
-            <button
-              onClick={() => setActiveTab('organizations')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'organizations'
-                  ? 'bg-white shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-              style={activeTab === 'organizations' ? { color: '#7c3aed' } : {}}
-            >
-              🏢 Organisations
-            </button>
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'users'
-                  ? 'bg-white shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-              style={activeTab === 'users' ? { color: '#7c3aed' } : {}}
-            >
-              👥 Utilisateurs
-            </button>
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setActiveTab('organizations')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'organizations'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'organizations' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          🏢 Organisations
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'users'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'users' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          👥 Utilisateurs
+        </button>
       </div>
 
       {/* Organizations Tab */}

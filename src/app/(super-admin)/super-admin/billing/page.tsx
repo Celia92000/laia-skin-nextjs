@@ -434,61 +434,63 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-                ← Retour au dashboard
-              </Link>
-              <h1 className="text-3xl font-bold mb-2">💳 Facturation & Abonnements</h1>
-              <p className="text-white/90">Gestion des factures, paiements et paramètres</p>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              Facturation & Abonnements
+            </h2>
+            <p className="text-gray-700">Gestion des factures, paiements et paramètres</p>
+          </div>
+          {activeTab === 'invoices' && (
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowExtendTrialModal(true)}
+                className="px-6 py-3 bg-white hover:bg-gray-50 rounded-lg font-medium border-2 shadow-sm"
+                style={{ color: '#4f46e5', borderColor: '#4f46e5' }}
+              >
+                Prolonger essai
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50 border-2 shadow-sm"
+                style={{ color: '#7c3aed', borderColor: '#7c3aed' }}
+              >
+                Créer facture
+              </button>
             </div>
-            {activeTab === 'invoices' && (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowExtendTrialModal(true)}
-                  className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 rounded-lg font-medium"
-                >
-                  ⏰ Prolonger essai
-                </button>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50"
-                  style={{ color: "#7c3aed" }}
-                >
-                  ➕ Créer facture
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Tabs */}
-          <div className="mt-6 flex gap-2">
-            <button
-              onClick={() => setActiveTab('invoices')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'invoices'
-                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              📄 Factures
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === 'settings'
-                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              ⚙️ Paramètres
-            </button>
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setActiveTab('invoices')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'invoices'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'invoices' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          📄 Factures
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            activeTab === 'settings'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'settings' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          ⚙️ Paramètres
+        </button>
       </div>
 
       {/* Invoices Tab Content */}

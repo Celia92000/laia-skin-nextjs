@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface Organization {
   id: string
@@ -153,16 +154,22 @@ export default function EmailCampaignsPage() {
   const recipientCount = selectedOrg === 'all' ? totalClients : (selectedOrgData?.clientCount || 0)
 
   return (
-    <div className="px-4 py-8 max-w-7xl mx-auto">
-      {/* Header */}
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
-          📧 Campagnes Email Clients
-        </h1>
-        <p className="text-gray-600">
-          Envoyez des emails personnalisés aux clients de vos instituts
-        </p>
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div>
+          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+            Campagnes Email Clients
+          </h2>
+          <p className="text-gray-700">
+            Envoyez des emails personnalisés aux clients de vos instituts
+          </p>
+        </div>
       </div>
+
+      <div className="max-w-7xl mx-auto">
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

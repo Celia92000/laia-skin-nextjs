@@ -15,50 +15,47 @@ export default function CommunicationsPage() {
   const [activeTab, setActiveTab] = useState<'emailing' | 'whatsapp'>('emailing')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-                ← Retour au dashboard
-              </Link>
-              <h1 className="text-3xl font-bold mb-2">
-                📧 Communications LAIA Connect
-              </h1>
-              <p className="text-white/90">
-                Gestion globale des emails et WhatsApp pour toutes les organisations
-              </p>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="mt-6 flex gap-2">
-            <button
-              onClick={() => setActiveTab('emailing')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                activeTab === 'emailing'
-                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              <Mail className="w-5 h-5" />
-              Emailing
-            </button>
-            <button
-              onClick={() => setActiveTab('whatsapp')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                activeTab === 'whatsapp'
-                  ? 'bg-white style={{ color: "#7c3aed" }} className="shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              <MessageCircle className="w-5 h-5" />
-              WhatsApp
-            </button>
-          </div>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div>
+          <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+            Communications LAIA Connect
+          </h2>
+          <p className="text-gray-700">
+            Gestion globale des emails et WhatsApp pour toutes les organisations
+          </p>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setActiveTab('emailing')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            activeTab === 'emailing'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'emailing' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          <Mail className="w-5 h-5" />
+          Emailing
+        </button>
+        <button
+          onClick={() => setActiveTab('whatsapp')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            activeTab === 'whatsapp'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+          style={activeTab === 'whatsapp' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          <MessageCircle className="w-5 h-5" />
+          WhatsApp
+        </button>
       </div>
 
       {/* Content */}

@@ -171,24 +171,22 @@ export default function OrganizationLocationsPage({ params }: { params: Promise<
   const usagePercent = (locations.length / organization.maxLocations) * 100
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-10 shadow-md" style={{ backgroundColor: '#7c3aed' }}>
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <Link
-            href={`/super-admin/organizations/${id}`}
-            className="text-white/90 hover:text-white mb-2 inline-block"
-          >
-            ← Retour à l'organisation
-          </Link>
-          <h1 className="text-3xl font-bold text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
-            📍 Points de vente de {organization.name}
-          </h1>
-          <p className="text-white/90">Gérer les emplacements de l'organisation</p>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href={`/super-admin/organizations/${id}`} className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour à l'organisation
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              Points de vente de {organization.name}
+            </h2>
+            <p className="text-gray-700">Gérer les emplacements de l'organisation</p>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
         {/* Message */}
         {message.text && (
           <div className={`mb-6 p-4 rounded-lg ${

@@ -232,19 +232,22 @@ export default function GlobalUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-            ← Retour au dashboard
-          </Link>
-          <h1 className="text-3xl font-bold mb-2">👥 Gestion Globale des Utilisateurs</h1>
-          <p className="text-white/90">{users.length} utilisateurs au total</p>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              Gestion Globale des Utilisateurs
+            </h2>
+            <p className="text-gray-700">{users.length} utilisateurs au total</p>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-md p-6">

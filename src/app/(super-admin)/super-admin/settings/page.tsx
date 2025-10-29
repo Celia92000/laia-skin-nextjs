@@ -117,27 +117,26 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(to right, #7c3aed, #6b46c1)' }} className="text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/super-admin" className="text-white/80 hover:text-white mb-2 inline-block">
-                ← Retour au dashboard
-              </Link>
-              <h1 className="text-3xl font-bold mb-2">⚙️ Configuration Plateforme</h1>
-              <p className="text-white/90">Paramètres globaux de la plateforme multi-tenant</p>
-            </div>
-            <button
-              onClick={handleSaveAll}
-              disabled={saving}
-              className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50"
-              style={{ color: '#7c3aed' }}
-            >
-              {saving ? '💾 Enregistrement...' : '💾 Enregistrer tout'}
-            </button>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour au dashboard
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              Configuration Plateforme
+            </h2>
+            <p className="text-gray-700">Paramètres globaux de la plateforme multi-tenant</p>
           </div>
+          <button
+            onClick={handleSaveAll}
+            disabled={saving}
+            className="px-6 py-3 bg-white rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 border-2 shadow-sm"
+            style={{ color: '#7c3aed', borderColor: '#7c3aed' }}
+          >
+            {saving ? 'Enregistrement...' : 'Enregistrer tout'}
+          </button>
         </div>
       </div>
 

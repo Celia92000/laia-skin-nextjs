@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface Testimonial {
   id: string
@@ -145,8 +146,8 @@ export default function TestimonialsPage() {
     }
     const labels = {
       PENDING: 'En attente',
-      APPROVED: 'Approuvé',
-      REJECTED: 'Rejeté'
+      APPROVED: 'Approuvï¿½',
+      REJECTED: 'Rejetï¿½'
     }
     return (
       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
@@ -171,14 +172,14 @@ export default function TestimonialsPage() {
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">P Témoignages Clients</h1>
-          <p className="text-gray-600">Gérez les témoignages pour le marketing LAIA</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">P Tï¿½moignages Clients</h1>
+          <p className="text-gray-600">Gï¿½rez les tï¿½moignages pour le marketing LAIA</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
         >
-          + Nouveau Témoignage
+          + Nouveau Tï¿½moignage
         </button>
       </div>
 
@@ -191,15 +192,15 @@ export default function TestimonialsPage() {
         >
           <option value="ALL">Tous les statuts</option>
           <option value="PENDING">En attente</option>
-          <option value="APPROVED">Approuvés</option>
-          <option value="REJECTED">Rejetés</option>
+          <option value="APPROVED">Approuvï¿½s</option>
+          <option value="REJECTED">Rejetï¿½s</option>
         </select>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total témoignages</p>
+          <p className="text-sm text-gray-600 mb-1">Total tï¿½moignages</p>
           <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{testimonials.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -209,7 +210,7 @@ export default function TestimonialsPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Approuvés</p>
+          <p className="text-sm text-gray-600 mb-1">Approuvï¿½s</p>
           <p className="text-3xl font-bold text-green-600">
             {testimonials.filter(t => t.status === 'APPROVED').length}
           </p>
@@ -225,7 +226,7 @@ export default function TestimonialsPage() {
       {/* Liste */}
       {filteredTestimonials.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500">
-          <p className="text-lg mb-2">Aucun témoignage trouvé</p>
+          <p className="text-lg mb-2">Aucun tï¿½moignage trouvï¿½</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -332,7 +333,7 @@ export default function TestimonialsPage() {
                     onClick={() => setSelectedTestimonial(testimonial)}
                     className="text-xs className=" style={{ backgroundColor: "#7c3aed" }}text-white px-3 py-1 rounded hover:bg-purple-700"
                   >
-                    Voir détails
+                    Voir dï¿½tails
                   </button>
                 </div>
               </div>
@@ -341,11 +342,11 @@ export default function TestimonialsPage() {
         </div>
       )}
 
-      {/* Modal création */}
+      {/* Modal crï¿½ation */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full my-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Nouveau Témoignage</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Nouveau Tï¿½moignage</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Nom du client *</label>
@@ -360,13 +361,13 @@ export default function TestimonialsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rôle/Titre</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rï¿½le/Titre</label>
                 <input
                   type="text"
                   value={formData.clientRole}
                   onChange={(e) => setFormData({ ...formData, clientRole: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                  placeholder="Gérante, Beauté Éternelle Paris"
+                  placeholder="Gï¿½rante, Beautï¿½ ï¿½ternelle Paris"
                 />
               </div>
 
@@ -388,28 +389,28 @@ export default function TestimonialsPage() {
                   onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value) })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                 >
-                  <option value="5">PPPPP (5 étoiles)</option>
-                  <option value="4">PPPP (4 étoiles)</option>
-                  <option value="3">PPP (3 étoiles)</option>
-                  <option value="2">PP (2 étoiles)</option>
-                  <option value="1">P (1 étoile)</option>
+                  <option value="5">PPPPP (5 ï¿½toiles)</option>
+                  <option value="4">PPPP (4 ï¿½toiles)</option>
+                  <option value="3">PPP (3 ï¿½toiles)</option>
+                  <option value="2">PP (2 ï¿½toiles)</option>
+                  <option value="1">P (1 ï¿½toile)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Témoignage *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tï¿½moignage *</label>
                 <textarea
                   required
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   rows={6}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                  placeholder="LAIA a transformé la gestion de mon institut..."
+                  placeholder="LAIA a transformï¿½ la gestion de mon institut..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par virgule)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (sï¿½parï¿½s par virgule)</label>
                 <input
                   type="text"
                   value={formData.tags}
@@ -424,7 +425,7 @@ export default function TestimonialsPage() {
                   type="submit"
                   className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
                 >
-                  Créer le témoignage
+                  Crï¿½er le tï¿½moignage
                 </button>
                 <button
                   type="button"
@@ -439,12 +440,12 @@ export default function TestimonialsPage() {
         </div>
       )}
 
-      {/* Modal détails */}
+      {/* Modal dï¿½tails */}
       {selectedTestimonial && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full my-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Détails du témoignage</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Dï¿½tails du tï¿½moignage</h2>
               <button
                 onClick={() => setSelectedTestimonial(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -499,7 +500,7 @@ export default function TestimonialsPage() {
               )}
 
               <div className="border-t pt-4 text-sm text-gray-500">
-                Créé le {new Date(selectedTestimonial.createdAt).toLocaleDateString('fr-FR')}
+                Crï¿½ï¿½ le {new Date(selectedTestimonial.createdAt).toLocaleDateString('fr-FR')}
               </div>
             </div>
 

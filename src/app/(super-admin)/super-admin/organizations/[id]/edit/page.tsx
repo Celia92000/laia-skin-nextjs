@@ -237,66 +237,58 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header moderne */}
-      <div className="bg-gradient-to-r from-[#7c3aed] to-[#6b46c1] text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <Link
-            href={`/super-admin/organizations/${id}`}
-            className="inline-flex items-center text-white/90 hover:text-white mb-4 text-sm font-medium transition"
-          >
-            ← Retour à l'organisation
-          </Link>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">⚙️ {organization.name}</h1>
-              <p className="text-white/90">Gestion du forfait et des options</p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-white/80">Forfait actuel</div>
-              <div className="text-2xl font-bold">{formData.plan}</div>
-              <div className="text-lg text-white/90">{PLAN_PRICES[formData.plan as keyof typeof PLAN_PRICES]}€/mois</div>
-            </div>
+    <div className="px-4 py-8 min-h-screen bg-gray-50">
+      <div className="mb-8">
+        <Link href={`/super-admin/organizations/${id}`} className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
+          ← Retour à l'organisation
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
+              {organization.name}
+            </h2>
+            <p className="text-gray-700">Gestion du forfait et des options</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-600">Forfait actuel</div>
+            <div className="text-2xl font-bold" style={{ color: '#7c3aed' }}>{formData.plan}</div>
+            <div className="text-lg text-gray-700">{PLAN_PRICES[formData.plan as keyof typeof PLAN_PRICES]}€/mois</div>
           </div>
         </div>
       </div>
 
       {/* Onglets */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-1">
-            <button
-              onClick={() => setActiveTab('plan')}
-              className={`px-6 py-4 font-medium transition relative ${
-                activeTab === 'plan'
-                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              💳 Forfait & Options
-            </button>
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`px-6 py-4 font-medium transition ${
-                activeTab === 'info'
-                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              📋 Informations
-            </button>
-            <button
-              onClick={() => setActiveTab('billing')}
-              className={`px-6 py-4 font-medium transition ${
-                activeTab === 'billing'
-                  ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🏢 Facturation
-            </button>
-          </div>
-        </div>
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setActiveTab('plan')}
+          className={`px-6 py-3 rounded-lg font-medium transition ${
+            activeTab === 'plan'
+              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+        >
+          Forfait & Options
+        </button>
+        <button
+          onClick={() => setActiveTab('info')}
+          className={`px-6 py-3 rounded-lg font-medium transition ${
+            activeTab === 'info'
+              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+        >
+          Informations
+        </button>
+        <button
+          onClick={() => setActiveTab('billing')}
+          className={`px-6 py-3 rounded-lg font-medium transition ${
+            activeTab === 'billing'
+              ? 'bg-white shadow-md border-2 border-purple-600 text-purple-600'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+          }`}
+        >
+          Facturation
+        </button>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
