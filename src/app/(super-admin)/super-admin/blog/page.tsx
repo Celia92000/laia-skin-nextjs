@@ -127,11 +127,11 @@ export default function BlogPage() {
 
   const getCategoryLabel = (category: BlogPost['category']) => {
     const labels = {
-      NEWS: 'Actualit�s',
+      NEWS: 'Actualités',
       TUTORIAL: 'Tutoriel',
-      FEATURE: 'Fonctionnalit�',
-      CASE_STUDY: '�tude de cas',
-      UPDATE: 'Mise � jour'
+      FEATURE: 'Fonctionnalité',
+      CASE_STUDY: 'Étude de cas',
+      UPDATE: 'Mise à jour'
     }
     return labels[category]
   }
@@ -168,12 +168,12 @@ export default function BlogPage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">=� Blog LAIA</h1>
-          <p className="text-gray-600">G�rez les articles de blog et actualit�s de la plateforme</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">📰 Nouveautés</h1>
+          <p className="text-gray-600">Gérez les articles de blog et actualités de la plateforme</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
+          className="px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl text-white" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
         >
           + Nouvel Article
         </button>
@@ -188,8 +188,8 @@ export default function BlogPage() {
         >
           <option value="ALL">Tous les statuts</option>
           <option value="DRAFT">Brouillons</option>
-          <option value="PUBLISHED">Publi�s</option>
-          <option value="ARCHIVED">Archiv�s</option>
+          <option value="PUBLISHED">Publiés</option>
+          <option value="ARCHIVED">Archivés</option>
         </select>
 
         <select
@@ -197,12 +197,12 @@ export default function BlogPage() {
           onChange={(e) => setFilterCategory(e.target.value as typeof filterCategory)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
         >
-          <option value="ALL">Toutes les cat�gories</option>
-          <option value="NEWS">Actualit�s</option>
+          <option value="ALL">Toutes les catégories</option>
+          <option value="NEWS">Actualités</option>
           <option value="TUTORIAL">Tutoriels</option>
-          <option value="FEATURE">Fonctionnalit�s</option>
-          <option value="CASE_STUDY">�tudes de cas</option>
-          <option value="UPDATE">Mises � jour</option>
+          <option value="FEATURE">Fonctionnalités</option>
+          <option value="CASE_STUDY">Études de cas</option>
+          <option value="UPDATE">Mises à jour</option>
         </select>
       </div>
 
@@ -213,7 +213,7 @@ export default function BlogPage() {
           <p className="text-3xl font-bold" style={{ color: "#7c3aed" }}>{posts.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Publi�s</p>
+          <p className="text-sm text-gray-600 mb-1">Publiés</p>
           <p className="text-3xl font-bold text-green-600">
             {posts.filter(p => p.status === 'PUBLISHED').length}
           </p>
@@ -244,8 +244,8 @@ export default function BlogPage() {
 
         {filteredPosts.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            <p className="text-lg mb-2">Aucun article trouv�</p>
-            <p className="text-sm">Cr�ez votre premier article de blog</p>
+            <p className="text-lg mb-2">Aucun article trouvé</p>
+            <p className="text-sm">Créez votre premier article de blog</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -280,8 +280,8 @@ export default function BlogPage() {
 
                   <div className="text-xs text-gray-500 mb-4">
                     {post.publishedAt
-                      ? `Publi� le ${new Date(post.publishedAt).toLocaleDateString('fr-FR')}`
-                      : `Cr�� le ${new Date(post.createdAt).toLocaleDateString('fr-FR')}`}
+                      ? `Publié le ${new Date(post.publishedAt).toLocaleDateString('fr-FR')}`
+                      : `Créé le ${new Date(post.createdAt).toLocaleDateString('fr-FR')}`}
                   </div>
 
                   <div className="flex gap-2">
@@ -304,7 +304,7 @@ export default function BlogPage() {
                       onClick={() => handleDelete(post.id)}
                       className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium hover:bg-red-700"
                     >
-                      
+                      🗑️
                     </button>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function BlogPage() {
         )}
       </div>
 
-      {/* Modal de cr�ation */}
+      {/* Modal de création */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -328,52 +328,52 @@ export default function BlogPage() {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                  placeholder="Ex: Les nouveaut�s LAIA de janvier 2025"
+                  placeholder="Ex: Les nouveautés LAIA de janvier 2025"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">R�sum�</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Résumé</label>
                 <textarea
                   required
                   value={formData.excerpt}
                   onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                  placeholder="Court r�sum� de l'article..."
+                  placeholder="Court résumé de l'article..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cat�gorie</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as BlogPost['category'] })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   >
-                    <option value="NEWS">Actualit�s</option>
+                    <option value="NEWS">Actualités</option>
                     <option value="TUTORIAL">Tutoriel</option>
-                    <option value="FEATURE">Fonctionnalit�</option>
-                    <option value="CASE_STUDY">�tude de cas</option>
-                    <option value="UPDATE">Mise � jour</option>
+                    <option value="FEATURE">Fonctionnalité</option>
+                    <option value="CASE_STUDY">Étude de cas</option>
+                    <option value="UPDATE">Mise à jour</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (s�par�s par virgule)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par virgule)</label>
                   <input
                     type="text"
                     value={formData.tags}
                     onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                    placeholder="saas, beaut�, gestion"
+                    placeholder="saas, beauté, gestion"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image � la une (URL)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image à la une (URL)</label>
                 <input
                   type="url"
                   value={formData.featuredImage}
@@ -391,7 +391,7 @@ export default function BlogPage() {
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   rows={12}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 font-mono text-sm"
-                  placeholder="Contenu de l'article (Markdown support�)..."
+                  placeholder="Contenu de l'article (Markdown supporté)..."
                 />
               </div>
 
@@ -415,7 +415,7 @@ export default function BlogPage() {
                       onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })}
                       rows={2}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                      placeholder="Si vide, utilisera le r�sum�"
+                      placeholder="Si vide, utilisera le résumé"
                     />
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export default function BlogPage() {
                   className="flex-1 px-6 py-3 rounded-lg font-semibold text-white"
                   style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
                 >
-                  Cr�er en brouillon
+                  Créer en brouillon
                 </button>
                 <button
                   type="button"
@@ -442,7 +442,7 @@ export default function BlogPage() {
         </div>
       )}
 
-      {/* Modal de d�tail */}
+      {/* Modal de détail */}
       {selectedPost && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
@@ -452,7 +452,7 @@ export default function BlogPage() {
                 onClick={() => setSelectedPost(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
               >
-                
+                ×
               </button>
             </div>
 
@@ -508,7 +508,7 @@ export default function BlogPage() {
                     handlePublish(selectedPost.id)
                     setSelectedPost(null)
                   }}
-                  className="flex-1 bg-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
+                  className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
                 >
                   Publier
                 </button>

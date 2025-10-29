@@ -181,10 +181,7 @@ L'équipe LAIA Connect`
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const token = localStorage.getItem('auth-token');
-        const response = await fetch('/api/super-admin/email-templates/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const response = await fetch('/api/super-admin/email-templates/');
         if (response.ok) {
           const data = await response.json();
           // Vérifier que data est un tableau avant de fusionner
