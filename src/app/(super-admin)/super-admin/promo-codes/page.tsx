@@ -137,8 +137,8 @@ export default function PromoCodesPage() {
     <div className="px-4 py-8 max-w-7xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">< Codes Promo</h1>
-          <p className="text-gray-600">Gérez les codes promotionnels pour les abonnements LAIA</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2"> Codes Promo</h1>
+          <p className="text-gray-600">GÃ©rez les codes promotionnels pour les abonnements LAIA</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
@@ -167,7 +167,7 @@ export default function PromoCodesPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Expirés</p>
+          <p className="text-sm text-gray-600 mb-1">ExpirÃ©s</p>
           <p className="text-3xl font-bold text-red-600">
             {promoCodes.filter(p => p.status === 'EXPIRED').length}
           </p>
@@ -183,7 +183,7 @@ export default function PromoCodesPage() {
         {promoCodes.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <p className="text-lg mb-2">Aucun code promo</p>
-            <p className="text-sm">Créez votre premier code promo</p>
+            <p className="text-sm">CrÃ©ez votre premier code promo</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -194,7 +194,7 @@ export default function PromoCodesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type / Valeur</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plans</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Utilisations</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Validité</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ValiditÃ©</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -212,7 +212,7 @@ export default function PromoCodesPage() {
                       <div className="text-sm text-gray-900">{getTypeLabel(promo.type)}</div>
                       <div className="text-sm font-bold text-gray-600">
                         {promo.type === 'PERCENTAGE' ? `${promo.value}%` :
-                         promo.type === 'FIXED' ? `${promo.value}¬` :
+                         promo.type === 'FIXED' ? `${promo.value}â‚¬` :
                          `+${promo.value} jours`}
                       </div>
                     </td>
@@ -225,7 +225,7 @@ export default function PromoCodesPage() {
                       {promo.currentUses} {promo.maxUses && `/ ${promo.maxUses}`}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {promo.validUntil ? new Date(promo.validUntil).toLocaleDateString('fr-FR') : 'Illimité'}
+                      {promo.validUntil ? new Date(promo.validUntil).toLocaleDateString('fr-FR') : 'IllimitÃ©'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(promo.status)}
@@ -233,9 +233,10 @@ export default function PromoCodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleToggleStatus(promo.id, promo.status)}
-                        className="style={{ color: "#7c3aed" }} className=" hover-text-beige-900"
+                        className="hover:text-beige-900"
+                        style={{ color: "#7c3aed" }}
                       >
-                        {promo.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
+                        {promo.status === 'ACTIVE' ? 'DÃ©sactiver' : 'Activer'}
                       </button>
                     </td>
                   </tr>
@@ -246,7 +247,7 @@ export default function PromoCodesPage() {
         )}
       </div>
 
-      {/* Modal création */}
+      {/* Modal crÃ©ation */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-lg p-8 max-w-2xl w-full my-8">
@@ -286,14 +287,14 @@ export default function PromoCodesPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                   >
                     <option value="PERCENTAGE">Pourcentage</option>
-                    <option value="FIXED">Montant fixe (¬)</option>
+                    <option value="FIXED">Montant fixe (â‚¬)</option>
                     <option value="FREE_TRIAL">Essai gratuit (jours)</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Valeur * {formData.type === 'PERCENTAGE' && '(%)'} {formData.type === 'FIXED' && '(¬)'} {formData.type === 'FREE_TRIAL' && '(jours)'}
+                    Valeur * {formData.type === 'PERCENTAGE' && '(%)'} {formData.type === 'FIXED' && '(â‚¬)'} {formData.type === 'FREE_TRIAL' && '(jours)'}
                   </label>
                   <input
                     type="number"
@@ -308,7 +309,7 @@ export default function PromoCodesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Plans ciblés (laisser vide pour tous)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plans ciblÃ©s (laisser vide pour tous)</label>
                 <div className="grid grid-cols-2 gap-2">
                   {['SOLO', 'DUO', 'TEAM', 'PREMIUM'].map(plan => (
                     <label key={plan} className="flex items-center">
@@ -339,7 +340,7 @@ export default function PromoCodesPage() {
                     value={formData.maxUses}
                     onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
-                    placeholder="Illimité"
+                    placeholder="IllimitÃ©"
                   />
                 </div>
 
@@ -357,9 +358,10 @@ export default function PromoCodesPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r className=" style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700"
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white hover:from-purple-700 hover:to-indigo-700"
+                  style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
                 >
-                  Créer le code
+                  CrÃ©er le code
                 </button>
                 <button
                   type="button"

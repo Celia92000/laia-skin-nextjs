@@ -172,7 +172,7 @@ export default function NotificationsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#7c3aed" }}></div>
           <p className="text-gray-600">Chargement des notifications...</p>
         </div>
       </div>
@@ -225,8 +225,9 @@ export default function NotificationsPage() {
               <button
                 onClick={() => setFilter('all')}
                 className={`px-4 py-2 rounded-lg font-medium ${
-                  filter === 'all' ? 'style={{ backgroundColor: "#7c3aed" }} className="text-white' : 'bg-gray-100 text-gray-700'
+                  filter === 'all' ? 'text-white' : 'bg-gray-100 text-gray-700'
                 }`}
+                style={filter === 'all' ? { backgroundColor: "#7c3aed" } : {}}
               >
                 Toutes ({stats.total})
               </button>
@@ -307,7 +308,8 @@ export default function NotificationsPage() {
                   type="checkbox"
                   checked={selectedNotifications.length === notifications.length}
                   onChange={toggleSelectAll}
-                  className="w-5 h-5 className=" style={{ color: "#7c3aed" }} rounded focus:ring-2 focus:ring-amber-500"
+                  className="w-5 h-5 rounded focus:ring-2 focus:ring-amber-500"
+                  style={{ color: "#7c3aed" }}
                 />
                 <span className="text-sm text-gray-600">
                   {selectedNotifications.length > 0
@@ -330,7 +332,8 @@ export default function NotificationsPage() {
                         type="checkbox"
                         checked={selectedNotifications.includes(notification.id)}
                         onChange={() => toggleSelect(notification.id)}
-                        className="w-5 h-5 mt-1 className=" style={{ color: "#7c3aed" }} rounded focus:ring-2 focus:ring-amber-500"
+                        className="w-5 h-5 mt-1 rounded focus:ring-2 focus:ring-amber-500"
+                        style={{ color: "#7c3aed" }}
                       />
 
                       <div className={`text-3xl p-2 rounded-lg ${getNotificationColor(notification.type)}`}>
@@ -358,7 +361,8 @@ export default function NotificationsPage() {
                           {notification.actionUrl && (
                             <Link
                               href={notification.actionUrl}
-                              className="text-sm className=" style={{ color: "#7c3aed" }} hover:text-beige-800 font-medium"
+                              className="text-sm hover:text-beige-800 font-medium"
+                              style={{ color: "#7c3aed" }}
                             >
                               Voir l'organisation →
                             </Link>

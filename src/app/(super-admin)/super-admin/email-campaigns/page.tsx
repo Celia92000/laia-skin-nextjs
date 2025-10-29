@@ -338,8 +338,9 @@ export default function EmailCampaignsPage() {
               className={`w-full py-4 rounded-lg font-semibold text-white text-lg transition-all ${
                 sending || !emailSubject.trim()
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }} className=" hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+                  : 'hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
               }`}
+              style={sending || !emailSubject.trim() ? {} : { background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
             >
               {sending ? (
                 <span className="flex items-center justify-center gap-2">
@@ -352,6 +353,7 @@ export default function EmailCampaignsPage() {
             </button>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Modal de prévisualisation */}

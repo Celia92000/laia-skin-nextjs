@@ -117,7 +117,7 @@ export default function EmailTemplatesPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: "#7c3aed" }} className=" mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: "#7c3aed" }}></div>
           <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
@@ -186,7 +186,8 @@ export default function EmailTemplatesPage() {
 
                 <button
                   onClick={() => handleEdit(template)}
-                  className="w-full px-4 py-2 className=" style={{ backgroundColor: "#7c3aed" }}text-white rounded-lg hover:bg-purple-700"
+                  className="w-full px-4 py-2 text-white rounded-lg hover:bg-purple-700"
+                  style={{ backgroundColor: "#7c3aed" }}
                 >
                   ✏️ Modifier
                 </button>
@@ -268,7 +269,8 @@ export default function EmailTemplatesPage() {
                   type="checkbox"
                   checked={editForm.active}
                   onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                  className="w-4 h-4 className=" style={{ color: "#7c3aed" }} rounded"
+                  className="w-4 h-4 rounded"
+                  style={{ color: "#7c3aed" }}
                 />
                 <label className="ml-2 text-sm text-gray-700">
                   Template actif
@@ -279,7 +281,8 @@ export default function EmailTemplatesPage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={saveTemplate}
-                className="flex-1 px-4 py-2 className=" style={{ backgroundColor: "#7c3aed" }}text-white rounded-lg hover:bg-purple-700"
+                className="flex-1 px-4 py-2 text-white rounded-lg hover:bg-purple-700"
+                style={{ backgroundColor: "#7c3aed" }}
               >
                 💾 Enregistrer
               </button>
