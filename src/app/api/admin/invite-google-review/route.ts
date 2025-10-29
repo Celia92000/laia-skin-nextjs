@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
 
     // URL de votre page Google Business
     const googleReviewUrl = 'https://g.page/r/CYourGoogleBusinessID/review'; // À remplacer par votre vraie URL
+    const email = 'contact@laia-institut.fr';
 
     // Template d'email
     const emailTemplate = (clientName: string) => `
