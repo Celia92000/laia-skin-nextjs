@@ -344,7 +344,6 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
                 </p>
                 <AddonSelector
                   selectedPlan={formData.plan as OrgPlan}
-                  selectedAddons={selectedAddons}
                   onAddonsChange={setSelectedAddons}
                 />
               </div>
