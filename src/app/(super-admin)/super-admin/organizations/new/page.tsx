@@ -180,9 +180,32 @@ export default function NewOrganizationPage() {
                   onClick={() => {
                     setSuccess(null)
                     setFormData({
-                      name: '', ownerEmail: '', ownerPhone: '', plan: 'SOLO', city: '',
-                      legalName: '', siret: '', billingEmail: '', billingAddress: '',
-                      slug: '', subdomain: ''
+                      // Informations essentielles
+                      name: '',
+                      ownerFirstName: '',
+                      ownerLastName: '',
+                      ownerEmail: '',
+                      ownerPhone: '',
+                      plan: 'SOLO',
+                      city: '',
+                      // Informations légales/facturation
+                      legalName: '',
+                      siret: '',
+                      tvaNumber: '',
+                      billingEmail: '',
+                      billingAddress: '',
+                      billingPostalCode: '',
+                      billingCity: '',
+                      billingCountry: 'France',
+                      // Mandat SEPA
+                      sepaIban: '',
+                      sepaBic: '',
+                      sepaAccountHolder: '',
+                      sepaMandate: false,
+                      // Auto-générés
+                      slug: '',
+                      subdomain: '',
+                      domain: ''
                     })
                   }}
                   className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold"
