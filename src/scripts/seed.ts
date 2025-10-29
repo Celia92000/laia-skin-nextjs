@@ -19,7 +19,7 @@ async function main() {
       password: adminPassword,
       name: 'Laia Admin',
       phone: '0600000000',
-      role: 'admin',
+      role: "ADMIN",
       loyaltyPoints: 0,
       totalSpent: 0
     }
@@ -35,7 +35,7 @@ async function main() {
       password: clientPassword,
       name: 'Sophie Martin',
       phone: '0612345678',
-      role: 'client',
+      role: "CLIENT",
       loyaltyPoints: 150,
       totalSpent: 450,
       skinType: 'normal',
@@ -49,7 +49,7 @@ async function main() {
       password: clientPassword,
       name: 'Marie Dubois',
       phone: '0623456789',
-      role: 'client',
+      role: "CLIENT",
       loyaltyPoints: 280,
       totalSpent: 840,
       skinType: 'combination',
@@ -64,7 +64,7 @@ async function main() {
       password: clientPassword,
       name: 'Julie Bernard',
       phone: '0634567890',
-      role: 'client',
+      role: "CLIENT",
       loyaltyPoints: 50,
       totalSpent: 150,
       skinType: 'sensitive'

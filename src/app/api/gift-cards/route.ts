@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
             email: recipientEmail,
             name: recipientName,
             password: tempPassword,
-            role: 'client'
+            role: "CLIENT"
           }
         });
       }

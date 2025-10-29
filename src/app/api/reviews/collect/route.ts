@@ -51,7 +51,7 @@ export async function POST(request: Request) {
           email: `anonymous_${Date.now()}@temp.com`,
           name: data.clientName || 'Client anonyme',
           password: 'not-used',
-          role: 'client'
+          role: "CLIENT"
         }
       });
       client = anonymousUser;

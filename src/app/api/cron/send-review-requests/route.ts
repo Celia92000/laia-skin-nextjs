@@ -241,9 +241,19 @@ Merci infiniment ! 🙏
 
 // Endpoint manuel pour tester
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+
   try {
     const { reservationId } = await request.json();
-    
+
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: { 

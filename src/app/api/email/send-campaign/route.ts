@@ -96,7 +96,7 @@ async function getSegmentUsers(segment: string) {
       // Nouvelles clientes (inscrites ce mois)
       return await prisma.user.findMany({
         where: {
-          role: 'client',
+          role: "CLIENT",
           createdAt: {
             gte: new Date(today.getFullYear(), today.getMonth(), 1)
           }
@@ -108,7 +108,7 @@ async function getSegmentUsers(segment: string) {
       // Clientes fidèles (6+ visites)
       return await prisma.user.findMany({
         where: {
-          role: 'client',
+          role: "CLIENT",
           loyaltyProfile: {
             individualServicesCount: { gte: 6 }
           }
@@ -120,7 +120,7 @@ async function getSegmentUsers(segment: string) {
       // Clientes inactives (60+ jours sans visite)
       return await prisma.user.findMany({
         where: {
-          role: 'client',
+          role: "CLIENT",
           lastVisit: {
             lte: sixtyDaysAgo
           }
@@ -133,7 +133,7 @@ async function getSegmentUsers(segment: string) {
       const currentMonth = today.getMonth() + 1;
       return await prisma.user.findMany({
         where: {
-          role: 'client',
+          role: "CLIENT",
           birthDate: {
             not: null
           }

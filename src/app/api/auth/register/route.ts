@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         name,
         phone,
-        role: 'client',
+        role: "CLIENT",
         loyaltyPoints: 0,
         totalSpent: 0
       }

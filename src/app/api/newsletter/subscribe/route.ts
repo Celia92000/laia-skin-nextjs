@@ -68,7 +68,7 @@ export async function POST(request: Request) {
           email,
           name: name || email.split('@')[0], // Utiliser la partie avant @ si pas de nom
           password: 'NEWSLETTER_ONLY', // Compte non connecté
-          role: 'client',
+          role: "CLIENT",
           adminNotes: 'Inscrit via newsletter'
         }
       });

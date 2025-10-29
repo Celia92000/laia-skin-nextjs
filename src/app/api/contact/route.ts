@@ -52,8 +52,8 @@ export async function POST(request: Request) {
             phone,
             subject,
             message,
-            source: 'contact_form',
-            status: 'new'
+            source: "WEBSITE",
+            status: "NEW"
           }
         });
       }

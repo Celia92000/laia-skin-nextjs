@@ -53,11 +53,11 @@ export async function GET(request: Request) {
     // Ajouter des statistiques DE CETTE ORGANISATION
     const stats = {
       total: await prisma.lead.count({ where: { organizationId: user.organizationId } }),
-      new: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'new' } }),
-      contacted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'contacted' } }),
-      qualified: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'qualified' } }),
-      converted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'converted' } }),
-      lost: await prisma.lead.count({ where: { organizationId: user.organizationId, status: 'lost' } })
+      new: await prisma.lead.count({ where: { organizationId: user.organizationId, status: "NEW" } }),
+      contacted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: "CONTACTED" } }),
+      qualified: await prisma.lead.count({ where: { organizationId: user.organizationId, status: "QUALIFIED" } }),
+      converted: await prisma.lead.count({ where: { organizationId: user.organizationId, status: "WON" } }),
+      lost: await prisma.lead.count({ where: { organizationId: user.organizationId, status: "LOST" } })
     };
 
     return NextResponse.json({ leads, stats });
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
       await prisma.lead.update({
         where: { id: leadId },
         data: {
-          status: 'converted',
+          status: "WON",
           userId: existingUser.id
         }
       });
@@ -199,7 +199,7 @@ export async function POST(request: Request) {
     await prisma.lead.update({
       where: { id: leadId },
       data: {
-        status: 'converted',
+        status: "WON",
         userId: newUser.id
       }
     });

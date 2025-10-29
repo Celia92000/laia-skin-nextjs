@@ -183,6 +183,9 @@ Merci infiniment ! 🙏
 
 // Endpoint pour tester l'envoi manuel d'une demande d'avis
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+
   try {
     const body = await request.json();
     const { reservationId } = body;

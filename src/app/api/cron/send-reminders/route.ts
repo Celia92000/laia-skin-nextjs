@@ -231,7 +231,7 @@ export async function GET(request: Request) {
         birthDate: {
           not: null
         },
-        role: 'client'
+        role: "CLIENT"
       }
     });
     
