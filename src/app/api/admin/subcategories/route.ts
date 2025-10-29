@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
 
     const subcategories = await prisma.serviceSubcategory.findMany({
       where: {
-        organizationId: user.organizationId,
         ...(categoryId ? { categoryId } : {})
       },
       include: {
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
     const category = await prisma.serviceCategory.findFirst({
       where: {
         id: categoryId,
-        organizationId: user.organizationId
       }
     });
 
@@ -116,7 +114,6 @@ export async function POST(request: NextRequest) {
     const existingSubcategory = await prisma.serviceSubcategory.findFirst({
       where: {
         slug,
-        organizationId: user.organizationId
       }
     });
 
@@ -131,7 +128,6 @@ export async function POST(request: NextRequest) {
     const lastSubcategory = await prisma.serviceSubcategory.findFirst({
       where: {
         categoryId,
-        organizationId: user.organizationId
       },
       orderBy: { order: 'desc' }
     });
@@ -146,7 +142,6 @@ export async function POST(request: NextRequest) {
         icon,
         image,
         order,
-        organizationId: user.organizationId
       },
       include: {
         category: {
