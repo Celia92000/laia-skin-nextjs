@@ -42,6 +42,9 @@ export default function BlogPage() {
     seoDescription: ''
   })
 
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string>('')
+
   useEffect(() => {
     fetchPosts()
   }, [])
@@ -88,10 +91,49 @@ export default function BlogPage() {
           seoTitle: '',
           seoDescription: ''
         })
+        setImagePreview('')
         fetchPosts()
       }
     } catch (error) {
       console.error('Error creating post:', error)
+    }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Afficher la prévisualisation
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload l'image
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/super-admin/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setFormData(prev => ({ ...prev, featuredImage: data.url }))
+      } else {
+        alert('Erreur lors de l\'upload de l\'image')
+        setImagePreview('')
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Erreur lors de l\'upload de l\'image')
+      setImagePreview('')
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -342,14 +384,38 @@ export default function BlogPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Image à la une (URL)</label>
-                <input
-                  type="url"
-                  value={formData.featuredImage}
-                  onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image à la une</label>
+                <div className="space-y-4">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage && (
+                    <p className="text-sm text-gray-500">Upload en cours...</p>
+                  )}
+                  {imagePreview && (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Prévisualisation"
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview('')
+                          setFormData(prev => ({ ...prev, featuredImage: '' }))
+                        }}
+                        className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
