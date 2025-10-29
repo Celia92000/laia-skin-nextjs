@@ -111,7 +111,7 @@ export default function CRMPage() {
             className="px-6 py-3 bg-white rounded-lg hover:bg-gray-100 transition font-semibold border-2 shadow-sm"
             style={{ color: '#7c3aed', borderColor: '#7c3aed' }}
           >
-            + Nouveau lead
+            + Nouvelle entreprise
           </button>
         </div>
       </div>
@@ -398,7 +398,7 @@ export default function CRMPage() {
 
             {leads.length === 0 && (
               <div className="text-center py-12 text-gray-500">
-                Aucun lead. Cliquez sur "+ Nouveau lead" pour commencer.
+                Aucun lead. Cliquez sur "+ Nouvelle entreprise" pour commencer.
               </div>
             )}
           </div>

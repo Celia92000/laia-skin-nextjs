@@ -80,7 +80,7 @@ export default function AddLeadModal({ onClose, onSuccess }: AddLeadModalProps) 
           {/* Header */}
           <div className="p-6 border-b">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">➕ Nouveau lead</h2>
+              <h2 className="text-2xl font-bold text-gray-900">➕ Nouvelle entreprise</h2>
               <button
                 type="button"
                 onClick={onClose}
