@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function TemplateUpdatesPage() {
-  const router = useRouter()
   const [syncing, setSyncing] = useState(false)
   const [result, setResult] = useState<any>(null)
 
@@ -34,7 +32,7 @@ export default function TemplateUpdatesPage() {
 
       if (response.ok) {
         setResult(data)
-        alert(data.message || 'Synchronisation rÈussie !')
+        alert(data.message || 'Synchronisation reussie !')
       } else {
         alert(`Erreur : ${data.error}`)
       }
@@ -50,7 +48,7 @@ export default function TemplateUpdatesPage() {
     <div className="px-4 py-8 min-h-screen bg-gray-50">
       <div className="mb-8">
         <Link href="/super-admin" className="text-gray-600 hover:text-purple-600 mb-4 inline-block">
-          ê Retour au dashboard
+          Retour au dashboard
         </Link>
         <div>
           <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
@@ -64,12 +62,12 @@ export default function TemplateUpdatesPage() {
 
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-          <h3 className="text-xl font-semibold mb-4 text-gray-900">¿ propos de la synchronisation</h3>
+          <h3 className="text-xl font-semibold mb-4 text-gray-900">A propos de la synchronisation</h3>
           <div className="space-y-3 text-gray-700">
-            <p> <strong>Contenu synchronisÈ</strong> : Services, Produits, Articles de blog, Formations, Configuration</p>
-            <p>† <strong>…lÈments personnalisÈs</strong> : Les contenus marquÈs comme personnalisÈs (isCustomized = true) ne seront jamais modifiÈs</p>
-            <p>= <strong>Nouveaux ÈlÈments</strong> : Seront crÈÈs automatiquement depuis le template</p>
-            <p>=› <strong>…lÈments existants</strong> : Seront mis ‡ jour uniquement s'ils ne sont pas personnalisÈs</p>
+            <p><strong>Contenu synchronise</strong> : Services, Produits, Articles de blog, Formations, Configuration</p>
+            <p><strong>Elements personnalises</strong> : Les contenus marques comme personnalises ne seront jamais modifies</p>
+            <p><strong>Nouveaux elements</strong> : Seront crees automatiquement depuis le template</p>
+            <p><strong>Elements existants</strong> : Seront mis a jour uniquement s ils ne sont pas personnalises</p>
           </div>
         </div>
 
@@ -86,27 +84,27 @@ export default function TemplateUpdatesPage() {
           >
             {syncing ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">Û</span>
+                <span className="animate-spin">...</span>
                 Synchronisation en cours...
               </span>
             ) : (
-              '= Lancer la synchronisation'
+              'Lancer la synchronisation'
             )}
           </button>
 
           {result && (
             <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-semibold text-green-800 mb-2">
-                 {result.message}
+                {result.message}
               </h4>
               <div className="text-sm text-green-700 space-y-1">
-                <p>Organisations synchronisÈes : {result.synced} / {result.total}</p>
+                <p>Organisations synchronisees : {result.synced} / {result.total}</p>
                 {result.report && (
                   <>
-                    <p>Services : {result.report.services.created} crÈÈs, {result.report.services.updated} mis ‡ jour, {result.report.services.skipped} ignorÈs</p>
-                    <p>Produits : {result.report.products.created} crÈÈs, {result.report.products.updated} mis ‡ jour, {result.report.products.skipped} ignorÈs</p>
-                    <p>Articles : {result.report.blogPosts.created} crÈÈs, {result.report.blogPosts.updated} mis ‡ jour, {result.report.blogPosts.skipped} ignorÈs</p>
-                    <p>Formations : {result.report.formations.created} crÈÈes, {result.report.formations.updated} mises ‡ jour, {result.report.formations.skipped} ignorÈes</p>
+                    <p>Services : {result.report.services.created} crees, {result.report.services.updated} mis a jour, {result.report.services.skipped} ignores</p>
+                    <p>Produits : {result.report.products.created} crees, {result.report.products.updated} mis a jour, {result.report.products.skipped} ignores</p>
+                    <p>Articles : {result.report.blogPosts.created} crees, {result.report.blogPosts.updated} mis a jour, {result.report.blogPosts.skipped} ignores</p>
+                    <p>Formations : {result.report.formations.created} creees, {result.report.formations.updated} mises a jour, {result.report.formations.skipped} ignorees</p>
                   </>
                 )}
               </div>
