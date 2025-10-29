@@ -120,10 +120,10 @@ export default function CRMPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setView('pipeline')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             view === 'pipeline'
-              ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={view === 'pipeline' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
@@ -131,10 +131,10 @@ export default function CRMPage() {
         </button>
         <button
           onClick={() => setView('list')}
-          className={`px-6 py-3 rounded-lg font-medium transition-all ${
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             view === 'list'
-              ? 'bg-white shadow-md border-2'
-              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm'
+              ? 'bg-white shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
           }`}
           style={view === 'list' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
