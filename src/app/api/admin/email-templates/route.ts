@@ -6,8 +6,7 @@ export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
 
   try {
-    const token = request.cookies.get('token')?.value ||
-                 request.headers.get('authorization')?.split(' ')[1];
+    const token = request.cookies.get('auth-token')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -52,8 +51,7 @@ export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
 
   try {
-    const token = request.cookies.get('token')?.value ||
-                 request.headers.get('authorization')?.split(' ')[1];
+    const token = request.cookies.get('auth-token')?.value;
 
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    if (!admin.organizationId) {
+    if (!admin || !admin.organizationId) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 

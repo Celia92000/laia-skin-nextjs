@@ -103,14 +103,9 @@ export default function EmailConversationTab() {
 
   const loadTemplates = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('🔍 Chargement templates... Token:', token ? 'présent' : 'absent');
+      console.log('🔍 Chargement templates...');
 
-      const response = await fetch('/api/admin/email-templates/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch('/api/admin/email-templates/');
 
       console.log('📡 Réponse API templates:', response.status);
 
