@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email }
     });
 
@@ -160,7 +160,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
@@ -243,7 +243,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
@@ -271,7 +271,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur existe
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: userId },
       include: {
         _count: {

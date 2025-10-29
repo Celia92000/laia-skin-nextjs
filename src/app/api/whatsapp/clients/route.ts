@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     }
 
     // Vérifier le rôle de l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });

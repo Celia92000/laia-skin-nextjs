@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     });

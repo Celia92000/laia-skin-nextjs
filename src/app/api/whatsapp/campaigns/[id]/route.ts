@@ -49,7 +49,7 @@ export async function PUT(
     }
 
     // Vérifier le rôle de l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
@@ -124,7 +124,7 @@ export async function DELETE(
     }
 
     // Vérifier le rôle de l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });

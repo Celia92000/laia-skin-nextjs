@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Récupérer l'utilisateur et son organisation
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         organizationId: true,
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Récupérer l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         organizationId: true,
@@ -166,7 +166,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Récupérer l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         organizationId: true,

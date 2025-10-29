@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       notifications
     ] = await Promise.all([
       // Informations du client
-      prisma.user.findUnique({
+      prisma.user.findFirst({
         where: { id: userId },
         select: {
           id: true,
@@ -242,7 +242,7 @@ export async function GET(request: Request) {
       notifications
     ] = await Promise.all([
       // Informations du client
-      prisma.user.findUnique({
+      prisma.user.findFirst({
         where: { id: userId },
         select: {
           id: true,

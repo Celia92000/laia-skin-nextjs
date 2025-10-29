@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Optionnel : marquer dans le CRM
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email }
     });
 

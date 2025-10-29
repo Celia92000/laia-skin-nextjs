@@ -30,7 +30,7 @@ export async function POST(
       }
       
       try {
-        const adminUser = await prisma.user.findUnique({
+        const adminUser = await prisma.user.findFirst({
           where: { id: decoded.userId }
         });
 
@@ -113,7 +113,7 @@ export async function GET(
       }
       
       try {
-        const adminUser = await prisma.user.findUnique({
+        const adminUser = await prisma.user.findFirst({
           where: { id: decoded.userId }
         });
 

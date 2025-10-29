@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         preferences: true
@@ -68,7 +68,7 @@ export async function PUT(request: Request) {
     const { emailNotifications, whatsappNotifications } = body;
 
     // Get current preferences
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { preferences: true }
     });

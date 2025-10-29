@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que le client existe
-    const client = await prisma.user.findUnique({
+    const client = await prisma.user.findFirst({
       where: { id: clientId },
       include: { loyaltyProfile: true }
     });
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
 
     if (!profile || !profile.referralCode) {
       // Créer un code de parrainage si n'existe pas
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.findFirst({
         where: { id: clientId }
       });
 

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       const token = authorization.split(' ')[1];
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret-key-1234567890') as any;
-        const adminUser = await prisma.user.findUnique({
+        const adminUser = await prisma.user.findFirst({
           where: { id: decoded.userId }
         });
         

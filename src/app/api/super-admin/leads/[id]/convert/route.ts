@@ -26,7 +26,7 @@ export async function POST(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     })

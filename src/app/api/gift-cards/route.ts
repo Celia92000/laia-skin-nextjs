@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Créer ou trouver l'utilisateur acheteur
-    let purchaser = await prisma.user.findUnique({
+    let purchaser = await prisma.user.findFirst({
       where: { email: senderEmail }
     });
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     let reservation = null;
     if (bookNow && reservationData) {
       // Créer ou trouver l'utilisateur bénéficiaire
-      let recipient = await prisma.user.findUnique({
+      let recipient = await prisma.user.findFirst({
         where: { email: recipientEmail }
       });
 

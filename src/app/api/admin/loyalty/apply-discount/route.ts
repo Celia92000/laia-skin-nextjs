@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const { userId, discountType, amount, description } = await req.json();
     
     // Vérifier que l'utilisateur existe
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: userId }
     });
     

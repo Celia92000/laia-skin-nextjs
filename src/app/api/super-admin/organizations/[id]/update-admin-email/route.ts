@@ -24,7 +24,7 @@ export async function POST(
     }
 
     // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     })
@@ -41,7 +41,7 @@ export async function POST(
     }
 
     // Vérifier que l'email n'est pas déjà utilisé
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email: newEmail }
     })
 

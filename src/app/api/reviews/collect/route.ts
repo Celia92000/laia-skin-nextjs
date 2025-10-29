@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Trouver ou créer le client
     let client = null;
     if (data.clientEmail) {
-      client = await prisma.user.findUnique({
+      client = await prisma.user.findFirst({
         where: { email: data.clientEmail }
       });
       

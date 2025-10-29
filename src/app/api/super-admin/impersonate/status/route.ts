@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     // Récupérer l'utilisateur impersonné
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         id: true,

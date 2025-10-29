@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       
       // Récupérer les infos utilisateur depuis la base de données
-      const user = await prisma.user.findUnique({
+      const user = await prisma.user.findFirst({
         where: { id: decoded.userId },
         select: {
           id: true,

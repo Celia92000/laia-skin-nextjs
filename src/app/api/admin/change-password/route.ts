@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId }
     });
 

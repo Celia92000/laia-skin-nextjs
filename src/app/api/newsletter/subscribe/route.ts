@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         });
 
         // Mettre à jour les notes admin de l'utilisateur
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findFirst({ where: { email } });
         if (user) {
           await prisma.user.update({
             where: { id: user.id },
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     });
 
     // Vérifier si l'utilisateur existe dans le CRM
-    let user = await prisma.user.findUnique({
+    let user = await prisma.user.findFirst({
       where: { email }
     });
 

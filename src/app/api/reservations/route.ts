@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
       }
       userId = decoded.userId;
-      user = await prisma.user.findUnique({
+      user = await prisma.user.findFirst({
         where: { id: userId }
       });
     } else if (clientInfo && clientInfo.email) {
@@ -391,7 +391,7 @@ export async function POST(request: Request) {
     });
 
     // Vérifier si le client a droit à une réduction
-    const updatedUser = await prisma.user.findUnique({
+    const updatedUser = await prisma.user.findFirst({
       where: { id: userId }
     });
     

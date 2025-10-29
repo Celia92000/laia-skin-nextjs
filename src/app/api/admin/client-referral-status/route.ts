@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
     
     // Vérifier que c'est un admin
-    const adminUser = await prisma.user.findUnique({
+    const adminUser = await prisma.user.findFirst({
       where: { id: decoded.userId }
     });
     

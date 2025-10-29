@@ -38,7 +38,7 @@ export async function PATCH(
     }
 
     // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     })

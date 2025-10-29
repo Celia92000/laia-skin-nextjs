@@ -21,7 +21,7 @@ export async function GET(
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     });
@@ -74,7 +74,7 @@ export async function PUT(
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     });
@@ -137,7 +137,7 @@ export async function DELETE(
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     });

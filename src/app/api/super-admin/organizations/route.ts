@@ -31,7 +31,7 @@ export async function GET() {
     }
 
     // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { id: true, name: true, email: true, role: true }
     })
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'utilisateur est SUPER_ADMIN
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     })

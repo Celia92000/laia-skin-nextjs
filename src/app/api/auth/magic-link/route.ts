@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier si l'utilisateur existe
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: email.toLowerCase() }
     });
 

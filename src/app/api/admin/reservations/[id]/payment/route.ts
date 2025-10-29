@@ -59,7 +59,7 @@ export async function GET(
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
 
     const prisma = await getPrismaClient();
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId }
     });
 
@@ -130,7 +130,7 @@ export async function POST(
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
     
     const prisma = await getPrismaClient();
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId }
     });
 
@@ -447,7 +447,7 @@ export async function DELETE(
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
     
     const prisma = await getPrismaClient();
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId }
     });
 

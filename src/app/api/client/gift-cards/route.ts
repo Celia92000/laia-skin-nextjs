@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Récupérer les cartes cadeaux reçues (où purchasedFor correspond à l'email du client)
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { email: true, name: true }
     });

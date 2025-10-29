@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     for (const client of clients) {
       try {
         // Vérifier si le client existe déjà
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.user.findFirst({
           where: { email: client.email }
         });
 

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer l'utilisateur avec son organizationId
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { organizationId: true }
     });
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     });

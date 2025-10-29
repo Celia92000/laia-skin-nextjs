@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'utilisateur est SUPER_ADMIN
-    const superAdmin = await prisma.user.findUnique({
+    const superAdmin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { id: true, role: true, email: true }
     })
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     if (userId) {
       // Impersonnation d'un utilisateur spécifique
-      targetUser = await prisma.user.findUnique({
+      targetUser = await prisma.user.findFirst({
         where: { id: userId },
         include: { organization: true }
       })
@@ -141,7 +141,7 @@ export async function DELETE(request: Request) {
     }
 
     // Récupérer le super admin original
-    const superAdmin = await prisma.user.findUnique({
+    const superAdmin = await prisma.user.findFirst({
       where: { id: originalAdminId }
     })
 

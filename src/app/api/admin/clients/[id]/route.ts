@@ -24,7 +24,7 @@ export async function GET(
     }
 
     // Récupérer les détails du client
-    const client = await prisma.user.findUnique({
+    const client = await prisma.user.findFirst({
       where: { id },
       include: {
         reservations: {
@@ -100,7 +100,7 @@ export async function PATCH(
     }
 
     // Vérifier que c'est un admin
-    const admin = await prisma.user.findUnique({
+    const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });

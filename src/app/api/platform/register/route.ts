@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier si l'email est déjà utilisé
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email: ownerEmail }
     })
 
