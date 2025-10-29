@@ -35,7 +35,6 @@ export async function GET() {
         email: true,
         name: true,
         role: true,
-        isActive: true,
         createdAt: true,
         lastLoginAt: true,
         organization: {
@@ -66,7 +65,6 @@ export async function GET() {
       email: u.email,
       name: u.name,
       role: u.role,
-      isActive: u.isActive,
       createdAt: u.createdAt,
       lastLoginAt: u.lastLoginAt,
       organization: u.organization,
