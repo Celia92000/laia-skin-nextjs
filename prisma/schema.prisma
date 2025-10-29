@@ -987,6 +987,8 @@ model SiteConfig {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([createdAt]) // Index pour optimiser findFirst()
 }
 
 model EmailHistory {

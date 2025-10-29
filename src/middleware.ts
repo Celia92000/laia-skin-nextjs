@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-tenant-host', cleanHost)
 
+  // Routing par domaine : laiaconnect.fr → /platform
+  if (cleanHost.includes('laiaconnect.fr') && request.nextUrl.pathname === '/') {
+    return NextResponse.rewrite(new URL('/platform', request.url))
+  }
+
   // Routes protégées
   const protectedPaths = ['/admin', '/espace-client', '/comptable'];
   const isProtectedPath = protectedPaths.some(path =>
