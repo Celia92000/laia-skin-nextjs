@@ -12,17 +12,31 @@ export default async function Blog() {
   let recentPosts: any[] = [];
 
   try {
-    // Récupérer les articles depuis la base de données
-    posts = await prisma.blogPost.findMany({
-      where: { published: true },
-      orderBy: { publishedAt: 'desc' }
+    // Récupérer les nouveautés LAIA depuis platformNews
+    posts = await prisma.platformNews.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: { publishedAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            name: true
+          }
+        }
+      }
     });
 
-    // Un seul article vedette
-    featuredPosts = posts.filter(p => p.featured).slice(0, 1);
-    // Tous les autres articles (y compris les autres vedettes)
-    const featuredIds = featuredPosts.map(p => p.id);
-    recentPosts = posts.filter(p => !featuredIds.includes(p.id));
+    // Transformer les données pour correspondre au format attendu
+    posts = posts.map(post => ({
+      ...post,
+      published: true,
+      featured: false,
+      mainImage: post.featuredImage,
+      readTime: '5 min',
+      author: post.author?.name || 'LAIA'
+    }));
+
+    // Tous les articles récents (pas de système de featured pour platformNews)
+    recentPosts = posts;
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     // En cas d'erreur, on continue avec des tableaux vides
@@ -39,10 +53,10 @@ export default async function Blog() {
         
         <div className="max-w-6xl mx-auto px-4 text-center relative">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-playfair font-normal text-[#2c3e50] mb-4 tracking-normal">
-            Le Blog LAIA SKIN
+            Nos Nouveautés
           </h1>
           <p className="font-inter text-base sm:text-lg md:text-xl text-[#2c3e50]/60 max-w-3xl mx-auto tracking-normal">
-            Découvrez mes conseils d'experte, les dernières innovations en soins esthétiques et mes astuces beauté pour une peau rayonnante.
+            Découvrez les dernières actualités LAIA, les nouvelles fonctionnalités et les conseils pour optimiser votre expérience.
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mt-8">

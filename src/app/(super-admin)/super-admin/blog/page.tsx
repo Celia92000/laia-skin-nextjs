@@ -28,7 +28,7 @@ export default function BlogPage() {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null)
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
   const [filterStatus, setFilterStatus] = useState<'ALL' | BlogPost['status']>('ALL')
-  const [filterCategory, setFilterCategory] = useState<'ALL' | BlogPost['category']>('ALL')
+  const [filterCategory, setFilterCategory] = useState<BlogPost['category']>('NEWS')
 
   // Formulaire
   const [formData, setFormData] = useState({
@@ -151,7 +151,6 @@ export default function BlogPage() {
 
   const filteredPosts = posts.filter(post => {
     if (filterStatus !== 'ALL' && post.status !== filterStatus) return false
-    if (filterCategory !== 'ALL' && post.category !== filterCategory) return false
     return true
   })
 
@@ -190,19 +189,6 @@ export default function BlogPage() {
           <option value="DRAFT">Brouillons</option>
           <option value="PUBLISHED">Publiés</option>
           <option value="ARCHIVED">Archivés</option>
-        </select>
-
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value as typeof filterCategory)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-        >
-          <option value="ALL">Toutes les catégories</option>
-          <option value="NEWS">Actualités</option>
-          <option value="TUTORIAL">Tutoriels</option>
-          <option value="FEATURE">Fonctionnalités</option>
-          <option value="CASE_STUDY">Études de cas</option>
-          <option value="UPDATE">Mises à jour</option>
         </select>
       </div>
 
@@ -344,32 +330,15 @@ export default function BlogPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as BlogPost['category'] })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                  >
-                    <option value="NEWS">Actualités</option>
-                    <option value="TUTORIAL">Tutoriel</option>
-                    <option value="FEATURE">Fonctionnalité</option>
-                    <option value="CASE_STUDY">Étude de cas</option>
-                    <option value="UPDATE">Mise à jour</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par virgule)</label>
-                  <input
-                    type="text"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                    placeholder="saas, beauté, gestion"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (séparés par virgule)</label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="saas, beauté, gestion"
+                />
               </div>
 
               <div>
