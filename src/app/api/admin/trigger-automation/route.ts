@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
           case 'birthday':
             // Pour anniversaire
             templateParams.service_name = 'Joyeux anniversaire !';
-            templateParams.review_link = 'https://${website.replace('https://', '').replace('http://', '')}';
+            templateParams.review_link = `https://${website.replace('https://', '').replace('http://', '')}`;
             templateParams.loyalty_progress = '🎂 Offre anniversaire : -30% sur un soin';
             templateParams.next_reward = 'Valable tout le mois de votre anniversaire';
             break;
