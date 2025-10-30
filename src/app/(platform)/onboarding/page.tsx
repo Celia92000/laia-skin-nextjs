@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { validateSIRET, validateIBAN, validateBIC, validateEmail, validatePhoneNumber, formatSIRET, formatIBAN } from '@/lib/validation'
@@ -59,7 +59,7 @@ interface OnboardingData {
   selectedPlan: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'
 }
 
-export default function OnboardingPage() {
+function OnboardingForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const planFromUrl = searchParams.get('plan') as OnboardingData['selectedPlan'] || 'SOLO'
@@ -1246,5 +1246,22 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 rounded-2xl inline-block mb-4">
+            <span className="text-4xl">🌸</span>
+          </div>
+          <p className="text-gray-600 text-lg">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <OnboardingForm />
+    </Suspense>
   )
 }
