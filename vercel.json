@@ -27,26 +27,5 @@
       "maxDuration": 60
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/sync-emails?secret=$CRON_SECRET",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/process-payments",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/generate-monthly-invoices",
-      "schedule": "0 0 1 * *"
-    },
-    {
-      "path": "/api/cron/send-payment-reminders",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/check-tokens",
-      "schedule": "0 8 * * *"
-    }
-  ]
+  "crons": []
 }
