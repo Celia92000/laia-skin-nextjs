@@ -85,6 +85,25 @@ const ROLE_PERMISSIONS: Record<UserRole, Record<Resource, Permission[]>> = {
     staff: ['view', 'create', 'update'],
   },
 
+  ACCOUNTANT: {
+    // Comptable avec accès financier
+    users: [],
+    clients: ['view'],
+    reservations: ['view'],
+    services: ['view'],
+    products: ['view'],
+    blog: [],
+    reviews: [],
+    settings: [],
+    finance: ['view', 'create', 'update', 'manage'],
+    stats: ['view'],
+    inventory: ['view'],
+    marketing: [],
+    loyalty: [],
+    locations: ['view'],
+    staff: [],
+  },
+
   LOCATION_MANAGER: {
     // Responsable de point de vente
     users: ['view'],
@@ -267,6 +286,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   SUPER_ADMIN: 'Super Administrateur - Accès complet à tous les instituts',
   ORG_OWNER: 'Propriétaire - Accès complet à l\'institut',
   ORG_ADMIN: 'Co-gérant - Gestion étendue de l\'institut',
+  ACCOUNTANT: 'Comptable - Accès aux finances et statistiques',
   LOCATION_MANAGER: 'Responsable de point de vente',
   STAFF: 'Employé / Praticien',
   RECEPTIONIST: 'Réceptionniste',

@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
       reservation = await prisma.reservation.create({
         data: {
           userId: recipient.id,
+          organizationId: recipient.organizationId || '', // Ajouter organizationId
           date: new Date(reservationData.date),
           time: reservationData.time,
           services: JSON.stringify(reservationData.services),

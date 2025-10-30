@@ -13,7 +13,7 @@ export interface JWTPayload {
  * Génère un token JWT
  */
 export function generateToken(payload: JWTPayload, expiresIn: string = '7d'): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, JWT_SECRET as jwt.Secret, { expiresIn } as jwt.SignOptions);
 }
 
 /**
@@ -21,7 +21,7 @@ export function generateToken(payload: JWTPayload, expiresIn: string = '7d'): st
  */
 export function verifyJWT(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET as jwt.Secret) as JWTPayload;
     return decoded;
   } catch (error) {
     console.error('JWT verification failed:', error);

@@ -419,6 +419,7 @@ export default function DemoCalendar() {
             setSelectedBooking(null)
             fetchSlots()
           }}
+          onScheduleFollowUp={setShowFollowUpModal}
         />
       )}
 
@@ -890,12 +891,14 @@ function BookingDetailModal({
   slot,
   booking,
   onClose,
-  onSuccess
+  onSuccess,
+  onScheduleFollowUp
 }: {
   slot: DemoSlot
   booking: DemoBooking
   onClose: () => void
   onSuccess: () => void
+  onScheduleFollowUp: (booking: DemoBooking) => void
 }) {
   const [updating, setUpdating] = useState(false)
 
@@ -1049,7 +1052,7 @@ function BookingDetailModal({
                 </div>
                 <button
                   onClick={() => {
-                    setShowFollowUpModal(booking)
+                    onScheduleFollowUp(booking)
                     onClose()
                   }}
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold"
@@ -1157,7 +1160,7 @@ function FollowUpModal({
           contactEmail: booking.contactEmail,
           contactPhone: booking.contactPhone,
           message: formData.notes,
-          leadId: booking.leadId,
+          leadId: booking.lead?.id,
           type: 'ONLINE'
         })
       })

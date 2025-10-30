@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
     // Fallback vers env
     if (!accessToken || !accountId) {
-      accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-      accountId = process.env.INSTAGRAM_ACCOUNT_ID;
+      accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN) ?? null;
+      accountId = process.env.INSTAGRAM_ACCOUNT_ID ?? null;
     }
 
     if (!accessToken || !accountId) {

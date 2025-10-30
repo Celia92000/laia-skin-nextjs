@@ -10,6 +10,19 @@ async function main() {
   await prisma.reservation.deleteMany();
   await prisma.user.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.organization.deleteMany();
+
+  // Créer une organisation de test
+  const organization = await prisma.organization.create({
+    data: {
+      name: 'LAIA Skin Institut - Demo',
+      slug: 'laia-skin-demo',
+      subdomain: 'laia-skin-demo',
+      ownerEmail: 'admin@laia.skin.com',
+      plan: 'SOLO',
+      status: 'ACTIVE'
+    }
+  });
 
   // Créer l'admin
   const adminPassword = await bcrypt.hash('admin123', 12);
@@ -19,7 +32,8 @@ async function main() {
       password: adminPassword,
       name: 'Laia Admin',
       phone: '0600000000',
-      role: "ADMIN",
+      role: "ORG_OWNER",
+      organizationId: organization.id,
       loyaltyPoints: 0,
       totalSpent: 0
     }
@@ -36,6 +50,7 @@ async function main() {
       name: 'Sophie Martin',
       phone: '0612345678',
       role: "CLIENT",
+      organizationId: organization.id,
       loyaltyPoints: 150,
       totalSpent: 450,
       skinType: 'normal',
@@ -50,6 +65,7 @@ async function main() {
       name: 'Marie Dubois',
       phone: '0623456789',
       role: "CLIENT",
+      organizationId: organization.id,
       loyaltyPoints: 280,
       totalSpent: 840,
       skinType: 'combination',
@@ -65,6 +81,7 @@ async function main() {
       name: 'Julie Bernard',
       phone: '0634567890',
       role: "CLIENT",
+      organizationId: organization.id,
       loyaltyPoints: 50,
       totalSpent: 150,
       skinType: 'sensitive'
@@ -126,7 +143,12 @@ async function main() {
   ];
 
   for (const service of services) {
-    await prisma.service.create({ data: service });
+    await prisma.service.create({
+      data: {
+        ...service,
+        organizationId: organization.id
+      }
+    });
   }
   console.log('✅ Services créés');
 
@@ -138,6 +160,7 @@ async function main() {
   // Réservations pour aujourd'hui
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client1.id,
       services: JSON.stringify(['hydro']),
       date: today,
@@ -151,6 +174,7 @@ async function main() {
 
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client2.id,
       services: JSON.stringify(['renaissance']),
       date: today,
@@ -164,6 +188,7 @@ async function main() {
   // Réservations pour demain
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client3.id,
       services: JSON.stringify(['bb-glow']),
       date: tomorrow,
@@ -176,6 +201,7 @@ async function main() {
 
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client1.id,
       services: JSON.stringify(['hydro-naissance']),
       date: tomorrow,
@@ -193,6 +219,7 @@ async function main() {
 
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client2.id,
       services: JSON.stringify(['hydro']),
       date: lastWeek,
@@ -205,6 +232,7 @@ async function main() {
 
   await prisma.reservation.create({
     data: {
+      organizationId: organization.id,
       userId: client2.id,
       services: JSON.stringify(['led']),
       date: lastWeek,

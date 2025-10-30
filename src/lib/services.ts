@@ -3,10 +3,10 @@ import { getPrismaClient } from '@/lib/prisma';
 export async function getServiceBySlug(slug: string) {
   try {
     const prisma = await getPrismaClient();
-    const service = await prisma.service.findUnique({
-      where: { 
+    const service = await prisma.service.findFirst({
+      where: {
         slug,
-        active: true 
+        active: true
       }
     });
     return service;

@@ -9,10 +9,11 @@ export async function GET(
     const prisma = await getPrismaClient();
     const { slug } = await params;
     
-    const service = await prisma.service.findUnique({
-      where: { 
+    // Utiliser findFirst car slug seul n'est pas unique (nécessite organizationId)
+    const service = await prisma.service.findFirst({
+      where: {
         slug,
-        active: true 
+        active: true
       }
     });
 

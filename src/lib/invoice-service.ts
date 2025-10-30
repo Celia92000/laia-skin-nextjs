@@ -252,9 +252,11 @@ export async function generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
 
       doc
         .fillColor('#667eea')
-        .text('TOTAL TTC', 380, totalsTop + 58, { bold: true })
+        .font('Helvetica-Bold')
+        .text('TOTAL TTC', 380, totalsTop + 58)
         .fontSize(14)
-        .text(`${totalTTC.toFixed(2)} €`, 450, totalsTop + 58, { align: 'right', bold: true })
+        .text(`${totalTTC.toFixed(2)} €`, 450, totalsTop + 58, { align: 'right' })
+        .font('Helvetica')
 
       // === CONDITIONS DE PAIEMENT ===
       const footerTop = totalsTop + 120

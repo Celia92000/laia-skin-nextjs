@@ -69,6 +69,8 @@ export async function GET(request: NextRequest) {
           month: 'long'
         });
 
+        const contactPhone = process.env.CONTACT_PHONE || '+33 6 00 00 00 00';
+
         const message = `🌟 *Rappel de votre RDV*
 
 Bonjour ${reservation.user.name} 👋
@@ -87,7 +89,7 @@ C'est demain ! Nous avons hâte de vous accueillir pour :
 • Venez démaquillée si possible
 • N'hésitez pas à nous appeler si besoin
 
-Pour toute modification : 📞 ${phone}
+Pour toute modification : 📞 ${contactPhone}
 
 À demain ! ✨
 *L'équipe Laia Skin Institut*`;

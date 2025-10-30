@@ -121,7 +121,7 @@ export async function GET(request: Request) {
     }
 
     // Get action breakdown
-    const actionStats = await prisma.auditLog.groupBy({
+    const actionStats = await (prisma.auditLog as any).groupBy({
       by: ['action'],
       _count: {
         action: true
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(total / limit)
       },
       stats,
-      actionStats: actionStats.map(stat => ({
+      actionStats: actionStats.map((stat: any) => ({
         action: stat.action,
         count: stat._count.action
       }))

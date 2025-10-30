@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import { Point, Area } from 'react-easy-crop/types';
+
+type Point = { x: number; y: number };
+type Area = { x: number; y: number; width: number; height: number };
 
 interface MediaCropModalProps {
   mediaUrl: string;
@@ -153,7 +155,7 @@ export default function MediaCropModal({
             {aspectRatios.map((ratio) => (
               <button
                 key={ratio.value ?? 'free'}
-                onClick={() => setAspectRatio(ratio.value ?? undefined)}
+                onClick={() => setAspectRatio(ratio.value ?? 1)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   aspectRatio === ratio.value
                     ? 'bg-[#8B6F5C] text-white'

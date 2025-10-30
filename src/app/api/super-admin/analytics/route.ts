@@ -181,7 +181,7 @@ export async function GET(request: Request) {
       .slice(0, 5)
 
     // Top organisations par réservations - optimisé avec groupBy
-    const reservationsByOrg = await prisma.reservation.groupBy({
+    const reservationsByOrg = await (prisma.reservation as any).groupBy({
       by: ['organizationId'],
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
@@ -189,7 +189,7 @@ export async function GET(request: Request) {
     })
 
     const topByReservations = await Promise.all(
-      reservationsByOrg.map(async item => {
+      reservationsByOrg.map(async (item: any) => {
         const org = await prisma.organization.findUnique({
           where: { id: item.organizationId },
           select: { id: true, name: true }

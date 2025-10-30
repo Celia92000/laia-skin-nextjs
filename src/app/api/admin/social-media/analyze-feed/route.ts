@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       // Fallback vers les variables d'environnement si pas de token en base
       if (!accessToken || !accountId) {
         console.log('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
-        accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-        accountId = process.env.INSTAGRAM_ACCOUNT_ID;
+        accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN) ?? null;
+        accountId = process.env.INSTAGRAM_ACCOUNT_ID ?? null;
       }
     } else if (platform === 'facebook') {
       try {
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
       // Fallback vers les variables d'environnement si pas de token en base
       if (!accessToken || !accountId) {
         console.log('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
-        accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-        accountId = process.env.FACEBOOK_PAGE_ID;
+        accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN ?? null;
+        accountId = process.env.FACEBOOK_PAGE_ID ?? null;
       }
     }
 

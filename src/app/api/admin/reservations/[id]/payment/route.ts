@@ -119,6 +119,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+
   try {
     const { id } = await params;
     const token = request.headers.get('authorization')?.replace('Bearer ', '');

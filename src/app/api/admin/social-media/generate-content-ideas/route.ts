@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
 
     // Fallback vers env si nécessaire
     if (!accessToken || !accountId) {
-      accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-      accountId = process.env.INSTAGRAM_ACCOUNT_ID;
+      accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN) ?? null;
+      accountId = process.env.INSTAGRAM_ACCOUNT_ID ?? null;
     }
 
     if (!accessToken || !accountId) {
@@ -426,7 +426,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Photo avant/après en diptyque',
           'Vidéo du traitement en accéléré',
           'Close-up sur la peau transformée'
-        ]
+        ],
+        inspiration: 'Les transformations avant/après génèrent 3x plus d\'engagement que les posts classiques'
       },
       {
         type: 'reel' as const,
@@ -444,7 +445,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Transitions fluides entre chaque étape',
           'Gros plans sur les outils',
           'Sourire de la cliente à la fin'
-        ]
+        ],
+        inspiration: 'Les reels tutoriels éducatifs ont une portée moyenne 5x supérieure aux posts classiques'
       },
       {
         type: 'story' as const,
@@ -462,7 +464,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Fond coloré avec le logo',
           'Émojis pour rendre attractif',
           'Photo du traitement en arrière-plan'
-        ]
+        ],
+        inspiration: 'Les stories interactives augmentent la portée de 40% et renforcent l\'engagement'
       }
     ],
     'microneedling': [
@@ -481,7 +484,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Infographie avec fond pastel',
           'Icônes pour illustrer chaque point',
           'Dernière slide avec call-to-action'
-        ]
+        ],
+        inspiration: 'Les posts éducatifs qui démystifient les traitements rassurent et convertissent mieux'
       },
       {
         type: 'reel' as const,
@@ -499,7 +503,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Plan large puis zoom sur le visage',
           'Éclairage professionnel',
           'Finir sur un avant/après'
-        ]
+        ],
+        inspiration: 'Les time-lapse de traitements captivent l\'attention et se partagent facilement'
       }
     ],
     'routine': [
@@ -518,7 +523,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Flat lay avec les produits',
           'Fond en marbre ou blanc',
           'Ajoutez des fleurs ou plantes'
-        ]
+        ],
+        inspiration: 'Les routines de soin inspirent confiance et positionnent votre expertise'
       },
       {
         type: 'reel' as const,
@@ -536,7 +542,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Bonne lumière (ring light)',
           'Miroir en arrière-plan',
           'Montrez l\'application de chaque produit'
-        ]
+        ],
+        inspiration: 'Les GRWM créent une connexion authentique et humanisent votre marque'
       }
     ],
     'conseils': [
@@ -555,7 +562,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
           'Design fun avec émojis',
           'Couleurs vives et attractives',
           'Dernière slide : "Sauvegardez ce post"'
-        ]
+        ],
+        inspiration: 'Les listes d\'erreurs à éviter sont très partagées et sauvegardées par votre audience'
       }
     ]
   };
@@ -577,7 +585,8 @@ function generateContentIdeas(topic: string, platform: string, count: number): C
         'Photos professionnelles',
         'Éclairage naturel',
         'Mise en scène soignée'
-      ]
+      ],
+      inspiration: 'Partagez votre expertise pour établir votre crédibilité et attirer de nouveaux clients'
     }
   ];
 

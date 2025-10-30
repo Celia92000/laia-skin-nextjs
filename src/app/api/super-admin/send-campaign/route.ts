@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
 
     // Récupérer les clients
     const whereClause = organizationId
-      ? { organizationId, role: 'CLIENT' }
-      : { role: 'CLIENT' }
+      ? { organizationId, role: 'CLIENT' as const }
+      : { role: 'CLIENT' as const }
 
     const clients = await prisma.user.findMany({
       where: whereClause,
@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
                 siteName: true,
                 founderName: true,
                 legalRepName: true,
+                contactEmail: true,
                 phone: true,
                 address: true,
                 city: true,
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
         const { html, text } = await getEmailTemplate(templateType, templateData)
 
         // Récupérer l'email d'envoi de l'organisation
-        const fromEmail = client.organization?.config?.email || process.env.EMAIL_FROM || 'noreply@laiaskin.com'
+        const fromEmail = client.organization?.config?.contactEmail || process.env.EMAIL_FROM || 'noreply@laiaskin.com'
         const fromName = client.organization?.config?.siteName || 'LAIA SKIN Institut'
 
         // Envoyer l'email
@@ -121,24 +122,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Enregistrer l'activité
-    await prisma.activityLog.create({
-      data: {
-        userId: decoded.userId,
-        action: 'EMAIL_CAMPAIGN_SENT',
-        entityType: 'EMAIL',
-        entityId: `campaign-${templateType}-${Date.now()}`,
-        description: `Campagne email ${templateType} envoyée à ${sentCount} clients`,
-        metadata: {
-          templateType,
-          subject,
-          organizationId,
-          sentCount,
-          totalClients: clients.length,
-          errors: errors.length > 0 ? errors : undefined
-        }
-      }
-    })
+    // TODO: Enregistrer l'activité dans un log dédié aux campagnes email
+    // Le modèle AuditLog actuel ne couvre pas les campagnes email
+    console.log(`📊 Campagne email ${templateType} envoyée à ${sentCount}/${clients.length} clients`)
 
     return NextResponse.json({
       success: true,

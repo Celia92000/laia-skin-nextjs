@@ -212,9 +212,14 @@ async function createDemoFormations(orgId: string, orgName: string) {
 
   const formations = []
   for (const formationData of formationsData) {
+    const { title, description, content, duration, ...rest } = formationData
     const formation = await prisma.formation.create({
       data: {
-        ...formationData,
+        ...rest,
+        name: title,
+        shortDescription: description,
+        description: content,
+        duration: 2, // Duration en jours (par défaut 2 jours)
         organizationId: orgId
       }
     })

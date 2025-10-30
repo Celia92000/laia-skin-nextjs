@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // Synchroniser chaque organisation
     for (const org of organizations) {
       try {
-        await prisma.$transaction(async (tx) => {
+        await (prisma as any).$transaction(async (tx: any) => {
           // ========================================
           // 1. SYNCHRONISER LES SERVICES
           // ========================================

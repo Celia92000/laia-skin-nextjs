@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { FaFire, FaHeart, FaComment, FaExternalLinkAlt, FaVideo, FaImage, FaSpinner } from 'react-icons/fa';
+import { FaFire, FaHeart, FaComment, FaExternalLinkAlt, FaVideo, FaImage, FaSpinner, FaLightbulb } from 'react-icons/fa';
 
 interface TrendingPost {
   id: string;

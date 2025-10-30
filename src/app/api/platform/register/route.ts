@@ -95,13 +95,14 @@ export async function POST(request: Request) {
     const location = await prisma.location.create({
       data: {
         name: `${organizationName} - Principal`,
+        slug: 'principal',
         address: '',
         city: '',
         postalCode: '',
         phone: ownerPhone,
         email: ownerEmail,
         organizationId: organization.id,
-        isActive: true
+        active: true
       }
     })
 
@@ -113,8 +114,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         phone: ownerPhone,
         role: 'ORG_OWNER',
-        organizationId: organization.id,
-        isActive: true
+        organizationId: organization.id
       }
     })
 

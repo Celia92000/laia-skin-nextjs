@@ -88,19 +88,19 @@ export async function GET(request: NextRequest) {
     // Stats globales
     const stats = {
       total: await prisma.lead.count(),
-      byStatus: await prisma.lead.groupBy({
+      byStatus: await (prisma.lead as any).groupBy({
         by: ['status'],
         _count: true
       }),
-      bySource: await prisma.lead.groupBy({
+      bySource: await (prisma.lead as any).groupBy({
         by: ['source'],
         _count: true
       }),
-      totalValue: await prisma.lead.aggregate({
+      totalValue: await (prisma.lead as any).aggregate({
         where: { status: { notIn: ['WON', 'LOST'] } },
         _sum: { estimatedValue: true }
       }),
-      avgProbability: await prisma.lead.aggregate({
+      avgProbability: await (prisma.lead as any).aggregate({
         where: { status: { notIn: ['WON', 'LOST'] } },
         _avg: { probability: true }
       })

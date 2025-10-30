@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const config = await getSiteConfig();
     const siteName = config.siteName || 'Mon Institut';
     const email = config.email || 'contact@institut.fr';
+    const phone = config.phone || '+33 6 00 00 00 00';
 
     // Vérifier le token secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);

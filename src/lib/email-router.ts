@@ -27,7 +27,10 @@ export async function sendEmail(params: EmailParams, domain?: string) {
   // Utiliser Brevo pour laiaconnect.fr
   if (currentDomain.includes('laiaconnect.fr')) {
     console.log('📧 Envoi via Brevo (LAIA Connect)')
-    return sendEmailBrevo(params)
+    return sendEmailBrevo({
+      ...params,
+      replyTo: params.replyTo ? { email: params.replyTo } : undefined
+    })
   }
 
   // Utiliser Resend pour laiaskininstitut.fr
@@ -43,14 +46,14 @@ export async function sendEmail(params: EmailParams, domain?: string) {
       subject,
       html,
       text,
-      reply_to: replyTo,
+      replyTo: replyTo,
       attachments: attachments?.map(att => ({
         filename: att.name,
         content: att.content
       }))
     })
 
-    console.log('✅ Email envoyé via Resend:', response.id)
+    console.log('✅ Email envoyé via Resend:', response.data?.id || 'Envoyé')
     return response
   } catch (error: any) {
     console.error('❌ Erreur envoi email Resend:', error.message)

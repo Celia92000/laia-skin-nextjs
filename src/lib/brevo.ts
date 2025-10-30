@@ -67,7 +67,7 @@ export async function sendEmail(params: SendEmailParams) {
   try {
     const api = getApiInstance()
     const response = await api.sendTransacEmail(sendSmtpEmail)
-    console.log('✅ Email envoyé via Brevo:', response.messageId)
+    console.log('✅ Email envoyé via Brevo:', response.body?.messageId || 'Envoyé')
     return response
   } catch (error: any) {
     console.error('❌ Erreur envoi email Brevo:', error.response?.body || error.message)
@@ -105,7 +105,7 @@ export async function sendTemplateEmail(params: {
   try {
     const api = getApiInstance()
     const response = await api.sendTransacEmail(sendSmtpEmail)
-    console.log('✅ Email template envoyé via Brevo:', response.messageId)
+    console.log('✅ Email template envoyé via Brevo:', response.body?.messageId || 'Envoyé')
     return response
   } catch (error: any) {
     console.error('❌ Erreur envoi template Brevo:', error.response?.body || error.message)

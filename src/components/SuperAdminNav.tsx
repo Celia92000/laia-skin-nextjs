@@ -72,13 +72,14 @@ export default function SuperAdminNav() {
         <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon
-            const active = isActive(tab.href, tab.external)
+            const external = ('external' in tab ? tab.external : false) as boolean
+            const active = isActive(tab.href, external)
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                target={tab.external ? '_blank' : undefined}
-                rel={tab.external ? 'noopener noreferrer' : undefined}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
                 className={`flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-lg transition-all`}
                 style={{
                   color: active ? '#6b21a8' : 'rgba(255, 255, 255, 0.85)',
@@ -89,7 +90,7 @@ export default function SuperAdminNav() {
               >
                 <Icon className="w-4 h-4 mr-2" />
                 {tab.name}
-                {tab.external && <span className="ml-1 text-xs">↗</span>}
+                {external && <span className="ml-1 text-xs">↗</span>}
               </Link>
             )
           })}

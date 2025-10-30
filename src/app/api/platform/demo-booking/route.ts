@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     const meetingUrl = generateJitsiMeetingUrl(`${data.institutName}-${Date.now()}`, data.institutName)
 
     // Transaction pour garantir l'atomicité et éviter les doubles réservations
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await (prisma as any).$transaction(async (tx: any) => {
       // Re-vérifier la disponibilité dans la transaction (protection contre race condition)
       const slotCheck = await tx.demoSlot.findUnique({
         where: { id: data.slotId },

@@ -6,9 +6,7 @@ export async function GET() {
     // Récupérer tous les clients directement sans auth pour debug
     const clients = await prisma.user.findMany({
       where: {
-        role: {
-          in: ['client', 'CLIENT']
-        }
+        role: 'CLIENT'
       },
       select: {
         id: true,

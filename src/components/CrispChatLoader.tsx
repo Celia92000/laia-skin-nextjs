@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { verifyAuth } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import CrispChat from './CrispChat';
 
@@ -12,7 +12,7 @@ export default async function CrispChatLoader() {
       return null;
     }
 
-    const decoded = await verifyAuth(token);
+    const decoded = verifyToken(token);
     if (!decoded || !decoded.organizationId) {
       return null;
     }

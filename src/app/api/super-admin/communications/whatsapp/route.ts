@@ -27,26 +27,9 @@ export async function GET(request: Request) {
     }
 
     // Récupérer tous les messages WhatsApp de toutes les organisations
-    const messages = await prisma.whatsAppMessage.findMany({
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true
-          }
-        }
-      },
+    const messages = await prisma.whatsAppHistory.findMany({
       orderBy: {
-        sentAt: 'desc'
+        createdAt: 'desc'
       },
       take: 500 // Limiter pour éviter les surcharges
     })
@@ -59,14 +42,12 @@ export async function GET(request: Request) {
       message: msg.message,
       status: msg.status,
       direction: msg.direction,
-      sentAt: msg.sentAt,
+      sentAt: msg.createdAt, // Utiliser createdAt comme sentAt
       deliveredAt: msg.deliveredAt,
       readAt: msg.readAt,
-      organizationId: msg.organizationId,
-      organization: msg.organization,
       userId: msg.userId,
-      clientName: msg.user?.name || msg.from || msg.to,
-      clientEmail: msg.user?.email || '',
+      clientName: msg.from || msg.to,
+      clientEmail: '',
       createdAt: msg.createdAt
     }))
 

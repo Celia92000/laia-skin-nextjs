@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           include: {
             users: {
               where: {
-                role: { in: ['ADMIN', 'SUPER_ADMIN', 'ORG_ADMIN'] }
+                role: { in: ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'] }
               }
             }
           }

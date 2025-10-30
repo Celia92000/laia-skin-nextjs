@@ -97,18 +97,22 @@ export async function PATCH(
     })
 
     // Enregistrer l'activité
-    await prisma.activityLog.create({
+    await prisma.auditLog.create({
       data: {
         userId: decoded.userId,
-        action: 'SUBSCRIPTION_UPDATED',
-        entityType: 'ORGANIZATION',
-        entityId: id,
-        description: `Abonnement mis à jour pour ${organization.name}`,
+        action: 'CHANGE_PLAN',
+        targetType: 'ORGANIZATION',
+        targetId: id,
+        organizationId: id,
+        before: {
+          plan: organization.plan,
+          status: organization.status
+        },
+        after: {
+          plan: plan || organization.plan,
+          status: status || organization.status
+        },
         metadata: {
-          previousPlan: organization.plan,
-          newPlan: plan || organization.plan,
-          previousStatus: organization.status,
-          newStatus: status || organization.status,
           note
         }
       }

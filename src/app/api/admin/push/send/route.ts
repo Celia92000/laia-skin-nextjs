@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPrismaClient } from '@/lib/prisma';
-import { verifyAuth } from '@/lib/auth';
-import webpush from 'web-push';
+// import { getPrismaClient } from '@/lib/prisma';
+// import { verifyAuth } from '@/lib/auth';
+// import webpush from 'web-push';
+
+// TEMPORAIREMENT DÉSACTIVÉ: Le modèle pushSubscription n'existe pas dans le schéma Prisma
+// TODO: Ajouter le modèle pushSubscription dans schema.prisma si nécessaire
 
 // Configurer web-push avec les clés VAPID
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
-const vapidEmail = process.env.VAPID_EMAIL || 'mailto:contact@laiaskin.com';
+// const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+// const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
+// const vapidEmail = process.env.VAPID_EMAIL || 'mailto:contact@laiaskin.com';
 
-if (vapidPublicKey && vapidPrivateKey) {
-  webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
-}
+// if (vapidPublicKey && vapidPrivateKey) {
+//   webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
+// }
 
 export async function POST(request: NextRequest) {
+  return NextResponse.json(
+    { error: 'Push notifications temporairement désactivées - Modèle pushSubscription manquant' },
+    { status: 501 }
+  );
+
+  /*
   try {
     const token = request.cookies.get('token')?.value;
     if (!token) {
@@ -142,4 +151,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  */
 }

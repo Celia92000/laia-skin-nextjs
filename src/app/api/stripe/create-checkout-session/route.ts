@@ -138,6 +138,18 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
+    // Récupérer l'email de l'utilisateur pour Stripe
+    let customerEmail: string | undefined;
+    if (reservation) {
+      customerEmail = reservation.user.email;
+    } else {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { email: true }
+      });
+      customerEmail = user?.email;
+    }
+
     // Créer une session Stripe Checkout
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
 
@@ -165,7 +177,7 @@ export async function POST(request: Request) {
         productId: productId || '',
         ...metadata
       },
-      customer_email: decoded.email || undefined,
+      customer_email: customerEmail || undefined,
     };
 
     const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {

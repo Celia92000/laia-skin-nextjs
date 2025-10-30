@@ -23,12 +23,16 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation requise' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -177,6 +181,7 @@ export async function POST(request: NextRequest) {
     // Créer la réservation avec le service principal
     const reservation = await prisma.reservation.create({
       data: {
+        organizationId: user.organizationId,
         userId: clientUser.id,
         serviceId: primaryServiceId, // Lier le service principal
         services: JSON.stringify(services), // Garder aussi la liste pour compatibilité
@@ -257,7 +262,7 @@ export async function GET(request: NextRequest) {
     }
 
     const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
-    if (user && !adminRoles.includes(user.role)) {
+    if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

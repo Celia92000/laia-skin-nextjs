@@ -9,7 +9,8 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const product = await prisma.product.findUnique({
+    // Utiliser findFirst car slug seul n'est pas unique (nécessite organizationId)
+    const product = await prisma.product.findFirst({
       where: { slug }
     });
 

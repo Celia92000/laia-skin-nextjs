@@ -23,7 +23,7 @@ export async function getServicesFromDB() {
 export async function getServiceBySlug(slug: string) {
   try {
     const prisma = await getPrismaClient();
-    const service = await prisma.service.findUnique({
+    const service = await prisma.service.findFirst({
       where: { slug, active: true }
     });
     return service;

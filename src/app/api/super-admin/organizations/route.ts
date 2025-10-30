@@ -131,7 +131,7 @@ export async function GET() {
             role: staff.role,
             roleLabel: roleLabels[staff.role] || staff.role,
             createdAt: staff.createdAt,
-            lastLogin: staff.lastLogin
+            lastLogin: staff.lastLoginAt
           })),
           // 👤 CLIENTS DE L'INSTITUT
           topClients: clients
@@ -143,7 +143,7 @@ export async function GET() {
               email: client.email,
               reservationCount: client._count.reservations,
               createdAt: client.createdAt,
-              lastLogin: client.lastLogin
+              lastLogin: client.lastLoginAt
             })),
           activityStats: {
             reservations: totalOrgReservations,

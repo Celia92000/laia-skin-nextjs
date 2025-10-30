@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       publishPlatform = post.platform;
       publishData = {
         content: post.content,
-        hashtags: post.hashtags || undefined,
+        hashtags: post.hashtags ?? undefined,
         imageUrl: post.mediaUrls ?
           (typeof post.mediaUrls === 'string' ? JSON.parse(post.mediaUrls)[0] : post.mediaUrls[0])
           : undefined,
@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
       publishPlatform = platform;
       publishData = {
         content,
-        hashtags: hashtags || undefined,
-        imageUrl: imageUrl || undefined,
-        link: link || undefined
+        hashtags: hashtags ?? undefined,
+        imageUrl: imageUrl ?? undefined,
+        link: link ?? undefined
       };
 
       // Créer un enregistrement dans la base de données
@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
           title: content.substring(0, Math.min(50, content.length)),
           content,
           platform: publishPlatform,
-          hashtags: hashtags || null,
+          hashtags: hashtags ?? null,
           mediaUrls: imageUrl ? JSON.stringify([imageUrl]) : null,
           links: link ? JSON.stringify([link]) : null,
           scheduledDate: new Date(),
           status: 'publishing',
-          userId: decoded.userId || null,
+          userId: decoded.userId ?? null,
         }
       }).catch((err) => {
         console.error('Erreur création post:', err);
@@ -105,8 +105,8 @@ export async function POST(request: NextRequest) {
         data: {
           status: 'published',
           publishedAt: new Date(),
-          apiPostId: result.postId || null,
-          notes: `${postToUpdate.notes || ''}\n\nPublié avec succès le ${new Date().toLocaleString('fr-FR')} - ID: ${result.postId || 'N/A'}`
+          apiPostId: result.postId ?? null,
+          notes: `${postToUpdate.notes ?? ''}\n\nPublié avec succès le ${new Date().toLocaleString('fr-FR')} - ID: ${result.postId ?? 'N/A'}`
         }
       }).catch(() => null);
 
@@ -128,14 +128,14 @@ export async function POST(request: NextRequest) {
           where: { id: postToUpdate.id },
           data: {
             status: 'failed',
-            errorMessage: result.error || 'Erreur inconnue'
+            errorMessage: result.error ?? 'Erreur inconnue'
           }
         }).catch(() => null);
       }
 
       return NextResponse.json({
         success: false,
-        error: result.error || 'Erreur lors de la publication'
+        error: result.error ?? 'Erreur lors de la publication'
       }, { status: 500 });
     }
 

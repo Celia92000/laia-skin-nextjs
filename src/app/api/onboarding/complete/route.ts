@@ -8,7 +8,7 @@ import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia'
+  apiVersion: '2025-09-30.clover'
 })
 
 export async function POST(req: NextRequest) {
@@ -169,7 +169,6 @@ export async function POST(req: NextRequest) {
             // Informations légales dans la config aussi
             siret,
             tvaNumber: tvaNumber || null,
-            legalName,
             legalRepName: `${ownerFirstName} ${ownerLastName}`,
             legalRepTitle: 'Gérant(e)'
           }
@@ -177,6 +176,7 @@ export async function POST(req: NextRequest) {
         locations: {
           create: {
             name: institutName,
+            slug: 'principal',
             isMainLocation: true,
             address: address || '',
             city: city || '',
@@ -282,7 +282,7 @@ export async function POST(req: NextRequest) {
       where: { id: organization.id },
       data: {
         stripeCustomerId: checkoutSession.customer as string || null,
-        stripeSubscriptionId: checkoutSession.subscription as string || null
+        subscriptionId: checkoutSession.subscription as string || null
       }
     })
 
@@ -309,14 +309,8 @@ export async function POST(req: NextRequest) {
       // On continue même si le template échoue, l'organisation existe déjà
     }
 
-    // Enregistrer le mot de passe temporaire dans l'organisation (pour le super admin)
-    await prisma.organization.update({
-      where: { id: organization.id },
-      data: {
-        initialPassword: tempPassword, // Mot de passe en clair (temporaire, sera changé par le client)
-        onboardingCompletedAt: new Date()
-      }
-    })
+    // Note: Le mot de passe temporaire sera envoyé par email à l'utilisateur
+    // Il n'est pas stocké dans l'organisation pour des raisons de sécurité
 
     // Générer la facture d'activation
     let invoicePdfBuffer: Buffer | undefined

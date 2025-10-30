@@ -66,7 +66,7 @@ export async function GET(
       where: { organizationId: id }
     })
 
-    const loyaltyProgram = await prisma.loyaltyProgram.findUnique({
+    const loyaltyProgram = await prisma.loyaltyProgramSettings.findUnique({
       where: { organizationId: id }
     })
 
@@ -358,20 +358,20 @@ export async function PUT(
 
     // Mettre à jour le programme de fidélité
     if (loyaltyProgram) {
-      await prisma.loyaltyProgram.upsert({
+      await prisma.loyaltyProgramSettings.upsert({
         where: { organizationId: id },
         create: {
           organizationId: id,
-          enabled: loyaltyProgram.enabled ?? false,
+          isEnabled: loyaltyProgram.enabled ?? false,
           pointsPerEuro: loyaltyProgram.pointsPerEuro ?? 1,
-          pointValue: loyaltyProgram.pointValue ?? 0.01,
-          minPointsForRedemption: loyaltyProgram.minPointsForRedemption ?? 100,
+          pointsValue: loyaltyProgram.pointValue ?? 0.01,
+          minPointsToRedeem: loyaltyProgram.minPointsForRedemption ?? 100,
         },
         update: {
-          enabled: loyaltyProgram.enabled,
+          isEnabled: loyaltyProgram.enabled,
           pointsPerEuro: loyaltyProgram.pointsPerEuro,
-          pointValue: loyaltyProgram.pointValue,
-          minPointsForRedemption: loyaltyProgram.minPointsForRedemption,
+          pointsValue: loyaltyProgram.pointValue,
+          minPointsToRedeem: loyaltyProgram.minPointsForRedemption,
         }
       })
     }
@@ -382,22 +382,30 @@ export async function PUT(
         where: { organizationId: id },
         create: {
           organizationId: id,
-          minBookingDelay: bookingSettings.minBookingDelay ?? 24,
-          maxBookingDelay: bookingSettings.maxBookingDelay ?? 90,
-          slotDuration: bookingSettings.slotDuration ?? 30,
-          autoConfirm: bookingSettings.autoConfirm ?? true,
-          requireDeposit: bookingSettings.requireDeposit ?? false,
-          depositPercentage: bookingSettings.depositPercentage ?? 30,
-          cancellationDeadline: bookingSettings.cancellationDeadline ?? 24,
+          minAdvanceBookingHours: bookingSettings.minAdvanceBookingHours ?? 2,
+          maxAdvanceBookingDays: bookingSettings.maxAdvanceBookingDays ?? 30,
+          cancellationDeadlineHours: bookingSettings.cancellationDeadlineHours ?? 24,
+          allowStaffSelection: bookingSettings.allowStaffSelection ?? true,
+          requireLocationSelection: bookingSettings.requireLocationSelection ?? false,
+          allowOnlinePayment: bookingSettings.allowOnlinePayment ?? true,
+          requireDepositPercent: bookingSettings.requireDepositPercent,
+          sendConfirmationEmail: bookingSettings.sendConfirmationEmail ?? true,
+          sendReminder24h: bookingSettings.sendReminder24h ?? true,
+          sendReminder2h: bookingSettings.sendReminder2h ?? false,
+          sendReviewRequest: bookingSettings.sendReviewRequest ?? true,
         },
         update: {
-          minBookingDelay: bookingSettings.minBookingDelay,
-          maxBookingDelay: bookingSettings.maxBookingDelay,
-          slotDuration: bookingSettings.slotDuration,
-          autoConfirm: bookingSettings.autoConfirm,
-          requireDeposit: bookingSettings.requireDeposit,
-          depositPercentage: bookingSettings.depositPercentage,
-          cancellationDeadline: bookingSettings.cancellationDeadline,
+          minAdvanceBookingHours: bookingSettings.minAdvanceBookingHours,
+          maxAdvanceBookingDays: bookingSettings.maxAdvanceBookingDays,
+          cancellationDeadlineHours: bookingSettings.cancellationDeadlineHours,
+          allowStaffSelection: bookingSettings.allowStaffSelection,
+          requireLocationSelection: bookingSettings.requireLocationSelection,
+          allowOnlinePayment: bookingSettings.allowOnlinePayment,
+          requireDepositPercent: bookingSettings.requireDepositPercent,
+          sendConfirmationEmail: bookingSettings.sendConfirmationEmail,
+          sendReminder24h: bookingSettings.sendReminder24h,
+          sendReminder2h: bookingSettings.sendReminder2h,
+          sendReviewRequest: bookingSettings.sendReviewRequest,
         }
       })
     }

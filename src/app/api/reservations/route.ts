@@ -154,7 +154,8 @@ export async function POST(request: Request) {
       let existingDuration = 0;
       
       for (const existingServiceSlug of existingServices) {
-        const service = await prisma.service.findUnique({
+        // Utiliser findFirst car slug seul n'est pas unique (nécessite organizationId)
+        const service = await prisma.service.findFirst({
           where: { slug: existingServiceSlug }
         });
         if (service) {
@@ -261,6 +262,7 @@ export async function POST(request: Request) {
     const reservation = await prisma.reservation.create({
       data: {
         userId: userId,
+        organizationId: user?.organizationId || '', // Ajouter organizationId depuis le user
         services: JSON.stringify(services),
         packages: packages ? JSON.stringify(packages) : '{}',
         isSubscription,

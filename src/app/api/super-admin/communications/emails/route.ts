@@ -27,15 +27,8 @@ export async function GET(request: Request) {
     }
 
     // Récupérer tous les emails de toutes les organisations
-    const emails = await prisma.emailLog.findMany({
+    const emails = await prisma.emailHistory.findMany({
       include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
         campaign: {
           select: {
             id: true,

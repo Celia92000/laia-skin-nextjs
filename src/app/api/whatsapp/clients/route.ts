@@ -21,16 +21,14 @@ export async function GET(request: Request) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'admin' && (user.role as string) !== 'ADMIN' && user.role !== 'employee' && (user.role as string) !== 'EMPLOYEE')) {
+    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
     // Récupérer tous les clients avec leurs réservations et informations complètes
     const clients = await prisma.user.findMany({
       where: {
-        role: {
-          in: ['client', 'CLIENT']
-        }
+        role: 'CLIENT'
       },
       select: {
         id: true,

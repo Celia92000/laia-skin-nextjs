@@ -81,7 +81,9 @@ export async function POST(request: Request) {
         redirect = '/admin'
         break
 
-      case 'EMPLOYEE':
+      case 'STAFF':
+      case 'RECEPTIONIST':
+      case 'LOCATION_MANAGER':
         // Rediriger vers l'admin avec des permissions limitées
         redirect = '/admin'
         break

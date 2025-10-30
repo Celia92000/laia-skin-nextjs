@@ -349,7 +349,7 @@ export default function DemoBooking() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 border border-purple-100 max-h-[90vh] overflow-y-auto">
         <button
           onClick={() => {
-            setStep('calendar')
+            setStep('date')
             setSelectedSlot(null)
           }}
           className="text-purple-600 hover:text-purple-700 mb-4 flex items-center gap-2"

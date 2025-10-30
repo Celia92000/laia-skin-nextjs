@@ -26,20 +26,19 @@ export async function POST(request: Request) {
     // Créer ou mettre à jour le lead dans la base de données
     try {
       // Vérifier si un lead existe déjà avec cet email
-      const existingLead = await prisma.lead.findUnique({
-        where: { email }
+      const existingLead = await prisma.lead.findFirst({
+        where: { contactEmail: email }
       });
 
       if (existingLead) {
         // Mettre à jour le lead existant
         await prisma.lead.update({
-          where: { email },
+          where: { id: existingLead.id },
           data: {
-            name,
-            phone: phone || existingLead.phone,
-            subject: subject || existingLead.subject,
-            message: message + (existingLead.message ? '\n\n--- Message précédent ---\n' + existingLead.message : ''),
-            status: existingLead.status === 'converted' ? 'converted' : 'contacted',
+            contactName: name,
+            contactPhone: phone || existingLead.contactPhone,
+            notes: message + (existingLead.notes ? '\n\n--- Message précédent ---\n' + existingLead.notes : ''),
+            status: existingLead.status === 'WON' ? 'WON' : 'CONTACTED',
             updatedAt: new Date()
           }
         });
@@ -47,11 +46,11 @@ export async function POST(request: Request) {
         // Créer un nouveau lead
         await prisma.lead.create({
           data: {
-            name,
-            email,
-            phone,
-            subject,
-            message,
+            institutName: name,
+            contactName: name,
+            contactEmail: email,
+            contactPhone: phone,
+            notes: subject ? `${subject}\n\n${message}` : message,
             source: "WEBSITE",
             status: "NEW"
           }

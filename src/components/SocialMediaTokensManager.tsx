@@ -306,7 +306,7 @@ export default function SocialMediaTokensManager() {
                     <div>
                       <h3 className="font-semibold text-gray-900">{platform.name}</h3>
                       <p className="text-xs text-gray-500">
-                        {status.count} paramètre{status.count > 1 ? 's' : ''} configuré{status.count > 1 ? 's' : ''}
+                        {status.count ?? 0} paramètre{(status.count ?? 0) > 1 ? 's' : ''} configuré{(status.count ?? 0) > 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>

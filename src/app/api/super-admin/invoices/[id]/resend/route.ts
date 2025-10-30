@@ -57,7 +57,7 @@ export async function POST(
       invoiceNumber: invoice.invoiceNumber,
       amount: invoice.amount,
       dueDate: invoice.dueDate,
-      plan: invoice.plan,
+      plan: invoice.plan || 'SOLO',
       lineItems: lineItems,
       changeType: metadata?.changeType,
       prorata: metadata?.prorata

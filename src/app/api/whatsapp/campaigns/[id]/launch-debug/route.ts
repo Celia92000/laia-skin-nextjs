@@ -54,7 +54,7 @@ export async function POST(
         // Récupérer quelques clients pour la simulation
         const clients = await prisma.user.findMany({
           where: {
-            role: { in: ['client', 'CLIENT'] },
+            role: 'CLIENT',
             phone: { not: null }
           },
           take: 5,

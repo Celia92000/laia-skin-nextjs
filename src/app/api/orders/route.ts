@@ -61,9 +61,20 @@ export async function POST(request: NextRequest) {
     if (body.orderType === 'service' && body.selectedDate && body.selectedTime) {
       const serviceItem = body.items[0];
 
+      // Récupérer l'organizationId de l'utilisateur
+      let organizationId = '';
+      if (userId) {
+        const user = await prisma.user.findFirst({
+          where: { id: userId },
+          select: { organizationId: true }
+        });
+        organizationId = user?.organizationId || '';
+      }
+
       await prisma.reservation.create({
         data: {
           userId: userId || 'guest',
+          organizationId, // Ajouter organizationId
           serviceId: serviceItem.id,
           services: JSON.stringify([serviceItem.id]),
           packages: '{}',

@@ -176,12 +176,13 @@ model OrganizationConfig {
   siteDescription String?
 
   // Contact
-  email      String? @default("contact@mon-institut.fr")
-  phone      String? @default("+33 6 00 00 00 00")
-  address    String?
-  city       String?
-  postalCode String?
-  country    String? @default("France")
+  email        String? @default("contact@mon-institut.fr")
+  contactEmail String? // Email de contact principal (alias de email)
+  phone        String? @default("+33 6 00 00 00 00")
+  address      String?
+  city         String?
+  postalCode   String?
+  country      String? @default("France")
 
   // Réseaux sociaux
   facebook  String?
@@ -653,6 +654,7 @@ model Service {
   serviceCategory    ServiceCategory?    @relation("ServiceToCategory", fields: [categoryId], references: [id])
   serviceSubcategory ServiceSubcategory? @relation("ServiceToSubcategory", fields: [subcategoryId], references: [id])
 
+  @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([categoryId])
   @@index([subcategoryId])
@@ -769,29 +771,32 @@ model ClientEvolution {
 }
 
 model Review {
-  id            String       @id @default(cuid())
-  userId        String
-  reservationId String?      @unique
-  orderId       String?      @unique // Pour avis sur produits/formations
-  serviceName   String?
-  itemType      String? // "service", "product", "formation"
-  itemId        String? // ID du service/produit/formation
-  itemName      String? // Nom du service/produit/formation
-  rating        Int
-  comment       String
-  satisfaction  Int          @default(5)
-  photos        String       @default("[]") // JSON array of photo URLs
-  response      String?
-  approved      Boolean      @default(false)
-  featured      Boolean      @default(false)
-  source        String       @default("site") // site, email, whatsapp, google
-  googleReview  Boolean      @default(false)
-  googleUrl     String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  user          User         @relation(fields: [userId], references: [id])
-  reservation   Reservation? @relation(fields: [reservationId], references: [id])
-  order         Order?       @relation(fields: [orderId], references: [id])
+  id             String       @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
+  userId         String
+  reservationId  String?      @unique
+  orderId        String?      @unique // Pour avis sur produits/formations
+  serviceName    String?
+  itemType       String? // "service", "product", "formation"
+  itemId         String? // ID du service/produit/formation
+  itemName       String? // Nom du service/produit/formation
+  rating         Int
+  comment        String
+  satisfaction   Int          @default(5)
+  photos         String       @default("[]") // JSON array of photo URLs
+  response       String?
+  approved       Boolean      @default(false)
+  featured       Boolean      @default(false)
+  source         String       @default("site") // site, email, whatsapp, google
+  googleReview   Boolean      @default(false)
+  googleUrl      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id])
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
+  order          Order?       @relation(fields: [orderId], references: [id])
+
+  @@index([organizationId])
 }
 
 model Notification {
@@ -1230,6 +1235,7 @@ model Product {
   updatedAt    DateTime      @updatedAt
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, slug])
   @@index([organizationId])
   @@index([active])
 }
@@ -1352,6 +1358,7 @@ model Formation {
 model Order {
   id              String  @id @default(cuid())
   orderNumber     String  @unique // Numéro de commande unique (ex: ORD-2024-00001)
+  organizationId  String? // Organisation (multi-tenant)
   userId          String? // Peut être null pour commandes invités
   customerName    String
   customerEmail   String
@@ -1390,6 +1397,7 @@ model Order {
   reviews Review[]
 
   @@index([userId])
+  @@index([organizationId])
   @@index([orderNumber])
   @@index([paymentStatus])
   @@index([status])

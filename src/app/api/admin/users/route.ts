@@ -293,7 +293,7 @@ export async function DELETE(request: NextRequest) {
     if (user._count.reservations > 0) {
       await prisma.user.update({
         where: { id: userId },
-        data: { role: 'INACTIVE' }
+        data: { isVisible: false, isAvailable: false }
       });
       
       return NextResponse.json({

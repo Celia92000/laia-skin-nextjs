@@ -3,6 +3,7 @@ import prisma from './prisma';
 
 export interface ApiToken {
   id: string;
+  organizationId: string | null;
   service: string;
   name: string;
   encryptedToken: string;
@@ -169,8 +170,14 @@ export async function getApiTokenWithMetadata(
     }
 
     // Déchiffrer le token et retourner avec metadata
+    const decryptedToken = decrypt(tokenRecord.encryptedToken);
+    if (!decryptedToken) {
+      console.error(`⚠️  Impossible de déchiffrer le token ${service}/${name}`);
+      return null;
+    }
+
     return {
-      token: decrypt(tokenRecord.encryptedToken),
+      token: decryptedToken,
       metadata: tokenRecord.metadata || {}
     };
   } catch (error) {

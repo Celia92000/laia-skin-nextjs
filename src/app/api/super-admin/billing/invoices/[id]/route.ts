@@ -66,6 +66,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
 

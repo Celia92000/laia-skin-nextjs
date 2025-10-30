@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPrismaClient } from '@/lib/prisma';
-import { verifyAuth } from '@/lib/auth';
+// import { getPrismaClient } from '@/lib/prisma';
+// import { verifyAuth } from '@/lib/auth';
+
+// TEMPORAIREMENT DÉSACTIVÉ: Le modèle pushSubscription n'existe pas dans le schéma Prisma
+// TODO: Ajouter le modèle pushSubscription dans schema.prisma si nécessaire
 
 export async function POST(request: NextRequest) {
+  return NextResponse.json(
+    { error: 'Push notifications temporairement désactivées - Modèle pushSubscription manquant' },
+    { status: 501 }
+  );
+
+  /*
   try {
     const token = request.cookies.get('token')?.value;
     if (!token) {
@@ -56,4 +65,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  */
 }

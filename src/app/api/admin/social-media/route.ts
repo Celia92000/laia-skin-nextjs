@@ -244,17 +244,17 @@ export async function POST(request: Request) {
       data: {
         title: data.title,
         content: data.content,
-        platform: data.platforms ? data.platforms.join(',') : (data.platform || null),
+        platform: data.platforms ? data.platforms.join(',') : (data.platform ?? null),
         scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : new Date(),
         status: data.status || 'draft',
-        notes: data.notes || null,
+        notes: data.notes ?? null,
         links: data.links ? JSON.stringify(data.links) : null,
-        hashtags: data.hashtags || null,
+        hashtags: data.hashtags ?? null,
         mediaUrls: data.mediaUrls ? JSON.stringify(data.mediaUrls) : null,
-        instagramType: data.instagramType || null,
-        facebookType: data.facebookType || null,
-        tiktokType: data.tiktokType || null,
-        category: data.category || null,
+        instagramType: data.instagramType ?? null,
+        facebookType: data.facebookType ?? null,
+        tiktokType: data.tiktokType ?? null,
+        category: data.category ?? null,
       }
     });
 
@@ -291,11 +291,11 @@ export async function PUT(request: Request) {
     const dataToUpdate: any = {
       title: updateData.title,
       content: updateData.content,
-      platform: updateData.platform || null,
+      platform: updateData.platform ?? null,
       scheduledDate: new Date(updateData.scheduledDate),
       status: updateData.status,
-      notes: updateData.notes || null,
-      hashtags: updateData.hashtags || null,
+      notes: updateData.notes ?? null,
+      hashtags: updateData.hashtags ?? null,
     };
 
     if (updateData.links) {

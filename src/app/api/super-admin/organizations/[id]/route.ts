@@ -524,7 +524,7 @@ export async function DELETE(
         products: true,
         reservations: true
       }
-    })
+    }) as any
 
     if (!organization) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
@@ -566,7 +566,7 @@ export async function DELETE(
     })
 
     // 4. Supprimer les articles de blog
-    await prisma.blogArticle.deleteMany({
+    await prisma.blogPost.deleteMany({
       where: { organizationId: id }
     })
 

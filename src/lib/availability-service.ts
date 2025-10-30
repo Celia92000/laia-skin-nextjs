@@ -42,7 +42,7 @@ export async function isSlotAvailable(date: Date, time: string): Promise<boolean
 
   // 3. Vérifier les horaires de travail
   const dayOfWeek = normalizedDate.getDay();
-  const workingHours = await prisma.workingHours.findUnique({
+  const workingHours = await prisma.workingHours.findFirst({
     where: { dayOfWeek }
   });
 
@@ -101,7 +101,7 @@ export async function getAvailableSlots(date: Date, duration?: number): Promise<
 
   // Récupérer les horaires de travail
   const dayOfWeek = normalizedDate.getDay();
-  const workingHours = await prisma.workingHours.findUnique({
+  const workingHours = await prisma.workingHours.findFirst({
     where: { dayOfWeek }
   });
 

@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        user: {
+        assignedTo: {
           select: {
             id: true,
             name: true,
@@ -117,7 +117,7 @@ export async function PUT(request: Request) {
       where: { id },
       data: updateData,
       include: {
-        user: {
+        assignedTo: {
           select: {
             id: true,
             name: true,
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
 
     // Vérifier si un utilisateur existe déjà avec cet email
     const existingUser = await prisma.user.findFirst({
-      where: { email: lead.email }
+      where: { email: lead.contactEmail }
     });
 
     if (existingUser) {
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
         where: { id: leadId },
         data: {
           status: "WON",
-          userId: existingUser.id
+          organizationId: existingUser.organizationId
         }
       });
 
@@ -187,9 +187,9 @@ export async function POST(request: Request) {
     // Créer un nouveau client
     const newUser = await prisma.user.create({
       data: {
-        email: lead.email,
-        name: lead.name,
-        phone: lead.phone || undefined,
+        email: lead.contactEmail,
+        name: lead.contactName,
+        phone: lead.contactPhone || undefined,
         password: '', // Le client devra réinitialiser son mot de passe
         role: 'CLIENT'
       }
@@ -200,7 +200,7 @@ export async function POST(request: Request) {
       where: { id: leadId },
       data: {
         status: "WON",
-        userId: newUser.id
+        organizationId: newUser.organizationId
       }
     });
 

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    const configuredPlatforms = SocialMediaPublisher.getConfiguredPlatforms();
+    const configuredPlatforms = await SocialMediaPublisher.getConfiguredPlatforms();
 
     return NextResponse.json({
       success: true,

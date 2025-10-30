@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, subject, content, target, scheduledAt } = body
+    const { name, subject, content, recipients, scheduledAt } = body
 
     // Créer la campagne
     const campaign = await prisma.emailCampaign.create({
@@ -78,8 +78,8 @@ export async function POST(request: Request) {
         name,
         subject,
         content,
-        target,
-        status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
+        recipients: recipients || '[]',
+        status: scheduledAt ? 'scheduled' : 'draft',
         scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined
       }
     })
