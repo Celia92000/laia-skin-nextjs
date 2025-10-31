@@ -100,6 +100,24 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // Stripe Connect - Événements des comptes connectés (instituts)
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account
+        await handleConnectedAccountUpdated(account)
+        break
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        // Vérifier si c'est un paiement Connect (reservation, carte cadeau, etc.)
+        if (session.metadata?.organizationId) {
+          await handleConnectedCheckoutCompleted(session)
+        } else {
+          await handleCheckoutCompleted(session)
+        }
+        break
+      }
+
       default:
         console.log(`⚠️ Événement non géré: ${event.type}`)
     }
@@ -852,5 +870,141 @@ function generatePaymentFailedEmail(orgName: string, invoiceNumber: string, amou
     </body>
     </html>
   `
+}
+
+/**
+ * Gérer la mise à jour d'un compte Stripe Connect (institut)
+ */
+async function handleConnectedAccountUpdated(account: Stripe.Account) {
+  try {
+    console.log(`🔄 Mise à jour compte Connect: ${account.id}`)
+
+    // Trouver l'organisation correspondante
+    const org = await prisma.organization.findFirst({
+      where: { stripeConnectedAccountId: account.id }
+    })
+
+    if (!org) {
+      console.warn(`⚠️ Organisation introuvable pour compte Connect ${account.id}`)
+      return
+    }
+
+    // Mettre à jour les statuts
+    const onboardingComplete = account.details_submitted || false
+    const chargesEnabled = account.charges_enabled || false
+    const payoutsEnabled = account.payouts_enabled || false
+
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: {
+        stripeOnboardingComplete: onboardingComplete,
+        stripeChargesEnabled: chargesEnabled,
+        stripePayoutsEnabled: payoutsEnabled
+      }
+    })
+
+    console.log(`✅ Statut Connect mis à jour pour ${org.name}`)
+    console.log(`   - Onboarding: ${onboardingComplete}`)
+    console.log(`   - Charges: ${chargesEnabled}`)
+    console.log(`   - Payouts: ${payoutsEnabled}`)
+
+    // Logger l'événement
+    await prisma.activityLog.create({
+      data: {
+        userId: 'system',
+        action: 'STRIPE_CONNECT_UPDATED',
+        entityType: 'ORGANIZATION',
+        entityId: org.id,
+        description: `Compte Stripe Connect mis à jour pour ${org.name}`,
+        metadata: {
+          accountId: account.id,
+          onboardingComplete,
+          chargesEnabled,
+          payoutsEnabled
+        }
+      }
+    })
+
+  } catch (error) {
+    console.error('Erreur handleConnectedAccountUpdated:', error)
+  }
+}
+
+/**
+ * Gérer un paiement Connect réussi (réservation, carte cadeau, etc.)
+ */
+async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session) {
+  try {
+    console.log(`💳 Paiement Connect réussi: ${session.id}`)
+
+    const metadata = session.metadata
+    if (!metadata) return
+
+    const organizationId = metadata.organizationId
+    const reservationId = metadata.reservationId
+    const giftCardId = metadata.giftCardId
+
+    // Marquer la réservation comme payée
+    if (reservationId) {
+      await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          paid: true,
+          paymentMethod: 'card',
+          stripePaymentIntentId: session.payment_intent as string
+        }
+      })
+
+      console.log(`✅ Réservation ${reservationId} marquée comme payée`)
+
+      // Logger
+      await prisma.activityLog.create({
+        data: {
+          userId: 'system',
+          action: 'RESERVATION_PAID',
+          entityType: 'RESERVATION',
+          entityId: reservationId,
+          description: `Paiement réservation réussi via Stripe Connect`,
+          metadata: {
+            amount: session.amount_total ? session.amount_total / 100 : 0,
+            sessionId: session.id,
+            paymentIntentId: session.payment_intent
+          }
+        }
+      })
+    }
+
+    // Marquer la carte cadeau comme payée
+    if (giftCardId) {
+      await prisma.giftCard.update({
+        where: { id: giftCardId },
+        data: {
+          status: 'ACTIVE',
+          stripePaymentIntentId: session.payment_intent as string
+        }
+      })
+
+      console.log(`✅ Carte cadeau ${giftCardId} activée`)
+
+      // Logger
+      await prisma.activityLog.create({
+        data: {
+          userId: 'system',
+          action: 'GIFT_CARD_PAID',
+          entityType: 'GIFT_CARD',
+          entityId: giftCardId,
+          description: `Carte cadeau payée et activée via Stripe Connect`,
+          metadata: {
+            amount: session.amount_total ? session.amount_total / 100 : 0,
+            sessionId: session.id,
+            paymentIntentId: session.payment_intent
+          }
+        }
+      })
+    }
+
+  } catch (error) {
+    console.error('Erreur handleConnectedCheckoutCompleted:', error)
+  }
 }
 

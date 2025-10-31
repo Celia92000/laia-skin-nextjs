@@ -112,8 +112,15 @@ model Organization {
   lastPaymentDate DateTime? // Date du dernier paiement réussi
   monthlyAmount   Float? // Montant mensuel de l'abonnement
 
-  // Stripe
-  stripeCustomerId String? @unique // ID du client Stripe
+  // Stripe - Facturation de l'abonnement LAIA (compte Stripe de LAIA Platform)
+  stripeCustomerId      String? @unique // ID du client Stripe pour facturer l'abonnement
+  stripeSubscriptionId  String? @unique // ID de l'abonnement Stripe actif
+
+  // Stripe Connect - Paiements des clientes de l'institut (compte Stripe de l'institut)
+  stripeConnectedAccountId String? @unique // ID du compte Stripe Connect de l'institut
+  stripeOnboardingComplete Boolean @default(false) // Onboarding Stripe Connect terminé
+  stripeChargesEnabled     Boolean @default(false) // Peut accepter des paiements
+  stripePayoutsEnabled     Boolean @default(false) // Peut recevoir des virements
 
   // Template et versioning (pour modèle centralisé LAIA)
   templateVersion    String    @default("1.0.0") // Version du template utilisée
