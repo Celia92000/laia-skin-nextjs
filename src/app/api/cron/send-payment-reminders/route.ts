@@ -69,17 +69,15 @@ export async function GET(request: NextRequest) {
         const org = invoice.organization
         const daysSinceIssue = Math.floor((now.getTime() - invoice.issueDate.getTime()) / (24 * 60 * 60 * 1000))
 
-        // TEMPORAIREMENT DÉSACTIVÉ: activityLog n'existe pas dans le schéma
-        // TODO: Implémenter un système de suivi des relances dans Invoice ou créer ActivityLog
-        const lastReminder = null
-        // const lastReminder = await prisma.activityLog.findFirst({
-        //   where: {
-        //     entityType: 'INVOICE',
-        //     entityId: invoice.id,
-        //     action: { in: ['PAYMENT_REMINDER_1', 'PAYMENT_REMINDER_2'] }
-        //   },
-        //   orderBy: { createdAt: 'desc' }
-        // })
+        // Vérifier si une relance a déjà été envoyée pour cette facture
+        const lastReminder = await prisma.activityLog.findFirst({
+          where: {
+            entityType: 'INVOICE',
+            entityId: invoice.id,
+            action: { in: ['PAYMENT_REMINDER_1', 'PAYMENT_REMINDER_2'] }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
 
         // Première relance après 7 jours
         if (daysSinceIssue >= 7 && daysSinceIssue < 14 && !lastReminder) {
@@ -92,17 +90,16 @@ export async function GET(request: NextRequest) {
             html: generateReminderEmail(org.name, invoice.invoiceNumber, invoice.amount, 1)
           })
 
-          // TEMPORAIREMENT DÉSACTIVÉ: activityLog n'existe pas dans le schéma
-          // await prisma.activityLog.create({
-          //   data: {
-          //     userId: 'system',
-          //     action: 'PAYMENT_REMINDER_1',
-          //     entityType: 'INVOICE',
-          //     entityId: invoice.id,
-          //     description: `1ère relance de paiement envoyée à ${org.name}`,
-          //     metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount }
-          //   }
-          // })
+          await prisma.activityLog.create({
+            data: {
+              userId: 'system',
+              action: 'PAYMENT_REMINDER_1',
+              entityType: 'INVOICE',
+              entityId: invoice.id,
+              description: `1ère relance de paiement envoyée à ${org.name}`,
+              metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount }
+            }
+          })
 
           results.firstReminder.push(org.name)
         }
@@ -118,17 +115,16 @@ export async function GET(request: NextRequest) {
             html: generateReminderEmail(org.name, invoice.invoiceNumber, invoice.amount, 2)
           })
 
-          // TEMPORAIREMENT DÉSACTIVÉ: activityLog n'existe pas dans le schéma
-          // await prisma.activityLog.create({
-          //   data: {
-          //     userId: 'system',
-          //     action: 'PAYMENT_REMINDER_2',
-          //     entityType: 'INVOICE',
-          //     entityId: invoice.id,
-          //     description: `2ème relance de paiement envoyée à ${org.name}`,
-          //     metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount }
-          //   }
-          // })
+          await prisma.activityLog.create({
+            data: {
+              userId: 'system',
+              action: 'PAYMENT_REMINDER_2',
+              entityType: 'INVOICE',
+              entityId: invoice.id,
+              description: `2ème relance de paiement envoyée à ${org.name}`,
+              metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount }
+            }
+          })
 
           results.secondReminder.push(org.name)
         }
@@ -149,17 +145,16 @@ export async function GET(request: NextRequest) {
             html: generateSuspensionEmail(org.name, invoice.invoiceNumber, invoice.amount)
           })
 
-          // TEMPORAIREMENT DÉSACTIVÉ: activityLog n'existe pas dans le schéma
-          // await prisma.activityLog.create({
-          //   data: {
-          //     userId: 'system',
-          //     action: 'ORGANIZATION_SUSPENDED',
-          //     entityType: 'ORGANIZATION',
-          //     entityId: org.id,
-          //     description: `Organisation suspendue pour impayé`,
-          //     metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount, daysSinceIssue }
-          //   }
-          // })
+          await prisma.activityLog.create({
+            data: {
+              userId: 'system',
+              action: 'ORGANIZATION_SUSPENDED',
+              entityType: 'ORGANIZATION',
+              entityId: org.id,
+              description: `Organisation suspendue pour impayé`,
+              metadata: { invoiceNumber: invoice.invoiceNumber, amount: invoice.amount, daysSinceIssue }
+            }
+          })
 
           results.suspended.push(org.name)
         }

@@ -1,0 +1,3 @@
+name,email,phone,birthDate,address,city,postalCode,allergies,skinType,medicalNotes,preferences,notes
+Marie Dupont,marie.dupont@example.com,0612345678,1985-03-15,12 rue de la Paix,Paris,75001,Parfums,Mixte,Aucune,Soins anti-âge,Cliente VIP
+Sophie Martin,sophie.martin@example.com,0623456789,1990-07-22,45 avenue des Champs,Lyon,69001,Huiles essentielles,Sensible,Rosacée légère,Produits bio uniquement,Préfère RDV le matin

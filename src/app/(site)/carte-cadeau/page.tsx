@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import GiftCardPurchaseForm from "@/components/gift-cards/GiftCardPurchaseForm";
 import {
   Gift, Search, Calendar, Sparkles, Heart, Star, MapPin, Phone, Mail
 } from "lucide-react";
@@ -59,47 +60,8 @@ export default function CarteCadeau() {
             </p>
           </div>
 
-          {/* Achat en institut */}
-          <div className="bg-gradient-to-br from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-2xl shadow-xl p-8 mb-8 border-2 border-[#d4b5a0]">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="bg-[#d4b5a0] rounded-full p-3">
-                <Gift className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-semibold mb-3">Acheter une carte cadeau</h2>
-                <p className="text-gray-700 mb-4">
-                  Les cartes cadeaux sont disponibles exclusivement à l'institut.
-                  Rendez-vous sur place pour offrir un moment de bien-être unique.
-                </p>
-
-                <div className="bg-white rounded-lg p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-[#d4b5a0]" />
-                    <span className="text-gray-800">LAIA SKIN Institut</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-[#d4b5a0]" />
-                    <span className="text-gray-800">Contactez-nous pour plus d'informations</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid md:grid-cols-3 gap-4">
-                  <div className="bg-white rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-[#d4b5a0] mb-1">50€</div>
-                    <div className="text-sm text-gray-600">Montant minimum</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-[#d4b5a0] mb-1">1 an</div>
-                    <div className="text-sm text-gray-600">Validité</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 text-center">
-                    <div className="text-3xl font-bold text-[#d4b5a0] mb-1">Tous</div>
-                    <div className="text-sm text-gray-600">Nos soins</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Formulaire d'achat en ligne */}
+          <GiftCardPurchaseForm />
 
           {/* Vérifier le solde */}
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">

@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Gift, CheckCircle, Calendar, CreditCard, X, Plus, Edit, Trash2, Eye, Search, Mail, Settings, Save, User, Download, Package, GraduationCap, Clock, ShoppingBag } from 'lucide-react';
+import { Gift, CheckCircle, Calendar, CreditCard, X, Plus, Edit, Trash2, Eye, Search, Mail, Settings, Save, User, Download, Package, GraduationCap, Clock, ShoppingBag, FileDown, Star, Cake, Edit2 } from 'lucide-react';
 import { formatDateLocal } from '@/lib/date-utils';
+import { downloadGiftCardPDF, downloadMultipleGiftCardsPDF } from '@/lib/pdf-gift-card';
+import { downloadGiftCardsCSV, downloadGiftCardsExcel, downloadGiftCardsStatsCSV } from '@/lib/export-gift-cards-csv';
+import GiftCardStatistics from './GiftCardStatistics';
 
 interface GiftCard {
   id: string;
@@ -65,7 +68,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
   const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pending-cards' | 'all-cards' | 'pending-orders' | 'settings'>(
+  const [activeTab, setActiveTab] = useState<'pending-cards' | 'all-cards' | 'statistics' | 'pending-orders' | 'settings'>(
     filterType === 'shop' ? 'pending-orders' : 'pending-cards'
   );
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +102,20 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
     cardColorTo: "#be185d",
   });
 
+  // Loyalty Settings
+  const [loyaltySettings, setLoyaltySettings] = useState({
+    serviceThreshold: 5,  // Réduction au 5ème soin
+    serviceDiscount: 20,
+    packageThreshold: 2,   // Réduction après 2 forfaits complétés
+    packageDiscount: 40,
+    birthdayDiscount: 10,
+    referralSponsorDiscount: 15,  // Réduction pour le parrain
+    referralReferredDiscount: 10, // Réduction pour le filleul
+    referralBonus: 1,
+    reviewBonus: 1
+  });
+  const [savingLoyaltySettings, setSavingLoyaltySettings] = useState(false);
+
   const getDefaultExpiryDate = () => {
     const date = new Date();
     date.setFullYear(date.getFullYear() + 1);
@@ -122,6 +139,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
     fetchOrders();
     if (activeTab === 'settings') {
       fetchSettings();
+      fetchLoyaltySettings();
     }
   }, [activeTab]);
 
@@ -152,9 +170,10 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      setOrders(data);
+      setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Erreur lors de la récupération des commandes:', error);
+      setOrders([]);
     }
   };
 
@@ -200,6 +219,47 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
       alert('❌ Erreur lors de la sauvegarde');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const fetchLoyaltySettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/loyalty-settings', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLoyaltySettings(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement paramètres fidélité:', error);
+    }
+  };
+
+  const saveLoyaltySettings = async () => {
+    setSavingLoyaltySettings(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/loyalty-settings', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loyaltySettings)
+      });
+
+      if (response.ok) {
+        alert('✅ Paramètres de fidélité mis à jour avec succès !');
+      } else {
+        alert('❌ Erreur lors de la sauvegarde des paramètres');
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde paramètres fidélité:', error);
+      alert('❌ Erreur lors de la sauvegarde des paramètres');
+    } finally {
+      setSavingLoyaltySettings(false);
     }
   };
 
@@ -412,7 +472,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
 
   // Filtrer les cartes selon l'onglet actif
   const filteredGiftCards = () => {
-    let cards = giftCards;
+    let cards = Array.isArray(giftCards) ? giftCards : [];
 
     if (activeTab === 'pending-cards') {
       cards = cards.filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus);
@@ -432,7 +492,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
 
   // Filtrer les commandes
   const filteredOrders = () => {
-    let filtered = orders;
+    let filtered = Array.isArray(orders) ? orders : [];
 
     if (activeTab === 'pending-orders') {
       filtered = filtered.filter(o => o.paymentStatus === 'pending');
@@ -451,25 +511,25 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
 
   const displayedCards = filteredGiftCards();
   const displayedOrders = filteredOrders();
-  const pendingCardsCount = giftCards.filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus).length;
-  const pendingOrdersCount = orders.filter(o => o.paymentStatus === 'pending').length;
+  const pendingCardsCount = Array.isArray(giftCards) ? giftCards.filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus).length : 0;
+  const pendingOrdersCount = Array.isArray(orders) ? orders.filter(o => o.paymentStatus === 'pending').length : 0;
 
   // Statistiques CA (filtrées selon le type)
-  const paidCardsRevenue = filterType === 'shop' ? 0 : giftCards
+  const paidCardsRevenue = filterType === 'shop' ? 0 : (Array.isArray(giftCards) ? giftCards
     .filter(gc => gc.paymentStatus === 'paid')
-    .reduce((sum, gc) => sum + gc.amount, 0);
+    .reduce((sum, gc) => sum + gc.amount, 0) : 0);
 
-  const paidOrdersRevenue = filterType === 'giftcard' ? 0 : orders
+  const paidOrdersRevenue = filterType === 'giftcard' ? 0 : (Array.isArray(orders) ? orders
     .filter(o => o.paymentStatus === 'paid')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+    .reduce((sum, o) => sum + o.totalAmount, 0) : 0);
 
-  const pendingCardsRevenue = filterType === 'shop' ? 0 : giftCards
+  const pendingCardsRevenue = filterType === 'shop' ? 0 : (Array.isArray(giftCards) ? giftCards
     .filter(gc => gc.paymentStatus === 'pending' || !gc.paymentStatus)
-    .reduce((sum, gc) => sum + gc.amount, 0);
+    .reduce((sum, gc) => sum + gc.amount, 0) : 0);
 
-  const pendingOrdersRevenue = filterType === 'giftcard' ? 0 : orders
+  const pendingOrdersRevenue = filterType === 'giftcard' ? 0 : (Array.isArray(orders) ? orders
     .filter(o => o.paymentStatus === 'pending')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+    .reduce((sum, o) => sum + o.totalAmount, 0) : 0);
 
   const totalPaidRevenue = paidCardsRevenue + paidOrdersRevenue;
   const totalPendingRevenue = pendingCardsRevenue + pendingOrdersRevenue;
@@ -528,83 +588,224 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
         </div>
       </div>
 
-      {/* Onglets */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          {filterType !== 'shop' && (
-            <>
-              <button
-                onClick={() => setActiveTab('pending-cards')}
-                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'pending-cards'
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Gift className="w-4 h-4" />
-                <span className="hidden sm:inline">Cartes en attente</span>
-                <span className="sm:hidden">🎁</span>
-                {pendingCardsCount > 0 && (
-                  <span className="bg-white text-orange-600 text-xs font-bold px-2 py-1 rounded-full">
-                    {pendingCardsCount}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('all-cards')}
-                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'all-cards'
-                    ? 'bg-pink-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Gift className="w-4 h-4" />
-                <span className="hidden sm:inline">Toutes les cartes</span>
-                <span className="sm:hidden">💳</span>
-                <span className="text-xs opacity-75">({giftCards.length})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'settings'
-                    ? 'bg-gray-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Paramètres</span>
-                <span className="sm:hidden">⚙️</span>
-              </button>
-            </>
-          )}
-
-          {filterType !== 'giftcard' && (
+      {/* Navigation moderne par cartes */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {filterType !== 'shop' && (
+          <>
             <button
-              onClick={() => setActiveTab('pending-orders')}
-              className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
-                activeTab === 'pending-orders'
-                  ? 'bg-purple-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              onClick={() => setActiveTab('pending-cards')}
+              className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${
+                activeTab === 'pending-cards'
+                  ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg scale-105'
+                  : 'bg-white hover:bg-orange-50 text-gray-700 shadow-sm hover:shadow-md'
               }`}
             >
-              <Clock className="w-4 h-4" />
-              <span className="hidden sm:inline">Commandes en attente</span>
-              <span className="sm:hidden">⏰</span>
-              {pendingOrdersCount > 0 && (
-                <span className="bg-white text-purple-600 text-xs font-bold px-2 py-1 rounded-full">
-                  {pendingOrdersCount}
-                </span>
-              )}
+              <div className="flex flex-col items-center gap-3">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  activeTab === 'pending-cards' ? 'bg-white/20' : 'bg-orange-100 group-hover:bg-orange-200'
+                }`}>
+                  <Clock className={`w-6 h-6 ${activeTab === 'pending-cards' ? 'text-white' : 'text-orange-600'}`} />
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm mb-1">En attente</div>
+                  {pendingCardsCount > 0 && (
+                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                      activeTab === 'pending-cards' ? 'bg-white text-orange-600' : 'bg-orange-500 text-white'
+                    }`}>
+                      {pendingCardsCount}
+                    </div>
+                  )}
+                </div>
+              </div>
             </button>
-          )}
-        </div>
+
+            <button
+              onClick={() => setActiveTab('all-cards')}
+              className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${
+                activeTab === 'all-cards'
+                  ? 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-lg scale-105'
+                  : 'bg-white hover:bg-pink-50 text-gray-700 shadow-sm hover:shadow-md'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  activeTab === 'all-cards' ? 'bg-white/20' : 'bg-pink-100 group-hover:bg-pink-200'
+                }`}>
+                  <Gift className={`w-6 h-6 ${activeTab === 'all-cards' ? 'text-white' : 'text-pink-600'}`} />
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm mb-1">Toutes</div>
+                  <div className={`text-xs ${activeTab === 'all-cards' ? 'text-white/80' : 'text-gray-500'}`}>
+                    {giftCards.length} cartes
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('statistics')}
+              className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${
+                activeTab === 'statistics'
+                  ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-lg scale-105'
+                  : 'bg-white hover:bg-blue-50 text-gray-700 shadow-sm hover:shadow-md'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  activeTab === 'statistics' ? 'bg-white/20' : 'bg-blue-100 group-hover:bg-blue-200'
+                }`}>
+                  <Download className={`w-6 h-6 ${activeTab === 'statistics' ? 'text-white' : 'text-blue-600'}`} />
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm">Stats & Export</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${
+                activeTab === 'settings'
+                  ? 'bg-gradient-to-br from-gray-700 to-gray-900 text-white shadow-lg scale-105'
+                  : 'bg-white hover:bg-gray-50 text-gray-700 shadow-sm hover:shadow-md'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className={`p-3 rounded-xl transition-colors ${
+                  activeTab === 'settings' ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'
+                }`}>
+                  <Settings className={`w-6 h-6 ${activeTab === 'settings' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-sm">Paramètres</div>
+                </div>
+              </div>
+            </button>
+          </>
+        )}
+
+        {filterType !== 'giftcard' && (
+          <button
+            onClick={() => setActiveTab('pending-orders')}
+            className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${
+              activeTab === 'pending-orders'
+                ? 'bg-gradient-to-br from-purple-500 to-violet-500 text-white shadow-lg scale-105'
+                : 'bg-white hover:bg-purple-50 text-gray-700 shadow-sm hover:shadow-md'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className={`p-3 rounded-xl transition-colors ${
+                activeTab === 'pending-orders' ? 'bg-white/20' : 'bg-purple-100 group-hover:bg-purple-200'
+              }`}>
+                <Clock className={`w-6 h-6 ${activeTab === 'pending-orders' ? 'text-white' : 'text-purple-600'}`} />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-sm mb-1">Commandes</div>
+                {pendingOrdersCount > 0 && (
+                  <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                    activeTab === 'pending-orders' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white'
+                  }`}>
+                    {pendingOrdersCount}
+                  </div>
+                )}
+              </div>
+            </div>
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6">
-          {activeTab === 'settings' ? (
+          {activeTab === 'statistics' ? (
+            // Onglet Statistiques & Export
+            <div className="space-y-8">
+              {/* En-tête avec titre et description */}
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Statistiques & Exports</h2>
+                <p className="text-gray-600">Analysez vos ventes et exportez vos données en quelques clics</p>
+              </div>
+
+              {/* Section Export de données */}
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border-2 border-indigo-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                    <Download className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Exporter les données</h3>
+                    <p className="text-sm text-gray-600">Téléchargez toutes vos cartes cadeaux dans le format de votre choix</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => downloadGiftCardsCSV(giftCards)}
+                    className="group relative overflow-hidden bg-white hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 rounded-xl p-6 border-2 border-green-200 hover:border-transparent transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  >
+                    <div className="flex flex-col items-center gap-3 text-gray-700 group-hover:text-white transition-colors">
+                      <div className="w-14 h-14 bg-green-100 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                        <Download className="w-7 h-7 text-green-600 group-hover:text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-lg mb-1">CSV</div>
+                        <div className="text-xs opacity-75">Format universel</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => downloadGiftCardsExcel(giftCards)}
+                    className="group relative overflow-hidden bg-white hover:bg-gradient-to-br hover:from-blue-500 hover:to-cyan-600 rounded-xl p-6 border-2 border-blue-200 hover:border-transparent transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  >
+                    <div className="flex flex-col items-center gap-3 text-gray-700 group-hover:text-white transition-colors">
+                      <div className="w-14 h-14 bg-blue-100 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                        <Download className="w-7 h-7 text-blue-600 group-hover:text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-lg mb-1">Excel</div>
+                        <div className="text-xs opacity-75">Format .xls</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => downloadGiftCardsStatsCSV(giftCards)}
+                    className="group relative overflow-hidden bg-white hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-600 rounded-xl p-6 border-2 border-purple-200 hover:border-transparent transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                  >
+                    <div className="flex flex-col items-center gap-3 text-gray-700 group-hover:text-white transition-colors">
+                      <div className="w-14 h-14 bg-purple-100 group-hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+                        <Download className="w-7 h-7 text-purple-600 group-hover:text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-lg mb-1">Statistiques</div>
+                        <div className="text-xs opacity-75">Résumé CSV</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="mt-4 p-4 bg-white/60 rounded-xl">
+                  <p className="text-sm text-gray-600 text-center">
+                    💡 <strong>Astuce :</strong> Les exports contiennent toutes les données : code, montant, solde, bénéficiaire, dates, etc.
+                  </p>
+                </div>
+              </div>
+
+              {/* Section Statistiques */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Analyse des ventes</h3>
+                    <p className="text-sm text-gray-600">Visualisez vos performances en temps réel</p>
+                  </div>
+                </div>
+                <GiftCardStatistics giftCards={giftCards} />
+              </div>
+            </div>
+          ) : activeTab === 'settings' ? (
             // Onglet Paramètres
             <div className="space-y-8">
               {/* Apparence de la carte */}
@@ -760,6 +961,167 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
                 )}
               </div>
 
+              {/* Configuration des Réductions Fidélité */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 mb-4">💎 Programme de Fidélité & Réductions</h3>
+                {settingsLoading ? (
+                  <div className="text-center py-8">Chargement des paramètres...</div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Carte Soins Individuels */}
+                    <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-5 border border-[#d4b5a0]/30">
+                      <h4 className="font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+                        <Gift className="w-5 h-5 text-[#d4b5a0]" />
+                        Carte Soins Individuels
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                            Nombre de soins requis
+                          </label>
+                          <input
+                            type="number"
+                            value={loyaltySettings.serviceThreshold}
+                            onChange={(e) => setLoyaltySettings({...loyaltySettings, serviceThreshold: parseInt(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                            Montant de la réduction (€)
+                          </label>
+                          <input
+                            type="number"
+                            value={loyaltySettings.serviceDiscount}
+                            onChange={(e) => setLoyaltySettings({...loyaltySettings, serviceDiscount: parseInt(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm text-[#2c3e50]/60 mt-2">
+                        Actuellement : {loyaltySettings.serviceThreshold} soins = -{loyaltySettings.serviceDiscount}€
+                      </p>
+                    </div>
+
+                    {/* Carte Forfaits */}
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
+                      <h4 className="font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-purple-600" />
+                        Carte Forfaits Premium
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                            Nombre de forfaits requis
+                          </label>
+                          <input
+                            type="number"
+                            value={loyaltySettings.packageThreshold}
+                            onChange={(e) => setLoyaltySettings({...loyaltySettings, packageThreshold: parseInt(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                            Montant de la réduction (€)
+                          </label>
+                          <input
+                            type="number"
+                            value={loyaltySettings.packageDiscount}
+                            onChange={(e) => setLoyaltySettings({...loyaltySettings, packageDiscount: parseInt(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm text-[#2c3e50]/60 mt-2">
+                        Actuellement : {loyaltySettings.packageThreshold} forfaits = -{loyaltySettings.packageDiscount}€
+                      </p>
+                    </div>
+
+                    {/* Réductions spéciales */}
+                    <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-5 border border-pink-200">
+                      <h4 className="font-bold text-[#2c3e50] mb-4 flex items-center gap-2">
+                        <Cake className="w-5 h-5 text-pink-600" />
+                        Réductions Spéciales
+                      </h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                            Réduction anniversaire (€)
+                          </label>
+                          <input
+                            type="number"
+                            value={loyaltySettings.birthdayDiscount}
+                            onChange={(e) => setLoyaltySettings({...loyaltySettings, birthdayDiscount: parseInt(e.target.value)})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                              Réduction parrain (€)
+                            </label>
+                            <input
+                              type="number"
+                              value={loyaltySettings.referralSponsorDiscount}
+                              onChange={(e) => setLoyaltySettings({...loyaltySettings, referralSponsorDiscount: parseInt(e.target.value)})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                              Réduction filleul (€)
+                            </label>
+                            <input
+                              type="number"
+                              value={loyaltySettings.referralReferredDiscount}
+                              onChange={(e) => setLoyaltySettings({...loyaltySettings, referralReferredDiscount: parseInt(e.target.value)})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                              Bonus parrainage (soins)
+                            </label>
+                            <input
+                              type="number"
+                              value={loyaltySettings.referralBonus}
+                              onChange={(e) => setLoyaltySettings({...loyaltySettings, referralBonus: parseInt(e.target.value)})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-[#2c3e50]/70 mb-1">
+                              Bonus avis Google (soins)
+                            </label>
+                            <input
+                              type="number"
+                              value={loyaltySettings.reviewBonus}
+                              onChange={(e) => setLoyaltySettings({...loyaltySettings, reviewBonus: parseInt(e.target.value)})}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions pour les réductions */}
+                    <div className="flex justify-end pt-4 border-t">
+                      <button
+                        onClick={saveLoyaltySettings}
+                        disabled={savingLoyaltySettings}
+                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <Save className="w-5 h-5" />
+                        {savingLoyaltySettings ? 'Enregistrement...' : 'Enregistrer les réductions'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {!settingsLoading && (
                 <button
                   onClick={saveSettings}
@@ -767,7 +1129,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
                   className="px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save className="w-5 h-5" />
-                  {savingSettings ? 'Enregistrement...' : 'Enregistrer les paramètres'}
+                  {savingSettings ? 'Enregistrement...' : 'Enregistrer les paramètres cartes cadeaux'}
                 </button>
               )}
             </div>
@@ -900,7 +1262,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
           ) : (
             // Onglets Cartes Cadeaux (pending-cards et all-cards)
             <>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 gap-3">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -912,13 +1274,41 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
                   />
                 </div>
 
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Nouvelle carte
-                </button>
+                <div className="flex gap-2">
+                  {displayedCards.length > 0 && (
+                    <button
+                      onClick={() => {
+                        downloadMultipleGiftCardsPDF(
+                          displayedCards.map(card => ({
+                            code: card.code,
+                            amount: card.amount,
+                            balance: card.balance,
+                            purchasedFor: card.purchasedFor,
+                            purchasedBy: card.purchaser?.name,
+                            message: card.message,
+                            createdAt: card.createdAt || card.purchaseDate,
+                            expiryDate: card.expiryDate,
+                            purchaser: card.purchaser
+                          })),
+                          settings
+                        );
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2"
+                      title={`Télécharger ${displayedCards.length} carte(s) en PDF`}
+                    >
+                      <FileDown className="w-5 h-5" />
+                      PDF ({displayedCards.length})
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Nouvelle carte
+                  </button>
+                </div>
               </div>
 
               {displayedCards.length === 0 ? (
@@ -1056,6 +1446,27 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
                           >
                             <Eye className="w-4 h-4" />
                             Voir
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              downloadGiftCardPDF({
+                                code: card.code,
+                                amount: card.amount,
+                                balance: card.balance,
+                                purchasedFor: card.purchasedFor,
+                                purchasedBy: card.purchaser?.name,
+                                message: card.message,
+                                createdAt: card.createdAt || card.purchaseDate,
+                                expiryDate: card.expiryDate,
+                                purchaser: card.purchaser
+                              }, settings);
+                            }}
+                            className="flex-1 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                            title="Télécharger le PDF de la carte cadeau"
+                          >
+                            <FileDown className="w-4 h-4" />
+                            PDF
                           </button>
 
                           {(card.recipientEmail || card.purchaser?.email) && (
@@ -1292,8 +1703,8 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
 
       {/* Modal prévisualisation carte - Identique à avant */}
       {showCardPreview && previewCard && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowCardPreview(false); setPreviewCard(null); }}>
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => { setShowCardPreview(false); setPreviewCard(null); }}>
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-800">Aperçu de la carte cadeau</h3>
               <button

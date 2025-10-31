@@ -147,6 +147,7 @@ model Organization {
   supportTickets          SupportTicket[] // Tickets de support
   subscriptionPromoCodes  SubscriptionPromoCode[]  @relation("SubscriptionPromoUsage") // Codes promo utilisés
   testimonials            Testimonial[]            @relation("OrganizationTestimonials") // Témoignages
+  giftCards               GiftCard[]               @relation("OrganizationGiftCards") // Cartes cadeaux
 
   // CRM Relations
   convertedLeads Lead[] // Leads convertis en clients
@@ -878,7 +879,8 @@ model ContactFormLead {
 }
 
 model SiteConfig {
-  id String @id @default(cuid())
+  id             String  @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
 
   // Informations générales
   siteName        String  @default("Mon Institut de Beauté")
@@ -993,6 +995,7 @@ model SiteConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([organizationId])
   @@index([createdAt]) // Index pour optimiser findFirst()
 }
 
@@ -1417,6 +1420,7 @@ model MagicLink {
 
 model GiftCard {
   id             String    @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
   code           String    @unique // Code unique de la carte cadeau (ex: GIFT-XXXX-XXXX)
   amount         Float // Montant de la carte cadeau
   initialAmount  Float // Montant initial (pour historique)
@@ -1437,9 +1441,11 @@ model GiftCard {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  organization Organization? @relation("OrganizationGiftCards", fields: [organizationId], references: [id])
   purchaser    User?         @relation("GiftCardPurchaser", fields: [purchasedBy], references: [id])
   reservations Reservation[] @relation("GiftCardReservations") // Réservations faites avec cette carte
 
+  @@index([organizationId])
   @@index([code])
   @@index([purchasedBy])
   @@index([status])
@@ -1986,6 +1992,14 @@ model SupportTicket {
   assignedToId   String? // Super admin assigné
   resolvedAt     DateTime?
   closedAt       DateTime?
+
+  // SLA Tracking
+  firstResponseAt     DateTime? // Timestamp de la première réponse
+  slaResponseDeadline DateTime? // Deadline pour la première réponse (calculé selon la priorité)
+  slaResponseBreach   Boolean   @default(false) // Violation du SLA de réponse
+  slaResolutionDeadline DateTime? // Deadline pour la résolution (calculé selon la priorité)
+  slaResolutionBreach Boolean   @default(false) // Violation du SLA de résolution
+
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -2000,6 +2014,8 @@ model SupportTicket {
   @@index([organizationId])
   @@index([assignedToId])
   @@index([createdAt])
+  @@index([slaResponseBreach])
+  @@index([slaResolutionBreach])
 }
 
 model TicketMessage {
@@ -2410,5 +2426,26 @@ model AISuggestion {
 
   @@index([organizationId, category])
   @@index([contentType])
+  @@index([createdAt])
+}
+
+// ============================================
+// ACTIVITY LOG (AUDIT TRAIL)
+// ============================================
+
+// Journal des activités système et utilisateur
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String // ID de l'utilisateur qui a effectué l'action (ou "system" pour les actions automatiques)
+  action      String // Type d'action (PAYMENT_REMINDER_1, PAYMENT_REMINDER_2, ORGANIZATION_SUSPENDED, etc.)
+  entityType  String // Type d'entité concernée (INVOICE, ORGANIZATION, USER, etc.)
+  entityId    String // ID de l'entité concernée
+  description String   @db.Text // Description de l'action
+  metadata    Json? // Données supplémentaires (montant, numéro de facture, etc.)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
   @@index([createdAt])
 }

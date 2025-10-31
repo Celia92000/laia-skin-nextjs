@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 
 // Fonction pour générer un code unique
 function generateGiftCardCode(): string {
@@ -20,6 +21,16 @@ export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
 
   try {
+    // Récupérer l'organizationId depuis la config
+    const siteConfig = await getSiteConfig();
+    const organizationId = siteConfig.organizationId || process.env.ORGANIZATION_ID;
+
+    if (!organizationId) {
+      return NextResponse.json({
+        error: 'Configuration multi-tenant manquante. Contactez l\'administrateur.'
+      }, { status: 500 });
+    }
+
     const body = await request.json();
     const {
       amount,
@@ -71,6 +82,7 @@ export async function POST(request: NextRequest) {
     const giftCard = await prisma.giftCard.create({
       data: {
         code,
+        organizationId, // Rattacher à l'organisation
         amount,
         initialAmount: amount,
         balance: amount,
@@ -184,6 +196,10 @@ export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
 
   try {
+    // Récupérer l'organizationId depuis la config
+    const siteConfig = await getSiteConfig();
+    const organizationId = siteConfig.organizationId || process.env.ORGANIZATION_ID;
+
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
 
@@ -194,8 +210,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const giftCard = await prisma.giftCard.findUnique({
-      where: { code: code.toUpperCase() },
+    // Rechercher la carte cadeau filtrée par code ET organizationId
+    const giftCard = await prisma.giftCard.findFirst({
+      where: {
+        code: code.toUpperCase(),
+        organizationId: organizationId || undefined // Filtrer par organization si disponible
+      },
       include: {
         reservations: {
           select: {

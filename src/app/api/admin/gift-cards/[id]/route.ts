@@ -27,8 +27,9 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
 
     // Récupérer la carte cadeau
@@ -80,8 +81,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
 
     const body = await request.json();
@@ -204,8 +206,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé - suppression', role: decoded.role }, { status: 403 });
     }
 
     // Vérifier si la carte a des réservations

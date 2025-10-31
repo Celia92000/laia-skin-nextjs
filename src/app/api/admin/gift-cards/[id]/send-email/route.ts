@@ -41,8 +41,9 @@ export async function POST(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
 
     // Récupérer la carte cadeau avec les infos de l'émetteur

@@ -23,12 +23,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
 
-    // Récupérer toutes les cartes cadeaux
+    // Récupérer l'utilisateur pour obtenir son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 403 });
+    }
+
+    // Récupérer les cartes cadeaux de l'organisation
     const giftCards = await prisma.giftCard.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         purchaser: {
           select: {
@@ -78,8 +92,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    if ((decoded.role as string) !== 'ADMIN' && (decoded.role as string) !== 'EMPLOYEE') {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
+    }
+
+    // Récupérer l'utilisateur pour obtenir son organizationId
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -145,6 +170,7 @@ export async function POST(request: NextRequest) {
     const giftCard = await prisma.giftCard.create({
       data: {
         code: finalCode,
+        organizationId: user.organizationId, // Rattacher à l'organisation
         amount,
         initialAmount: amount,
         balance: amount,

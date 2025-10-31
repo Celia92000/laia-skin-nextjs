@@ -1,0 +1,4 @@
+clientEmail,amount,date,method,status,type,reference,notes
+marie.dupont@example.com,65.00,2024-11-20,CB,completed,reservation,RES-2024-001,Soin du visage
+sophie.martin@example.com,85.00,2024-11-15,Espèces,completed,reservation,RES-2024-002,Massage relaxant
+marie.dupont@example.com,100.00,2024-12-01,CB,completed,gift_card,GC-2024-NOEL01,Carte cadeau Noël

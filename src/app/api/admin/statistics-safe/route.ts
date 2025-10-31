@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
         return sum + (typeof price === 'number' ? price : parseFloat(price) || 0);
       }, 0);
 
-      // Ajouter les revenus des cartes cadeaux et commandes DE CETTE ORGANISATION
+      // Ajouter les revenus des cartes cadeaux
       const paidGiftCards = await prisma.giftCard.findMany({
         where: {
           organizationId: user.organizationId,
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
         }
       }).catch(() => []);
 
-      // Récupérer aussi les commandes en attente DE CETTE ORGANISATION
+      // Récupérer aussi les cartes cadeaux en attente
       const pendingGiftCards = await prisma.giftCard.findMany({
         where: {
           organizationId: user.organizationId,
