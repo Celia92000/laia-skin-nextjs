@@ -26,13 +26,13 @@ interface Integration {
 // Catalogue des intégrations disponibles
 const AVAILABLE_INTEGRATIONS = [
   {
-    type: 'stripe',
-    name: 'Stripe',
-    description: 'Paiements en ligne sécurisés par carte bancaire',
+    type: 'stripe_connect',
+    name: 'Stripe Connect',
+    description: 'Paiements CB directs sur votre compte Stripe (Commission LAIA 2%)',
     category: 'payments',
     icon: CreditCard,
     color: 'bg-indigo-500',
-    docsUrl: 'https://stripe.com/docs',
+    docsUrl: 'https://stripe.com/docs/connect',
     importance: 'essential'
   },
   {
@@ -178,10 +178,29 @@ export default function IntegrationsTab() {
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [showMollieModal, setShowMollieModal] = useState(false);
   const [showSumUpModal, setShowSumUpModal] = useState(false);
+  const [stripeConnectStatus, setStripeConnectStatus] = useState<any>(null);
 
   useEffect(() => {
     fetchIntegrations();
+    fetchStripeConnectStatus();
   }, []);
+
+  const fetchStripeConnectStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/stripe-connect/onboard', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStripeConnectStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement Stripe Connect:', error);
+    }
+  };
 
   const fetchIntegrations = async () => {
     try {
@@ -202,6 +221,20 @@ export default function IntegrationsTab() {
   };
 
   const getIntegrationStatus = (type: string) => {
+    // Gestion spéciale pour Stripe Connect
+    if (type === 'stripe_connect' && stripeConnectStatus) {
+      return {
+        id: 'stripe_connect',
+        type: 'stripe_connect',
+        enabled: stripeConnectStatus.connected || false,
+        status: stripeConnectStatus.connected && stripeConnectStatus.chargesEnabled
+          ? 'connected'
+          : stripeConnectStatus.connected
+            ? 'error'
+            : 'disconnected',
+        hasConfig: true
+      };
+    }
     return integrations.find(i => i.type === type);
   };
 
@@ -226,9 +259,25 @@ export default function IntegrationsTab() {
     }
   };
 
-  const handleActivateIntegration = (type: string) => {
-    if (type === 'stripe') {
-      setShowStripeModal(true);
+  const handleActivateIntegration = async (type: string) => {
+    if (type === 'stripe_connect') {
+      // Rediriger vers Stripe Connect onboarding
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/stripe-connect/onboard', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.url) {
+            window.location.href = data.url;
+          }
+        }
+      } catch (error) {
+        console.error('Erreur Stripe Connect:', error);
+      }
     } else if (type === 'paypal') {
       setShowPayPalModal(true);
     } else if (type === 'mollie') {
