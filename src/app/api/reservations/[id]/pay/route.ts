@@ -8,10 +8,10 @@ import { createConnectedCheckoutSession } from '@/lib/stripe-connect-helper'
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const reservationId = params.id
+    const { id: reservationId } = await params
 
     // Récupérer la réservation
     const reservation = await prisma.reservation.findUnique({
