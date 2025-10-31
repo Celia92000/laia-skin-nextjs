@@ -138,6 +138,30 @@ model Organization {
   treatwellVenueId       String? // ID du salon sur Treatwell
   treatwellVenueName     String? // Nom du salon sur Treatwell
 
+  // PayPal - Intégration OAuth pour paiements
+  paypalConnected        Boolean   @default(false) // Connecté à PayPal
+  paypalAccessToken      String? // Token d'accès (chiffré)
+  paypalRefreshToken     String? // Token de rafraîchissement (chiffré)
+  paypalTokenExpiry      DateTime? // Date d'expiration du token
+  paypalMerchantId       String? // ID du compte marchand PayPal
+  paypalEmail            String? // Email du compte PayPal
+
+  // SumUp - Intégration OAuth pour paiements
+  sumupConnected         Boolean   @default(false) // Connecté à SumUp
+  sumupAccessToken       String? // Token d'accès (chiffré)
+  sumupRefreshToken      String? // Token de rafraîchissement (chiffré)
+  sumupTokenExpiry       DateTime? // Date d'expiration du token
+  sumupMerchantCode      String? // Code marchand SumUp
+  sumupCurrency          String? // Devise par défaut
+
+  // Google Calendar - Intégration OAuth pour synchronisation
+  googleCalendarConnected Boolean   @default(false) // Connecté à Google Calendar
+  googleCalendarAccessToken String? // Token d'accès (chiffré)
+  googleCalendarRefreshToken String? // Token de rafraîchissement (chiffré)
+  googleCalendarTokenExpiry DateTime? // Date d'expiration du token
+  googleCalendarId       String? // ID du calendrier principal
+  googleCalendarEmail    String? // Email du compte Google
+
   // Template et versioning (pour modèle centralisé LAIA)
   templateVersion    String    @default("1.0.0") // Version du template utilisée
   lastTemplateUpdate DateTime? // Dernière mise à jour du template

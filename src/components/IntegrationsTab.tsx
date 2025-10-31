@@ -7,13 +7,13 @@ import {
   MessageSquare, Package, TrendingUp, Users, Gift
 } from 'lucide-react';
 import StripeConfigModal from './integrations/StripeConfigModal';
-import PayPalConfigModal from './integrations/PayPalConfigModal';
+import PayPalOAuthConfigModal from './integrations/PayPalOAuthConfigModal';
 import MollieConfigModal from './integrations/MollieConfigModal';
-import SumUpConfigModal from './integrations/SumUpConfigModal';
+import SumUpOAuthConfigModal from './integrations/SumUpOAuthConfigModal';
 import PlanityConfigModal from './integrations/PlanityConfigModal';
 import TreatwellConfigModal from './integrations/TreatwellConfigModal';
 import GrouponConfigModal from './integrations/GrouponConfigModal';
-import GoogleCalendarConfigModal from './integrations/GoogleCalendarConfigModal';
+import GoogleCalendarOAuthConfigModal from './integrations/GoogleCalendarOAuthConfigModal';
 import BrevoConfigModal from './integrations/BrevoConfigModal';
 import TwilioConfigModal from './integrations/TwilioConfigModal';
 import ShopifyConfigModal from './integrations/ShopifyConfigModal';
@@ -199,12 +199,18 @@ export default function IntegrationsTab() {
   const [stripeConnectStatus, setStripeConnectStatus] = useState<any>(null);
   const [planityStatus, setPlanityStatus] = useState<any>(null);
   const [treatwellStatus, setTreatwellStatus] = useState<any>(null);
+  const [paypalStatus, setPaypalStatus] = useState<any>(null);
+  const [sumupStatus, setSumupStatus] = useState<any>(null);
+  const [googleCalendarStatus, setGoogleCalendarStatus] = useState<any>(null);
 
   useEffect(() => {
     fetchIntegrations();
     fetchStripeConnectStatus();
     fetchPlanityStatus();
     fetchTreatwellStatus();
+    fetchPaypalStatus();
+    fetchSumupStatus();
+    fetchGoogleCalendarStatus();
   }, []);
 
   const fetchStripeConnectStatus = async () => {
@@ -255,6 +261,57 @@ export default function IntegrationsTab() {
       }
     } catch (error) {
       console.error('Erreur chargement Treatwell:', error);
+    }
+  };
+
+  const fetchPaypalStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations/paypal/connect', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPaypalStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement PayPal:', error);
+    }
+  };
+
+  const fetchSumupStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations/sumup/connect', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSumupStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement SumUp:', error);
+    }
+  };
+
+  const fetchGoogleCalendarStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations/google-calendar/connect', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGoogleCalendarStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement Google Calendar:', error);
     }
   };
 
@@ -310,6 +367,39 @@ export default function IntegrationsTab() {
         type: 'treatwell',
         enabled: treatwellStatus.connected || false,
         status: treatwellStatus.connected ? 'connected' : 'disconnected',
+        hasConfig: true
+      };
+    }
+
+    // Gestion spéciale pour PayPal
+    if (type === 'paypal' && paypalStatus) {
+      return {
+        id: 'paypal',
+        type: 'paypal',
+        enabled: paypalStatus.connected || false,
+        status: paypalStatus.connected ? 'connected' : 'disconnected',
+        hasConfig: true
+      };
+    }
+
+    // Gestion spéciale pour SumUp
+    if (type === 'sumup' && sumupStatus) {
+      return {
+        id: 'sumup',
+        type: 'sumup',
+        enabled: sumupStatus.connected || false,
+        status: sumupStatus.connected ? 'connected' : 'disconnected',
+        hasConfig: true
+      };
+    }
+
+    // Gestion spéciale pour Google Calendar
+    if (type === 'google_calendar' && googleCalendarStatus) {
+      return {
+        id: 'google_calendar',
+        type: 'google_calendar',
+        enabled: googleCalendarStatus.connected || false,
+        status: googleCalendarStatus.connected ? 'connected' : 'disconnected',
         hasConfig: true
       };
     }
@@ -775,10 +865,10 @@ export default function IntegrationsTab() {
 
       {/* Modal PayPal */}
       {showPayPalModal && (
-        <PayPalConfigModal
+        <PayPalOAuthConfigModal
           onClose={() => setShowPayPalModal(false)}
-          onSave={handleSavePayPal}
-          existingConfig={(integrations.find(i => i.type === 'paypal') as any)?.config}
+          onSave={async () => {}}
+          existingConfig={paypalStatus}
         />
       )}
 
@@ -793,10 +883,10 @@ export default function IntegrationsTab() {
 
       {/* Modal SumUp */}
       {showSumUpModal && (
-        <SumUpConfigModal
+        <SumUpOAuthConfigModal
           onClose={() => setShowSumUpModal(false)}
-          onSave={handleSaveSumUp}
-          existingConfig={(integrations.find(i => i.type === 'sumup') as any)?.config}
+          onSave={async () => {}}
+          existingConfig={sumupStatus}
         />
       )}
 
@@ -827,12 +917,10 @@ export default function IntegrationsTab() {
 
       {/* Modal Google Calendar */}
       {showGoogleCalendarModal && (
-        <GoogleCalendarConfigModal
+        <GoogleCalendarOAuthConfigModal
           onClose={() => setShowGoogleCalendarModal(false)}
-          onSave={(config) => {
-            console.log('Google Calendar config:', config);
-            setShowGoogleCalendarModal(false);
-          }}
+          onSave={async () => {}}
+          existingConfig={googleCalendarStatus}
         />
       )}
 
