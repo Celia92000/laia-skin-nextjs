@@ -5,6 +5,7 @@ import { decryptConfig } from '@/lib/encryption';
 import { z } from 'zod';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 import { getSiteConfig } from '@/lib/config-service';
+import { createConnectedCheckoutSession } from '@/lib/stripe-connect-helper';
 
 // Schéma de validation
 const checkoutSchema = z.object({
@@ -108,34 +109,32 @@ export async function POST(request: Request) {
       }
     }
 
-    // Récupérer la configuration Stripe
-    const stripeIntegration = await prisma.integration.findFirst({
-      where: {
-        type: 'stripe',
-        enabled: true
+    // Récupérer l'organisation de l'utilisateur
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            slug: true,
+            stripeConnectedAccountId: true,
+            stripeChargesEnabled: true
+          }
+        }
       }
     });
 
-    if (!stripeIntegration || !stripeIntegration.config) {
+    if (!user || !user.organization) {
       return NextResponse.json({
-        error: 'Stripe n\'est pas configuré. Activez-le dans Paramètres > Intégrations.'
+        error: 'Organisation introuvable'
+      }, { status: 404 });
+    }
+
+    // Vérifier que l'organisation a Stripe Connect configuré
+    if (!user.organization.stripeConnectedAccountId || !user.organization.stripeChargesEnabled) {
+      return NextResponse.json({
+        error: 'Stripe Connect n\'est pas configuré pour votre organisation. Veuillez le configurer dans Paramètres > Paiements.'
       }, { status: 400 });
-    }
-
-    // Déchiffrer la configuration
-    let config: any;
-    try {
-      config = decryptConfig(stripeIntegration.config as string);
-    } catch (error) {
-      return NextResponse.json({
-        error: 'Erreur de déchiffrement de la configuration Stripe'
-      }, { status: 500 });
-    }
-
-    if (!config.secretKey) {
-      return NextResponse.json({
-        error: 'Clé secrète Stripe manquante'
-      }, { status: 500 });
     }
 
     // Récupérer l'email de l'utilisateur pour Stripe
@@ -150,62 +149,22 @@ export async function POST(request: Request) {
       customerEmail = user?.email;
     }
 
-    // Créer une session Stripe Checkout
+    // Créer une session Stripe Connect
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
 
-    const sessionData = {
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: description || 'Paiement ${siteName}',
-              description: reservationId ? `Réservation #${reservationId}` : undefined,
-            },
-            unit_amount: Math.round(amount * 100), // Stripe utilise les centimes
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/payment/cancel`,
+    const session = await createConnectedCheckoutSession({
+      organizationId: user.organization.id,
+      amount: amount,
+      description: description || `Paiement ${siteName}`,
       metadata: {
         userId: decoded.userId,
         reservationId: reservationId || '',
         productId: productId || '',
         ...metadata
       },
-      customer_email: customerEmail || undefined,
-    };
-
-    const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.secretKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(sessionData as any).toString()
-    });
-
-    if (!stripeResponse.ok) {
-      const error = await stripeResponse.json();
-      console.error('Erreur Stripe:', error);
-      return NextResponse.json({
-        error: error.error?.message || 'Erreur lors de la création de la session de paiement'
-      }, { status: 500 });
-    }
-
-    const session = await stripeResponse.json();
-
-    // Mettre à jour le statut de l'intégration
-    await prisma.integration.update({
-      where: { id: stripeIntegration.id },
-      data: {
-        status: 'connected',
-        lastSync: new Date()
-      }
+      successUrl: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${baseUrl}/payment/cancel`,
+      customerEmail: customerEmail
     });
 
     // Si c'est pour une réservation, mettre à jour avec l'ID de session Stripe
@@ -213,7 +172,7 @@ export async function POST(request: Request) {
       await prisma.reservation.update({
         where: { id: reservationId },
         data: {
-          stripeSessionId: session.id,
+          stripeSessionId: session.sessionId,
           paymentMethod: 'stripe',
           paymentStatus: 'pending'
         }
@@ -221,9 +180,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      sessionId: session.id,
+      sessionId: session.sessionId,
       url: session.url,
-      publicKey: config.publishableKey
+      amountTotal: session.amountTotal,
+      applicationFee: session.applicationFee
     });
 
   } catch (error: any) {
