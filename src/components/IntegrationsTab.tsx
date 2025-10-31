@@ -12,6 +12,13 @@ import MollieConfigModal from './integrations/MollieConfigModal';
 import SumUpConfigModal from './integrations/SumUpConfigModal';
 import PlanityConfigModal from './integrations/PlanityConfigModal';
 import TreatwellConfigModal from './integrations/TreatwellConfigModal';
+import GrouponConfigModal from './integrations/GrouponConfigModal';
+import GoogleCalendarConfigModal from './integrations/GoogleCalendarConfigModal';
+import BrevoConfigModal from './integrations/BrevoConfigModal';
+import TwilioConfigModal from './integrations/TwilioConfigModal';
+import ShopifyConfigModal from './integrations/ShopifyConfigModal';
+import QuickBooksConfigModal from './integrations/QuickBooksConfigModal';
+import GoogleMyBusinessConfigModal from './integrations/GoogleMyBusinessConfigModal';
 
 interface Integration {
   id: string;
@@ -182,6 +189,13 @@ export default function IntegrationsTab() {
   const [showSumUpModal, setShowSumUpModal] = useState(false);
   const [showPlanityModal, setShowPlanityModal] = useState(false);
   const [showTreatwellModal, setShowTreatwellModal] = useState(false);
+  const [showGrouponModal, setShowGrouponModal] = useState(false);
+  const [showGoogleCalendarModal, setShowGoogleCalendarModal] = useState(false);
+  const [showBrevoModal, setShowBrevoModal] = useState(false);
+  const [showTwilioModal, setShowTwilioModal] = useState(false);
+  const [showShopifyModal, setShowShopifyModal] = useState(false);
+  const [showQuickBooksModal, setShowQuickBooksModal] = useState(false);
+  const [showGoogleMyBusinessModal, setShowGoogleMyBusinessModal] = useState(false);
   const [stripeConnectStatus, setStripeConnectStatus] = useState<any>(null);
   const [planityStatus, setPlanityStatus] = useState<any>(null);
   const [treatwellStatus, setTreatwellStatus] = useState<any>(null);
@@ -326,19 +340,15 @@ export default function IntegrationsTab() {
 
   const handleActivateIntegration = async (type: string) => {
     if (type === 'stripe_connect') {
-      // Rediriger vers Stripe Connect onboarding
       try {
         const token = localStorage.getItem('token');
         const response = await fetch('/api/admin/stripe-connect/onboard', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
         if (response.ok) {
           const data = await response.json();
-          if (data.url) {
-            window.location.href = data.url;
-          }
+          if (data.url) window.location.href = data.url;
         }
       } catch (error) {
         console.error('Erreur Stripe Connect:', error);
@@ -353,6 +363,20 @@ export default function IntegrationsTab() {
       setShowMollieModal(true);
     } else if (type === 'sumup') {
       setShowSumUpModal(true);
+    } else if (type === 'groupon') {
+      setShowGrouponModal(true);
+    } else if (type === 'google_calendar') {
+      setShowGoogleCalendarModal(true);
+    } else if (type === 'brevo') {
+      setShowBrevoModal(true);
+    } else if (type === 'twilio') {
+      setShowTwilioModal(true);
+    } else if (type === 'shopify') {
+      setShowShopifyModal(true);
+    } else if (type === 'quickbooks') {
+      setShowQuickBooksModal(true);
+    } else if (type === 'google_my_business') {
+      setShowGoogleMyBusinessModal(true);
     } else {
       setSelectedIntegration(type);
     }
@@ -791,6 +815,59 @@ export default function IntegrationsTab() {
           onClose={() => setShowTreatwellModal(false)}
           onSave={async () => {}}
           existingConfig={treatwellStatus}
+        />
+      )}
+
+      {/* Modal Groupon */}
+      {showGrouponModal && (
+        <GrouponConfigModal
+          onClose={() => setShowGrouponModal(false)}
+        />
+      )}
+
+      {/* Modal Google Calendar */}
+      {showGoogleCalendarModal && (
+        <GoogleCalendarConfigModal
+          onClose={() => setShowGoogleCalendarModal(false)}
+          onSave={(config) => {
+            console.log('Google Calendar config:', config);
+            setShowGoogleCalendarModal(false);
+          }}
+        />
+      )}
+
+      {/* Modal Brevo */}
+      {showBrevoModal && (
+        <BrevoConfigModal
+          onClose={() => setShowBrevoModal(false)}
+        />
+      )}
+
+      {/* Modal Twilio */}
+      {showTwilioModal && (
+        <TwilioConfigModal
+          onClose={() => setShowTwilioModal(false)}
+        />
+      )}
+
+      {/* Modal Shopify */}
+      {showShopifyModal && (
+        <ShopifyConfigModal
+          onClose={() => setShowShopifyModal(false)}
+        />
+      )}
+
+      {/* Modal QuickBooks */}
+      {showQuickBooksModal && (
+        <QuickBooksConfigModal
+          onClose={() => setShowQuickBooksModal(false)}
+        />
+      )}
+
+      {/* Modal Google My Business */}
+      {showGoogleMyBusinessModal && (
+        <GoogleMyBusinessConfigModal
+          onClose={() => setShowGoogleMyBusinessModal(false)}
         />
       )}
 
