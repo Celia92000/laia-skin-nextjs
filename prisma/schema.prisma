@@ -122,6 +122,22 @@ model Organization {
   stripeChargesEnabled     Boolean @default(false) // Peut accepter des paiements
   stripePayoutsEnabled     Boolean @default(false) // Peut recevoir des virements
 
+  // Planity - Intégration OAuth pour réservations
+  planityConnected      Boolean   @default(false) // Connecté à Planity
+  planityAccessToken    String? // Token d'accès (chiffré)
+  planityRefreshToken   String? // Token de rafraîchissement (chiffré)
+  planityTokenExpiry    DateTime? // Date d'expiration du token
+  planityBusinessId     String? // ID du salon sur Planity
+  planityBusinessName   String? // Nom du salon sur Planity
+
+  // Treatwell - Intégration OAuth pour réservations
+  treatwellConnected     Boolean   @default(false) // Connecté à Treatwell
+  treatwellAccessToken   String? // Token d'accès (chiffré)
+  treatwellRefreshToken  String? // Token de rafraîchissement (chiffré)
+  treatwellTokenExpiry   DateTime? // Date d'expiration du token
+  treatwellVenueId       String? // ID du salon sur Treatwell
+  treatwellVenueName     String? // Nom du salon sur Treatwell
+
   // Template et versioning (pour modèle centralisé LAIA)
   templateVersion    String    @default("1.0.0") // Version du template utilisée
   lastTemplateUpdate DateTime? // Dernière mise à jour du template

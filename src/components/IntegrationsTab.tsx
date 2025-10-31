@@ -10,6 +10,8 @@ import StripeConfigModal from './integrations/StripeConfigModal';
 import PayPalConfigModal from './integrations/PayPalConfigModal';
 import MollieConfigModal from './integrations/MollieConfigModal';
 import SumUpConfigModal from './integrations/SumUpConfigModal';
+import PlanityConfigModal from './integrations/PlanityConfigModal';
+import TreatwellConfigModal from './integrations/TreatwellConfigModal';
 
 interface Integration {
   id: string;
@@ -178,11 +180,17 @@ export default function IntegrationsTab() {
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [showMollieModal, setShowMollieModal] = useState(false);
   const [showSumUpModal, setShowSumUpModal] = useState(false);
+  const [showPlanityModal, setShowPlanityModal] = useState(false);
+  const [showTreatwellModal, setShowTreatwellModal] = useState(false);
   const [stripeConnectStatus, setStripeConnectStatus] = useState<any>(null);
+  const [planityStatus, setPlanityStatus] = useState<any>(null);
+  const [treatwellStatus, setTreatwellStatus] = useState<any>(null);
 
   useEffect(() => {
     fetchIntegrations();
     fetchStripeConnectStatus();
+    fetchPlanityStatus();
+    fetchTreatwellStatus();
   }, []);
 
   const fetchStripeConnectStatus = async () => {
@@ -199,6 +207,40 @@ export default function IntegrationsTab() {
       }
     } catch (error) {
       console.error('Erreur chargement Stripe Connect:', error);
+    }
+  };
+
+  const fetchPlanityStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations/planity/connect', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlanityStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement Planity:', error);
+    }
+  };
+
+  const fetchTreatwellStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/integrations/treatwell/connect', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTreatwellStatus(data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement Treatwell:', error);
     }
   };
 
@@ -235,6 +277,29 @@ export default function IntegrationsTab() {
         hasConfig: true
       };
     }
+
+    // Gestion spéciale pour Planity
+    if (type === 'planity' && planityStatus) {
+      return {
+        id: 'planity',
+        type: 'planity',
+        enabled: planityStatus.connected || false,
+        status: planityStatus.connected ? 'connected' : 'disconnected',
+        hasConfig: true
+      };
+    }
+
+    // Gestion spéciale pour Treatwell
+    if (type === 'treatwell' && treatwellStatus) {
+      return {
+        id: 'treatwell',
+        type: 'treatwell',
+        enabled: treatwellStatus.connected || false,
+        status: treatwellStatus.connected ? 'connected' : 'disconnected',
+        hasConfig: true
+      };
+    }
+
     return integrations.find(i => i.type === type);
   };
 
@@ -278,6 +343,10 @@ export default function IntegrationsTab() {
       } catch (error) {
         console.error('Erreur Stripe Connect:', error);
       }
+    } else if (type === 'planity') {
+      setShowPlanityModal(true);
+    } else if (type === 'treatwell') {
+      setShowTreatwellModal(true);
     } else if (type === 'paypal') {
       setShowPayPalModal(true);
     } else if (type === 'mollie') {
@@ -704,6 +773,24 @@ export default function IntegrationsTab() {
           onClose={() => setShowSumUpModal(false)}
           onSave={handleSaveSumUp}
           existingConfig={(integrations.find(i => i.type === 'sumup') as any)?.config}
+        />
+      )}
+
+      {/* Modal Planity */}
+      {showPlanityModal && (
+        <PlanityConfigModal
+          onClose={() => setShowPlanityModal(false)}
+          onSave={async () => {}}
+          existingConfig={planityStatus}
+        />
+      )}
+
+      {/* Modal Treatwell */}
+      {showTreatwellModal && (
+        <TreatwellConfigModal
+          onClose={() => setShowTreatwellModal(false)}
+          onSave={async () => {}}
+          existingConfig={treatwellStatus}
         />
       )}
 
