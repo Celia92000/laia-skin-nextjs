@@ -273,26 +273,40 @@ export default function CRMPage() {
 
       {/* Stats globales */}
       <div className="space-y-4 mb-8">
-        {/* Première ligne : 3 cartes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Première ligne : 4 cartes - Stats principales */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
             <div className="text-sm text-white/80 mb-1">Total Leads</div>
             <div className="text-3xl font-bold text-white">{stats?.total || 0}</div>
           </div>
-          <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
+          <div className="rounded-lg shadow-md p-6 bg-blue-500">
             <div className="text-sm text-white/80 mb-1">En cours</div>
             <div className="text-3xl font-bold text-white">
               {leads.filter(l => !['WON', 'LOST'].includes(l.status)).length}
             </div>
           </div>
-          <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
-            <div className="text-sm text-white/80 mb-1">Gagnés</div>
+          <div className="rounded-lg shadow-md p-6 bg-green-500">
+            <div className="text-sm text-white/80 mb-1">🎉 Gagnés</div>
             <div className="text-3xl font-bold text-white">{wonLeads.length}</div>
+            {wonLeads.length > 0 && (
+              <div className="text-xs text-white/80 mt-2">
+                {wonLeads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0).toLocaleString('fr-FR')}€
+              </div>
+            )}
+          </div>
+          <div className="rounded-lg shadow-md p-6 bg-red-500">
+            <div className="text-sm text-white/80 mb-1">❌ Perdus</div>
+            <div className="text-3xl font-bold text-white">{lostLeads.length}</div>
+            {lostLeads.length > 0 && (
+              <div className="text-xs text-white/80 mt-2">
+                {lostLeads.reduce((sum, l) => sum + (l.estimatedValue || 0), 0).toLocaleString('fr-FR')}€ manqués
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Deuxième ligne : 2 cartes */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Deuxième ligne : 3 cartes - Stats détaillées */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: '#7c3aed' }}>
             <div className="text-sm text-white/80 mb-1">Valeur pipeline</div>
             <div className="text-2xl font-bold text-white">
@@ -303,6 +317,17 @@ export default function CRMPage() {
             <div className="text-sm text-white/80 mb-1">Prob. moyenne</div>
             <div className="text-3xl font-bold text-white">
               {Math.round(stats?.avgProbability?._avg?.probability || 0)}%
+            </div>
+          </div>
+          <div className="rounded-lg shadow-md p-6 bg-amber-500">
+            <div className="text-sm text-white/80 mb-1">Taux de conversion</div>
+            <div className="text-3xl font-bold text-white">
+              {stats?.total && stats.total > 0
+                ? Math.round((wonLeads.length / stats.total) * 100)
+                : 0}%
+            </div>
+            <div className="text-xs text-white/80 mt-2">
+              {wonLeads.length} gagnés / {stats?.total || 0} leads
             </div>
           </div>
         </div>
