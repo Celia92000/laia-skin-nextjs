@@ -195,6 +195,7 @@ model Organization {
   subscriptionPromoCodes  SubscriptionPromoCode[]  @relation("SubscriptionPromoUsage") // Codes promo utilisés
   testimonials            Testimonial[]            @relation("OrganizationTestimonials") // Témoignages
   giftCards               GiftCard[]               @relation("OrganizationGiftCards") // Cartes cadeaux
+  reviews                 Review[]                 @relation("OrganizationReviews") // Avis clients
 
   // CRM Relations
   convertedLeads Lead[] // Leads convertis en clients
@@ -840,6 +841,7 @@ model Review {
   googleUrl      String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  organization   Organization? @relation("OrganizationReviews", fields: [organizationId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   reservation    Reservation? @relation(fields: [reservationId], references: [id])
   order          Order?       @relation(fields: [orderId], references: [id])
