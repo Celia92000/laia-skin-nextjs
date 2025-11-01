@@ -504,11 +504,54 @@ export default function CRMPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valeur</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prochaine action</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Gagné</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Perdu</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {leads.map(lead => {
                   const config = STATUS_CONFIG[lead.status]
+
+                  const handleStatusChange = async (newStatus: 'WON' | 'LOST', e: React.MouseEvent) => {
+                    e.stopPropagation() // Empêcher l'ouverture du modal
+
+                    if (lead.status === newStatus) return // Déjà dans ce statut
+
+                    // Mise à jour optimiste
+                    setLeads(prevLeads =>
+                      prevLeads.map(l =>
+                        l.id === lead.id ? { ...l, status: newStatus } : l
+                      )
+                    )
+
+                    // Mise à jour serveur
+                    try {
+                      const response = await fetch(`/api/super-admin/leads/${lead.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                      })
+
+                      if (!response.ok) {
+                        // Rollback
+                        setLeads(prevLeads =>
+                          prevLeads.map(l =>
+                            l.id === lead.id ? { ...l, status: lead.status } : l
+                          )
+                        )
+                        alert('Erreur lors de la mise à jour')
+                      }
+                    } catch (error) {
+                      console.error('Error:', error)
+                      // Rollback
+                      setLeads(prevLeads =>
+                        prevLeads.map(l =>
+                          l.id === lead.id ? { ...l, status: lead.status } : l
+                        )
+                      )
+                    }
+                  }
+
                   return (
                     <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="hover:bg-gray-50 cursor-pointer">
                       <td className="px-6 py-4">
@@ -533,6 +576,32 @@ export default function CRMPage() {
                           ? new Date(lead.nextFollowUpDate).toLocaleDateString('fr-FR')
                           : '-'
                         }
+                      </td>
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleStatusChange('WON', e)}
+                          className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                            lead.status === 'WON'
+                              ? 'bg-green-500 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700'
+                          }`}
+                          title="Marquer comme gagné"
+                        >
+                          {lead.status === 'WON' ? '✓ Gagné' : 'Gagner'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => handleStatusChange('LOST', e)}
+                          className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                            lead.status === 'LOST'
+                              ? 'bg-red-500 text-white'
+                              : 'bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-700'
+                          }`}
+                          title="Marquer comme perdu"
+                        >
+                          {lead.status === 'LOST' ? '✗ Perdu' : 'Perdre'}
+                        </button>
                       </td>
                     </tr>
                   )
