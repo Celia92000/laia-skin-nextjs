@@ -42,14 +42,19 @@ export default function EmailTemplatesPage() {
       const response = await fetch('/api/super-admin/email-templates')
       if (response.ok) {
         const data = await response.json()
-        setTemplates(data.templates)
+        // S'assurer que templates est un tableau
+        setTemplates(data.templates || data || [])
       } else if (response.status === 401) {
         router.push('/login?redirect=/super-admin')
       } else if (response.status === 403) {
         router.push('/admin')
+      } else {
+        console.error('Error fetching templates:', response.status)
+        setTemplates([])
       }
     } catch (error) {
       console.error('Error fetching templates:', error)
+      setTemplates([])
     } finally {
       setLoading(false)
     }

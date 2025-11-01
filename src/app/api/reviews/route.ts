@@ -48,20 +48,31 @@ export async function GET(request: Request) {
     if (approved !== null && !userId) where.approved = approved === 'true';
     if (featured !== null) where.featured = featured === 'true';
 
-    const reviews = await prisma.review.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true
+    let reviews;
+    try {
+      reviews = await prisma.review.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true
+            }
           }
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
+      });
+    } catch (dbError: any) {
+      // Si erreur de colonne manquante, retourner tableau vide
+      if (dbError.message && dbError.message.includes('organizationId')) {
+        console.warn('⚠️ Colonne Review.organizationId manquante - migration nécessaire');
+        reviews = [];
+      } else {
+        throw dbError;
       }
-    });
+    }
 
     // Calculer les statistiques
     const stats = {

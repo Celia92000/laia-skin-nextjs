@@ -82,6 +82,8 @@ export default function EmailConversationTab() {
   const loadClients = async () => {
     try {
       const token = localStorage.getItem('token');
+
+      // Essayer d'abord la route admin, sinon passer pour super-admin (pas besoin de clients)
       const response = await fetch('/api/admin/clients', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -95,6 +97,10 @@ export default function EmailConversationTab() {
           name: client.name,
           email: client.email
         })));
+      } else if (response.status === 404) {
+        // Super-admin sans organisation, pas de clients à charger
+        console.log('ℹ️ Super-admin mode: pas de clients spécifiques');
+        setClients([]);
       }
     } catch (error) {
       console.error('Erreur chargement clients:', error);
@@ -105,9 +111,17 @@ export default function EmailConversationTab() {
     try {
       console.log('🔍 Chargement templates...');
 
-      const response = await fetch('/api/admin/email-templates/');
+      // Essayer d'abord la route admin
+      let response = await fetch('/api/admin/email-templates/');
 
-      console.log('📡 Réponse API templates:', response.status);
+      console.log('📡 Réponse API templates (admin):', response.status);
+
+      // Si 404, essayer la route super-admin
+      if (response.status === 404) {
+        console.log('🔄 Tentative route super-admin...');
+        response = await fetch('/api/super-admin/email-templates/');
+        console.log('📡 Réponse API templates (super-admin):', response.status);
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -115,9 +129,12 @@ export default function EmailConversationTab() {
         setTemplates(data);
       } else {
         console.error('❌ Erreur HTTP:', response.status, await response.text());
+        // Initialiser avec un tableau vide pour éviter les erreurs
+        setTemplates([]);
       }
     } catch (error) {
       console.error('❌ Erreur chargement templates:', error);
+      setTemplates([]);
     }
   };
 
