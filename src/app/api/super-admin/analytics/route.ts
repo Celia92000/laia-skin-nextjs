@@ -149,26 +149,31 @@ export async function GET(request: Request) {
       : 0
 
     // Revenus - Calcul avec add-ons inclus
-    const activeOrgsWithDetails = await prisma.organization.findMany({
-      where: { status: 'ACTIVE' },
-      select: { id: true, name: true, plan: true, addons: true }
+    const allOrgsWithDetails = await prisma.organization.findMany({
+      select: { id: true, name: true, plan: true, addons: true, status: true }
     })
 
     const revenueByPlan = ['SOLO', 'DUO', 'TEAM', 'PREMIUM'].map(plan => {
-      const orgsWithPlan = activeOrgsWithDetails.filter(o => o.plan === plan)
-      const totalRevenue = orgsWithPlan.reduce((sum, org) => {
+      const orgsWithPlan = allOrgsWithDetails.filter(o => o.plan === plan)
+      const activeOrgsWithPlan = orgsWithPlan.filter(o => o.status === 'ACTIVE')
+
+      // Revenus = seulement les organisations ACTIVE
+      const totalRevenue = activeOrgsWithPlan.reduce((sum, org) => {
         return sum + calculateInvoiceTotal(org.plan as any, org.addons)
       }, 0)
 
       return {
         plan,
-        count: orgsWithPlan.length,
-        revenue: totalRevenue
+        count: orgsWithPlan.length, // Total incluant TRIAL
+        activeCount: activeOrgsWithPlan.length, // Seulement ACTIVE
+        revenue: totalRevenue // Revenus réels (ACTIVE seulement)
       }
     })
 
     const mrr = revenueByPlan.reduce((sum, p) => sum + p.revenue, 0)
     const arr = mrr * 12
+
+    const activeOrgsWithDetails = allOrgsWithDetails.filter(o => o.status === 'ACTIVE')
 
     // Top organisations par revenus (avec add-ons)
     const topByRevenue = activeOrgsWithDetails
@@ -216,7 +221,7 @@ export async function GET(request: Request) {
     const estimatedConversionRate = 0.70
     const trialEstimatedRevenue = trialPotentialRevenue * estimatedConversionRate
 
-    // Statistiques simplifiées par organisation
+    // Statistiques détaillées par organisation
     const allOrgsWithAddons = await prisma.organization.findMany({
       select: {
         id: true,
@@ -229,19 +234,42 @@ export async function GET(request: Request) {
       }
     })
 
-    const organizationsStats = allOrgsWithAddons.map(org => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      status: org.status,
-      plan: org.plan,
-      clients: 0, // Pas calculé pour performance
-      reservations: 0, // Pas calculé pour performance
-      revenue: 0, // Pas calculé pour performance
-      lastActivity: org.createdAt,
-      monthlyFee: calculateInvoiceTotal(org.plan as any, org.addons),
-      createdAt: org.createdAt
-    }))
+    // Compter les clients, réservations et revenus par organisation
+    const orgStats = await Promise.all(
+      allOrgsWithAddons.map(async (org) => {
+        const [clientsCount, reservationsData, lastReservation] = await Promise.all([
+          prisma.user.count({
+            where: { organizationId: org.id, role: 'CLIENT' }
+          }),
+          prisma.reservation.aggregate({
+            where: { organizationId: org.id },
+            _count: { id: true },
+            _sum: { totalPrice: true }
+          }),
+          prisma.reservation.findFirst({
+            where: { organizationId: org.id },
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true }
+          })
+        ])
+
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          status: org.status,
+          plan: org.plan,
+          clients: clientsCount,
+          reservations: reservationsData._count.id || 0,
+          revenue: reservationsData._sum.totalPrice || 0,
+          lastActivity: lastReservation?.createdAt || org.createdAt,
+          monthlyFee: calculateInvoiceTotal(org.plan as any, org.addons),
+          createdAt: org.createdAt
+        }
+      })
+    )
+
+    const organizationsStats = orgStats
 
     return NextResponse.json({
       growth,

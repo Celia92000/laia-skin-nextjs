@@ -20,7 +20,7 @@ interface AnalyticsData {
   revenue: {
     mrr: number
     arr: number
-    byPlan: { plan: string; revenue: number; count: number }[]
+    byPlan: { plan: string; revenue: number; count: number; activeCount?: number }[]
   }
   conversion: {
     trialToActive: number
@@ -320,7 +320,14 @@ export default function SuperAdminPage() {
               <div key={plan.plan} className="border-2 rounded-lg p-4 hover:shadow-lg transition-all">
                 <div className="text-sm text-gray-600 mb-1">{plan.plan}</div>
                 <div className="text-2xl font-bold" style={{ color: '#7c3aed' }}>{formatCurrency(plan.revenue)}/mois</div>
-                <div className="text-xs text-gray-500 mt-1">{plan.count} organisations</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {plan.count} organisation{plan.count > 1 ? 's' : ''}
+                  {(plan as any).activeCount !== undefined && (plan as any).activeCount < plan.count && (
+                    <span className="text-green-600 ml-1">
+                      ({(plan as any).activeCount} active{(plan as any).activeCount > 1 ? 's' : ''})
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
