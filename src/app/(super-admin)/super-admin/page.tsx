@@ -215,10 +215,13 @@ export default function SuperAdminPage() {
               🎁 Période d&apos;essai gratuite - Potentiel de conversion
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg p-4 shadow">
+              <div
+                onClick={() => setOpenModal('trial')}
+                className="bg-white rounded-lg p-4 shadow cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+              >
                 <p className="text-sm text-blue-600 mb-1">Organisations en essai</p>
                 <p className="text-3xl font-bold text-blue-900">{analytics.trial.count}</p>
-                <p className="text-xs text-blue-500 mt-1">1er mois gratuit</p>
+                <p className="text-xs text-blue-500 mt-1">Cliquer pour voir les détails</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-sm text-blue-600 mb-1">Revenus potentiels max</p>
@@ -268,23 +271,29 @@ export default function SuperAdminPage() {
             </div>
           </Link>
 
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-not-allowed opacity-75">
+          <div
+            onClick={() => setOpenModal('reservations')}
+            className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105 border-2 border-purple-200 hover:border-purple-400"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Réservations</p>
                 <p className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{stats.totalReservations}</p>
-                <p className="text-xs mt-2 text-gray-500">Total plateforme</p>
+                <p className="text-xs mt-2 text-gray-500">Cliquer pour voir les détails</p>
               </div>
               <div className="text-5xl opacity-20">📅</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-not-allowed opacity-75">
+          <div
+            onClick={() => setOpenModal('services')}
+            className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105 border-2 border-teal-200 hover:border-teal-400"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Services</p>
                 <p className="text-3xl font-bold text-teal-600">{stats.totalServices}</p>
-                <p className="text-xs mt-2 text-gray-500">Catalogue global</p>
+                <p className="text-xs mt-2 text-gray-500">Cliquer pour voir les détails</p>
               </div>
               <div className="text-5xl opacity-20">💆</div>
             </div>
@@ -317,7 +326,11 @@ export default function SuperAdminPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Revenus par Plan</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {analytics.revenue.byPlan.map(plan => (
-              <div key={plan.plan} className="border-2 rounded-lg p-4 hover:shadow-lg transition-all">
+              <div
+                key={plan.plan}
+                onClick={() => setOpenModal(`plan-${plan.plan}`)}
+                className="border-2 rounded-lg p-4 hover:shadow-lg transition-all cursor-pointer hover:scale-105 hover:border-purple-400"
+              >
                 <div className="text-sm text-gray-600 mb-1">{plan.plan}</div>
                 <div className="text-2xl font-bold" style={{ color: '#7c3aed' }}>{formatCurrency(plan.revenue)}/mois</div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -701,6 +714,226 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
               )}
+
+              {/* Modal Organisations en essai */}
+              {openModal === 'trial' && (
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">🎁 Organisations en période d&apos;essai</h3>
+                    <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-4xl font-bold text-blue-600 mb-2">{analytics.trial?.count || 0}</div>
+                    <p className="text-gray-600">Organisations en essai gratuit (1er mois)</p>
+                  </div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {analytics.organizationsStats
+                      .filter(org => org.status === 'TRIAL')
+                      .map(org => (
+                        <div key={org.id} className="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-semibold text-gray-800">{org.name}</div>
+                            <span className="px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-semibold">
+                              ESSAI
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Plan :</span>
+                              <span className="ml-1 font-medium text-gray-800">{org.plan}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Clients :</span>
+                              <span className="ml-1 font-medium text-gray-800">{org.clients}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Abonnement :</span>
+                              <span className="ml-1 font-medium text-green-600">{formatCurrency(org.monthlyFee)}/mois</span>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-xs text-gray-500">
+                            Créé le {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                          </div>
+                          <Link href={`/super-admin/organizations/${org.id}`} className="mt-2 inline-block text-xs text-blue-600 hover:text-blue-800 font-medium">
+                            Voir détails →
+                          </Link>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Réservations */}
+              {openModal === 'reservations' && (
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">📅 Réservations par organisation</h3>
+                    <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-4xl font-bold mb-2" style={{ color: '#7c3aed' }}>{stats.totalReservations}</div>
+                    <p className="text-gray-600">Réservations totales sur la plateforme</p>
+                  </div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {analytics.organizationsStats
+                      .sort((a, b) => b.reservations - a.reservations)
+                      .filter(org => org.reservations > 0)
+                      .map(org => (
+                        <div key={org.id} className="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-semibold text-gray-800">{org.name}</div>
+                            <span className="text-2xl font-bold text-purple-600">{org.reservations}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Clients :</span>
+                              <span className="ml-1 font-medium text-gray-800">{org.clients}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">CA :</span>
+                              <span className="ml-1 font-medium text-green-600">{formatCurrency(org.revenue)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Plan :</span>
+                              <span className="ml-1 font-medium text-gray-800">{org.plan}</span>
+                            </div>
+                          </div>
+                          <Link href={`/super-admin/organizations/${org.id}`} className="mt-2 inline-block text-xs text-purple-600 hover:text-purple-800 font-medium">
+                            Voir détails →
+                          </Link>
+                        </div>
+                      ))}
+                    {analytics.organizationsStats.filter(org => org.reservations > 0).length === 0 && (
+                      <p className="text-gray-500 text-center py-8">Aucune réservation enregistrée</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Services */}
+              {openModal === 'services' && (
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">💆 Services par organisation</h3>
+                    <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-4xl font-bold text-teal-600 mb-2">{stats.totalServices}</div>
+                    <p className="text-gray-600">Services disponibles au total</p>
+                  </div>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {analytics.organizationsStats.map(org => (
+                      <div key={org.id} className="p-4 bg-teal-50 rounded-lg border border-teal-200 hover:bg-teal-100 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-semibold text-gray-800">{org.name}</div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            org.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {org.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500">Plan :</span>
+                            <span className="ml-1 font-medium text-gray-800">{org.plan}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Clients :</span>
+                            <span className="ml-1 font-medium text-gray-800">{org.clients}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Réservations :</span>
+                            <span className="ml-1 font-medium text-gray-800">{org.reservations}</span>
+                          </div>
+                        </div>
+                        <Link href={`/super-admin/organizations/${org.id}`} className="mt-2 inline-block text-xs text-teal-600 hover:text-teal-800 font-medium">
+                          Voir détails →
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Modals par Plan */}
+              {['SOLO', 'DUO', 'TEAM', 'PREMIUM'].map(planName => (
+                openModal === `plan-${planName}` && (
+                  <div key={planName} className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-2xl font-bold text-gray-800">📊 Organisations - Plan {planName}</h3>
+                      <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                    </div>
+                    <div className="mb-6">
+                      {(() => {
+                        const planData = analytics.revenue.byPlan.find(p => p.plan === planName)
+                        return (
+                          <>
+                            <div className="text-4xl font-bold mb-2" style={{ color: '#7c3aed' }}>
+                              {planData?.count || 0}
+                            </div>
+                            <p className="text-gray-600">
+                              Organisation{(planData?.count || 0) > 1 ? 's' : ''} sur le plan {planName}
+                              {(planData as any)?.activeCount !== undefined && (
+                                <span className="ml-2 text-green-600 font-medium">
+                                  ({(planData as any).activeCount} active{(planData as any).activeCount > 1 ? 's' : ''})
+                                </span>
+                              )}
+                            </p>
+                            <div className="mt-2 text-2xl font-semibold text-green-600">
+                              {formatCurrency(planData?.revenue || 0)}/mois
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {analytics.organizationsStats
+                        .filter(org => org.plan === planName)
+                        .map(org => (
+                          <div key={org.id} className={`p-4 rounded-lg border-2 hover:shadow-lg transition-all ${
+                            org.status === 'ACTIVE' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'
+                          }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="font-semibold text-gray-800">{org.name}</div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                org.status === 'ACTIVE' ? 'bg-green-200 text-green-800' : 'bg-blue-200 text-blue-800'
+                              }`}>
+                                {org.status}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3 text-sm mb-2">
+                              <div>
+                                <span className="text-gray-500">Clients :</span>
+                                <span className="ml-1 font-medium text-gray-800">{org.clients}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Réservations :</span>
+                                <span className="ml-1 font-medium text-gray-800">{org.reservations}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">CA :</span>
+                                <span className="ml-1 font-medium text-green-600">{formatCurrency(org.revenue)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Abonnement :</span>
+                                <span className="ml-1 font-medium text-purple-600">{formatCurrency(org.monthlyFee)}/mois</span>
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Créé le {new Date(org.createdAt).toLocaleDateString('fr-FR')}
+                            </div>
+                            <Link href={`/super-admin/organizations/${org.id}`} className="mt-2 inline-block text-xs text-purple-600 hover:text-purple-800 font-medium">
+                              Voir détails →
+                            </Link>
+                          </div>
+                        ))}
+                      {analytics.organizationsStats.filter(org => org.plan === planName).length === 0 && (
+                        <p className="text-gray-500 text-center py-8">Aucune organisation sur ce plan</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              ))}
             </div>
           </div>
         )}
