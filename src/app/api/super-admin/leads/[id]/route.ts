@@ -59,6 +59,17 @@ export async function GET(
             }
           },
           orderBy: { createdAt: 'desc' }
+        },
+        demoBooking: {
+          include: {
+            slot: {
+              select: {
+                id: true,
+                date: true,
+                duration: true
+              }
+            }
+          }
         }
       }
     })

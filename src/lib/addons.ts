@@ -129,17 +129,6 @@ export const ADDON_OPTIONS: AddonOption[] = [
     unlocks: 'featureWhatsApp',
   },
   {
-    id: 'feature-sms',
-    name: 'Onglet SMS',
-    description: 'Débloquez l\'onglet SMS complet (campagnes + automations)',
-    price: 15,
-    type: 'recurring',
-    category: 'features',
-    availableFor: ['SOLO', 'DUO'], // Déjà inclus en TEAM+
-    icon: '📱',
-    unlocks: 'featureSMS',
-  },
-  {
     id: 'feature-social-media',
     name: 'Onglet Réseaux Sociaux',
     description: 'Débloquez l\'onglet Réseaux Sociaux complet (Instagram + Facebook + TikTok)',

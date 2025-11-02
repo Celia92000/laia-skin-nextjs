@@ -4,9 +4,11 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { validateSIRET, validateIBAN, validateBIC, validateEmail, validatePhoneNumber, formatSIRET, formatIBAN } from '@/lib/validation'
+import { getPlanPrice, getPlanName } from '@/lib/features-simple'
+import { websiteTemplates } from '@/lib/website-templates'
 
 // Étapes du tunnel
-type Step = 'welcome' | 'personal-info' | 'business-info' | 'service' | 'hours' | 'billing' | 'payment' | 'complete'
+type Step = 'questionnaire' | 'welcome' | 'personal-info' | 'business-info' | 'service' | 'website-template' | 'website-colors' | 'hours' | 'billing' | 'payment' | 'complete'
 
 interface OnboardingData {
   // Étape 1 - Informations personnelles
@@ -33,6 +35,9 @@ interface OnboardingData {
   servicePrice: number
   serviceDuration: number
   serviceDescription: string
+
+  // Étape 3.5 - Template de site web
+  websiteTemplateId?: string
 
   // Étape 4 - Horaires
   businessHours: {
@@ -63,8 +68,26 @@ function OnboardingForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const planFromUrl = searchParams.get('plan') as OnboardingData['selectedPlan'] || 'SOLO'
+  const skipQuestionnaire = searchParams.get('skip') === 'true'
 
-  const [currentStep, setCurrentStep] = useState<Step>('welcome')
+  const [currentStep, setCurrentStep] = useState<Step>(skipQuestionnaire ? 'personal-info' : 'questionnaire')
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState({
+    teamSize: '',
+    locations: '',
+    servicesCount: '',
+    needsSocial: false,
+    needsBlog: false,
+    needsNewsletter: false,
+    needsAPI: false,
+    needsEmailMarketing: false,
+    needsWhatsApp: false,
+    needsAutomation: false,
+    needsCRM: false,
+    needsLoyalty: false,
+    needsShop: false,
+    needsStock: false,
+    needsSMS: false
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -112,19 +135,114 @@ function OnboardingForm() {
     selectedPlan: planFromUrl
   })
 
+  // Pré-remplir le formulaire avec les données du lead (si présentes dans l'URL)
+  useEffect(() => {
+    const ownerFirstName = searchParams.get('ownerFirstName')
+    const ownerLastName = searchParams.get('ownerLastName')
+    const ownerEmail = searchParams.get('ownerEmail')
+    const ownerPhone = searchParams.get('ownerPhone')
+    const institutName = searchParams.get('institutName')
+    const city = searchParams.get('city')
+    const address = searchParams.get('address')
+    const postalCode = searchParams.get('postalCode')
+
+    if (ownerFirstName || ownerEmail || institutName) {
+      setData(prev => ({
+        ...prev,
+        ownerFirstName: ownerFirstName || prev.ownerFirstName,
+        ownerLastName: ownerLastName || prev.ownerLastName,
+        ownerEmail: ownerEmail || prev.ownerEmail,
+        ownerPhone: ownerPhone || prev.ownerPhone,
+        institutName: institutName || prev.institutName,
+        city: city || prev.city,
+        address: address || prev.address,
+        postalCode: postalCode || prev.postalCode,
+        billingEmail: ownerEmail || prev.billingEmail,
+        billingAddress: address || prev.billingAddress,
+        billingPostalCode: postalCode || prev.billingPostalCode,
+        billingCity: city || prev.billingCity
+      }))
+    }
+  }, [searchParams])
+
   const steps: { id: Step; title: string; description: string; icon: string }[] = [
+    { id: 'questionnaire', title: 'Vos Besoins', description: 'Trouvons l\'offre idéale', icon: '📋' },
     { id: 'welcome', title: 'Bienvenue', description: 'Commençons votre aventure', icon: '👋' },
     { id: 'personal-info', title: 'Vos Informations', description: 'Qui êtes-vous ?', icon: '👤' },
     { id: 'business-info', title: 'Votre Institut', description: 'Informations de base', icon: '🏢' },
     { id: 'service', title: 'Premier Service', description: 'Créez votre première prestation', icon: '💆' },
+    { id: 'website-template', title: 'Design de Site', description: 'Choisissez votre layout', icon: '🎨' },
+    { id: 'website-colors', title: 'Couleurs', description: 'Personnalisez les couleurs', icon: '🎨' },
     { id: 'hours', title: 'Horaires', description: 'Vos heures d\'ouverture', icon: '🕐' },
     { id: 'billing', title: 'Facturation', description: 'Informations légales', icon: '📋' },
     { id: 'payment', title: 'Paiement', description: 'Activez votre abonnement', icon: '💳' },
     { id: 'complete', title: 'Terminé', description: 'Tout est prêt !', icon: '🎉' }
   ]
 
-  const currentStepIndex = steps.findIndex(s => s.id === currentStep)
-  const progress = ((currentStepIndex + 1) / steps.length) * 100
+  // Fonction pour calculer le plan recommandé
+  const getRecommendedPlan = (): OnboardingData['selectedPlan'] => {
+    const teamSize = parseInt(questionnaireAnswers.teamSize) || 0
+    const locations = parseInt(questionnaireAnswers.locations) || 0
+    const servicesCount = parseInt(questionnaireAnswers.servicesCount) || 0
+
+    // PREMIUM : Blog + Newsletter + API + Automation Marketing complète + CRM commercial
+    if (questionnaireAnswers.needsBlog && questionnaireAnswers.needsNewsletter) {
+      return 'PREMIUM'
+    }
+    if (questionnaireAnswers.needsAPI || questionnaireAnswers.needsAutomation) {
+      return 'PREMIUM'
+    }
+    // CRM commercial + Automation = PREMIUM
+    if (questionnaireAnswers.needsCRM && questionnaireAnswers.needsAutomation) {
+      return 'PREMIUM'
+    }
+    // Beaucoup de prestations + marketing automation = PREMIUM
+    if (servicesCount > 30 && (questionnaireAnswers.needsEmailMarketing || questionnaireAnswers.needsWhatsApp)) {
+      return 'PREMIUM'
+    }
+
+    // TEAM : Multi-emplacements ou stock avancé ou SMS ou réseaux sociaux
+    if (locations > 1 || questionnaireAnswers.needsSocial) {
+      return 'TEAM'
+    }
+    // Stock avancé = TEAM
+    if (questionnaireAnswers.needsStock) {
+      return 'TEAM'
+    }
+    // SMS automatiques = TEAM
+    if (questionnaireAnswers.needsSMS) {
+      return 'TEAM'
+    }
+    // Beaucoup de prestations = TEAM
+    if (servicesCount > 15) {
+      return 'TEAM'
+    }
+
+    // DUO : Plusieurs employés ou marketing (email + WhatsApp + CRM + Blog + Boutique) ou fidélité
+    if (teamSize > 1 && teamSize <= 3) {
+      return 'DUO'
+    }
+    // Email Marketing, WhatsApp, CRM, Blog ou Boutique = DUO
+    if (questionnaireAnswers.needsEmailMarketing || questionnaireAnswers.needsWhatsApp ||
+        questionnaireAnswers.needsCRM || questionnaireAnswers.needsBlog ||
+        questionnaireAnswers.needsShop) {
+      return 'DUO'
+    }
+    // Programme fidélité = DUO minimum
+    if (questionnaireAnswers.needsLoyalty) {
+      return 'DUO'
+    }
+
+    // SOLO : Par défaut
+    return 'SOLO'
+  }
+
+  // Flux simplifié si skip=true
+  const simplifiedFlow: Step[] = ['personal-info', 'business-info', 'billing', 'payment', 'complete']
+  const activeFlow = skipQuestionnaire ? simplifiedFlow : steps.map(s => s.id)
+
+  const currentStepIndex = activeFlow.findIndex(s => s === currentStep)
+  const progress = ((currentStepIndex + 1) / activeFlow.length) * 100
 
   // Auto-générer slug depuis le nom
   useEffect(() => {
@@ -140,17 +258,29 @@ function OnboardingForm() {
   }, [data.institutName])
 
   const handleNext = () => {
-    const stepIndex = steps.findIndex(s => s.id === currentStep)
-    if (stepIndex < steps.length - 1) {
-      setCurrentStep(steps[stepIndex + 1].id)
+    // Parcours simplifié si skip=true : personal-info → business-info → billing → payment → complete
+    const simplifiedFlow: Step[] = ['personal-info', 'business-info', 'billing', 'payment', 'complete']
+    const fullFlow: Step[] = steps.map(s => s.id)
+
+    const flow = skipQuestionnaire ? simplifiedFlow : fullFlow
+    const stepIndex = flow.findIndex(s => s === currentStep)
+
+    if (stepIndex < flow.length - 1) {
+      setCurrentStep(flow[stepIndex + 1])
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
   const handleBack = () => {
-    const stepIndex = steps.findIndex(s => s.id === currentStep)
+    // Parcours simplifié si skip=true
+    const simplifiedFlow: Step[] = ['personal-info', 'business-info', 'billing', 'payment', 'complete']
+    const fullFlow: Step[] = steps.map(s => s.id)
+
+    const flow = skipQuestionnaire ? simplifiedFlow : fullFlow
+    const stepIndex = flow.findIndex(s => s === currentStep)
+
     if (stepIndex > 0) {
-      setCurrentStep(steps[stepIndex - 1].id)
+      setCurrentStep(flow[stepIndex - 1])
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
@@ -225,33 +355,423 @@ function OnboardingForm() {
 
       {/* Contenu principal */}
       <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Étape Questionnaire */}
+        {currentStep === 'questionnaire' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">🎯</div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Trouvons l'offre parfaite pour vous
+              </h2>
+              <p className="text-gray-600">
+                Répondez à quelques questions pour que nous puissions vous recommander le plan le plus adapté
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Question 1 : Taille de l'équipe */}
+              <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  1. Combien de personnes travaillent dans votre institut ? *
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {['1', '2-3', '4-10', '10+'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, teamSize: option })}
+                      className={`p-4 border-2 rounded-lg transition font-semibold ${
+                        questionnaireAnswers.teamSize === option
+                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400'
+                      }`}
+                    >
+                      {option === '1' ? 'Solo' : option === '2-3' ? '2-3 personnes' : option === '4-10' ? '4-10 personnes' : 'Plus de 10'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Question 2 : Nombre d'emplacements */}
+              <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  2. Combien d'emplacements / salons avez-vous ? *
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {['1', '2', '3', '4+'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, locations: option })}
+                      className={`p-4 border-2 rounded-lg transition font-semibold ${
+                        questionnaireAnswers.locations === option
+                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400'
+                      }`}
+                    >
+                      {option === '1' ? 'Un seul' : option === '4+' ? '4 ou plus' : option + ' salons'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Question 2.5 : Nombre de prestations */}
+              <div className="p-6 border-2 border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  💆‍♀️ Combien de prestations proposez-vous (ou souhaitez proposer) ? *
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {['1-5', '6-15', '16-30', '30+'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, servicesCount: option })}
+                      className={`p-4 border-2 rounded-lg transition font-semibold ${
+                        questionnaireAnswers.servicesCount === option
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-lg'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-600 mt-3">
+                  💡 Soins du visage, épilation, massages, manucure, pédicure...
+                </p>
+              </div>
+
+              {/* Question 3 : Fonctionnalités souhaitées */}
+              <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  3. Quelles fonctionnalités vous intéressent ?
+                </label>
+                <p className="text-sm text-gray-600 mb-4">Sélectionnez toutes les options qui vous intéressent</p>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsSocial}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsSocial: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📱 Publication réseaux sociaux automatique</div>
+                      <div className="text-sm text-gray-600">Planifiez et publiez sur Instagram, Facebook, etc.</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsBlog}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsBlog: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📝 Blog professionnel</div>
+                      <div className="text-sm text-gray-600">Partagez des conseils et attirez plus de clients</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsNewsletter}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsNewsletter: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📧 Newsletter automatisée</div>
+                      <div className="text-sm text-gray-600">Envoyez des emails marketing à vos clients</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsAPI}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsAPI: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">🔌 API Access (export comptable)</div>
+                      <div className="text-sm text-gray-600">Connectez votre logiciel comptable</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Question 4 : Marketing & Communication */}
+              <div className="p-6 border-2 border-pink-100 rounded-xl bg-gradient-to-br from-pink-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  4. Fonctionnalités Marketing & Communication 🚀
+                </label>
+                <p className="text-sm text-gray-600 mb-4">Automatisez votre marketing et fidélisez vos clients</p>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-4 border-2 border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition bg-gradient-to-r from-white to-pink-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsEmailMarketing}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsEmailMarketing: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-pink-600 rounded focus:ring-2 focus:ring-pink-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        📧 Campagnes Email Marketing
+                        <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-bold">Recommandé</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Créez et envoyez des campagnes email personnalisées à vos clients</div>
+                      <div className="text-xs text-pink-600 mt-1">💡 Emails de bienvenue, promotions, rappels RDV...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 transition bg-gradient-to-r from-white to-green-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsWhatsApp}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsWhatsApp: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        📱 Messages WhatsApp automatiques
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">Populaire</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Envoyez des confirmations et rappels par WhatsApp</div>
+                      <div className="text-xs text-green-600 mt-1">💡 Taux d'ouverture 98% vs 20% pour les emails</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition bg-gradient-to-r from-white to-purple-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsAutomation}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsAutomation: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        ⚡ Automation Marketing
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-bold">Premium</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Scénarios automatisés pour fidéliser vos clients</div>
+                      <div className="text-xs text-purple-600 mt-1">💡 Anniversaires, clients inactifs, programmes de fidélité...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 transition bg-gradient-to-r from-white to-blue-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsCRM}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsCRM: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        📊 CRM Commercial
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">Business</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Gérez votre pipeline commercial et vos prospects</div>
+                      <div className="text-xs text-blue-600 mt-1">💡 Suivi des leads, opportunités, conversion...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 transition bg-gradient-to-r from-white to-yellow-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsLoyalty}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsLoyalty: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        🎁 Programme Fidélité
+                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-bold">Essentiel</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Récompensez vos clients fidèles automatiquement</div>
+                      <div className="text-xs text-yellow-600 mt-1">💡 Points, récompenses, offres exclusives...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition bg-gradient-to-r from-white to-indigo-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsShop}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsShop: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        🛍️ Boutique en ligne
+                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-bold">E-commerce</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Vendez vos produits et formations en ligne</div>
+                      <div className="text-xs text-indigo-600 mt-1">💡 Cosmétiques, soins à domicile, formations...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-teal-200 rounded-lg cursor-pointer hover:bg-teal-50 transition bg-gradient-to-r from-white to-teal-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsStock}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsStock: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-2 focus:ring-teal-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        📦 Gestion stock avancée
+                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-bold">Inventaire</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Suivez votre inventaire avec alertes automatiques</div>
+                      <div className="text-xs text-teal-600 mt-1">💡 Alertes rupture, fournisseurs, commandes...</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition bg-gradient-to-r from-white to-orange-50">
+                    <input
+                      type="checkbox"
+                      checked={questionnaireAnswers.needsSMS}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsSMS: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900 flex items-center gap-2">
+                        📲 SMS automatiques
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-bold">Pro</span>
+                      </div>
+                      <div className="text-sm text-gray-600">Envoyez des SMS pour vos campagnes marketing</div>
+                      <div className="text-xs text-orange-600 mt-1">💡 Promotions, rappels urgents, alertes...</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <Link
+                href="/platform"
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all text-center"
+              >
+                ← Retour
+              </Link>
+              <button
+                onClick={() => {
+                  const recommendedPlan = getRecommendedPlan()
+                  setData({ ...data, selectedPlan: recommendedPlan })
+                  handleNext()
+                }}
+                disabled={!questionnaireAnswers.teamSize || !questionnaireAnswers.locations || !questionnaireAnswers.servicesCount}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Voir ma recommandation →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Étape Welcome */}
         {currentStep === 'welcome' && (
           <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="text-6xl mb-6">🎉</div>
+            <div className="text-6xl mb-6">✨</div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Bienvenue sur LAIA Connect !
+              Parfait ! Voici notre recommandation
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Nous allons configurer votre institut en quelques minutes seulement.
+              Basé sur vos réponses, voici le plan idéal pour vous
             </p>
 
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Votre plan sélectionné :</h3>
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-4xl">{planDetails[data.selectedPlan].icon}</span>
+            <div className="bg-gradient-to-br from-purple-600 via-purple-500 to-pink-600 rounded-2xl p-8 mb-8 text-white shadow-2xl transform hover:scale-105 transition-transform">
+              <div className="inline-block px-4 py-1 bg-yellow-400 text-purple-900 rounded-full text-sm font-bold mb-4">
+                ⭐ RECOMMANDÉ POUR VOUS
+              </div>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <span className="text-6xl">{planDetails[data.selectedPlan].icon}</span>
                 <div className="text-left">
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-4xl font-bold">
                     {planDetails[data.selectedPlan].name}
                   </div>
-                  <div className="text-lg text-gray-600">
+                  <div className="text-2xl font-semibold opacity-90">
                     {planDetails[data.selectedPlan].price}€/mois
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 mt-4">
-                ✅ 30 jours gratuits • Annulation à tout moment
-              </p>
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span>🎁</span>
+                    <span className="font-semibold">1er mois offert</span>
+                  </div>
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="flex items-center gap-1">
+                    <span>✅</span>
+                    <span className="font-semibold">30 jours pour tester</span>
+                  </div>
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="flex items-center gap-1">
+                    <span>📌</span>
+                    <span className="font-semibold">Engagement 1 an</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+              <h3 className="font-bold text-blue-900 mb-3 text-lg">💡 Pourquoi ce plan ?</h3>
+              <div className="space-y-2 text-left max-w-md mx-auto text-sm text-blue-800">
+                {data.selectedPlan === 'SOLO' && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Parfait pour les indépendants qui démarrent</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Site web + réservations + paiements inclus</span>
+                    </div>
+                  </>
+                )}
+                {data.selectedPlan === 'DUO' && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Idéal pour les petites équipes (2-3 personnes)</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Programme fidélité et cartes cadeaux inclus</span>
+                    </div>
+                  </>
+                )}
+                {data.selectedPlan === 'TEAM' && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Pour les équipes avec plusieurs emplacements</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Réseaux sociaux complet et multi-emplacements inclus</span>
+                    </div>
+                  </>
+                )}
+                {data.selectedPlan === 'PREMIUM' && (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Solution complète pour instituts exigeants</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span>•</span>
+                      <span>Blog, newsletter et API inclus</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 mb-6 text-sm text-gray-600">
+              <p>✨ Vous pourrez toujours changer de plan plus tard selon vos besoins</p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -760,6 +1280,302 @@ function OnboardingForm() {
           </div>
         )}
 
+        {/* Étape 3.5 - Choix du template de site web */}
+        {currentStep === 'website-template' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">🎨</div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Choisissez le design de votre site
+              </h2>
+              <p className="text-gray-600">
+                {data.selectedPlan === 'TEAM' && 'Votre plan TEAM inclut 5 templates modernes'}
+                {data.selectedPlan === 'PREMIUM' && 'Votre plan PREMIUM inclut 5 templates exclusifs'}
+              </p>
+            </div>
+
+            {/* Grille de templates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {websiteTemplates
+                .filter(template => {
+                  // Filtrer selon le plan
+                  if (data.selectedPlan === 'TEAM') {
+                    return template.minTier === 'TEAM';
+                  } else if (data.selectedPlan === 'PREMIUM') {
+                    return template.minTier === 'PREMIUM'; // Uniquement les templates PREMIUM
+                  }
+                  return false;
+                })
+                .map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => setData({ ...data, websiteTemplateId: template.id })}
+                    className={`group relative bg-white rounded-xl border-2 transition-all overflow-hidden text-left ${
+                      data.websiteTemplateId === template.id
+                        ? 'border-purple-500 shadow-xl scale-105'
+                        : 'border-gray-200 hover:border-purple-300 hover:shadow-lg'
+                    }`}
+                  >
+                    {/* Preview du layout */}
+                    <div className="h-32 relative bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex items-center justify-center">
+                      {/* Icône représentant le layout */}
+                      <div className="text-5xl opacity-60">
+                        {template.componentName === 'classic' && '📋'}
+                        {template.componentName === 'modern' && '🎨'}
+                        {template.componentName === 'minimal' && '✨'}
+                        {template.componentName === 'elegant' && '💎'}
+                        {template.componentName === 'bold' && '⚡'}
+                        {template.componentName === 'zen' && '🧘'}
+                        {template.componentName === 'luxury' && '👑'}
+                        {template.componentName === 'creative' && '🎭'}
+                        {template.componentName === 'corporate' && '💼'}
+                        {template.componentName === 'artistic' && '🎪'}
+                      </div>
+
+                      {data.websiteTemplateId === template.id && (
+                        <div className="absolute top-2 right-2 bg-purple-500 rounded-full p-1.5 shadow-lg">
+                          <span className="text-white text-xl">✓</span>
+                        </div>
+                      )}
+                      {template.minTier === 'PREMIUM' && (
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-1 bg-gradient-to-r from-indigo-500 to-pink-600 text-white text-xs font-bold rounded-full">
+                            PREMIUM
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Contenu */}
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{template.name}</h3>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{template.description}</p>
+
+                      {/* Caractéristiques du layout */}
+                      <div className="space-y-1.5">
+                        {template.layoutFeatures.slice(0, 3).map((feature, idx) => (
+                          <div key={idx} className="flex items-start gap-1.5 text-xs text-gray-600">
+                            <span className="text-purple-500 flex-shrink-0 mt-0.5">✓</span>
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+            </div>
+
+            {/* Boutons navigation */}
+            <div className="flex gap-4">
+              <button
+                onClick={handleBack}
+                className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
+                ← Retour
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={!data.websiteTemplateId}
+                className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all ${
+                  data.websiteTemplateId
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-xl'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Continuer →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Étape 3.6 - Choix des couleurs du site */}
+        {currentStep === 'website-colors' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">🎨</div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Personnalisez vos couleurs
+              </h2>
+              <p className="text-gray-600">
+                Choisissez les couleurs qui représentent votre institut
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              {/* Sélection des couleurs */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Couleur Principale
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      value={data.primaryColor}
+                      onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
+                      className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
+                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={data.primaryColor}
+                        onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg font-mono text-sm"
+                        placeholder="#000000"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Couleur des éléments principaux</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Couleur Secondaire
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="color"
+                      value={data.secondaryColor}
+                      onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
+                      className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
+                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={data.secondaryColor}
+                        onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg font-mono text-sm"
+                        placeholder="#000000"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Couleur des accents et dégradés</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Palettes prédéfinies */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Palettes suggérées
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#E91E8C', secondaryColor: '#F8BBD0' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #E91E8C, #F8BBD0)' }} />
+                      <span className="text-sm font-medium">Rose</span>
+                    </button>
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#9C27B0', secondaryColor: '#E91E8C' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #9C27B0, #E91E8C)' }} />
+                      <span className="text-sm font-medium">Violet</span>
+                    </button>
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#2C3E50', secondaryColor: '#95A5A6' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #2C3E50, #95A5A6)' }} />
+                      <span className="text-sm font-medium">Élégant</span>
+                    </button>
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#C9B037', secondaryColor: '#F5E6D3' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #C9B037, #F5E6D3)' }} />
+                      <span className="text-sm font-medium">Or</span>
+                    </button>
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#0288D1', secondaryColor: '#4FC3F7' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #0288D1, #4FC3F7)' }} />
+                      <span className="text-sm font-medium">Bleu</span>
+                    </button>
+                    <button
+                      onClick={() => setData({ ...data, primaryColor: '#4CAF50', secondaryColor: '#8BC34A' })}
+                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #4CAF50, #8BC34A)' }} />
+                      <span className="text-sm font-medium">Vert</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Aperçu en temps réel */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Aperçu
+                </label>
+                <div className="border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
+                  {/* Hero miniature */}
+                  <div
+                    className="h-32 p-6 flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${data.primaryColor}20, ${data.secondaryColor}20)`
+                    }}
+                  >
+                    <div className="text-center">
+                      <h3
+                        className="text-2xl font-bold mb-2"
+                        style={{ color: data.primaryColor }}
+                      >
+                        {data.institutName || 'Votre Institut'}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Éléments de l'interface */}
+                  <div className="p-6 space-y-4">
+                    <button
+                      className="w-full py-3 px-6 rounded-lg text-white font-bold"
+                      style={{ backgroundColor: data.primaryColor }}
+                    >
+                      Bouton Principal
+                    </button>
+                    <div className="flex gap-2">
+                      <div
+                        className="flex-1 h-12 rounded-lg"
+                        style={{ backgroundColor: data.primaryColor + '20' }}
+                      />
+                      <div
+                        className="flex-1 h-12 rounded-lg"
+                        style={{ backgroundColor: data.secondaryColor + '20' }}
+                      />
+                    </div>
+                    <div
+                      className="p-4 rounded-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${data.primaryColor}, ${data.secondaryColor})`
+                      }}
+                    >
+                      <p className="text-white text-sm font-semibold">Dégradé des couleurs</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons navigation */}
+            <div className="flex gap-4">
+              <button
+                onClick={handleBack}
+                className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+              >
+                ← Retour
+              </button>
+              <button
+                onClick={handleNext}
+                className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
+              >
+                Continuer →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Étape 3 - Horaires */}
         {currentStep === 'hours' && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -867,6 +1683,51 @@ function OnboardingForm() {
               </p>
             </div>
 
+            {/* Récapitulatif du prix */}
+            <div className="mb-8 p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                💳 Récapitulatif de votre abonnement
+              </h3>
+              <div className="space-y-3">
+                {/* Badge 1er mois offert */}
+                <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white p-3 rounded-lg text-center">
+                  <p className="font-bold text-sm">🎁 Offre de lancement : 1er mois offert !</p>
+                  <p className="text-xs mt-1 opacity-90">30 jours pour tester gratuitement</p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700">Formule {getPlanName(data.selectedPlan)}</span>
+                  <span className="font-semibold text-gray-900">{getPlanPrice(data.selectedPlan)}€/mois</span>
+                </div>
+
+                <div className="flex justify-between items-center text-purple-600">
+                  <span className="font-medium">1er mois offert</span>
+                  <span className="font-bold">-{getPlanPrice(data.selectedPlan)}€</span>
+                </div>
+
+                <div className="border-t border-purple-200 pt-3 flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">À payer aujourd'hui</span>
+                  <span className="text-2xl font-bold text-purple-600">0€</span>
+                </div>
+
+                <div className="border-t border-purple-200 pt-3 flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Puis à partir du {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')}</span>
+                  <span className="font-semibold text-gray-900">{getPlanPrice(data.selectedPlan)}€/mois</span>
+                </div>
+
+                <div className="bg-white/70 p-3 rounded-lg mt-4">
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>📌 Conditions</strong>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    ✅ Engagement 1 an à partir du 2e mois<br />
+                    ✅ Prélèvement SEPA automatique le 1er de chaque mois<br />
+                    ✅ Annulation possible pendant les 30 premiers jours
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
                 {error}
@@ -890,6 +1751,79 @@ function OnboardingForm() {
                 <p className="text-xs text-gray-500 mt-1">
                   Les factures seront envoyées à cette adresse
                 </p>
+              </div>
+
+              {/* Informations légales */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 mb-4">Informations légales</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Raison sociale *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.legalName}
+                      onChange={(e) => setData({ ...data, legalName: e.target.value })}
+                      placeholder="SARL Mon Institut de Beauté"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Nom légal de votre entreprise tel qu'enregistré
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        N° SIRET *
+                      </label>
+                      <input
+                        type="text"
+                        value={data.siret}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, '')
+                          setData({ ...data, siret: value })
+                          // Valider en temps réel
+                          if (value.length === 14) {
+                            if (!validateSIRET(value)) {
+                              setValidationErrors({ ...validationErrors, siret: 'SIRET invalide' })
+                            } else {
+                              const newErrors = { ...validationErrors }
+                              delete newErrors.siret
+                              setValidationErrors(newErrors)
+                            }
+                          }
+                        }}
+                        placeholder="123 456 789 00012"
+                        maxLength={14}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                        required
+                      />
+                      {validationErrors.siret && (
+                        <p className="text-xs text-red-500 mt-1">{validationErrors.siret}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">14 chiffres</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        N° TVA Intracommunautaire
+                      </label>
+                      <input
+                        type="text"
+                        value={data.tvaNumber || ''}
+                        onChange={(e) => setData({ ...data, tvaNumber: e.target.value.toUpperCase() })}
+                        placeholder="FR12345678901"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Optionnel • Commence par FR
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Adresse de facturation */}

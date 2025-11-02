@@ -128,15 +128,6 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                 <Key className="w-4 h-4" />
                 Se connecter
               </button>
-              <a
-                href={`/${organization.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2 text-sm font-medium"
-              >
-                <Eye className="w-4 h-4" />
-                Voir le site
-              </a>
               <Link
                 href={`/super-admin/organizations/${organization.id}/settings`}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2 text-sm font-medium"

@@ -42,24 +42,52 @@ export async function POST(request: NextRequest) {
     // Générer le lien de visioconférence Jitsi
     const meetingUrl = generateJitsiMeetingUrl(`${data.institutName}-${Date.now()}`, data.institutName)
 
-    // Créer la réservation
-    const booking = await prisma.demoBooking.create({
-      data: {
-        slotId: data.slotId,
-        institutName: data.institutName,
-        contactName: data.contactName,
-        contactEmail: data.contactEmail,
-        contactPhone: data.contactPhone || null,
-        message: data.message || null,
-        leadId: data.leadId || null,
-        type: data.type || 'ONLINE',
-        status: 'CONFIRMED',
-        meetingUrl: meetingUrl
-      },
-      include: {
-        slot: true,
-        lead: true
+    // Créer la réservation principale avec transaction pour bloquer tous les créneaux
+    const booking = await prisma.$transaction(async (tx) => {
+      // Créer le booking principal
+      const mainBooking = await tx.demoBooking.create({
+        data: {
+          slotId: data.slotId,
+          institutName: data.institutName,
+          contactName: data.contactName,
+          contactEmail: data.contactEmail,
+          contactPhone: data.contactPhone || null,
+          message: data.message || null,
+          leadId: data.leadId || null,
+          type: data.type || 'ONLINE',
+          status: 'CONFIRMED',
+          meetingUrl: meetingUrl,
+          customDuration: data.customDuration || null
+        },
+        include: {
+          slot: true,
+          lead: true
+        }
+      })
+
+      // Si plusieurs créneaux doivent être bloqués, créer des bookings de blocage pour les autres
+      if (data.slotsToBlock && data.slotsToBlock.length > 1) {
+        const additionalSlots = data.slotsToBlock.filter((id: string) => id !== data.slotId)
+
+        for (const slotId of additionalSlots) {
+          await tx.demoBooking.create({
+            data: {
+              slotId: slotId,
+              institutName: `[BLOQUÉ] ${data.institutName}`,
+              contactName: `Continuation de la démo de ${data.contactName}`,
+              contactEmail: data.contactEmail,
+              contactPhone: data.contactPhone || null,
+              message: `Créneau bloqué automatiquement pour la démo de ${data.customDuration || 30} minutes`,
+              type: data.type || 'ONLINE',
+              status: 'CONFIRMED',
+              meetingUrl: meetingUrl,
+              notes: `Créneau de continuation automatique. Réservation principale: ${mainBooking.id}`
+            }
+          })
+        }
       }
+
+      return mainBooking
     })
 
     // TODO: Envoyer email de confirmation avec le lien de visio

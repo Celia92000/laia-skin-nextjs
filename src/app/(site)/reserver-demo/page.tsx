@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, Video, ArrowRight, Check } from 'lucide-react'
+import { Calendar, Clock, MapPin, Video, ArrowRight, Check, AlertCircle } from 'lucide-react'
 
 interface DemoSlot {
   id: string
@@ -13,11 +13,8 @@ interface DemoSlot {
 export default function ReserverDemoPage() {
   const [slots, setSlots] = useState<DemoSlot[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<DemoSlot | null>(null)
-  const [step, setStep] = useState<'calendar' | 'time' | 'form' | 'success'>('calendar')
-  const [meetingType, setMeetingType] = useState<'ONLINE' | 'PHYSICAL'>('ONLINE')
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+  const [step, setStep] = useState<'config' | 'info' | 'slot'>('config')
   const [formData, setFormData] = useState({
     institutName: '',
     contactName: '',
@@ -25,7 +22,9 @@ export default function ReserverDemoPage() {
     contactPhone: '',
     message: '',
     city: '',
-    location: ''
+    location: '',
+    type: 'ONLINE' as 'ONLINE' | 'PHYSICAL',
+    duration: 30
   })
   const [submitting, setSubmitting] = useState(false)
 
@@ -47,35 +46,95 @@ export default function ReserverDemoPage() {
     }
   }
 
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
-    const startingDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1
+  // Filtrer les créneaux disponibles selon la durée choisie
+  const availableSlots = slots.filter(slot => !slot.isBooked)
 
-    return { daysInMonth, startingDayOfWeek }
+  // Vérifier si on a assez de créneaux consécutifs
+  const hasEnoughConsecutiveSlots = (slot: DemoSlot, durationNeeded: number): boolean => {
+    const slotDuration = slot.duration
+    if (durationNeeded <= slotDuration) return true
+
+    const sortedSlots = [...availableSlots].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+
+    const slotIndex = sortedSlots.findIndex(s => s.id === slot.id)
+    if (slotIndex === -1) return false
+
+    let totalDuration = slotDuration
+    let currentTime = new Date(slot.date).getTime() + (slotDuration * 60000)
+
+    for (let i = slotIndex + 1; i < sortedSlots.length; i++) {
+      const nextSlot = sortedSlots[i]
+      const nextSlotTime = new Date(nextSlot.date).getTime()
+
+      if (nextSlotTime !== currentTime) break
+
+      totalDuration += nextSlot.duration
+      currentTime = nextSlotTime + (nextSlot.duration * 60000)
+
+      if (totalDuration >= durationNeeded) return true
+    }
+
+    return totalDuration >= durationNeeded
   }
 
-  const getSlotsForDate = (day: number) => {
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    return slots.filter(slot => {
-      const slotDate = new Date(slot.date)
-      return slotDate.toDateString() === date.toDateString()
+  // Obtenir les créneaux qui seront bloqués
+  const getSlotsToBlock = (startSlot: DemoSlot, durationNeeded: number): string[] => {
+    const slotsToBlock: string[] = [startSlot.id]
+    const slotDuration = startSlot.duration
+
+    if (durationNeeded <= slotDuration) return slotsToBlock
+
+    const sortedSlots = [...availableSlots].sort((a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+
+    const slotIndex = sortedSlots.findIndex(s => s.id === startSlot.id)
+    if (slotIndex === -1) return slotsToBlock
+
+    let totalDuration = slotDuration
+    let currentTime = new Date(startSlot.date).getTime() + (slotDuration * 60000)
+
+    for (let i = slotIndex + 1; i < sortedSlots.length && totalDuration < durationNeeded; i++) {
+      const nextSlot = sortedSlots[i]
+      const nextSlotTime = new Date(nextSlot.date).getTime()
+
+      if (nextSlotTime !== currentTime) break
+
+      slotsToBlock.push(nextSlot.id)
+      totalDuration += nextSlot.duration
+      currentTime = nextSlotTime + (nextSlot.duration * 60000)
+    }
+
+    return slotsToBlock
+  }
+
+  const filteredSlots = availableSlots.filter(slot =>
+    hasEnoughConsecutiveSlots(slot, formData.duration)
+  )
+
+  const slotsToBlock = selectedSlot
+    ? getSlotsToBlock(
+        availableSlots.find(s => s.id === selectedSlot)!,
+        formData.duration
+      )
+    : []
+
+  // Grouper les créneaux par date
+  const groupedSlots = filteredSlots.reduce((acc, slot) => {
+    const date = new Date(slot.date).toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     })
-  }
+    if (!acc[date]) acc[date] = []
+    acc[date].push(slot)
+    return acc
+  }, {} as Record<string, DemoSlot[]>)
 
-  const getAvailableSlotsForSelectedDate = () => {
-    if (!selectedDate) return []
-    return slots.filter(slot => {
-      const slotDate = new Date(slot.date)
-      return slotDate.toDateString() === selectedDate.toDateString()
-    })
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (!selectedSlot) return
 
     setSubmitting(true)
@@ -84,14 +143,24 @@ export default function ReserverDemoPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slotId: selectedSlot.id,
-          type: meetingType,
-          ...formData
+          slotId: selectedSlot,
+          type: formData.type,
+          institutName: formData.institutName,
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          message: formData.message,
+          city: formData.city,
+          location: formData.location,
+          customDuration: formData.duration,
+          slotsToBlock: slotsToBlock
         })
       })
 
       if (response.ok) {
-        setStep('success')
+        // Afficher message de succès
+        alert('✅ Réservation confirmée ! Vous recevrez un email de confirmation.')
+        window.location.href = '/platform'
       } else {
         alert('Erreur lors de la réservation')
       }
@@ -103,404 +172,421 @@ export default function ReserverDemoPage() {
     }
   }
 
-  const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth)
-  const monthName = currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 flex items-center justify-center">
         <div className="text-purple-600 text-xl font-semibold">Chargement...</div>
       </div>
     )
   }
 
-  if (step === 'success') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">✅ Réservation confirmée !</h1>
-          {meetingType === 'ONLINE' ? (
-            <p className="text-gray-600 mb-6">
-              Vous recevrez un email avec le lien de visioconférence Jitsi Meet.
-              Aucune inscription requise, cliquez simplement sur le lien à l'heure du rendez-vous.
-            </p>
-          ) : (
-            <p className="text-gray-600 mb-6">
-              Nous vous contacterons rapidement pour organiser votre rendez-vous physique.
-            </p>
-          )}
-          <a
-            href="/platform"
-            className="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold"
-          >
-            Retour à LAIA Connect
-          </a>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            📅 Réserver une démo
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-700 bg-clip-text text-transparent mb-4">
+            ✨ Réserver une démo LAIA Connect
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-700 text-lg font-medium">
             Découvrez notre solution en direct avec un expert
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="flex justify-center mb-8">
+        {/* Indicateur d'étapes */}
+        <div className="flex items-center justify-center mb-10">
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 ${step === 'calendar' ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'calendar' ? 'bg-purple-600 text-white' : 'bg-gray-200'
-              }`}>1</div>
-              <span className="font-semibold hidden md:inline">Date</span>
+            <div className={`flex items-center gap-2 transition ${step === 'config' ? 'opacity-100 scale-110' : step === 'info' || step === 'slot' ? 'opacity-50' : 'opacity-30'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-lg transition ${step === 'config' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white' : 'bg-gray-300 text-gray-600'}`}>1</div>
+              <span className="font-bold text-gray-800 hidden md:inline">Configuration</span>
             </div>
-            <ArrowRight className="text-gray-400" size={20} />
-            <div className={`flex items-center gap-2 ${step === 'time' ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'time' ? 'bg-purple-600 text-white' : 'bg-gray-200'
-              }`}>2</div>
-              <span className="font-semibold hidden md:inline">Heure</span>
+            <div className="w-16 h-1 bg-gray-300 rounded"></div>
+            <div className={`flex items-center gap-2 transition ${step === 'info' ? 'opacity-100 scale-110' : step === 'slot' ? 'opacity-50' : 'opacity-30'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-lg transition ${step === 'info' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white' : 'bg-gray-300 text-gray-600'}`}>2</div>
+              <span className="font-bold text-gray-800 hidden md:inline">Informations</span>
             </div>
-            <ArrowRight className="text-gray-400" size={20} />
-            <div className={`flex items-center gap-2 ${step === 'form' ? 'text-purple-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step === 'form' ? 'bg-purple-600 text-white' : 'bg-gray-200'
-              }`}>3</div>
-              <span className="font-semibold hidden md:inline">Infos</span>
+            <div className="w-16 h-1 bg-gray-300 rounded"></div>
+            <div className={`flex items-center gap-2 transition ${step === 'slot' ? 'opacity-100 scale-110' : 'opacity-30'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-lg transition ${step === 'slot' ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white' : 'bg-gray-300 text-gray-600'}`}>3</div>
+              <span className="font-bold text-gray-800 hidden md:inline">Créneau</span>
             </div>
           </div>
         </div>
 
-        {/* Calendar Step */}
-        {step === 'calendar' && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 capitalize flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-600" />
-              {monthName}
-            </h2>
+        <div className="bg-white rounded-3xl shadow-2xl p-8">
+          {/* ÉTAPE 1: Configuration */}
+          {step === 'config' && (
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg">1</div>
+                  <h2 className="text-2xl font-bold text-purple-900">Configuration de la démo</h2>
+                </div>
 
-            <div className="flex justify-center gap-2 mb-6">
-              <button
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition"
-              >
-                ← Mois précédent
-              </button>
-              <button
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition"
-              >
-                Mois suivant →
-              </button>
-            </div>
-
-            {/* Calendrier classique */}
-            <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
-              {/* En-tête des jours */}
-              <div className="grid grid-cols-7 bg-gray-100 border-b-2 border-gray-300">
-                {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map(day => (
-                  <div key={day} className="text-center font-bold text-gray-700 py-3 border-r border-gray-300 last:border-r-0">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Grille des jours */}
-              <div className="grid grid-cols-7">
-                {Array.from({ length: startingDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[120px] bg-gray-50 border-r border-b border-gray-300" />
-                ))}
-
-                {Array.from({ length: daysInMonth }).map((_, i) => {
-                  const day = i + 1
-                  const daySlots = getSlotsForDate(day)
-                  const hasSlots = daySlots.length > 0
-                  const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-                  const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
-                  const isToday = date.toDateString() === new Date().toDateString()
-
-                  return (
-                    <div
-                      key={day}
-                      className={`min-h-[120px] border-r border-b border-gray-300 p-2 ${
-                        isPast ? 'bg-gray-50' : isToday ? 'bg-blue-50' : 'bg-white'
-                      } ${(startingDayOfWeek + day - 1) % 7 === 6 ? 'border-r-0' : ''}`}
-                    >
-                      <div className={`text-right font-bold mb-2 ${
-                        isToday ? 'text-blue-600' : isPast ? 'text-gray-400' : 'text-gray-900'
-                      }`}>
-                        {day}
-                      </div>
-
-                      <div className="space-y-1">
-                        {hasSlots && !isPast ? (
-                          daySlots.slice(0, 3).map(slot => (
-                            <button
-                              key={slot.id}
-                              disabled={slot.isBooked}
-                              onClick={() => {
-                                if (!slot.isBooked) {
-                                  setSelectedDate(date)
-                                  setSelectedSlot(slot)
-                                  setStep('form')
-                                }
-                              }}
-                              className={`w-full text-left px-2 py-1 border rounded text-xs font-semibold transition ${
-                                slot.isBooked
-                                  ? 'bg-red-100 border-red-300 text-red-700 cursor-not-allowed line-through'
-                                  : 'bg-green-100 hover:bg-green-200 border-green-300 text-green-900'
-                              }`}
-                            >
-                              {new Date(slot.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                              {slot.isBooked && <span className="ml-1 text-xs">(Réservé)</span>}
-                            </button>
-                          ))
-                        ) : null}
-                        {daySlots.length > 3 && (
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Durée */}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <Clock className="w-6 h-6 text-purple-600" />
+                      Durée de la démo *
+                    </label>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-4 gap-3">
+                        {[15, 30, 45, 60].map((duration) => (
                           <button
-                            onClick={() => {
-                              setSelectedDate(date)
-                              setStep('time')
-                            }}
-                            className="w-full text-left px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs text-gray-700 font-semibold transition"
+                            key={duration}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, duration })}
+                            className={`py-4 px-3 border-2 rounded-xl transition font-bold text-sm shadow-md hover:shadow-lg ${
+                              formData.duration === duration
+                                ? 'border-purple-600 bg-gradient-to-br from-purple-600 to-pink-600 text-white scale-105'
+                                : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400'
+                            }`}
                           >
-                            +{daySlots.length - 3} autres
+                            {duration}min
                           </button>
-                        )}
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 bg-white rounded-xl p-4 border-2 border-gray-300 shadow-sm">
+                        <input
+                          type="number"
+                          min="5"
+                          max="240"
+                          step="5"
+                          value={formData.duration}
+                          onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
+                          className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-bold text-center text-lg"
+                        />
+                        <span className="text-gray-700 font-bold whitespace-nowrap">minutes (personnalisé)</span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-blue-50 border border-gray-300 rounded"></div>
-                <span>Aujourd'hui</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                <span>Créneaux disponibles</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-gray-50 border border-gray-300 rounded"></div>
-                <span>Passé</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Time Step */}
-        {step === 'time' && selectedDate && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Choisissez votre horaire - {selectedDate.toLocaleDateString('fr-FR')}
-            </h2>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
-              {getAvailableSlotsForSelectedDate().map(slot => (
-                <button
-                  key={slot.id}
-                  disabled={slot.isBooked}
-                  onClick={() => {
-                    if (!slot.isBooked) {
-                      setSelectedSlot(slot)
-                    }
-                  }}
-                  className={`p-4 rounded-lg border-2 transition ${
-                    slot.isBooked
-                      ? 'border-red-300 bg-red-100 cursor-not-allowed opacity-80'
-                      : selectedSlot?.id === slot.id
-                      ? 'border-green-600 bg-green-100'
-                      : 'border-gray-300 hover:border-green-400'
-                  }`}
-                >
-                  <Clock className={`w-5 h-5 mx-auto mb-2 ${slot.isBooked ? 'text-red-600' : 'text-green-600'}`} />
-                  <div className={`font-bold ${slot.isBooked ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                    {new Date(slot.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  <div className="text-xs text-gray-600">{slot.duration} min</div>
-                  {slot.isBooked && <div className="text-xs text-red-600 mt-1">Réservé</div>}
-                </button>
-              ))}
-            </div>
 
-            <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  setStep('calendar')
-                  setSelectedSlot(null)
-                }}
-                className="px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 font-semibold transition"
-              >
-                ← Retour
-              </button>
-              <button
-                onClick={() => setStep('form')}
-                disabled={!selectedSlot}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continuer →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Form Step */}
-        {step === 'form' && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Vos informations</h2>
-
-            {/* Type de RDV */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Type de rendez-vous</label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setMeetingType('ONLINE')}
-                  className={`p-4 rounded-lg border-2 transition ${
-                    meetingType === 'ONLINE'
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-300 hover:border-purple-400'
-                  }`}
-                >
-                  <Video className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                  <div className="font-semibold">Visioconférence</div>
-                  <div className="text-xs text-gray-600 mt-1">Jitsi Meet</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMeetingType('PHYSICAL')}
-                  className={`p-4 rounded-lg border-2 transition ${
-                    meetingType === 'PHYSICAL'
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-300 hover:border-purple-400'
-                  }`}
-                >
-                  <MapPin className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-                  <div className="font-semibold">Sur place</div>
-                  <div className="text-xs text-gray-600 mt-1">À votre institut</div>
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Nom de l'institut *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.institutName}
-                  onChange={(e) => setFormData({ ...formData, institutName: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Ex: Institut Beauté Zen"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Votre nom *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.contactName}
-                  onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Ex: Marie Dupont"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.contactEmail}
-                  onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="contact@institut.fr"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Téléphone</label>
-                <input
-                  type="tel"
-                  value={formData.contactPhone}
-                  onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="06 12 34 56 78"
-                />
-              </div>
-
-              {meetingType === 'PHYSICAL' && (
-                <>
+                  {/* Type */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Ville *</label>
+                    <label className="block text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <MapPin className="w-6 h-6 text-purple-600" />
+                      Type de rendez-vous *
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'ONLINE' })}
+                        className={`p-6 border-2 rounded-xl transition shadow-md hover:shadow-lg ${
+                          formData.type === 'ONLINE'
+                            ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl'
+                            : 'border-gray-300 bg-white hover:border-purple-400'
+                        }`}
+                      >
+                        <Video className={`w-8 h-8 mx-auto mb-3 ${formData.type === 'ONLINE' ? 'text-purple-600' : 'text-gray-600'}`} />
+                        <div className="font-bold text-base">Visio</div>
+                        <div className="text-xs text-gray-600 mt-1">Jitsi Meet</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, type: 'PHYSICAL' })}
+                        className={`p-6 border-2 rounded-xl transition shadow-md hover:shadow-lg ${
+                          formData.type === 'PHYSICAL'
+                            ? 'border-purple-600 bg-gradient-to-br from-purple-50 to-pink-50 shadow-xl'
+                            : 'border-gray-300 bg-white hover:border-purple-400'
+                        }`}
+                      >
+                        <MapPin className={`w-8 h-8 mx-auto mb-3 ${formData.type === 'PHYSICAL' ? 'text-purple-600' : 'text-gray-600'}`} />
+                        <div className="font-bold text-base">Présentiel</div>
+                        <div className="text-xs text-gray-600 mt-1">À votre institut</div>
+                      </button>
+                    </div>
+                    {formData.type === 'PHYSICAL' && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-sm text-blue-800">
+                            <span className="font-semibold">Zone de déplacement :</span> Paris et banlieue parisienne proche uniquement
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setStep('info')}
+                    className="px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition font-bold text-lg shadow-lg hover:shadow-xl flex items-center gap-2"
+                  >
+                    Suivant
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ÉTAPE 2: Informations */}
+          {step === 'info' && (
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-200 rounded-2xl p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg">2</div>
+                  <h2 className="text-2xl font-bold text-purple-900">Vos informations</h2>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      Nom de l'institut *
+                    </label>
                     <input
                       type="text"
-                      required={meetingType === 'PHYSICAL'}
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="Ex: Paris"
+                      required
+                      value={formData.institutName}
+                      onChange={(e) => setFormData({ ...formData, institutName: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                      placeholder="Ex: Institut Beauté Zen"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Adresse complète *</label>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      Votre nom *
+                    </label>
                     <input
                       type="text"
-                      required={meetingType === 'PHYSICAL'}
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="123 Rue de la Beauté, 75001 Paris"
+                      required
+                      value={formData.contactName}
+                      onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                      placeholder="Ex: Marie Dupont"
                     />
                   </div>
-                </>
-              )}
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.contactEmail}
+                      onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                      placeholder="contact@institut.fr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      Téléphone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contactPhone}
+                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                      placeholder="06 12 34 56 78"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Message (optionnel)</label>
-                <textarea
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Dites-nous ce qui vous intéresse..."
-                />
-              </div>
+                  {formData.type === 'PHYSICAL' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Ville *
+                        </label>
+                        <input
+                          type="text"
+                          required={formData.type === 'PHYSICAL'}
+                          value={formData.city}
+                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                          placeholder="Ex: Paris"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Adresse complète *
+                        </label>
+                        <input
+                          type="text"
+                          required={formData.type === 'PHYSICAL'}
+                          value={formData.location}
+                          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                          placeholder="123 Rue de la Beauté, 75001 Paris"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
 
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setStep('time')}
-                  className="px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 font-semibold transition"
-                >
-                  ← Retour
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-xl font-bold transition disabled:opacity-50"
-                >
-                  {submitting ? 'Envoi...' : '✨ Confirmer la réservation'}
-                </button>
+                <div className="mt-6">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
+                    Message (optionnel)
+                  </label>
+                  <textarea
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                    placeholder="Dites-nous ce qui vous intéresse..."
+                  />
+                </div>
+
+                <div className="flex gap-4 mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setStep('config')}
+                    className="px-10 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-bold text-lg shadow-md"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep('slot')}
+                    disabled={!formData.institutName || !formData.contactName || !formData.contactEmail}
+                    className="flex-1 px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    Suivant
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
-            </form>
-          </div>
-        )}
+            </div>
+          )}
+
+          {/* ÉTAPE 3: Sélection du créneau */}
+          {step === 'slot' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-full flex items-center justify-center font-bold text-xl shadow-lg">3</div>
+                  <h2 className="text-2xl font-bold text-purple-900">Choisir le créneau</h2>
+                  {formData.duration && (
+                    <div className="ml-auto px-5 py-3 bg-white border-2 border-purple-300 rounded-xl shadow-md">
+                      <span className="text-sm font-bold text-purple-900">
+                        ⏱️ Durée : {formData.duration} min
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {slotsToBlock.length > 1 && (
+                  <div className="mb-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-xl shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="font-bold text-orange-900 mb-1 text-lg">
+                          ⚠️ Plusieurs créneaux seront bloqués
+                        </div>
+                        <div className="text-sm text-orange-700">
+                          Pour une démo de <strong>{formData.duration} minutes</strong>, {slotsToBlock.length} créneaux consécutifs seront réservés.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {filteredSlots.length === 0 && availableSlots.length > 0 && (
+                  <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-xl shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="font-bold text-red-900 mb-1 text-lg">
+                          ❌ Aucun créneau disponible pour cette durée
+                        </div>
+                        <div className="text-sm text-red-700">
+                          Il n'y a pas assez de créneaux consécutifs disponibles pour une démo de {formData.duration} minutes.
+                          Veuillez réduire la durée ou nous contacter.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {availableSlots.length === 0 ? (
+                  <div className="text-center py-16 text-purple-600">
+                    <AlertCircle className="w-16 h-16 mx-auto mb-3" />
+                    <p className="font-bold text-xl">Aucun créneau disponible</p>
+                    <p className="text-sm mt-2 text-gray-600">Veuillez nous contacter directement</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                    {Object.entries(groupedSlots).map(([date, slots]) => (
+                      <div key={date}>
+                        <h3 className="font-bold text-gray-800 mb-3 capitalize sticky top-0 bg-gradient-to-r from-purple-50 to-pink-50 py-3 text-lg">
+                          📅 {date}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {slots.map((slot) => {
+                            const willBeBlocked = slotsToBlock.includes(slot.id)
+                            const isMainSlot = selectedSlot === slot.id
+                            return (
+                              <button
+                                key={slot.id}
+                                type="button"
+                                onClick={() => setSelectedSlot(slot.id)}
+                                className={`p-4 border-2 rounded-xl transition relative text-center shadow-md hover:shadow-lg ${
+                                  isMainSlot
+                                    ? 'border-purple-600 bg-gradient-to-br from-purple-600 to-pink-600 text-white scale-105 shadow-xl'
+                                    : willBeBlocked
+                                    ? 'border-orange-400 bg-orange-50 text-orange-900'
+                                    : 'border-purple-300 bg-white text-gray-900 hover:border-purple-500'
+                                }`}
+                              >
+                                {willBeBlocked && !isMainSlot && (
+                                  <div className="absolute -top-2 -right-2 w-7 h-7 bg-orange-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
+                                    🔒
+                                  </div>
+                                )}
+                                <div className={`font-bold text-xl ${isMainSlot ? 'text-white' : ''}`}>
+                                  {new Date(slot.date).toLocaleTimeString('fr-FR', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                                {willBeBlocked && !isMainSlot && (
+                                  <div className="text-xs mt-1 font-bold text-orange-700">
+                                    Bloqué
+                                  </div>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-4 pt-6 border-t-2 border-gray-200 mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setStep('info')}
+                    className="flex-1 py-4 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-bold text-lg shadow-md"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting || !selectedSlot || filteredSlots.length === 0}
+                    className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition font-bold text-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Réservation...
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <Check className="w-6 h-6" />
+                        ✨ Confirmer la réservation
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

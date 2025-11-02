@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import Stripe from 'stripe'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
-import { sendWelcomeEmail, sendOnboardingGuide } from '@/lib/onboarding-emails'
+import { sendPendingActivationEmail, sendAccountActivationEmail } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 
 const prisma = new PrismaClient()
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
 
         // Plan et statut
         plan: selectedPlan,
-        status: 'TRIAL',
+        status: 'PENDING', // En attente d'activation manuelle
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
 
         // Configuration du site
@@ -325,13 +325,13 @@ export async function POST(req: NextRequest) {
       console.error('⚠️ Erreur génération facture (non bloquant):', invoiceError)
     }
 
-    // Envoyer l'email de bienvenue avec les identifiants et la facture
+    // Envoyer l'email de confirmation de paiement (compte en attente d'activation)
     try {
       const adminUrl = process.env.NEXT_PUBLIC_APP_URL
         ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
         : `https://${subdomain}.laia-connect.fr/admin`
 
-      await sendWelcomeEmail({
+      await sendPendingActivationEmail({
         organizationName: institutName,
         ownerFirstName,
         ownerLastName,
@@ -344,31 +344,9 @@ export async function POST(req: NextRequest) {
         monthlyAmount: amount,
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
-      }, invoicePdfBuffer, invoiceNumber)
+      })
 
-      // Envoyer le guide de démarrage 2 minutes après
-      setTimeout(async () => {
-        try {
-          await sendOnboardingGuide({
-            organizationName: institutName,
-            ownerFirstName,
-            ownerLastName,
-            ownerEmail: adminEmail,
-            tempPassword,
-            plan: selectedPlan,
-            subdomain,
-            customDomain: useCustomDomain ? customDomain : undefined,
-            adminUrl,
-            monthlyAmount: amount,
-            trialEndsAt: organization.trialEndsAt!,
-            sepaMandateRef
-          })
-        } catch (guideError) {
-          console.error('⚠️ Erreur envoi guide (non bloquant):', guideError)
-        }
-      }, 120000) // 2 minutes
-
-      console.log('✅ Email de bienvenue envoyé avec facture')
+      console.log('✅ Email de confirmation paiement envoyé (compte PENDING)')
     } catch (emailError) {
       console.error('⚠️ Erreur envoi email (non bloquant):', emailError)
       // On ne bloque pas même si l'email échoue

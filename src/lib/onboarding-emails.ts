@@ -548,3 +548,323 @@ export async function sendOnboardingGuide(data: WelcomeEmailData) {
     throw error
   }
 }
+
+/**
+ * Email de confirmation de paiement et attente d'activation (24h)
+ */
+export async function sendPendingActivationEmail(data: WelcomeEmailData) {
+  const {
+    organizationName,
+    ownerFirstName,
+    ownerEmail,
+    plan,
+    monthlyAmount,
+    sepaMandateRef
+  } = data
+
+  const planNames: Record<string, string> = {
+    SOLO: 'Solo',
+    DUO: 'Duo',
+    TEAM: 'Team',
+    PREMIUM: 'Premium'
+  }
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement confirmé - Activation sous 24h</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #f9fafb;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+          <!-- Header avec gradient -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); padding: 40px 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                Paiement confirmé !
+              </h1>
+              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                Votre compte ${organizationName} est en cours de préparation
+              </p>
+            </td>
+          </tr>
+
+          <!-- Contenu principal -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                Bonjour ${ownerFirstName},
+              </p>
+
+              <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                Merci pour votre confiance ! Votre paiement a bien été enregistré et votre abonnement <strong>${planNames[plan]}</strong> à <strong>${monthlyAmount}€/mois</strong> est activé.
+              </p>
+
+              <!-- Encadré important -->
+              <table style="width: 100%; background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%); border-left: 4px solid #3b82f6; border-radius: 8px; margin: 25px 0; overflow: hidden;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #1e40af;">
+                      ⏳ Activation sous 24 heures
+                    </p>
+                    <p style="margin: 0; font-size: 14px; color: #1e40af; line-height: 1.6;">
+                      Notre équipe prépare actuellement votre espace personnalisé. Vous recevrez vos identifiants de connexion par email dès que tout sera prêt.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <h3 style="font-size: 18px; color: #111827; margin: 30px 0 15px 0;">
+                📋 Récapitulatif de votre commande
+              </h3>
+
+              <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Offre</td>
+                  <td style="padding: 12px 0; color: #111827; font-size: 14px; text-align: right; font-weight: 600;">
+                    Plan ${planNames[plan]}
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Montant mensuel</td>
+                  <td style="padding: 12px 0; color: #111827; font-size: 14px; text-align: right; font-weight: 600;">
+                    ${monthlyAmount}€/mois
+                  </td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                  <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Période d'essai</td>
+                  <td style="padding: 12px 0; color: #10b981; font-size: 14px; text-align: right; font-weight: 600;">
+                    30 jours gratuits
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0; color: #6b7280; font-size: 14px;">Référence mandat SEPA</td>
+                  <td style="padding: 12px 0; color: #111827; font-size: 12px; text-align: right; font-family: monospace;">
+                    ${sepaMandateRef}
+                  </td>
+                </tr>
+              </table>
+
+              <h3 style="font-size: 18px; color: #111827; margin: 30px 0 15px 0;">
+                🎯 Prochaines étapes
+              </h3>
+
+              <ol style="padding-left: 20px; margin: 0; color: #374151; font-size: 14px; line-height: 1.8;">
+                <li style="margin-bottom: 10px;">Notre équipe configure votre espace personnalisé</li>
+                <li style="margin-bottom: 10px;">Vous recevrez un email avec vos identifiants de connexion</li>
+                <li style="margin-bottom: 10px;">Vous pourrez vous connecter et commencer à utiliser LAIA Connect</li>
+                <li>Profitez de vos 30 jours d'essai gratuit !</li>
+              </ol>
+
+              <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                Des questions ? Contactez-nous à <a href="mailto:support@laia-connect.fr" style="color: #9333ea; text-decoration: none;">support@laia-connect.fr</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280;">
+                © 2025 LAIA Connect - Logiciel de gestion pour instituts de beauté
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                Cet email a été envoyé automatiquement, merci de ne pas y répondre
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: 'LAIA Connect <onboarding@laia-connect.fr>',
+      to: ownerEmail,
+      subject: `✅ Paiement confirmé - Activation sous 24h - ${organizationName}`,
+      html: emailHtml
+    })
+
+    console.log('✅ Email de confirmation envoyé:', result)
+    return result
+  } catch (error) {
+    console.error('❌ Erreur envoi email confirmation:', error)
+    throw error
+  }
+}
+
+/**
+ * Email d'activation du compte avec identifiants
+ */
+export async function sendAccountActivationEmail(data: WelcomeEmailData) {
+  const {
+    organizationName,
+    ownerFirstName,
+    ownerEmail,
+    tempPassword,
+    adminUrl,
+    subdomain,
+    customDomain
+  } = data
+
+  const siteUrl = customDomain || `https://${subdomain}.laia-connect.fr`
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Votre compte est activé !</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #f9fafb;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+          <!-- Header avec gradient -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); padding: 40px 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 15px;">🎉</div>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                Votre compte est activé !
+              </h1>
+              <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">
+                Bienvenue dans l'aventure LAIA Connect
+              </p>
+            </td>
+          </tr>
+
+          <!-- Contenu principal -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                Bonjour ${ownerFirstName},
+              </p>
+
+              <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 20px 0;">
+                Bonne nouvelle ! Votre espace <strong>${organizationName}</strong> est maintenant prêt. Vous pouvez vous connecter et commencer à l'utiliser dès maintenant.
+              </p>
+
+              <!-- Encadré identifiants -->
+              <table style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; border-radius: 8px; margin: 25px 0; overflow: hidden;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #92400e;">
+                      🔐 Vos identifiants de connexion
+                    </p>
+                    <table style="width: 100%;">
+                      <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-size: 14px; font-weight: 600;">Email :</td>
+                        <td style="padding: 8px 0; color: #92400e; font-size: 14px; text-align: right; font-family: monospace; background-color: rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px;">
+                          ${ownerEmail}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; color: #92400e; font-size: 14px; font-weight: 600;">Mot de passe :</td>
+                        <td style="padding: 8px 0; color: #92400e; font-size: 14px; text-align: right; font-family: monospace; background-color: rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 4px;">
+                          ${tempPassword}
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin: 15px 0 0 0; font-size: 12px; color: #92400e;">
+                      ⚠️ Pour votre sécurité, changez ce mot de passe dès votre première connexion
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Bouton de connexion -->
+              <table style="width: 100%; margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${adminUrl}" style="display: inline-block; background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(147, 51, 234, 0.3);">
+                      🚀 Accéder à mon espace admin
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <h3 style="font-size: 18px; color: #111827; margin: 30px 0 15px 0;">
+                🎯 Pour bien démarrer
+              </h3>
+
+              <ol style="padding-left: 20px; margin: 0; color: #374151; font-size: 14px; line-height: 1.8;">
+                <li style="margin-bottom: 10px;">Connectez-vous à votre espace admin</li>
+                <li style="margin-bottom: 10px;">Changez votre mot de passe</li>
+                <li style="margin-bottom: 10px;">Complétez votre profil et ajoutez votre logo</li>
+                <li style="margin-bottom: 10px;">Ajoutez vos services et prestations</li>
+                <li>Invitez vos premiers clients !</li>
+              </ol>
+
+              <!-- URLs utiles -->
+              <table style="width: 100%; background-color: #f9fafb; border-radius: 8px; margin: 25px 0; padding: 15px;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 10px 0; font-size: 14px; font-weight: 600; color: #374151;">
+                      📍 Vos liens importants :
+                    </p>
+                    <p style="margin: 5px 0; font-size: 13px; color: #6b7280;">
+                      <strong>Espace admin :</strong> <a href="${adminUrl}" style="color: #9333ea;">${adminUrl}</a>
+                    </p>
+                    <p style="margin: 5px 0; font-size: 13px; color: #6b7280;">
+                      <strong>Votre site :</strong> <a href="${siteUrl}" style="color: #9333ea;">${siteUrl}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                Besoin d'aide ? Consultez notre <a href="https://docs.laia-connect.fr" style="color: #9333ea;">documentation</a> ou contactez-nous à <a href="mailto:support@laia-connect.fr" style="color: #9333ea;">support@laia-connect.fr</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280;">
+                © 2025 LAIA Connect - Logiciel de gestion pour instituts de beauté
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                Cet email a été envoyé automatiquement, merci de ne pas y répondre
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: 'LAIA Connect <onboarding@laia-connect.fr>',
+      to: ownerEmail,
+      subject: `🎉 Votre compte ${organizationName} est activé !`,
+      html: emailHtml
+    })
+
+    console.log('✅ Email d\'activation envoyé:', result)
+    return result
+  } catch (error) {
+    console.error('❌ Erreur envoi email activation:', error)
+    throw error
+  }
+}

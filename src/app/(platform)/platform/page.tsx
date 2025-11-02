@@ -22,14 +22,17 @@ export default function PlatformHomePage() {
       id: 'SOLO',
       name: 'Solo',
       price: 49,
-      description: 'Parfait pour débuter',
+      description: 'Pour indépendants',
       features: [
-        '1 emplacement',
-        '1 utilisateur',
-        '5 GB stockage',
-        'Réservations illimitées',
-        'Support email',
-        'Accès mobile'
+        'Site web basique (1 template)',
+        'Réservation en ligne',
+        'Gestion clients',
+        'Catalogue prestations',
+        'Calendrier',
+        '💳 Paiements en ligne (toutes intégrations)',
+        '🏪 Connexion caisse NF525',
+        'Espace client',
+        '1 utilisateur • 1 emplacement • 5 GB'
       ],
       color: 'from-gray-400 to-gray-600',
       popular: false
@@ -40,13 +43,18 @@ export default function PlatformHomePage() {
       price: 89,
       description: 'Le plus populaire',
       features: [
-        '1 emplacement',
-        '3 utilisateurs',
-        '10 GB stockage',
-        'Réservations illimitées',
-        'Support prioritaire',
-        'Export de données',
-        'Accès mobile'
+        '✨ Tout Solo +',
+        'Site web premium',
+        '🛍️ Boutique + Formations en ligne',
+        '📧 Campagnes Email Marketing',
+        '📱 Messages WhatsApp auto',
+        '📝 Blog professionnel',
+        '🎯 CRM Commercial',
+        'Programme fidélité',
+        'Cartes cadeaux',
+        'Analytics',
+        'Domaine personnalisé',
+        '3 utilisateurs • 1 emplacement • 10 GB'
       ],
       color: 'from-blue-500 to-blue-600',
       popular: true
@@ -55,16 +63,17 @@ export default function PlatformHomePage() {
       id: 'TEAM',
       name: 'Team',
       price: 149,
-      description: 'Pour les équipes',
+      description: 'Pour équipes',
       features: [
-        '3 emplacements',
-        '10 utilisateurs',
-        '50 GB stockage',
-        'Réservations illimitées',
-        'Support 24/7',
-        'Export de données',
-        'API access',
-        'Formation personnalisée'
+        '✨ Tout Duo +',
+        'Site web pro (5 templates)',
+        '🛍️ Boutique en ligne (produits + formations)',
+        '📦 Gestion stock avancée',
+        '📱 Réseaux sociaux complet',
+        '📲 SMS automatiques',
+        'Programme parrainage',
+        'Multi-emplacements (3)',
+        '10 utilisateurs • 3 emplacements • 50 GB'
       ],
       color: 'from-purple-500 to-purple-600',
       popular: false
@@ -75,14 +84,15 @@ export default function PlatformHomePage() {
       price: 249,
       description: 'Solution complète',
       features: [
-        'Emplacements illimités',
-        'Utilisateurs illimités',
-        '999 GB stockage',
-        'Tout illimité',
-        'Support dédié 24/7',
-        'API complète',
-        'Développement sur mesure',
-        'Manager dédié'
+        '✨ Tout Team +',
+        'Site web premium (5 templates)',
+        '⚡ Automation Marketing complète',
+        '📝 Blog professionnel',
+        '📧 Newsletter automatisée',
+        '🤖 Scénarios marketing avancés',
+        '🔌 API Access (export comptable)',
+        'Formation avancée',
+        'Utilisateurs illimités • Emplacements illimités • 999 GB'
       ],
       color: 'from-indigo-500 to-pink-600',
       popular: false
@@ -90,6 +100,20 @@ export default function PlatformHomePage() {
   ]
 
   const features = [
+    {
+      icon: '📧',
+      title: 'Marketing Automation',
+      description: 'Campagnes email, WhatsApp et scénarios automatisés pour fidéliser vos clients',
+      gradient: 'from-pink-400 to-pink-600',
+      badge: 'Nouveau'
+    },
+    {
+      icon: '📊',
+      title: 'CRM Commercial',
+      description: 'Pipeline commercial, suivi des prospects et opportunités pour développer votre activité',
+      gradient: 'from-blue-400 to-indigo-600',
+      badge: 'Business'
+    },
     {
       icon: '📅',
       title: 'Réservations en ligne',
@@ -109,10 +133,11 @@ export default function PlatformHomePage() {
       gradient: 'from-green-400 to-green-600'
     },
     {
-      icon: '📊',
-      title: 'Analytics avancés',
-      description: 'Tableaux de bord en temps réel, KPIs et prévisions de revenus',
-      gradient: 'from-pink-400 to-pink-600'
+      icon: '⚡',
+      title: 'Automation complète',
+      description: 'SMS, emails, WhatsApp : automatisez toute votre communication client',
+      gradient: 'from-purple-400 to-pink-600',
+      badge: 'Premium'
     },
     {
       icon: '🎁',
@@ -160,11 +185,8 @@ export default function PlatformHomePage() {
             </Link>
             {/* Navigation Desktop */}
             <nav className="hidden md:flex items-center gap-5 flex-nowrap">
-              <Link href="/pour-qui" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
+              <a href="#pour-qui" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Pour qui ?
-              </Link>
-              <a href="#features" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
-                Fonctionnalités
               </a>
               <a href="#pricing" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
                 Tarifs
@@ -240,22 +262,13 @@ export default function PlatformHomePage() {
 
               {/* Contenu du menu */}
               <div className="p-6 space-y-3">
-                <Link
-                  href="/pour-qui"
+                <a
+                  href="#pour-qui"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
                 >
                   <span className="text-2xl">👥</span>
                   <span className="text-gray-800 font-medium group-hover:text-purple-600">Pour qui ?</span>
-                </Link>
-
-                <a
-                  href="#features"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white hover:bg-purple-50 transition-all shadow-sm border border-purple-100 group"
-                >
-                  <span className="text-2xl">✨</span>
-                  <span className="text-gray-800 font-medium group-hover:text-purple-600">Fonctionnalités</span>
                 </a>
 
                 <a
@@ -336,12 +349,8 @@ export default function PlatformHomePage() {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center max-w-4xl mx-auto mb-16">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 border border-purple-200 rounded-full text-purple-700 mb-6">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-              </span>
-              <span className="text-sm font-semibold">✨ Nouveau : IA pour optimiser vos rendez-vous</span>
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full mb-6 shadow-lg animate-pulse">
+              <span className="text-sm font-bold">🎁 Offre de lancement : 1er mois offert</span>
             </div>
 
             <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -375,7 +384,7 @@ export default function PlatformHomePage() {
               </a>
             </div>
             <p className="text-sm text-gray-600 mt-6 font-medium">
-              ✅ 30 jours gratuits • 💳 Prélèvement SEPA après essai • ❌ Annulation à tout moment
+              ✅ 1er mois offert • 💳 Aucun paiement pendant 30 jours • 📌 Engagement 1 an ensuite
             </p>
           </div>
 
@@ -431,20 +440,214 @@ export default function PlatformHomePage() {
         </div>
       </section>
 
+      {/* Pour Qui Section - Who is it for */}
+      <section id="pour-qui" className="py-20 px-4 bg-gradient-to-br from-purple-50 via-white to-pink-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-purple-600 font-bold text-sm uppercase tracking-widest">POUR QUI ?</span>
+            <h3 className="text-5xl md:text-6xl font-black text-gray-900 mt-4 mb-6 leading-tight">
+              Fait pour <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">votre métier</span>
+            </h3>
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+              Chaque secteur de la beauté et du bien-être a ses spécificités. Découvrez comment LAIA Connect s'adapte parfaitement à vous.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Instituts de beauté */}
+            <div className="group relative bg-white border-2 border-pink-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-pink-500 to-rose-500 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">🌸</div>
+                <h4 className="text-2xl font-bold text-white">Instituts de beauté</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-pink-500 font-bold">✓</span>
+                    <span className="text-gray-700">Agenda 24/7 avec réservation automatique</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pink-500 font-bold">✓</span>
+                    <span className="text-gray-700">Photos avant/après par cliente</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pink-500 font-bold">✓</span>
+                    <span className="text-gray-700">Fiches allergies & contre-indications</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-pink-500 font-bold">✓</span>
+                    <span className="text-gray-700">Programme fidélité & cartes cadeaux</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Salons de coiffure */}
+            <div className="group relative bg-white border-2 border-purple-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-purple-500 to-violet-500 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">💇</div>
+                <h4 className="text-2xl font-bold text-white">Salons de coiffure</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 font-bold">✓</span>
+                    <span className="text-gray-700">Planning multi-coiffeurs optimisé</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 font-bold">✓</span>
+                    <span className="text-gray-700">Historique colorations & formules</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 font-bold">✓</span>
+                    <span className="text-gray-700">Vente produits capillaires en ligne</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-500 font-bold">✓</span>
+                    <span className="text-gray-700">Stats par praticien en temps réel</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Spas */}
+            <div className="group relative bg-white border-2 border-blue-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">💆</div>
+                <h4 className="text-2xl font-bold text-white">Spas & Bien-être</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">✓</span>
+                    <span className="text-gray-700">Réservation parcours & packages</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">✓</span>
+                    <span className="text-gray-700">Attribution automatique des cabines</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">✓</span>
+                    <span className="text-gray-700">Programme fidélité VIP multi-niveaux</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 font-bold">✓</span>
+                    <span className="text-gray-700">Campagnes email & WhatsApp ciblées</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Barbiers */}
+            <div className="group relative bg-white border-2 border-slate-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-slate-600 to-gray-700 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">✂️</div>
+                <h4 className="text-2xl font-bold text-white">Barbiers</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-600 font-bold">✓</span>
+                    <span className="text-gray-700">Créneaux courts rotation optimisée</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-600 font-bold">✓</span>
+                    <span className="text-gray-700">Historique coupes avec photos</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-600 font-bold">✓</span>
+                    <span className="text-gray-700">Abonnements mensuels prépayés</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-slate-600 font-bold">✓</span>
+                    <span className="text-gray-700">Paiement express sans contact</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Massage */}
+            <div className="group relative bg-white border-2 border-green-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">🧘</div>
+                <h4 className="text-2xl font-bold text-white">Centres de massage</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">✓</span>
+                    <span className="text-gray-700">Durées flexibles (30min à 3h)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">✓</span>
+                    <span className="text-gray-700">Fiche séance avec schéma corporel</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">✓</span>
+                    <span className="text-gray-700">Dossier santé avec alertes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 font-bold">✓</span>
+                    <span className="text-gray-700">Cures & abonnements personnalisés</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Esthéticienne */}
+            <div className="group relative bg-white border-2 border-orange-200 rounded-3xl overflow-hidden hover:shadow-2xl hover:scale-105 transition-all">
+              <div className="bg-gradient-to-r from-orange-500 to-amber-500 p-8 text-center">
+                <div className="text-4xl md:text-5xl lg:text-6xl mb-4">💅</div>
+                <h4 className="text-2xl font-bold text-white">Esthéticiennes</h4>
+              </div>
+              <div className="p-6">
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span className="text-gray-700">Gestion multi-services beauté</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span className="text-gray-700">Photos avant/après prestations</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span className="text-gray-700">Boutique produits cosmétiques</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-500 font-bold">✓</span>
+                    <span className="text-gray-700">Marketing automation complet</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <Link
+              href="/onboarding"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl text-lg font-semibold hover:shadow-xl hover:shadow-purple-500/50 transition-all"
+            >
+              Essayer gratuitement 30 jours →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Demo Section with Celia */}
       <section id="demo" className="py-20 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl overflow-hidden border border-purple-100">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
               {/* Vidéo de Celia */}
-              <div className="relative h-96 lg:h-auto overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+              <div className="relative h-[500px] lg:h-auto overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                 <video
                   src="/team/celia-page.mp4"
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover scale-75"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-purple-900/90 to-transparent">
                   <p className="text-lg text-purple-200">Fondatrice & CEO LAIA Connect</p>
@@ -547,6 +750,13 @@ export default function PlatformHomePage() {
                 <div className={`h-2 bg-gradient-to-r ${plan.color}`}></div>
 
                 <div className="p-8">
+                  {/* Badge 1er mois offert */}
+                  <div className="flex justify-center mb-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full text-sm font-bold shadow-lg animate-pulse">
+                      🎁 1er mois offert
+                    </div>
+                  </div>
+
                   <h4 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h4>
                   <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
 
@@ -555,17 +765,23 @@ export default function PlatformHomePage() {
                       <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{plan.price}€</span>
                       <span className="text-gray-600 text-lg">/mois</span>
                     </div>
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      30 jours gratuits • Puis {plan.price}€/mois
+                    </p>
+                    <p className="text-xs text-gray-400 text-center mt-1">
+                      Engagement 1 an • Prélèvement SEPA
+                    </p>
                   </div>
 
                   <Link
-                    href={`/onboarding?plan=${plan.id}`}
-                    className={`block w-full py-3 px-4 rounded-xl font-semibold text-center transition-all ${
+                    href={`/onboarding?plan=${plan.id}&skip=true`}
+                    className={`block w-full py-4 px-6 rounded-xl font-bold text-center transition-all transform hover:scale-105 ${
                       plan.popular
                         ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/50'
-                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                        : 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200'
                     }`}
                   >
-                    Commencer
+                    🚀 Choisir {plan.name}
                   </Link>
 
                   <ul className="mt-8 space-y-3">
@@ -655,7 +871,6 @@ export default function PlatformHomePage() {
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">Produit</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#features" className="text-gray-600 hover:text-purple-600 transition">Fonctionnalités</a></li>
                 <li><a href="#pricing" className="text-gray-600 hover:text-purple-600 transition">Tarifs</a></li>
                 <li><Link href="/onboarding?plan=DUO" className="text-gray-600 hover:text-purple-600 transition">Essai gratuit</Link></li>
               </ul>

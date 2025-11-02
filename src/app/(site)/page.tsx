@@ -31,11 +31,11 @@ export default async function Home() {
   } catch (e) {
     console.error('Error parsing testimonials:', e);
   }
-  
+
   try {
     // Récupérer les services depuis la base de données (sans les forfaits)
     services = await prisma.service.findMany({
-      where: { 
+      where: {
         active: true,
         category: { not: 'forfaits' } // Exclure les forfaits
       }
@@ -44,7 +44,7 @@ export default async function Home() {
     console.error('Error fetching services:', error);
     // En cas d'erreur, on continue avec un tableau vide
   }
-  
+
   // Trier pour mettre les services featured en premier, puis par ordre
   const sortedServices = [...services].sort((a, b) => {
     // D'abord trier par featured
@@ -109,7 +109,7 @@ export default async function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {sortedServices.map((service) => (
-              <Link 
+              <Link
                 key={service.id}
                 href={`/services/${service.slug}`}
                 className="group block h-full"
@@ -125,9 +125,9 @@ export default async function Home() {
                       </div>
                     )}
                     {service.mainImage ? (
-                      <img 
-                        src={service.mainImage} 
-                        alt={service.name} 
+                      <img
+                        src={service.mainImage}
+                        alt={service.name}
                         className="w-full h-full object-cover object-center"
                         style={{ objectPosition: '50% 50%' }}
                       />
@@ -136,7 +136,7 @@ export default async function Home() {
                         <Sparkles className="w-20 h-20 text-[#d4b5a0]/40" />
                       </div>
                     )}
-                    
+
                     {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#2c3e50]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
                       <div className="p-6 text-white w-full">
@@ -154,7 +154,7 @@ export default async function Home() {
                     <h3 className="text-2xl font-bold text-[#2c3e50] mb-3 group-hover:text-[#d4b5a0] transition-colors">
                       {service.name}
                     </h3>
-                    
+
                     <p className="text-[#2c3e50]/70 mb-4 line-clamp-2">
                       {service.description}
                     </p>
@@ -164,7 +164,7 @@ export default async function Home() {
                         <Clock className="w-4 h-4" />
                         <span>{service.duration} min</span>
                       </div>
-                      
+
                       {service.category && (
                         <span className="text-xs px-3 py-1 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-full">
                           {service.category}
@@ -217,12 +217,12 @@ export default async function Home() {
       <section className="py-28 sm:py-32 md:py-40 relative overflow-hidden">
         {/* Sophisticated Background */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#fdfbf7] via-white to-[#f8f6f0]">
-          <div className="absolute inset-0 opacity-[0.02]" style={{ 
-            backgroundImage: 'radial-gradient(circle at 2px 2px, #d4b5a0 1px, transparent 1px)', 
-            backgroundSize: '50px 50px' 
+          <div className="absolute inset-0 opacity-[0.02]" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, #d4b5a0 1px, transparent 1px)',
+            backgroundSize: '50px 50px'
           }}></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Refined Title Section */}
           <div className="text-center mb-24">

@@ -132,9 +132,14 @@ export default function AddonSelector({ selectedPlan, onAddonsChange }: AddonSel
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             ✨ Fonctionnalités Supplémentaires
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Débloquez des onglets supplémentaires non inclus dans le forfait {selectedPlan}
-          </p>
+          <div className="mb-4 p-3 bg-white/80 rounded-lg border border-amber-200">
+            <p className="text-sm text-gray-700">
+              <strong>ℹ️ Info :</strong> Ces fonctionnalités ne sont <strong>PAS incluses</strong> dans le forfait {selectedPlan}.
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Les fonctionnalités déjà incluses dans votre forfait sont affichées dans l'encadré vert ci-dessus.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {featureAddons.map((addon) => {

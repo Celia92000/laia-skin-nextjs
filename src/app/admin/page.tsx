@@ -1336,6 +1336,17 @@ export default function AdminDashboard() {
               >
                 Gestion Services
               </button>
+              <button
+                onClick={() => setActiveTab("locations")}
+                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                  activeTab === "locations"
+                    ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                    : "bg-white text-[#2c3e50] hover:shadow-md"
+                }`}
+              >
+                <MapPin className="w-4 h-4 inline mr-2" />
+                Points de vente
+              </button>
               {/* Boutique (Produits + Formations + Commandes) - TEAM+ uniquement */}
               {orgFeatures?.featureShop && (
                 <>
@@ -3403,6 +3414,29 @@ export default function AdminDashboard() {
 
           {/* Onglet Services */}
           {activeTab === "services" && <AdminServicesTab />}
+
+          {/* Onglet Locations (Points de vente) */}
+          {activeTab === "locations" && (
+            <div className="p-6 bg-gray-50 rounded-lg">
+              <div className="max-w-6xl mx-auto">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <MapPin className="inline-block w-6 h-6 mr-2" />
+                  Gestion des Points de Vente
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Pour gérer vos points de vente, veuillez{' '}
+                  <a
+                    href="/admin/locations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#d4b5a0] hover:underline font-medium"
+                  >
+                    cliquer ici pour ouvrir la page dédiée
+                  </a>.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Boutique - TEAM+ uniquement */}
           {activeTab === "products" && orgFeatures?.featureShop && <AdminStockTab />}

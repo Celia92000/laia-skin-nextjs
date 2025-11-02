@@ -76,10 +76,10 @@ export const PLAN_FEATURES: Record<OrgPlan, OrgFeatures> = {
     featureBlog: true,          // ✅ Onglet Blog complet
     featureCRM: true,           // ✅ Onglet CRM complet
     featureEmailing: true,      // ✅ Onglet Email Marketing complet
+    featureWhatsApp: true,      // ✅ Onglet WhatsApp complet (messages auto)
+    featureShop: true,          // ✅ Onglet Boutique complet (produits + formations)
 
     // Onglets toujours cachés
-    featureShop: false,
-    featureWhatsApp: false,
     featureSMS: false,
     featureSocialMedia: false,
     featureStock: false,

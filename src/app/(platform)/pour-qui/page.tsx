@@ -101,35 +101,46 @@ export default function PourQuiPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-50">
+      {/* Header Navigation - Same as homepage */}
+      <header className="bg-white/95 backdrop-blur-sm border-b border-purple-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/platform" className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2 rounded-xl shadow-lg">
+            <Link href="/platform" className="flex items-center gap-3 group">
+              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 rounded-xl shadow-lg">
                 <span className="text-xl">🌸</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   LAIA Connect
                 </h1>
+                <p className="text-xs text-purple-600 font-medium">Logiciel de gestion</p>
               </div>
             </Link>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/platform" className="text-gray-700 hover:text-purple-600 transition font-medium">
-                Accueil
-              </Link>
-              <Link href="/pour-qui" className="text-purple-600 font-semibold">
+            {/* Navigation Desktop */}
+            <nav className="hidden md:flex items-center gap-5 flex-nowrap">
+              <Link href="/pour-qui" className="text-purple-600 font-semibold transition-colors text-base whitespace-nowrap">
                 Pour qui ?
               </Link>
-              <Link href="/connexion" className="text-gray-700 hover:text-purple-600 transition font-medium">
+              <a href="/platform#features" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
+                Fonctionnalités
+              </a>
+              <a href="/platform#pricing" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
+                Tarifs
+              </a>
+              <Link href="/platform/nouveautes" className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap">
+                Nouveautés
+              </Link>
+              <Link
+                href="/connexion"
+                className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base whitespace-nowrap"
+              >
                 Connexion
               </Link>
               <Link
-                href="/register"
-                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg transition"
+                href="/onboarding"
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all whitespace-nowrap"
               >
-                Essai gratuit
+                Essayer gratuitement 30 jours
               </Link>
             </nav>
           </div>

@@ -30,6 +30,8 @@ export async function POST(request: Request) {
 
     const { userId, organizationId } = await request.json()
 
+    console.log('🔍 Impersonation request:', { userId, organizationId })
+
     let targetUser
 
     if (userId) {
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
         where: { id: userId },
         include: { organization: true }
       })
+      console.log('👤 Target user by userId:', targetUser?.email)
     } else if (organizationId) {
       // Impersonnation du propriétaire de l'organisation
       targetUser = await prisma.user.findFirst({
@@ -47,11 +50,13 @@ export async function POST(request: Request) {
         },
         include: { organization: true }
       })
+      console.log('🏢 Target user by organizationId:', targetUser?.email, 'Organization:', targetUser?.organization?.slug)
     } else {
       return NextResponse.json({ error: 'userId ou organizationId requis' }, { status: 400 })
     }
 
     if (!targetUser) {
+      console.error('❌ No user found for organizationId:', organizationId)
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
     }
 
@@ -109,6 +114,8 @@ export async function POST(request: Request) {
       : ''
 
     const redirect = baseUrl + (roleRedirects[targetUser.role] || '/admin')
+
+    console.log('✅ Impersonation successful - Redirect to:', redirect)
 
     return NextResponse.json({
       success: true,

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
 import AddonSelector from '@/components/super-admin/AddonSelector'
@@ -9,6 +9,7 @@ import { OrgPlan } from '@prisma/client'
 
 export default function NewOrganizationPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<any>(null)
@@ -44,6 +45,44 @@ export default function NewOrganizationPage() {
     subdomain: '',
     domain: '',            // Domaine personnalisé (optionnel)
   })
+
+  // Pré-remplir le formulaire avec les données depuis l'URL (depuis le CRM)
+  useEffect(() => {
+    const institutName = searchParams.get('institutName')
+    const ownerFirstName = searchParams.get('ownerFirstName')
+    const ownerLastName = searchParams.get('ownerLastName')
+    const ownerEmail = searchParams.get('ownerEmail')
+    const ownerPhone = searchParams.get('ownerPhone')
+    const city = searchParams.get('city')
+    const address = searchParams.get('address')
+    const postalCode = searchParams.get('postalCode')
+    const leadId = searchParams.get('leadId')
+
+    if (institutName || ownerEmail) {
+      // Génération automatique du slug
+      const name = institutName || ''
+      const slug = name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+
+      setFormData(prev => ({
+        ...prev,
+        name: institutName || '',
+        ownerFirstName: ownerFirstName || '',
+        ownerLastName: ownerLastName || '',
+        ownerEmail: ownerEmail || '',
+        ownerPhone: ownerPhone || '',
+        city: city || '',
+        billingAddress: address || '',
+        billingPostalCode: postalCode || '',
+        billingCity: city || '',
+        billingEmail: ownerEmail || '',
+        slug,
+        subdomain: slug,
+      }))
+    }
+  }, [searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target

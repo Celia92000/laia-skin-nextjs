@@ -1,4 +1,6 @@
 import { prisma } from './prisma'
+import { getFeaturesForPlan } from './features-simple'
+import { getAddonById } from './addons'
 
 /**
  * Service de génération de template LAIA SKIN INSTITUT
@@ -13,6 +15,7 @@ interface TemplateGenerationOptions {
   ownerLastName: string
   primaryColor?: string
   secondaryColor?: string
+  selectedAddons?: string[] // Add-ons achetés
   // Service initial créé pendant l'onboarding
   initialService?: {
     name: string
@@ -85,9 +88,12 @@ export async function generateOrganizationTemplate(options: TemplateGenerationOp
   await updateOrganizationTemplate(organizationId, organizationName, ownerFirstName, ownerLastName, options)
   console.log(`✅ Configuration du site mise à jour`)
 
-  // 8. Activer les features selon le plan
-  await activatePlanFeatures(organizationId, plan)
+  // 8. Activer les features selon le plan + add-ons
+  await activatePlanFeatures(organizationId, plan, options.selectedAddons)
   console.log(`✅ Features activées pour le plan ${plan}`)
+  if (options.selectedAddons && options.selectedAddons.length > 0) {
+    console.log(`✅ ${options.selectedAddons.length} add-ons activés:`, options.selectedAddons)
+  }
 
   return {
     services: services.length,
@@ -501,17 +507,38 @@ async function updateOrganizationTemplate(
 /**
  * Active les features selon le plan choisi
  */
-async function activatePlanFeatures(orgId: string, plan: string) {
-  const features = getFeaturesByPlan(plan)
+async function activatePlanFeatures(orgId: string, plan: string, selectedAddons?: string[]) {
+  // Récupérer les features de base du plan
+  const planFeatures = getFeaturesForPlan(plan as any)
+
+  // Activer les features des add-ons achetés
+  const addonFeatures: any = {}
+
+  if (selectedAddons && selectedAddons.length > 0) {
+    for (const addonId of selectedAddons) {
+      const addon = getAddonById(addonId)
+      if (addon && addon.unlocks) {
+        // Activer la feature correspondante
+        // Par exemple: unlocks: 'featureBlog' => featureBlog: true
+        addonFeatures[addon.unlocks] = true
+      }
+    }
+  }
+
+  // Fusionner les features du plan avec celles des add-ons
+  const finalFeatures = {
+    featureBlog: planFeatures.featureBlog || addonFeatures.featureBlog || false,
+    featureCRM: planFeatures.featureCRM || addonFeatures.featureCRM || false,
+    featureEmailing: planFeatures.featureEmailing || addonFeatures.featureEmailing || false,
+    featureShop: planFeatures.featureShop || addonFeatures.featureShop || false,
+    featureWhatsApp: planFeatures.featureWhatsApp || addonFeatures.featureWhatsApp || false,
+    featureSMS: planFeatures.featureSMS || addonFeatures.featureSMS || false,
+    featureSocialMedia: planFeatures.featureSocialMedia || addonFeatures.featureSocialMedia || false,
+    featureStock: planFeatures.featureStock || addonFeatures.featureStock || false,
+  }
 
   await prisma.organization.update({
     where: { id: orgId },
-    data: {
-      featureBlog: features.blog,
-      featureProducts: features.products,
-      featureCRM: features.crm,
-      featureStock: features.stock,
-      featureFormations: features.formations
-    }
+    data: finalFeatures
   })
 }

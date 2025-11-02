@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { 
-  LayoutDashboard, Calendar, Users, Package, Euro, 
-  BarChart3, Settings, FileText, Image, Star, 
+import {
+  LayoutDashboard, Calendar, Users, Package, Euro,
+  BarChart3, Settings, FileText, Image, Star,
   MessageCircle, Bell, Gift, TrendingUp, Clock,
-  ChevronLeft, ChevronRight, Sparkles, Heart
+  ChevronLeft, ChevronRight, Sparkles, Heart, MapPin, ThumbsUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -25,17 +25,24 @@ const menuItems = [
     href: '/admin/planning',
     badge: '12'
   },
-  { 
-    id: 'clients', 
-    label: 'Clients', 
-    icon: Users, 
+  {
+    id: 'clients',
+    label: 'Clients',
+    icon: Users,
     href: '/admin/clients',
     badge: null
   },
-  { 
-    id: 'services', 
-    label: 'Services', 
-    icon: Package, 
+  {
+    id: 'locations',
+    label: 'Points de vente',
+    icon: MapPin,
+    href: '/admin/locations',
+    badge: null
+  },
+  {
+    id: 'services',
+    label: 'Services',
+    icon: Package,
     href: '/admin/services',
     badge: null
   },
@@ -179,6 +186,26 @@ export default function AdminSidebar({ activeTab, onTabChange }: { activeTab: st
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Bouton Noter LAIA */}
+        {!isCollapsed && (
+          <div className="p-4">
+            <Link
+              href="/admin/rate-laia"
+              className="block w-full"
+            >
+              <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg p-3 hover:from-purple-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg cursor-pointer">
+                <div className="flex items-center justify-center gap-2">
+                  <ThumbsUp className="h-4 w-4" />
+                  <span className="font-semibold text-sm">Noter LAIA Connect</span>
+                </div>
+                <p className="text-xs text-center mt-1 text-purple-100">
+                  Donnez-nous votre avis
+                </p>
+              </div>
+            </Link>
           </div>
         )}
 

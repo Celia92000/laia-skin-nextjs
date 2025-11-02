@@ -561,9 +561,13 @@ export async function POST(request: Request) {
         ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
         ownerLastName: data.ownerLastName || '',
         primaryColor: data.primaryColor,
-        secondaryColor: data.secondaryColor
+        secondaryColor: data.secondaryColor,
+        selectedAddons: data.selectedAddons || [] // Passer les add-ons achetés
       })
       console.log('✅ Template LAIA généré:', templateResult)
+      if (data.selectedAddons && data.selectedAddons.length > 0) {
+        console.log('✅ Add-ons activés:', data.selectedAddons)
+      }
     } catch (templateError) {
       console.error('⚠️ Erreur lors de la génération du template (non bloquant):', templateError)
       // On ne bloque pas la création même si le template échoue

@@ -41,10 +41,23 @@ enum OrgPlan {
 }
 
 enum OrgStatus {
+  PENDING // En attente d'activation (payé mais pas encore activé)
   ACTIVE // Organisation active
   TRIAL // Période d'essai
   SUSPENDED // Suspendue (impayé)
   CANCELLED // Annulée
+}
+
+enum LeadSource {
+  WEBSITE // Formulaire site web LAIA Connect
+  DEMO_FORM // Formulaire de réservation démo
+  REFERRAL // Bouche à oreille / Parrainage
+  MARKETING // Campagne marketing (email, pub, etc.)
+  SOCIAL_MEDIA // Réseaux sociaux
+  EVENT // Événement / Salon
+  PARTNER // Partenaire commercial
+  DIRECT // Contact direct
+  OTHER // Autre
 }
 
 enum PaymentProvider {
@@ -77,6 +90,11 @@ model Organization {
   status         OrgStatus @default(TRIAL)
   trialEndsAt    DateTime?
   subscriptionId String? // ID d'abonnement Stripe
+
+  // CRM & Tracking
+  leadSource   LeadSource? @default(WEBSITE) // Origine du prospect/client
+  activatedAt  DateTime? // Date d'activation manuelle par le super-admin
+  convertedAt  DateTime? // Date de conversion prospect → client (paiement)
 
   // Limites du plan
   maxLocations Int @default(1)
@@ -205,6 +223,10 @@ model Organization {
 
   // Templates email
   emailTemplates EmailTemplate[] // Templates email de l'organisation
+
+  // Template de site web
+  websiteTemplateId String?
+  websiteTemplate   WebsiteTemplate? @relation("OrganizationWebsiteTemplate", fields: [websiteTemplateId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2237,6 +2259,12 @@ enum LeadSource {
   OTHER // Autre
 }
 
+enum LeadQualification {
+  COLD // Lead froid - peu d'intérêt
+  WARM // Lead moyen - intéressé mais pas pressé
+  HOT // Lead chaud - très intéressé, prêt à acheter
+}
+
 enum InteractionType {
   EMAIL
   PHONE
@@ -2271,11 +2299,12 @@ model Lead {
   painPoints        String[] // Points de douleur
 
   // Pipeline
-  status         LeadStatus @default(NEW)
+  status         LeadStatus          @default(NEW)
+  qualification  LeadQualification? // Qualification du lead (froid/moyen/chaud)
   source         LeadSource
-  score          Int        @default(0) // Score de qualité 0-100
-  probability    Int        @default(0) // Probabilité de conversion 0-100%
-  estimatedValue Decimal?   @db.Decimal(10, 2)
+  score          Int                 @default(0) // Score de qualité 0-100
+  probability    Int                 @default(0) // Probabilité de conversion 0-100%
+  estimatedValue Decimal?            @db.Decimal(10, 2)
 
   // Suivi commercial
   assignedToUserId  String?
@@ -2378,9 +2407,15 @@ model DemoBooking {
   leadId String? @unique
   lead   Lead?   @relation("DemoBookingLead", fields: [leadId], references: [id])
 
+  // Origine du prospect
+  leadSource LeadSource? @default(DEMO_FORM) // D'où vient ce prospect
+
   // Type de rendez-vous
   type     String  @default("ONLINE") // ONLINE (visio) ou PHYSICAL (physique)
   location String? // Adresse si rendez-vous physique
+
+  // Durée personnalisée (optionnelle, sinon prend la durée du slot)
+  customDuration Int? // Durée en minutes
 
   status     String  @default("CONFIRMED") // CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
   meetingUrl String? // URL visio si démo en ligne
@@ -2497,4 +2532,37 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ============================================
+// WEBSITE TEMPLATES
+// ============================================
+
+// Templates de sites web pour les organisations
+model WebsiteTemplate {
+  id               String   @id @default(cuid())
+  name             String // Nom du template (ex: "Élégance Rose", "Minimaliste Zen")
+  description      String   @db.Text // Description du template
+  previewImageUrl  String? // URL de l'image de prévisualisation
+
+  // Configuration du template (couleurs, polices, layout, etc.)
+  config           Json // { colors: { primary, secondary, accent }, fonts: { heading, body }, layout: "classic" | "modern" }
+
+  // Tier d'accès
+  minTier          String   @default("DUO") // Tier minimum requis: SOLO, DUO, TEAM, ENTERPRISE
+
+  // Métadonnées
+  category         String   @default("beauty") // beauty, spa, salon, barbershop, wellness
+  isActive         Boolean  @default(true)
+  displayOrder     Int      @default(0)
+
+  // Relations
+  organizations    Organization[] @relation("OrganizationWebsiteTemplate")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([minTier])
+  @@index([category])
+  @@index([isActive, displayOrder])
 }
