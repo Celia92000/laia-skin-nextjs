@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, FileText, Bell, ScrollText, Settings, Home, Send, Target, Calendar } from 'lucide-react'
+import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, ScrollText, Settings, Home, Send, Target, Calendar, Palette } from 'lucide-react'
 
 export default function SuperAdminNav() {
   const pathname = usePathname()
@@ -18,7 +18,7 @@ export default function SuperAdminNav() {
     { name: 'Support', href: '/super-admin/tickets', icon: MessageCircle },
     { name: 'Codes Promo', href: '/super-admin/promo-codes', icon: Gift },
     { name: 'Témoignages', href: '/super-admin/testimonials', icon: Star },
-    { name: 'Templates Email', href: '/super-admin/email-templates', icon: FileText },
+    { name: 'Templates Web', href: '/super-admin/templates', icon: Palette },
     { name: 'Push Notifications', href: '/super-admin/push-notifications', icon: Bell },
     { name: 'Logs', href: '/super-admin/logs', icon: ScrollText },
     { name: 'Configuration', href: '/super-admin/settings', icon: Settings },

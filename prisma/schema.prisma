@@ -228,6 +228,9 @@ model Organization {
   websiteTemplateId String?
   websiteTemplate   WebsiteTemplate? @relation("OrganizationWebsiteTemplate", fields: [websiteTemplateId], references: [id])
 
+  // Onboarding
+  isOnboarded Boolean @default(false) // Configuration initiale terminée
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

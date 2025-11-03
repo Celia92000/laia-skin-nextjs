@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { BaseTemplateContent } from '@/types/template-content';
 
 interface TemplateProps {
   organization: {
@@ -22,9 +23,29 @@ interface TemplateProps {
     role: string;
     imageUrl?: string;
   }>;
+  content?: BaseTemplateContent;
 }
 
-export default function TemplateMinimal({ organization, services, team }: TemplateProps) {
+export default function TemplateMinimal({ organization, services, team, content }: TemplateProps) {
+  const defaultContent: BaseTemplateContent = {
+    hero: {
+      title: 'Beauté Minimaliste',
+      description: organization.description || 'L\'essentiel de la beauté',
+      ctaPrimary: 'Réserver'
+    },
+    services: {
+      title: 'Nos Services'
+    },
+    cta: {
+      title: 'Prêt pour une expérience unique ?',
+      description: 'Réservez votre rendez-vous',
+      button: 'Réserver Maintenant'
+    },
+    footer: {}
+  };
+
+  const c = content || defaultContent;
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header ultra minimal - Style magazine */}
@@ -99,7 +120,7 @@ export default function TemplateMinimal({ organization, services, team }: Templa
           {/* Header section */}
           <div className="mb-20">
             <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-6">
-              Nos Services
+              {c.services.title}
             </p>
             <h3 className="text-6xl font-light text-gray-900 mb-8 tracking-tight">
               Nos Soins
@@ -160,15 +181,12 @@ export default function TemplateMinimal({ organization, services, team }: Templa
               <div className="w-24 h-px bg-gray-300" />
             </div>
 
-            {/* Grille asymétrique */}
+            {/* Grille alignée */}
             <div className="grid md:grid-cols-2 gap-16">
               {team.slice(0, 4).map((member, idx) => (
                 <div
                   key={member.id}
                   className="group"
-                  style={{
-                    marginTop: idx % 2 === 1 ? '80px' : '0'
-                  }}
                 >
                   {/* Photo */}
                   <div

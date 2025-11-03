@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { BaseTemplateContent } from '@/types/template-content';
 
 interface TemplateProps {
   organization: {
@@ -23,10 +24,37 @@ interface TemplateProps {
     role: string;
     imageUrl?: string;
   }>;
+  content?: BaseTemplateContent;
 }
 
-export default function TemplateModern({ organization, services, team }: TemplateProps) {
+export default function TemplateModern({ organization, services, team, content }: TemplateProps) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+
+  const defaultContent: BaseTemplateContent = {
+    hero: {
+      title: 'Révélez Votre Beauté Moderne',
+      description: organization.description || 'Institut de beauté nouvelle génération',
+      ctaPrimary: 'Book Now'
+    },
+    services: {
+      title: 'Nos Services',
+      description: 'Des soins innovants pour une beauté contemporaine'
+    },
+    team: {
+      title: 'Our Team',
+      description: 'Des experts passionnés à votre service'
+    },
+    cta: {
+      title: 'Prêt à découvrir l\'innovation beauté ?',
+      description: 'Réservez votre expérience',
+      button: 'Book Your Experience'
+    },
+    footer: {
+      tagline: 'L\'innovation au service de votre beauté'
+    }
+  };
+
+  const c = content || defaultContent;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -66,7 +94,7 @@ export default function TemplateModern({ organization, services, team }: Templat
                   boxShadow: `0 0 30px ${organization.primaryColor}50`
                 }}
               >
-                <span className="relative z-10">Book Now</span>
+                <span className="relative z-10">{c.hero.ctaPrimary}</span>
                 <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
               </Link>
             </nav>
@@ -120,12 +148,12 @@ export default function TemplateModern({ organization, services, team }: Templat
                 backgroundImage: `linear-gradient(to right, ${organization.primaryColor}, ${organization.secondaryColor})`
               }}
             >
-              Redefined
+              {c.hero.title}
             </span>
           </h2>
 
           <p className="text-2xl text-white/60 max-w-3xl mx-auto mb-12 font-light leading-relaxed">
-            {organization.description || 'Where innovation meets beauty. Experience the future of wellness.'}
+            {c.hero.description}
           </p>
 
           <div className="flex gap-6 justify-center flex-wrap">
@@ -192,7 +220,7 @@ export default function TemplateModern({ organization, services, team }: Templat
           <div className="text-center mb-20">
             <div className="inline-block px-4 py-2 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 mb-6">
               <span className="text-sm font-bold uppercase tracking-wider" style={{ color: organization.primaryColor }}>
-                Our Services
+                {c.services.title}
               </span>
             </div>
             <h2 className="text-6xl md:text-7xl font-black mb-6 tracking-tighter">
@@ -273,7 +301,7 @@ export default function TemplateModern({ organization, services, team }: Templat
                         boxShadow: `0 10px 30px ${organization.primaryColor}40`
                       }}
                     >
-                      <span className="relative z-10">Book Now</span>
+                      <span className="relative z-10">{c.hero.ctaPrimary}</span>
                       <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity" />
                     </Link>
                   </div>
@@ -304,7 +332,7 @@ export default function TemplateModern({ organization, services, team }: Templat
             <div className="text-center mb-20">
               <div className="inline-block px-4 py-2 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 mb-6">
                 <span className="text-sm font-bold uppercase tracking-wider" style={{ color: organization.primaryColor }}>
-                  Our Team
+                  {c.team?.title || 'Our Team'}
                 </span>
               </div>
               <h2 className="text-6xl md:text-7xl font-black mb-6 tracking-tighter">

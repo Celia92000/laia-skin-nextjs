@@ -1289,8 +1289,9 @@ function OnboardingForm() {
                 Choisissez le design de votre site
               </h2>
               <p className="text-gray-600">
-                {data.selectedPlan === 'TEAM' && 'Votre plan TEAM inclut 5 templates modernes'}
-                {data.selectedPlan === 'PREMIUM' && 'Votre plan PREMIUM inclut 5 templates exclusifs'}
+                {(data.selectedPlan === 'SOLO' || data.selectedPlan === 'DUO') && 'Votre plan inclut 9 templates standards'}
+                {data.selectedPlan === 'TEAM' && 'Votre plan TEAM inclut 9 templates standards'}
+                {data.selectedPlan === 'PREMIUM' && 'Votre plan PREMIUM inclut 12 templates (9 standards + 3 premium exclusifs)'}
               </p>
             </div>
 
@@ -1299,12 +1300,16 @@ function OnboardingForm() {
               {websiteTemplates
                 .filter(template => {
                   // Filtrer selon le plan
-                  if (data.selectedPlan === 'TEAM') {
-                    return template.minTier === 'TEAM';
-                  } else if (data.selectedPlan === 'PREMIUM') {
-                    return template.minTier === 'PREMIUM'; // Uniquement les templates PREMIUM
+                  if (data.selectedPlan === 'PREMIUM') {
+                    // PREMIUM a accès à TOUS les templates
+                    return true;
+                  } else if (data.selectedPlan === 'TEAM') {
+                    // TEAM a accès aux templates STANDARD et TEAM
+                    return template.minTier === 'STANDARD' || template.minTier === 'TEAM';
+                  } else {
+                    // SOLO et DUO ont accès uniquement aux templates STANDARD
+                    return template.minTier === 'STANDARD';
                   }
-                  return false;
                 })
                 .map((template) => (
                   <button
@@ -1320,16 +1325,18 @@ function OnboardingForm() {
                     <div className="h-32 relative bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex items-center justify-center">
                       {/* Icône représentant le layout */}
                       <div className="text-5xl opacity-60">
-                        {template.componentName === 'classic' && '📋'}
-                        {template.componentName === 'modern' && '🎨'}
-                        {template.componentName === 'minimal' && '✨'}
-                        {template.componentName === 'elegant' && '💎'}
-                        {template.componentName === 'bold' && '⚡'}
-                        {template.componentName === 'zen' && '🧘'}
-                        {template.componentName === 'luxury' && '👑'}
-                        {template.componentName === 'creative' && '🎭'}
-                        {template.componentName === 'corporate' && '💼'}
-                        {template.componentName === 'artistic' && '🎪'}
+                        {template.id === 'classic' && '📋'}
+                        {template.id === 'modern' && '🎨'}
+                        {template.id === 'minimal' && '✨'}
+                        {template.id === 'professional' && '💼'}
+                        {template.id === 'boutique' && '💕'}
+                        {template.id === 'fresh' && '⚡'}
+                        {template.id === 'luxe' && '👑'}
+                        {template.id === 'elegance' && '💎'}
+                        {template.id === 'zen' && '🧘'}
+                        {template.id === 'medical' && '🏥'}
+                        {template.id === 'spa-luxe' && '🌺'}
+                        {template.id === 'laser-tech' && '⚡'}
                       </div>
 
                       {data.websiteTemplateId === template.id && (
@@ -1353,7 +1360,7 @@ function OnboardingForm() {
 
                       {/* Caractéristiques du layout */}
                       <div className="space-y-1.5">
-                        {template.layoutFeatures.slice(0, 3).map((feature, idx) => (
+                        {template.features.slice(0, 3).map((feature, idx) => (
                           <div key={idx} className="flex items-start gap-1.5 text-xs text-gray-600">
                             <span className="text-purple-500 flex-shrink-0 mt-0.5">✓</span>
                             <span>{feature}</span>

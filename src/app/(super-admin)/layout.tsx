@@ -1,3 +1,6 @@
+'use client'
+
+import { usePathname } from 'next/navigation'
 import SuperAdminNav from '@/components/SuperAdminNav'
 
 export default function SuperAdminLayout({
@@ -5,6 +8,14 @@ export default function SuperAdminLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  const isPreviewPage = pathname?.includes('/preview')
+
+  // Si c'est une page de preview de template, on affiche juste le contenu
+  if (isPreviewPage) {
+    return <>{children}</>
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <SuperAdminNav />

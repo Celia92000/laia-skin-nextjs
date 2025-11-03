@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import CreateOrganizationModal from './CreateOrganizationModal'
 
 type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'DEMO_SCHEDULED' | 'DEMO_DONE' | 'PROPOSAL_SENT' | 'NEGOTIATION' | 'WON' | 'LOST' | 'ON_HOLD'
 type InteractionType = 'EMAIL' | 'PHONE' | 'MEETING' | 'DEMO' | 'PROPOSAL' | 'NOTE'
@@ -100,6 +101,7 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
   const [showQualificationMenu, setShowQualificationMenu] = useState(false)
   const [editMode, setEditMode] = useState<'contact' | 'institut' | 'location' | 'commercial' | null>(null)
   const [showBookDemo, setShowBookDemo] = useState(false)
+  const [showCreateOrgModal, setShowCreateOrgModal] = useState(false)
   const [editForm, setEditForm] = useState({
     contactName: '',
     contactEmail: '',
@@ -1144,31 +1146,25 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
                     </a>
                   </div>
 
-                  {/* Option 2 : Conversion rapide */}
+                  {/* Option 2 : Formulaire complet de création */}
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                     <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                      <span>⚡</span>
-                      <span>Option 2 : Conversion rapide (Trial automatique)</span>
+                      <span>📋</span>
+                      <span>Option 2 : Créer l'organisation (Formulaire complet)</span>
                     </h4>
                     <ul className="space-y-2 text-sm text-purple-800 mb-4">
-                      <li>✅ Organisation "{lead.institutName}" en mode Trial (14 jours)</li>
-                      <li>✅ Compte utilisateur propriétaire pour {lead.contactEmail}</li>
-                      <li>✅ Configuration initiale de l'organisation</li>
-                      <li>✅ Email de bienvenue avec identifiants (si activé)</li>
-                      <li>✅ Lead marqué comme "WON" (Gagné)</li>
+                      <li>✅ Formulaire pré-rempli avec toutes les données du lead</li>
+                      <li>✅ Choix du forfait (SOLO, DUO, TEAM, PREMIUM)</li>
+                      <li>✅ Configuration SEPA optionnelle</li>
+                      <li>✅ Organisation créée avec accès admin immédiat</li>
+                      <li>✅ Lead automatiquement marqué comme "WON"</li>
                     </ul>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ <strong>Important:</strong> Un mot de passe temporaire sera généré et affiché une seule fois. Assurez-vous de le noter ou de l'envoyer au client.
-                      </p>
-                    </div>
-
                     <button
-                      onClick={handleConvert}
+                      onClick={() => setShowCreateOrgModal(true)}
                       className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold"
                     >
-                      ⚡ Conversion rapide en Trial
+                      📋 Ouvrir le formulaire de création
                     </button>
                   </div>
                 </div>
@@ -1195,6 +1191,19 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
           onClose={() => setShowBookDemo(false)}
           onSuccess={() => {
             setShowBookDemo(false)
+            fetchLead()
+            onUpdate()
+          }}
+        />
+      )}
+
+      {/* Modal Création organisation */}
+      {showCreateOrgModal && lead && (
+        <CreateOrganizationModal
+          lead={lead}
+          onClose={() => setShowCreateOrgModal(false)}
+          onSuccess={() => {
+            setShowCreateOrgModal(false)
             fetchLead()
             onUpdate()
           }}

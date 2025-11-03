@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { BaseTemplateContent } from '@/types/template-content';
 
 interface TemplateProps {
   organization: {
@@ -23,9 +24,33 @@ interface TemplateProps {
     role: string;
     imageUrl?: string;
   }>;
+  content?: BaseTemplateContent;
 }
 
-export default function TemplateClassic({ organization, services }: TemplateProps) {
+export default function TemplateClassic({ organization, services, content }: TemplateProps) {
+  const defaultContent: BaseTemplateContent = {
+    hero: {
+      title: 'Une peau respectée, une beauté révélée',
+      description: organization.description || 'Institut spécialisé dans les techniques esthétiques avancées',
+      ctaPrimary: 'Réserver un Soin',
+      ctaSecondary: 'Découvrir nos Soins'
+    },
+    services: {
+      title: 'Mes Prestations',
+      description: 'Des soins personnalisés pour sublimer votre beauté naturelle'
+    },
+    cta: {
+      title: 'Prête à vous offrir un moment de détente ?',
+      description: 'Réservez dès maintenant votre prochain soin',
+      button: 'Prendre Rendez-vous'
+    },
+    footer: {
+      tagline: 'Votre beauté, notre passion'
+    }
+  };
+
+  const c = content || defaultContent;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
@@ -51,19 +76,25 @@ export default function TemplateClassic({ organization, services }: TemplateProp
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up leading-tight tracking-normal"
             style={{ color: organization.secondaryColor }}
           >
-            <span className="block font-normal">Une peau respectée,</span>
-            <span
-              className="block font-semibold mt-1"
-              style={{ color: organization.primaryColor }}
-            >
-              une beauté révélée
-            </span>
+            {c.hero.title.includes(',') ? (
+              <>
+                <span className="block font-normal">{c.hero.title.split(',')[0]},</span>
+                <span
+                  className="block font-semibold mt-1"
+                  style={{ color: organization.primaryColor }}
+                >
+                  {c.hero.title.split(',')[1]?.trim()}
+                </span>
+              </>
+            ) : (
+              <span className="block font-semibold">{c.hero.title}</span>
+            )}
           </h1>
           <p
             className="font-inter text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal opacity-60"
             style={{ color: organization.secondaryColor }}
           >
-            {organization.description || "Institut spécialisé dans les techniques esthétiques avancées"}
+            {c.hero.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
             <Link
@@ -73,15 +104,17 @@ export default function TemplateClassic({ organization, services }: TemplateProp
                 background: `linear-gradient(to right, ${organization.primaryColor}, ${organization.secondaryColor})`
               }}
             >
-              Réserver un Soin
+              {c.hero.ctaPrimary}
             </Link>
-            <Link
-              href="/prestations"
-              className="bg-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
-              style={{ color: organization.secondaryColor }}
-            >
-              Découvrir nos Soins
-            </Link>
+            {c.hero.ctaSecondary && (
+              <Link
+                href="/prestations"
+                className="bg-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+                style={{ color: organization.secondaryColor }}
+              >
+                {c.hero.ctaSecondary}
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -94,14 +127,16 @@ export default function TemplateClassic({ organization, services }: TemplateProp
               className="text-3xl md:text-4xl lg:text-5xl font-playfair font-normal mb-4 tracking-normal"
               style={{ color: organization.secondaryColor }}
             >
-              Mes Prestations
+              {c.services.title}
             </h2>
-            <p
-              className="font-inter text-base md:text-lg max-w-2xl mx-auto tracking-normal opacity-60"
-              style={{ color: organization.secondaryColor }}
-            >
-              Découvrez notre gamme exclusive de soins innovants pour une peau éclatante et rajeunie
-            </p>
+            {c.services.description && (
+              <p
+                className="font-inter text-base md:text-lg max-w-2xl mx-auto tracking-normal opacity-60"
+                style={{ color: organization.secondaryColor }}
+              >
+                {c.services.description}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
@@ -393,10 +428,10 @@ export default function TemplateClassic({ organization, services }: TemplateProp
       >
         <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-            Prête pour révéler votre éclat naturel ?
+            {c.cta.title}
           </h2>
           <p className="text-xl mb-12 opacity-95">
-            Réservez dès maintenant votre soin personnalisé
+            {c.cta.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -404,17 +439,19 @@ export default function TemplateClassic({ organization, services }: TemplateProp
               className="px-10 py-4 rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-white"
               style={{ color: organization.secondaryColor }}
             >
-              Réserver un soin
+              {c.cta.button}
             </Link>
-            <Link
-              href="/contact"
-              className="bg-transparent border-2 border-white text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-white transition-all duration-300"
-              style={{
-                ['--hover-color' as any]: organization.secondaryColor
-              }}
-            >
-              Nous contacter
-            </Link>
+            {c.cta.secondaryButton && (
+              <Link
+                href="/contact"
+                className="bg-transparent border-2 border-white text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-white transition-all duration-300"
+                style={{
+                  ['--hover-color' as any]: organization.secondaryColor
+                }}
+              >
+                {c.cta.secondaryButton}
+              </Link>
+            )}
           </div>
         </div>
       </section>

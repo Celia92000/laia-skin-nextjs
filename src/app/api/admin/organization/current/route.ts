@@ -36,6 +36,7 @@ export async function GET(request: Request) {
             plan: true,
             addons: true,
             status: true,
+            isOnboarded: true,
           }
         }
       }

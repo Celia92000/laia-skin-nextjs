@@ -12,6 +12,7 @@ import { getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
 import type { Client } from "@/components/UnifiedCRMTab";
 import { getActiveFeatures, type OrgFeatures } from "@/lib/features-simple";
+import OnboardingWizard from "@/components/OnboardingWizard";
 
 // Lazy load des composants lourds uniquement quand nécessaire
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
@@ -96,6 +97,7 @@ export default function AdminDashboard() {
   const [paymentDateEnd, setPaymentDateEnd] = useState("");
   const [orgFeatures, setOrgFeatures] = useState<OrgFeatures | null>(null);
   const [orgPlan, setOrgPlan] = useState<string | null>(null);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(true); // Par défaut true pour éviter le flash
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
@@ -345,6 +347,7 @@ export default function AdminDashboard() {
         const features = getActiveFeatures(org.plan, org.addons);
         setOrgFeatures(features);
         setOrgPlan(org.plan);
+        setIsOnboarded(org.isOnboarded !== false); // true par défaut si non défini
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'organisation:', error);
@@ -1045,6 +1048,18 @@ export default function AdminDashboard() {
       <AuthGuard requireAdmin={true}>
         <AdminDashboardOptimized />
       </AuthGuard>
+    );
+  }
+
+  // Afficher le wizard d'onboarding si non complété
+  if (!isOnboarded) {
+    return (
+      <OnboardingWizard
+        onComplete={() => {
+          setIsOnboarded(true);
+          fetchOrganizationFeatures(); // Recharger les données
+        }}
+      />
     );
   }
 
