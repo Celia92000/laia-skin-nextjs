@@ -21,7 +21,19 @@ export default function SettingsPage() {
     primaryColor: '#d4a574',
     roseColor: '#e8b4b8',
     nudeColor: '#f5e6d3',
-    darkColor: '#2c1810'
+    darkColor: '#2c1810',
+    // Informations de facturation LAIA
+    invoiceCompanyName: 'LAIA SAS',
+    invoiceAddress: '123 Avenue de l\'Innovation',
+    invoicePostalCode: '75008',
+    invoiceCity: 'Paris',
+    invoiceCountry: 'France',
+    invoiceSiret: '123 456 789 00012',
+    invoiceVatNumber: 'FR12345678900',
+    invoiceCapital: '10 000€',
+    invoiceRcs: 'RCS Paris 123 456 789',
+    invoiceEmail: 'facturation@laia.fr',
+    invoicePhone: '+33 1 23 45 67 89'
   })
 
   useEffect(() => {
@@ -46,7 +58,18 @@ export default function SettingsPage() {
           primaryColor: data.settings.primaryColor?.value || '#d4a574',
           roseColor: data.settings.roseColor?.value || '#e8b4b8',
           nudeColor: data.settings.nudeColor?.value || '#f5e6d3',
-          darkColor: data.settings.darkColor?.value || '#2c1810'
+          darkColor: data.settings.darkColor?.value || '#2c1810',
+          invoiceCompanyName: data.settings.invoiceCompanyName?.value || 'LAIA SAS',
+          invoiceAddress: data.settings.invoiceAddress?.value || '123 Avenue de l\'Innovation',
+          invoicePostalCode: data.settings.invoicePostalCode?.value || '75008',
+          invoiceCity: data.settings.invoiceCity?.value || 'Paris',
+          invoiceCountry: data.settings.invoiceCountry?.value || 'France',
+          invoiceSiret: data.settings.invoiceSiret?.value || '123 456 789 00012',
+          invoiceVatNumber: data.settings.invoiceVatNumber?.value || 'FR12345678900',
+          invoiceCapital: data.settings.invoiceCapital?.value || '10 000€',
+          invoiceRcs: data.settings.invoiceRcs?.value || 'RCS Paris 123 456 789',
+          invoiceEmail: data.settings.invoiceEmail?.value || 'facturation@laia.fr',
+          invoicePhone: data.settings.invoicePhone?.value || '+33 1 23 45 67 89'
         })
       } else if (response.status === 401) {
         router.push('/login?redirect=/super-admin')
@@ -90,7 +113,18 @@ export default function SettingsPage() {
         saveSetting('primaryColor', settings.primaryColor, 'Couleur principale'),
         saveSetting('roseColor', settings.roseColor, 'Couleur rose poudré'),
         saveSetting('nudeColor', settings.nudeColor, 'Couleur nude'),
-        saveSetting('darkColor', settings.darkColor, 'Couleur sombre')
+        saveSetting('darkColor', settings.darkColor, 'Couleur sombre'),
+        saveSetting('invoiceCompanyName', settings.invoiceCompanyName, 'Nom de l\'entreprise sur facture'),
+        saveSetting('invoiceAddress', settings.invoiceAddress, 'Adresse sur facture'),
+        saveSetting('invoicePostalCode', settings.invoicePostalCode, 'Code postal sur facture'),
+        saveSetting('invoiceCity', settings.invoiceCity, 'Ville sur facture'),
+        saveSetting('invoiceCountry', settings.invoiceCountry, 'Pays sur facture'),
+        saveSetting('invoiceSiret', settings.invoiceSiret, 'SIRET sur facture'),
+        saveSetting('invoiceVatNumber', settings.invoiceVatNumber, 'N° TVA intracommunautaire sur facture'),
+        saveSetting('invoiceCapital', settings.invoiceCapital, 'Capital social sur facture'),
+        saveSetting('invoiceRcs', settings.invoiceRcs, 'RCS sur facture'),
+        saveSetting('invoiceEmail', settings.invoiceEmail, 'Email facturation sur facture'),
+        saveSetting('invoicePhone', settings.invoicePhone, 'Téléphone sur facture')
       ])
       // Mettre à jour les variables CSS
       document.documentElement.style.setProperty('--laia-primary', settings.primaryColor)
@@ -436,6 +470,167 @@ export default function SettingsPage() {
             >
               🔄 Réinitialiser les couleurs par défaut
             </button>
+          </div>
+        </div>
+
+        {/* Informations de facturation LAIA */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">🧾 Informations de facturation</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Ces informations apparaissent sur toutes les factures d'abonnement LAIA envoyées aux clients.
+          </p>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de l'entreprise
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceCompanyName}
+                  onChange={(e) => setSettings({ ...settings, invoiceCompanyName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="LAIA SAS"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email de facturation
+                </label>
+                <input
+                  type="email"
+                  value={settings.invoiceEmail}
+                  onChange={(e) => setSettings({ ...settings, invoiceEmail: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="facturation@laia.fr"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adresse
+              </label>
+              <input
+                type="text"
+                value={settings.invoiceAddress}
+                onChange={(e) => setSettings({ ...settings, invoiceAddress: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                placeholder="123 Avenue de l'Innovation"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Code postal
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoicePostalCode}
+                  onChange={(e) => setSettings({ ...settings, invoicePostalCode: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="75008"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ville
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceCity}
+                  onChange={(e) => setSettings({ ...settings, invoiceCity: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="Paris"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pays
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceCountry}
+                  onChange={(e) => setSettings({ ...settings, invoiceCountry: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="France"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  SIRET
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceSiret}
+                  onChange={(e) => setSettings({ ...settings, invoiceSiret: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="123 456 789 00012"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  N° TVA intracommunautaire
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceVatNumber}
+                  onChange={(e) => setSettings({ ...settings, invoiceVatNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="FR12345678900"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Capital social
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceCapital}
+                  onChange={(e) => setSettings({ ...settings, invoiceCapital: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="10 000€"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  RCS
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoiceRcs}
+                  onChange={(e) => setSettings({ ...settings, invoiceRcs: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="RCS Paris 123 456 789"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Téléphone
+                </label>
+                <input
+                  type="text"
+                  value={settings.invoicePhone}
+                  onChange={(e) => setSettings({ ...settings, invoicePhone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  placeholder="+33 1 23 45 67 89"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

@@ -5,17 +5,23 @@ export default async function JsonLd() {
   // Récupérer la configuration du site
   const config = await getSiteConfig();
 
-  // Récupérer les services actifs pour le catalogue
-  const prisma = await getPrismaClient();
-  const services = await prisma.service.findMany({
-    where: { active: true },
-    select: {
-      id: true,
-      name: true,
-      shortDescription: true,
-    },
-    take: 20, // Limiter à 20 services pour éviter un JSON trop gros
-  });
+  // Récupérer les services actifs pour le catalogue avec gestion d'erreur
+  let services: any[] = [];
+  try {
+    const prisma = await getPrismaClient();
+    services = await prisma.service.findMany({
+      where: { active: true },
+      select: {
+        id: true,
+        name: true,
+        shortDescription: true,
+      },
+      take: 20, // Limiter à 20 services pour éviter un JSON trop gros
+    });
+  } catch (error) {
+    // Si Prisma n'est pas connecté ou erreur, continuer sans les services
+    console.warn('JsonLd: Impossible de charger les services:', error);
+  }
 
   // Construire l'URL de base avec fallback
   const baseUrl = config.baseUrl || 'https://laia-skin.fr';

@@ -27,14 +27,14 @@ export function middleware(request: NextRequest) {
                        request.nextUrl.pathname.startsWith('/api/admin');
 
   if (isAdminRoute) {
-    const token = request.cookies.get('token')?.value ||
+    const token = request.cookies.get('auth-token')?.value ||
                   request.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
       if (request.nextUrl.pathname.startsWith('/api')) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
       }
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/connexion', request.url));
     }
   }
 
