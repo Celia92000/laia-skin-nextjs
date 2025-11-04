@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Save, Settings, Mail, Phone, MapPin, Facebook, Instagram,
   MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
-  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart, Zap, Key
+  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart, Zap, Key, Layout, Eye
 } from 'lucide-react';
 import SocialMediaAPISync from './SocialMediaAPISync';
 import SocialMediaPreferences from './admin/SocialMediaPreferences';
@@ -12,6 +12,7 @@ import IntegrationsTab from './IntegrationsTab';
 import SocialMediaTokensManager from './SocialMediaTokensManager';
 import SocialMediaPublisher from './SocialMediaPublisher';
 import ApiTokensManager from './ApiTokensManager';
+import { websiteTemplates } from '@/lib/website-templates';
 
 interface SiteConfig {
   id?: string;
@@ -93,6 +94,7 @@ interface SiteConfig {
 
   // Configuration technique
   baseUrl?: string;
+  websiteTemplateId?: string;
 
   // Tracking & Analytics
   googleAnalyticsId?: string;
@@ -120,7 +122,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -221,6 +223,7 @@ export default function AdminConfigTab() {
           { id: 'company', label: 'Entreprise', icon: Building },
           { id: 'social', label: 'Réseaux sociaux', icon: MessageCircle },
           { id: 'appearance', label: 'Apparence', icon: Palette },
+          { id: 'template', label: 'Template Web', icon: Layout },
           { id: 'hours', label: 'Horaires', icon: Clock },
           { id: 'content', label: 'Contenu', icon: FileText },
           { id: 'about', label: 'À propos', icon: User },
@@ -898,6 +901,86 @@ export default function AdminConfigTab() {
                 </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'template' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Choix du template de site web</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Sélectionnez le template qui correspond le mieux au style de votre institut.
+              Les couleurs et contenus seront automatiquement appliqués selon votre configuration.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {websiteTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                    config.websiteTemplateId === template.id
+                      ? 'border-[#d4b5a0] bg-[#d4b5a0]/5 shadow-lg'
+                      : 'border-gray-200 hover:border-[#d4b5a0]/50 hover:shadow-md'
+                  }`}
+                  onClick={() => setConfig({ ...config, websiteTemplateId: template.id })}
+                >
+                  {config.websiteTemplateId === template.id && (
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#d4b5a0] rounded-full flex items-center justify-center text-white">
+                      ✓
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      template.minTier === 'PREMIUM'
+                        ? 'bg-gradient-to-r from-yellow-400 to-orange-400'
+                        : 'bg-gradient-to-r from-[#d4b5a0] to-[#c9a084]'
+                    }`}>
+                      <Layout className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">{template.name}</h4>
+                      {template.minTier === 'PREMIUM' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Premium
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+
+                  <div className="space-y-2">
+                    {template.features.slice(0, 3).map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-gray-600">
+                        <span className="text-[#d4b5a0] mt-0.5">✓</span>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <a
+                    href={`/super-admin/templates/${template.id}/preview`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Aperçu
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            {config.websiteTemplateId && (
+              <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm text-green-800">
+                  ✓ Template sélectionné : <strong>{websiteTemplates.find(t => t.id === config.websiteTemplateId)?.name}</strong>
+                  <br />
+                  Les couleurs et contenus de ce template seront automatiquement synchronisés avec votre configuration.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
