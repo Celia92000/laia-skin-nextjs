@@ -34,6 +34,7 @@ export function middleware(request: NextRequest) {
       if (request.nextUrl.pathname.startsWith('/api')) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
       }
+      // Pas de redirection - laisser la page gérer l'erreur
       return NextResponse.redirect(new URL('/connexion', request.url));
     }
   }

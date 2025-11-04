@@ -227,17 +227,17 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
                     }`}
                   >
                     <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-4xl">{template.icon}</span>
+                      <span className="text-2xl font-bold text-gray-400">{template.name}</span>
                     </div>
                     <h3 className="font-bold text-lg mb-1">{template.name}</h3>
                     <p className="text-sm text-gray-600 mb-2">{template.description}</p>
                     <div className="flex gap-1 flex-wrap">
-                      {template.tags.map((tag) => (
+                      {template.features.slice(0, 2).map((feature, idx) => (
                         <span
-                          key={tag}
+                          key={idx}
                           className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded"
                         >
-                          {tag}
+                          {feature}
                         </span>
                       ))}
                     </div>

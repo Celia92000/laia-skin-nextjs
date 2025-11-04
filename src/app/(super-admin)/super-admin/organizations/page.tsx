@@ -12,6 +12,7 @@ interface Organization {
   status: string
   subdomain: string
   domain: string | null
+  websiteTemplateId: string | null
   createdAt: string
   locations: any[]
 }
@@ -568,7 +569,7 @@ export default function OrganizationsPage() {
           </div>
 
           {/* Organisation Modèle - Section séparée */}
-          {filteredOrgs.find(org => org.slug === 'laia-skin') && (
+          {filteredOrgs.find(org => org.slug === 'laia-skin' || org.slug === 'laia-skin-institut') && (
             <div className="mb-8">
               <h3 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-2">
                 ⭐ Organisation Modèle
@@ -602,7 +603,7 @@ export default function OrganizationsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredOrgs.filter(org => org.slug === 'laia-skin').map((org) => (
+                      {filteredOrgs.filter(org => org.slug === 'laia-skin' || org.slug === 'laia-skin-institut').map((org) => (
                         <tr key={org.id} className="bg-white hover:bg-amber-50/50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
@@ -642,6 +643,15 @@ export default function OrganizationsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center gap-3 flex-wrap">
+                              <a
+                                href={org.slug === 'laia-skin-institut' || org.slug === 'laia-skin' ? '/' : `/${org.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5"
+                                title="Voir le site web"
+                              >
+                                🌐 Site
+                              </a>
                               <button
                                 onClick={handleSyncTemplate}
                                 disabled={syncing}
@@ -715,7 +725,7 @@ export default function OrganizationsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredOrgs.filter(org => org.slug !== 'laia-skin').map((org) => (
+                    {filteredOrgs.filter(org => org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut').map((org) => (
                       <tr key={org.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
@@ -746,6 +756,15 @@ export default function OrganizationsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-3 flex-wrap">
+                            <a
+                              href={`/${org.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-600 hover:text-emerald-900 font-medium"
+                              title={`Voir le site ${org.websiteTemplateId ? `(template: ${org.websiteTemplateId})` : ''}`}
+                            >
+                              🌐 Site
+                            </a>
                             <Link
                               href={`/super-admin/organizations/${org.id}`}
                               className="text-indigo-600 hover:text-indigo-900"

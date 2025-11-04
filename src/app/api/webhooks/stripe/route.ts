@@ -411,9 +411,9 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     // Générer la facture PDF
     const planPrices: Record<string, number> = {
       SOLO: 49,
-      DUO: 89,
-      TEAM: 149,
-      PREMIUM: 249,
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179,
     }
     const amount = planPrices[org.plan] || 0
 
@@ -481,9 +481,9 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     // Calculer le montant
     const planPrices: Record<string, number> = {
       SOLO: 49,
-      DUO: 89,
-      TEAM: 149,
-      PREMIUM: 249,
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179,
     }
     const amount = planPrices[org.plan] || 0
 

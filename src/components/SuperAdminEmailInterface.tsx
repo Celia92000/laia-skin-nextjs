@@ -175,6 +175,57 @@ La facture est disponible en pièce jointe.
 
 Merci pour votre confiance,
 L'équipe LAIA Connect`
+    },
+    {
+      id: 'payment-confirmation',
+      name: '✅ Confirmation de paiement',
+      subject: '✅ Paiement confirmé - {institut} - LAIA Connect',
+      content: `Bonjour {nom},
+
+Merci pour votre confiance ! Votre paiement pour {institut} a bien été enregistré.
+
+💳 Détails du paiement
+• Institut : {institut}
+• Forfait : {plan}
+• Montant : {montant}€
+
+📋 Prochaines étapes
+1. Notre équipe va préparer votre espace LAIA Connect
+2. Vous recevrez vos identifiants de connexion sous 24h
+3. Vous pourrez configurer votre site (template, couleurs, contenus)
+4. Votre site sera en ligne et prêt à prendre des réservations !
+
+À très bientôt ! 🚀
+L'équipe LAIA Connect`
+    },
+    {
+      id: 'onboarding-invitation',
+      name: '🎉 Invitation onboarding',
+      subject: '🎉 Bienvenue sur LAIA Connect - Votre espace est prêt !',
+      content: `Bonjour,
+
+Votre institut {institut} est configuré !
+
+Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenant vous connecter et configurer votre site web en 4 étapes simples.
+
+🔐 Vos identifiants de connexion
+• Email : {email}
+• Mot de passe temporaire : {password}
+
+⚠️ Important : Vous pourrez changer ce mot de passe après votre première connexion.
+
+📝 Configuration en 4 étapes
+1. Choisissez votre template de site - Plus de 12 designs professionnels
+2. Personnalisez les couleurs - Adaptez le design à votre image de marque
+3. Ajoutez vos textes et photos - Racontez votre histoire
+4. Validez la configuration - Votre site est en ligne ! 🎉
+
+💬 Besoin d'aide ?
+Notre équipe est là pour vous accompagner.
+support@laia-connect.fr
+
+Bienvenue dans la famille LAIA Connect ! 💜
+L'équipe LAIA Connect`
     }
   ]);
 

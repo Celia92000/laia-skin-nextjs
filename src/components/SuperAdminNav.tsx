@@ -3,14 +3,44 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, ScrollText, Settings, Home, Send, Target, Calendar, Palette } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export default function SuperAdminNav() {
   const pathname = usePathname()
+  const [newLeadsCount, setNewLeadsCount] = useState(0)
+  const [newDemosCount, setNewDemosCount] = useState(0)
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        // Compter les nouveaux leads
+        const leadsResponse = await fetch('/api/super-admin/leads/count-new')
+        if (leadsResponse.ok) {
+          const data = await leadsResponse.json()
+          setNewLeadsCount(data.count || 0)
+        }
+
+        // Compter les nouvelles démos
+        const demosResponse = await fetch('/api/super-admin/demos/count-new')
+        if (demosResponse.ok) {
+          const data = await demosResponse.json()
+          setNewDemosCount(data.count || 0)
+        }
+      } catch (error) {
+        console.error('Erreur récupération compteurs:', error)
+      }
+    }
+
+    fetchCounts()
+    // Rafraîchir toutes les 30 secondes
+    const interval = setInterval(fetchCounts, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const tabs = [
     { name: 'Dashboard', href: '/super-admin', icon: Home },
-    { name: 'CRM', href: '/super-admin/crm', icon: Target },
-    { name: 'Démos', href: '/super-admin/demos', icon: Calendar },
+    { name: 'CRM', href: '/super-admin/crm', icon: Target, badge: newLeadsCount },
+    { name: 'Démos', href: '/super-admin/demos', icon: Calendar, badge: newDemosCount },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },
     { name: 'Communications', href: '/super-admin/communications', icon: Send },
@@ -68,13 +98,14 @@ export default function SuperAdminNav() {
             const Icon = tab.icon
             const external = ('external' in tab ? tab.external : false) as boolean
             const active = isActive(tab.href, external)
+            const badge = 'badge' in tab ? tab.badge : 0
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
                 target={external ? '_blank' : undefined}
                 rel={external ? 'noopener noreferrer' : undefined}
-                className={`flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-lg transition-all`}
+                className={`flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-lg transition-all relative`}
                 style={{
                   color: active ? '#6b21a8' : 'rgba(255, 255, 255, 0.85)',
                   backgroundColor: active ? 'white' : 'rgba(255, 255, 255, 0.15)',
@@ -85,6 +116,11 @@ export default function SuperAdminNav() {
                 <Icon className="w-4 h-4 mr-2" />
                 {tab.name}
                 {external && <span className="ml-1 text-xs">↗</span>}
+                {badge > 0 && (
+                  <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white animate-pulse">
+                    {badge}
+                  </span>
+                )}
               </Link>
             )
           })}

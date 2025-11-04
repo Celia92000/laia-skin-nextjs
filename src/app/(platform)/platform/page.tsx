@@ -22,80 +22,103 @@ export default function PlatformHomePage() {
       id: 'SOLO',
       name: 'Solo',
       price: 49,
-      description: 'Pour indépendants',
+      description: 'Pour démarrer son activité',
       features: [
-        'Site web basique (1 template)',
-        'Réservation en ligne',
-        'Gestion clients',
-        'Catalogue prestations',
-        'Calendrier',
-        '💳 Paiements en ligne (toutes intégrations)',
-        '🏪 Connexion caisse NF525',
-        'Espace client',
-        '1 utilisateur • 1 emplacement • 5 GB'
+        '🌐 Site web professionnel multi-templates',
+        '📅 Réservations en ligne 24/7 automatiques',
+        '📊 Dashboard avec statistiques temps réel',
+        '👥 Gestion clients complète avec historique',
+        '💼 Catalogue prestations & tarifs',
+        '🎁 Programme fidélité VIP (points + paliers + parrainage)',
+        '💳 Cartes cadeaux digitales',
+        '⭐ Avis clients (collecte + photos avant/après)',
+        '🔗 Synchronisation Google Reviews automatique',
+        '💰 Comptabilité complète (factures + exports + rapports)',
+        '💳 Paiement en ligne sécurisé (Stripe)',
+        '🔐 Espace client sécurisé avec connexion',
+        '🎨 Design & Apparence (couleurs + logo + personnalisation)',
+        '📚 Guide de Formation complet inclus',
+        '🔌 API & Intégrations incluses',
+        '📧 Rappels automatiques par email',
+        '🔒 SSL gratuit + Sauvegardes quotidiennes',
+        '👤 1 utilisateur • 📍 1 emplacement'
       ],
       color: 'from-gray-400 to-gray-600',
-      popular: false
+      popular: false,
+      roi: '+500€/mois de CA supplémentaire avec les réservations 24/7'
     },
     {
       id: 'DUO',
       name: 'Duo',
-      price: 89,
-      description: 'Le plus populaire',
+      price: 69,
+      description: 'Pour développer son CA',
       features: [
         '✨ Tout Solo +',
-        'Site web premium',
-        '🛍️ Boutique + Formations en ligne',
-        '📧 Campagnes Email Marketing',
-        '📱 Messages WhatsApp auto',
-        '📝 Blog professionnel',
-        '🎯 CRM Commercial',
-        'Programme fidélité',
-        'Cartes cadeaux',
-        'Analytics',
-        'Domaine personnalisé',
-        '3 utilisateurs • 1 emplacement • 10 GB'
+        '🎯 CRM Commercial complet (prospects + opportunités)',
+        '📧 Email Marketing professionnel (campagnes illimitées)',
+        '🤖 Automations marketing intelligentes',
+        '📊 Pipeline de vente & tunnel commercial',
+        '🎯 Segmentation clients avancée',
+        '📈 Reporting commercial détaillé',
+        '🔔 Notifications leads & opportunités',
+        '💼 Gestion des devis & propositions',
+        '📞 Historique communications clients',
+        '🚀 Campagnes de fidélisation automatiques',
+        '👥 Jusqu\'à 3 utilisateurs • 📍 1 emplacement'
       ],
       color: 'from-blue-500 to-blue-600',
-      popular: true
+      popular: false,
+      roi: '+1200€/mois grâce au CRM et aux campagnes email'
     },
     {
       id: 'TEAM',
       name: 'Team',
-      price: 149,
-      description: 'Pour équipes',
+      price: 119,
+      description: '⭐ Le plus rentable',
       features: [
         '✨ Tout Duo +',
-        'Site web pro (5 templates)',
-        '🛍️ Boutique en ligne (produits + formations)',
-        '📦 Gestion stock avancée',
-        '📱 Réseaux sociaux complet',
-        '📲 SMS automatiques',
-        'Programme parrainage',
-        'Multi-emplacements (3)',
-        '10 utilisateurs • 3 emplacements • 50 GB'
+        '📝 Blog professionnel (SEO optimisé)',
+        '🛍️ Boutique en ligne (produits + formations + packages)',
+        '💳 Paiement produits & abonnements',
+        '📦 Gestion commandes & expéditions',
+        '📱 WhatsApp Business (messages + campagnes)',
+        '📲 SMS Marketing (campagnes illimitées)',
+        '📱 Réseaux sociaux (Instagram + Facebook sync)',
+        '📸 Publications automatiques réseaux sociaux',
+        '🎨 Templates boutique professionnels',
+        '📊 Analytics e-commerce complet',
+        '🌍 Multi-emplacements (jusqu\'à 3 sites)',
+        '👥 Jusqu\'à 10 utilisateurs • 📍 3 emplacements'
       ],
       color: 'from-purple-500 to-purple-600',
-      popular: false
+      popular: true,
+      roi: '+3500€/mois avec la boutique en ligne + multi-canaux'
     },
     {
       id: 'PREMIUM',
       name: 'Premium',
-      price: 249,
-      description: 'Solution complète',
+      price: 179,
+      description: 'Pour les instituts établis',
       features: [
         '✨ Tout Team +',
-        'Site web premium (5 templates)',
-        '⚡ Automation Marketing complète',
-        '📝 Blog professionnel',
-        '📧 Newsletter automatisée',
-        '🤖 Scénarios marketing avancés',
-        '🔌 API Access (export comptable)',
-        'Formation avancée',
-        'Utilisateurs illimités • Emplacements illimités • 999 GB'
+        '📦 Gestion stock avancée multi-sites',
+        '🔔 Alertes stock automatiques & réapprovisionnement',
+        '📊 Inventaire en temps réel',
+        '🚚 Gestion fournisseurs & bons de commande',
+        '📈 Prévisions stock intelligentes',
+        '💼 Gestion achats & marges',
+        '🔌 API complète pour intégrations',
+        '📊 Export comptable automatique (Sage, Cegid, etc.)',
+        '🔗 Connexion logiciels tiers',
+        '🌍 Multi-emplacements illimités',
+        '👥 Utilisateurs illimités',
+        '🎯 Accompagnement personnalisé',
+        '⚡ Support prioritaire 24/7',
+        '♾️ Utilisateurs illimités • 📍 Emplacements illimités'
       ],
       color: 'from-indigo-500 to-pink-600',
-      popular: false
+      popular: false,
+      roi: '+8000€/mois avec l\'optimisation stock + multi-sites'
     }
   ]
 
@@ -771,6 +794,12 @@ export default function PlatformHomePage() {
                     <p className="text-xs text-gray-400 text-center mt-1">
                       Engagement 1 an • Prélèvement SEPA
                     </p>
+                  </div>
+
+                  {/* ROI Badge - Commercial */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 rounded-xl">
+                    <p className="text-center text-green-800 text-xs font-bold mb-1">💰 RETOUR SUR INVESTISSEMENT</p>
+                    <p className="text-center text-green-700 text-sm font-extrabold">{plan.roi}</p>
                   </div>
 
                   <Link

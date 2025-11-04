@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import Stripe from 'stripe'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
-import { sendPendingActivationEmail, sendAccountActivationEmail } from '@/lib/onboarding-emails'
+import { sendWelcomeEmail, sendPendingActivationEmail, sendAccountActivationEmail } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 
 const prisma = new PrismaClient()
@@ -39,6 +39,23 @@ export async function POST(req: NextRequest) {
       servicePrice,
       serviceDuration,
       serviceDescription,
+
+      // Template de site web
+      websiteTemplateId,
+
+      // Contenu du site
+      siteTagline,
+      siteEmail,
+      sitePhone,
+      heroTitle,
+      heroSubtitle,
+      aboutText,
+      founderName,
+      founderTitle,
+      founderQuote,
+      facebook,
+      instagram,
+      whatsapp,
 
       // Horaires
       businessHours,
@@ -120,6 +137,9 @@ export async function POST(req: NextRequest) {
         subdomain,
         domain: useCustomDomain && customDomain ? customDomain : null,
 
+        // Template de site web
+        websiteTemplateId: websiteTemplateId || 'modern',
+
         // Informations du propriétaire
         ownerFirstName,
         ownerLastName,
@@ -148,7 +168,7 @@ export async function POST(req: NextRequest) {
 
         // Plan et statut
         plan: selectedPlan,
-        status: 'PENDING', // En attente d'activation manuelle
+        status: 'ACTIVE', // Compte activé immédiatement
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
 
         // Configuration du site
@@ -158,6 +178,23 @@ export async function POST(req: NextRequest) {
             secondaryColor,
             siteName: institutName,
             siteDescription: `Institut de beauté ${institutName}`,
+
+            // Contenu du site (baseline, hero, à propos)
+            siteTagline: siteTagline || 'Institut de Beauté & Bien-être',
+            siteEmail: siteEmail || ownerEmail,
+            sitePhone: sitePhone || ownerPhone || '',
+            heroTitle: heroTitle || 'Une peau respectée,',
+            heroSubtitle: heroSubtitle || 'une beauté révélée',
+            aboutText: aboutText || '',
+            founderName: founderName || `${ownerFirstName} ${ownerLastName}`,
+            founderTitle: founderTitle || 'Fondatrice & Experte en soins esthétiques',
+            founderQuote: founderQuote || '',
+
+            // Réseaux sociaux
+            facebook: facebook || null,
+            instagram: instagram || null,
+            whatsapp: whatsapp || null,
+
             contactEmail: ownerEmail,
             phone: ownerPhone || '',
             address: address || '',
@@ -226,9 +263,9 @@ export async function POST(req: NextRequest) {
     // Prix par plan
     const planPrices: Record<string, number> = {
       SOLO: 49,
-      DUO: 89,
-      TEAM: 149,
-      PREMIUM: 249
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179
     }
 
     const amount = planPrices[selectedPlan] || 49
@@ -325,13 +362,13 @@ export async function POST(req: NextRequest) {
       console.error('⚠️ Erreur génération facture (non bloquant):', invoiceError)
     }
 
-    // Envoyer l'email de confirmation de paiement (compte en attente d'activation)
+    // Envoyer l'email de bienvenue avec les identifiants de connexion
     try {
       const adminUrl = process.env.NEXT_PUBLIC_APP_URL
         ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
         : `https://${subdomain}.laia-connect.fr/admin`
 
-      await sendPendingActivationEmail({
+      await sendWelcomeEmail({
         organizationName: institutName,
         ownerFirstName,
         ownerLastName,
@@ -344,9 +381,9 @@ export async function POST(req: NextRequest) {
         monthlyAmount: amount,
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
-      })
+      }, invoicePdfBuffer, invoiceNumber)
 
-      console.log('✅ Email de confirmation paiement envoyé (compte PENDING)')
+      console.log('✅ Email de bienvenue avec identifiants envoyé')
     } catch (emailError) {
       console.error('⚠️ Erreur envoi email (non bloquant):', emailError)
       // On ne bloque pas même si l'email échoue

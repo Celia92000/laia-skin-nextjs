@@ -3,17 +3,47 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Calendar, Clock, CheckCircle, XCircle, Gift, Star, RefreshCw, User, Award, TrendingUp, LogOut, Share2, Heart, History, Check, Edit2, X, CalendarDays, MessageSquare, ThumbsUp, Send, Camera, Edit, Bell, AlertCircle } from "lucide-react";
 import ClientSpaceWrapper from "./ClientSpaceWrapper";
 import Modal from "@/components/Modal";
 import { logout } from "@/lib/auth-client";
-import ClientDashboard from "@/components/ClientDashboard";
-import { ReferralSystem } from "@/components/ReferralSystem";
-import { DiscountHistory } from "@/components/DiscountHistory";
-import { SocialQRCodes } from "@/components/SocialQRCodes";
-import { CongratulationsAnimation } from "@/components/CongratulationsAnimation";
 import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-utils';
-import ClientGiftCards from "@/components/ClientGiftCards";
+
+// Lazy load des composants lourds
+const ClientDashboard = dynamic(() => import("@/components/ClientDashboard"), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
+
+const ReferralSystem = dynamic(() => import("@/components/ReferralSystem").then(mod => ({ default: mod.ReferralSystem })), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
+
+const DiscountHistory = dynamic(() => import("@/components/DiscountHistory").then(mod => ({ default: mod.DiscountHistory })), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
+
+const SocialQRCodes = dynamic(() => import("@/components/SocialQRCodes").then(mod => ({ default: mod.SocialQRCodes })), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
+
+const CongratulationsAnimation = dynamic(() => import("@/components/CongratulationsAnimation").then(mod => ({ default: mod.CongratulationsAnimation })), {
+  ssr: false
+});
+
+const ClientGiftCards = dynamic(() => import("@/components/ClientGiftCards"), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
+
+const LoyaltyCards = dynamic(() => import("@/components/client/LoyaltyCards"), {
+  loading: () => <div className="text-center py-12">Chargement...</div>,
+  ssr: false
+});
 
 interface Reservation {
   id: string;
@@ -793,101 +823,8 @@ function EspaceClientContent() {
                 Deux cartes de fidélité pour maximiser vos avantages !
               </p>
 
-              {/* Deux cartes de fidélité */}
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
-                {/* Carte fidélité soins individuels */}
-                <div className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-2xl p-6 shadow-xl">
-                  <div className="text-center">
-                    <Gift className="w-12 h-12 mx-auto mb-3 text-white/80" />
-                    <h3 className="text-xl font-bold mb-2">Soins Individuels</h3>
-                    <p className="text-lg mb-4">5 soins = -20€ sur le 6ème</p>
-                    
-                    {/* Carte de fidélité visuelle */}
-                    <div className="bg-white/20 rounded-xl p-4">
-                      <div className="grid grid-cols-6 gap-2 mb-3">
-                        {[1, 2, 3, 4, 5, 6].map((num) => {
-                          const completedCount = reservations.length;
-                          const effectiveCount = completedCount % 6;
-                          const finalCount = effectiveCount === 0 && completedCount > 0 ? 6 : effectiveCount;
-                          return (
-                            <div 
-                              key={num}
-                              className={`w-full aspect-square rounded-lg flex items-center justify-center text-lg font-bold ${
-                                num <= finalCount ? 'bg-white text-[#d4b5a0]' : 'bg-white/30 text-white'
-                              }`}
-                            >
-                              {num <= finalCount ? '✓' : num}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-sm">
-                        {(() => {
-                          const count = reservations.length;
-                          const effectiveCount = count % 6;
-                          return effectiveCount === 0 && count > 0 ? '6 soins validés sur 6' : `${effectiveCount} soin${effectiveCount > 1 ? 's' : ''} validé${effectiveCount > 1 ? 's' : ''} sur 6`;
-                        })()}
-                      </p>
-                      <p className="text-xs mt-1 font-bold">Dès le 1er soin ! -20€ au 6ème soin</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Carte fidélité forfaits */}
-                <div className="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl p-6 shadow-xl">
-                  <div className="text-center">
-                    <Star className="w-12 h-12 mx-auto mb-3 text-white/80" />
-                    <h3 className="text-xl font-bold mb-2">Forfaits Premium</h3>
-                    <p className="text-lg mb-4">3 forfaits = -40€ sur le 4ème</p>
-                    
-                    {/* Carte de fidélité visuelle forfaits */}
-                    <div className="bg-white/20 rounded-xl p-4">
-                      <div className="grid grid-cols-4 gap-3 mb-3">
-                        {[1, 2, 3, 4].map((num) => {
-                          const forfaitCount = reservations.filter(r => {
-                            if (r.status !== 'completed') return false;
-                            try {
-                              const packages = r.packages ? JSON.parse(typeof r.packages === 'string' ? r.packages : JSON.stringify(r.packages)) : {};
-                              return Object.values(packages).some(p => p === 'forfait');
-                            } catch {
-                              return false;
-                            }
-                          }).length;
-                          const effectiveCount = forfaitCount % 4;
-                          const finalCount = effectiveCount === 0 && forfaitCount > 0 ? 4 : effectiveCount;
-                          return (
-                            <div 
-                              key={num}
-                              className={`w-full aspect-square rounded-lg flex items-center justify-center text-xl font-bold ${
-                                num <= finalCount ? 'bg-white text-purple-600' : 'bg-white/30 text-white'
-                              }`}
-                            >
-                              {num <= finalCount ? '✓' : num}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-sm">
-                        {(() => {
-                          const forfaitCount = reservations.filter(r => {
-                            if (r.status !== 'completed') return false;
-                            try {
-                              const packages = r.packages ? JSON.parse(typeof r.packages === 'string' ? r.packages : JSON.stringify(r.packages)) : {};
-                              return Object.values(packages).some(p => p === 'forfait');
-                            } catch {
-                              return false;
-                            }
-                          }).length;
-                          const effectiveCount = forfaitCount % 4;
-                          const finalCount = effectiveCount === 0 && forfaitCount > 0 ? 4 : effectiveCount;
-                          return `${finalCount} forfait${finalCount > 1 ? 's' : ''} validé${finalCount > 1 ? 's' : ''} sur 4`;
-                        })()}
-                      </p>
-                      <p className="text-xs mt-1 font-bold">Dès le 1er forfait ! -40€ au 4ème forfait</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {/* Deux cartes de fidélité - Optimisé avec lazy loading */}
+              <LoyaltyCards reservations={reservations} />
 
               {/* Comment ça marche */}
               <div className="bg-[#fdfbf7] rounded-xl p-6 mb-8">

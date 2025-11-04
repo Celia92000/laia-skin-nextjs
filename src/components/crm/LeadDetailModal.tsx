@@ -128,7 +128,18 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
 
   useEffect(() => {
     fetchLead()
+    markAsViewed()
   }, [leadId])
+
+  const markAsViewed = async () => {
+    try {
+      await fetch(`/api/super-admin/leads/${leadId}/mark-viewed`, {
+        method: 'POST'
+      })
+    } catch (error) {
+      console.error('Erreur marquage lead comme vu:', error)
+    }
+  }
 
   const fetchLead = async () => {
     try {
@@ -1107,66 +1118,16 @@ export default function LeadDetailModal({ leadId, onClose, onUpdate }: LeadDetai
                   </div>
                 </div>
               ) : (
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Convertir en organisation cliente</h3>
-
-                  {/* Option 1 : Formulaire d'onboarding avec pré-remplissage */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
-                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                      <span>📝</span>
-                      <span>Option 1 : Formulaire d'onboarding complet</span>
-                    </h4>
-                    <ul className="space-y-2 text-sm text-blue-800 mb-4">
-                      <li>✅ Formulaire pré-rempli avec les données du lead</li>
-                      <li>✅ Le client choisit son forfait et complète les informations</li>
-                      <li>✅ Processus d'onboarding standard avec paiement SEPA</li>
-                      <li>✅ Offre "1er mois offert" appliquée</li>
-                    </ul>
-                    <a
-                      href={`/onboarding?` + new URLSearchParams({
-                        // Données personnelles
-                        ownerFirstName: lead.contactName.split(' ')[0] || '',
-                        ownerLastName: lead.contactName.split(' ').slice(1).join(' ') || '',
-                        ownerEmail: lead.contactEmail,
-                        ownerPhone: lead.contactPhone || '',
-                        // Données institut
-                        institutName: lead.institutName,
-                        city: lead.city || '',
-                        address: lead.address || '',
-                        postalCode: lead.postalCode || '',
-                        // Source
-                        source: 'CRM_LEAD',
-                        leadId: lead.id
-                      }).toString()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition font-semibold text-center"
-                    >
-                      📝 Créer avec formulaire d'onboarding
-                    </a>
-                  </div>
-
-                  {/* Option 2 : Formulaire complet de création */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
-                    <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                      <span>📋</span>
-                      <span>Option 2 : Créer l'organisation (Formulaire complet)</span>
-                    </h4>
-                    <ul className="space-y-2 text-sm text-purple-800 mb-4">
-                      <li>✅ Formulaire pré-rempli avec toutes les données du lead</li>
-                      <li>✅ Choix du forfait (SOLO, DUO, TEAM, PREMIUM)</li>
-                      <li>✅ Configuration SEPA optionnelle</li>
-                      <li>✅ Organisation créée avec accès admin immédiat</li>
-                      <li>✅ Lead automatiquement marqué comme "WON"</li>
-                    </ul>
-
-                    <button
-                      onClick={() => setShowCreateOrgModal(true)}
-                      className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold"
-                    >
-                      📋 Ouvrir le formulaire de création
-                    </button>
-                  </div>
+                <div className="max-w-md mx-auto text-center py-12">
+                  <button
+                    onClick={() => setShowCreateOrgModal(true)}
+                    className="w-full px-8 py-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 font-bold text-lg"
+                  >
+                    🏢 Créer l'organisation
+                  </button>
+                  <p className="text-sm text-gray-500 mt-4">
+                    Convertir ce lead en organisation cliente
+                  </p>
                 </div>
               )}
             </div>

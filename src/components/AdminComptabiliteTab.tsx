@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Euro, Download, Calendar, TrendingUp, FileText, 
+import {
+  Euro, Download, Calendar, TrendingUp, FileText,
   Calculator, PieChart, BarChart3, DollarSign,
-  ArrowUpRight, ArrowDownRight, Filter, FileDown, 
+  ArrowUpRight, ArrowDownRight, Filter, FileDown,
   Receipt, BookOpen, AlertCircle, CheckCircle, Clock,
   Package, Users, Briefcase, ChevronDown, ChevronUp,
   Printer, Mail, Search, X, RefreshCw, Eye
 } from 'lucide-react';
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
 import { formatDateLocal } from '@/lib/date-utils';
+import LaiaInvoicesSection from './LaiaInvoicesSection';
 
 interface AdminComptabiliteTabProps {
   reservations: any[];
@@ -1622,6 +1623,9 @@ Pour toute question: contact@laia-skin-institut.com`;
           </div>
         </div>
       )}
+
+      {/* Section Factures d'abonnement LAIA */}
+      <LaiaInvoicesSection />
     </div>
   );
 }

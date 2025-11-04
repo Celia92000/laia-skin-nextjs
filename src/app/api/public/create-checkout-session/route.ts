@@ -7,9 +7,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const PLAN_PRICES = {
   SOLO: 49,
-  DUO: 89,
-  TEAM: 149,
-  PREMIUM: 249
+  DUO: 69,
+  TEAM: 119,
+  PREMIUM: 179
 }
 
 /**

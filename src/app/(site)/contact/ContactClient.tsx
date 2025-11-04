@@ -20,7 +20,9 @@ export default function ContactClient({ workingHours }: ContactClientProps) {
     email: "",
     phone: "",
     subject: "",
-    message: ""
+    message: "",
+    needsDataMigration: false,
+    currentSoftware: ""
   });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -62,7 +64,7 @@ export default function ContactClient({ workingHours }: ContactClientProps) {
 
       if (response.ok) {
         setSent(true);
-        setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+        setFormData({ name: "", email: "", phone: "", subject: "", message: "", needsDataMigration: false, currentSoftware: "" });
       }
     } catch (error) {
       console.error("Erreur lors de l'envoi:", error);
@@ -240,6 +242,34 @@ export default function ContactClient({ workingHours }: ContactClientProps) {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:outline-none"
                     placeholder="Votre message..."
                   />
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.needsDataMigration}
+                      onChange={(e) => setFormData({ ...formData, needsDataMigration: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">🔄 Je souhaite migrer mes données depuis un autre logiciel</div>
+                      <div className="text-sm text-gray-600 mt-1">Prestation de migration : 300€ (paiement unique)</div>
+                    </div>
+                  </label>
+
+                  {formData.needsDataMigration && (
+                    <div className="mt-4 ml-8">
+                      <label className="block text-sm font-medium mb-2">Quel logiciel utilisez-vous actuellement ?</label>
+                      <input
+                        type="text"
+                        value={formData.currentSoftware}
+                        onChange={(e) => setFormData({ ...formData, currentSoftware: e.target.value })}
+                        placeholder="ex: Planity, Treatwell, Planning.io, Excel..."
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <button

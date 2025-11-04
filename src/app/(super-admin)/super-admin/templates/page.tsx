@@ -23,7 +23,7 @@ const templates: TemplatePreview[] = [
   {
     id: 'classic',
     name: 'Élégance Classic',
-    description: 'Design élégant et chaleureux inspiré de LAIA SKIN avec gradients doux et animations fluides',
+    description: 'Design élégant et chaleureux avec gradients doux et animations fluides',
     style: 'classic',
     tier: 'standard',
     icon: Sparkles,

@@ -24,6 +24,82 @@ interface Stats {
   disabled: number
 }
 
+interface OnboardingTemplate {
+  id: string
+  name: string
+  description: string
+  subject: string
+  usage: string
+  currentlyUsed: boolean
+  previewData: {
+    organizationName: string
+    ownerFirstName: string
+    ownerLastName: string
+    ownerEmail: string
+    tempPassword: string
+    plan: string
+    adminUrl: string
+    monthlyAmount: number
+  }
+}
+
+const onboardingTemplates: OnboardingTemplate[] = [
+  {
+    id: 'welcome',
+    name: '🎉 Email de Bienvenue Complet',
+    description: 'Email envoyé après création du compte avec identifiants et guide',
+    subject: '🎉 Bienvenue sur LAIA Connect - Votre site {organizationName} est prêt !',
+    usage: 'Envoyé automatiquement après onboarding',
+    currentlyUsed: true,
+    previewData: {
+      organizationName: 'Beauté Zen Paris',
+      ownerFirstName: 'Sophie',
+      ownerLastName: 'Martin',
+      ownerEmail: 'sophie@beautezen.fr',
+      tempPassword: 'Test123Pass!@#',
+      plan: 'TEAM',
+      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
+      monthlyAmount: 149
+    }
+  },
+  {
+    id: 'pending',
+    name: '⏳ Confirmation Paiement',
+    description: 'Email de confirmation de paiement sans identifiants (activation manuelle)',
+    subject: '✅ Paiement confirmé - Activation sous 24h - {organizationName}',
+    usage: 'Pour activation manuelle (non utilisé)',
+    currentlyUsed: false,
+    previewData: {
+      organizationName: 'Beauté Zen Paris',
+      ownerFirstName: 'Sophie',
+      ownerLastName: 'Martin',
+      ownerEmail: 'sophie@beautezen.fr',
+      tempPassword: '',
+      plan: 'TEAM',
+      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
+      monthlyAmount: 149
+    }
+  },
+  {
+    id: 'activation',
+    name: '✅ Activation du Compte',
+    description: 'Email d\'activation avec identifiants uniquement',
+    subject: '🎉 Votre compte {organizationName} est activé !',
+    usage: 'Pour activation différée (non utilisé)',
+    currentlyUsed: false,
+    previewData: {
+      organizationName: 'Beauté Zen Paris',
+      ownerFirstName: 'Sophie',
+      ownerLastName: 'Martin',
+      ownerEmail: 'sophie@beautezen.fr',
+      tempPassword: 'Test123Pass!@#',
+      plan: 'TEAM',
+      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
+      monthlyAmount: 149
+    }
+  }
+]
+
 export default function EmailAutomationsPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -34,6 +110,11 @@ export default function EmailAutomationsPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingAutomation, setEditingAutomation] = useState<EmailAutomation | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // Onboarding templates
+  const [selectedOnboardingTemplate, setSelectedOnboardingTemplate] = useState<OnboardingTemplate | null>(null)
+  const [showOnboardingPreview, setShowOnboardingPreview] = useState(false)
+  const [activeTab, setActiveTab] = useState<'crm' | 'onboarding'>('onboarding')
 
   useEffect(() => {
     fetchAutomations()
@@ -176,30 +257,200 @@ export default function EmailAutomationsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#7c3aed' }}>
-              ⚡ Automatisations Email CRM
+              📧 Automatisations & Templates Email
             </h2>
-            <p className="text-gray-700">Gérez vos workflows d'emails automatiques déclenchés par des événements</p>
+            <p className="text-gray-700">Gérez les emails automatiques et templates d'onboarding</p>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Total automatisations</div>
-            <div className="text-4xl font-bold text-purple-600">{stats.total}</div>
+      {/* Tabs */}
+      <div className="mb-8 bg-white rounded-xl shadow-md p-2 inline-flex gap-2">
+        <button
+          onClick={() => setActiveTab('onboarding')}
+          className={`px-6 py-3 rounded-lg font-semibold transition ${
+            activeTab === 'onboarding'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          🎉 Templates d'Onboarding
+        </button>
+        <button
+          onClick={() => setActiveTab('crm')}
+          className={`px-6 py-3 rounded-lg font-semibold transition ${
+            activeTab === 'crm'
+              ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          ⚡ Automatisations CRM
+        </button>
+      </div>
+
+      {/* Onboarding Templates Tab */}
+      {activeTab === 'onboarding' && (
+        <div>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+              <div className="text-sm text-gray-600 mb-1">Templates disponibles</div>
+              <div className="text-4xl font-bold text-purple-600">{onboardingTemplates.length}</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+              <div className="text-sm text-gray-600 mb-1">Template actif</div>
+              <div className="text-2xl font-bold text-green-600">Welcome Email</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+              <div className="text-sm text-gray-600 mb-1">Status</div>
+              <div className="text-2xl font-bold text-blue-600">ACTIVE</div>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Actives</div>
-            <div className="text-4xl font-bold text-green-600">{stats.enabled}</div>
+
+          {/* Templates Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {onboardingTemplates.map((template) => (
+              <div
+                key={template.id}
+                className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all border-2 ${
+                  template.currentlyUsed
+                    ? 'border-green-500 ring-2 ring-green-200'
+                    : 'border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                <div className={`p-6 ${
+                  template.currentlyUsed
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                    : 'bg-gradient-to-r from-purple-500 to-pink-600'
+                }`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">📧</span>
+                    {template.currentlyUsed && (
+                      <span className="bg-white text-green-600 text-xs font-bold px-3 py-1 rounded-full">
+                        EN COURS
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {template.name}
+                  </h3>
+                  <p className="text-white/90 text-sm">
+                    {template.description}
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      <strong>Objet :</strong>
+                    </p>
+                    <p className="text-sm bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      {template.subject}
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      <strong>Usage :</strong>
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      {template.usage}
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-xs font-semibold text-blue-900 mb-2">
+                      Contenu inclus :
+                    </p>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      {template.id === 'welcome' && (
+                        <>
+                          <li>✅ Email et mot de passe</li>
+                          <li>✅ Lien admin</li>
+                          <li>✅ Détails formule</li>
+                          <li>✅ Guide complet</li>
+                          <li>✅ Facture PDF</li>
+                        </>
+                      )}
+                      {template.id === 'pending' && (
+                        <>
+                          <li>⏳ Confirmation paiement</li>
+                          <li>⏳ Délai d'activation (24h)</li>
+                          <li>❌ Pas d'identifiants</li>
+                        </>
+                      )}
+                      {template.id === 'activation' && (
+                        <>
+                          <li>✅ Email et mot de passe</li>
+                          <li>✅ Lien admin</li>
+                          <li>✅ Instructions</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedOnboardingTemplate(template)
+                        setShowOnboardingPreview(true)
+                      }}
+                      className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-700 transition font-semibold text-sm flex items-center justify-center gap-2"
+                    >
+                      👁️ Prévisualiser
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="text-sm text-gray-600 mb-1">Désactivées</div>
-            <div className="text-4xl font-bold text-gray-600">{stats.disabled}</div>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <span className="text-2xl">📧</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-blue-900 mb-2">
+                  Configuration actuelle
+                </h3>
+                <p className="text-blue-800 text-sm mb-2">
+                  L'email <strong>"Bienvenue Complet"</strong> est actuellement utilisé lors de l'onboarding.
+                  Le compte client est activé immédiatement avec le statut <code className="bg-blue-100 px-2 py-1 rounded">ACTIVE</code>.
+                </p>
+                <p className="text-blue-800 text-sm mb-3">
+                  📄 Fichier : <code className="bg-blue-100 px-2 py-1 rounded">/src/lib/onboarding-emails.ts</code>
+                </p>
+                <p className="text-blue-700 text-sm font-semibold">
+                  💡 Pour modifier un template, ouvrez le fichier source et modifiez le code HTML directement.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
+
+      {/* CRM Automations Tab */}
+      {activeTab === 'crm' && (
+        <div>
+          {/* Stats */}
+          {stats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="text-sm text-gray-600 mb-1">Total automatisations</div>
+                <div className="text-4xl font-bold text-purple-600">{stats.total}</div>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="text-sm text-gray-600 mb-1">Actives</div>
+                <div className="text-4xl font-bold text-green-600">{stats.enabled}</div>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="text-sm text-gray-600 mb-1">Désactivées</div>
+                <div className="text-4xl font-bold text-gray-600">{stats.disabled}</div>
+              </div>
+            </div>
+          )}
 
       {/* Liste des automatisations */}
       <div className="space-y-4">
@@ -273,27 +524,29 @@ export default function EmailAutomationsPage() {
       </div>
 
       {/* Informations */}
-      <div className="mt-8 bg-blue-50 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-blue-900 mb-4">ℹ️ Comment fonctionnent les automatisations ?</h3>
-        <div className="space-y-3 text-sm text-blue-800">
-          <p>
-            <strong>1. Déclencheurs (Triggers)</strong> : Chaque automatisation est déclenchée par un événement spécifique
-            (nouvelle inscription, inactivité, changement d'abonnement, etc.)
-          </p>
-          <p>
-            <strong>2. Délais optionnels</strong> : Certaines automatisations peuvent avoir un délai avant envoi
-            (ex: "3 jours avant la fin de l'essai")
-          </p>
-          <p>
-            <strong>3. Variables dynamiques</strong> : Les emails utilisent des variables comme {`{{organizationName}}`},
-            {`{{contactName}}`} qui sont remplacées automatiquement
-          </p>
-          <p>
-            <strong>4. Conditions</strong> : Certaines automatisations ont des conditions supplémentaires
-            (score RFM, nombre de jours d'inactivité, etc.)
-          </p>
+          <div className="mt-8 bg-blue-50 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-blue-900 mb-4">ℹ️ Comment fonctionnent les automatisations ?</h3>
+            <div className="space-y-3 text-sm text-blue-800">
+              <p>
+                <strong>1. Déclencheurs (Triggers)</strong> : Chaque automatisation est déclenchée par un événement spécifique
+                (nouvelle inscription, inactivité, changement d'abonnement, etc.)
+              </p>
+              <p>
+                <strong>2. Délais optionnels</strong> : Certaines automatisations peuvent avoir un délai avant envoi
+                (ex: "3 jours avant la fin de l'essai")
+              </p>
+              <p>
+                <strong>3. Variables dynamiques</strong> : Les emails utilisent des variables comme {`{{organizationName}}`},
+                {`{{contactName}}`} qui sont remplacées automatiquement
+              </p>
+              <p>
+                <strong>4. Conditions</strong> : Certaines automatisations ont des conditions supplémentaires
+                (score RFM, nombre de jours d'inactivité, etc.)
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal de prévisualisation */}
       {showPreview && selectedAutomation && (

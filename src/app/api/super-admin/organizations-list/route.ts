@@ -38,6 +38,7 @@ export async function GET() {
         status: true,
         subdomain: true,
         domain: true,
+        websiteTemplateId: true,
         createdAt: true,
         _count: {
           select: { locations: true }
@@ -57,6 +58,7 @@ export async function GET() {
       status: org.status,
       subdomain: org.subdomain,
       domain: org.domain,
+      websiteTemplateId: org.websiteTemplateId,
       createdAt: org.createdAt,
       locations: Array(org._count.locations).fill({}) // Compatibilité: array vide avec la bonne longueur
     }))

@@ -12,8 +12,90 @@ interface EmailTemplate {
   isActive: boolean;
 }
 
+// Templates LAIA Connect par défaut
+const defaultLaiaTemplates: EmailTemplate[] = [
+  {
+    id: 'payment-confirmation',
+    name: '✅ Confirmation de paiement',
+    subject: '✅ Paiement confirmé - {institut} - LAIA Connect',
+    content: `Bonjour {nom},
+
+Merci pour votre confiance ! Votre paiement pour {institut} a bien été enregistré.
+
+💳 Détails du paiement
+• Institut : {institut}
+• Forfait : {plan}
+• Montant : {montant}€
+
+📋 Prochaines étapes
+1. Notre équipe va préparer votre espace LAIA Connect
+2. Vous recevrez vos identifiants de connexion sous 24h
+3. Vous pourrez configurer votre site (template, couleurs, contenus)
+4. Votre site sera en ligne et prêt à prendre des réservations !
+
+À très bientôt ! 🚀
+L'équipe LAIA Connect`,
+    category: 'laia-connect',
+    isActive: true
+  },
+  {
+    id: 'onboarding-invitation',
+    name: '🎉 Invitation onboarding',
+    subject: '🎉 Bienvenue sur LAIA Connect - Votre espace est prêt !',
+    content: `Bonjour,
+
+Votre institut {institut} est configuré !
+
+Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenant vous connecter et configurer votre site web en 4 étapes simples.
+
+🔐 Vos identifiants de connexion
+• Email : {email}
+• Mot de passe temporaire : {password}
+
+⚠️ Important : Vous pourrez changer ce mot de passe après votre première connexion.
+
+📝 Configuration en 4 étapes
+1. Choisissez votre template de site - Plus de 12 designs professionnels
+2. Personnalisez les couleurs - Adaptez le design à votre image de marque
+3. Ajoutez vos textes et photos - Racontez votre histoire
+4. Validez la configuration - Votre site est en ligne ! 🎉
+
+💬 Besoin d'aide ?
+Notre équipe est là pour vous accompagner.
+support@laia-connect.fr
+
+Bienvenue dans la famille LAIA Connect ! 💜
+L'équipe LAIA Connect`,
+    category: 'laia-connect',
+    isActive: true
+  },
+  {
+    id: 'welcome-laia',
+    name: '🎉 Bienvenue LAIA Connect',
+    subject: 'Bienvenue sur LAIA Connect - Votre partenaire digital',
+    content: `Bonjour {nom},
+
+Bienvenue sur LAIA Connect ! 🎉
+
+Nous sommes ravis de vous accompagner dans la digitalisation de votre institut.
+
+Votre accès est maintenant actif et vous pouvez commencer à :
+✨ Gérer vos réservations en ligne
+📅 Optimiser votre planning
+💬 Communiquer avec vos clients
+📊 Suivre vos statistiques
+
+Notre équipe est à votre disposition pour vous accompagner.
+
+Belle journée,
+L'équipe LAIA Connect`,
+    category: 'laia-connect',
+    isActive: true
+  }
+];
+
 export default function EmailTemplateManager() {
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [customTemplates, setCustomTemplates] = useState<EmailTemplate[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [formData, setFormData] = useState({
@@ -23,20 +105,20 @@ export default function EmailTemplateManager() {
     category: 'general'
   });
 
+  // Combiner templates LAIA + templates custom
+  const allTemplates = [...defaultLaiaTemplates, ...customTemplates];
+
   useEffect(() => {
     loadTemplates();
   }, []);
 
   const loadTemplates = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/email-templates', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await fetch('/api/super-admin/email-templates');
 
       if (response.ok) {
         const data = await response.json();
-        setTemplates(data);
+        setCustomTemplates(data);
       }
     } catch (error) {
       console.error('Erreur chargement templates:', error);
@@ -47,16 +129,14 @@ export default function EmailTemplateManager() {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem('token');
       const url = editingTemplate
-        ? `/api/admin/email-templates/${editingTemplate.id}`
-        : '/api/admin/email-templates';
+        ? `/api/super-admin/email-templates/${editingTemplate.id}`
+        : '/api/super-admin/email-templates';
 
       const response = await fetch(url, {
         method: editingTemplate ? 'PUT' : 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
@@ -80,10 +160,8 @@ export default function EmailTemplateManager() {
     if (!confirm('Voulez-vous vraiment supprimer ce template ?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/email-templates/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch(`/api/super-admin/email-templates/${id}`, {
+        method: 'DELETE'
       });
 
       if (response.ok) {
@@ -127,29 +205,45 @@ export default function EmailTemplateManager() {
 
       {/* Liste des templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        {templates.map(template => (
-          <div key={template.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+        {allTemplates.map(template => (
+          <div key={template.id} className={`border rounded-lg p-4 transition-colors ${
+            template.category === 'laia-connect'
+              ? 'border-purple-300 bg-purple-50'
+              : 'border-gray-200 hover:border-blue-300'
+          }`}>
             <div className="flex items-start justify-between mb-2">
-              <FileText className="w-5 h-5 text-blue-500" />
+              <FileText className={`w-5 h-5 ${template.category === 'laia-connect' ? 'text-purple-500' : 'text-blue-500'}`} />
               <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(template)}
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(template.id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {template.category === 'laia-connect' ? (
+                  <span className="text-xs text-purple-600 font-medium px-2 py-1 bg-purple-100 rounded">
+                    Template LAIA
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => startEdit(template)}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(template.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
             <p className="text-sm text-gray-600 mb-2">{template.subject}</p>
-            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-              {template.category || 'général'}
+            <span className={`text-xs px-2 py-1 rounded ${
+              template.category === 'laia-connect'
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-gray-100 text-gray-700'
+            }`}>
+              {template.category === 'laia-connect' ? 'LAIA Connect' : template.category || 'général'}
             </span>
           </div>
         ))}

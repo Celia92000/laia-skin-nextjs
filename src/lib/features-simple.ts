@@ -11,18 +11,18 @@ import { OrgPlan } from '@prisma/client'
 export interface OrgFeatures {
   // === ONGLETS CONDITIONNELS (selon forfait) ===
 
-  // DUO+ : Onglets de contenu et marketing de base
-  featureBlog: boolean          // Onglet Blog complet (articles + catégories + SEO)
+  // DUO : Marketing de base
   featureCRM: boolean           // Onglet CRM complet (leads + prospects + pipeline + segmentation)
   featureEmailing: boolean      // Onglet Email Marketing complet (campagnes + automations + analytics)
 
-  // TEAM+ : Onglets e-commerce et communication avancée
+  // TEAM : E-commerce et communication complète
+  featureBlog: boolean          // Onglet Blog complet (articles + catégories + SEO)
   featureShop: boolean          // Onglet Boutique complet (produits + formations + commandes + stock léger)
   featureWhatsApp: boolean      // Onglet WhatsApp complet (marketing + automations)
   featureSMS: boolean           // Onglet SMS complet (campagnes + automations)
   featureSocialMedia: boolean   // Onglet Réseaux Sociaux complet (Instagram + Facebook + TikTok + programmation)
 
-  // PREMIUM : Onglets avancés
+  // PREMIUM : Outils avancés pour scale
   featureStock: boolean         // Onglet Stock avancé complet (inventaire + alertes + fournisseurs)
 
   // === LIMITES TECHNIQUES ===
@@ -68,18 +68,18 @@ export const PLAN_FEATURES: Record<OrgPlan, OrgFeatures> = {
   },
 
   // ==========================================
-  // DUO - 89€/mois
-  // Petit institut 2-3 personnes
+  // DUO - 69€/mois
+  // Petit institut 2-3 personnes - Marketing de base
   // ==========================================
   DUO: {
-    // Onglets débloqués
-    featureBlog: true,          // ✅ Onglet Blog complet
+    // Marketing de base débloqué
     featureCRM: true,           // ✅ Onglet CRM complet
     featureEmailing: true,      // ✅ Onglet Email Marketing complet
-    featureWhatsApp: true,      // ✅ Onglet WhatsApp complet (messages auto)
-    featureShop: true,          // ✅ Onglet Boutique complet (produits + formations)
 
-    // Onglets toujours cachés
+    // Onglets e-commerce et communication restent cachés
+    featureBlog: false,
+    featureShop: false,
+    featureWhatsApp: false,
     featureSMS: false,
     featureSocialMedia: false,
     featureStock: false,
@@ -90,21 +90,23 @@ export const PLAN_FEATURES: Record<OrgPlan, OrgFeatures> = {
   },
 
   // ==========================================
-  // TEAM - 149€/mois
-  // Institut établi, multi-emplacements
+  // TEAM - 119€/mois
+  // Institut établi - E-commerce et communication complète
   // ==========================================
   TEAM: {
     // Tout de DUO +
-    featureBlog: true,
     featureCRM: true,
     featureEmailing: true,
 
-    // Nouveaux onglets
+    // E-commerce et communication débloqués
+    featureBlog: true,          // ✅ Onglet Blog complet
     featureShop: true,          // ✅ Onglet Boutique complet (produits + formations)
     featureWhatsApp: true,      // ✅ Onglet WhatsApp complet
     featureSMS: true,           // ✅ Onglet SMS complet
     featureSocialMedia: true,   // ✅ Onglet Réseaux Sociaux complet
-    featureStock: true,         // ✅ Onglet Stock avancé complet
+
+    // Stock avancé reste pour PREMIUM
+    featureStock: false,
 
     // Limites
     featureMultiLocation: true,   // ✅ 3 emplacements max
@@ -112,21 +114,21 @@ export const PLAN_FEATURES: Record<OrgPlan, OrgFeatures> = {
   },
 
   // ==========================================
-  // PREMIUM - 249€/mois
-  // Chaîne/Franchise
+  // PREMIUM - 179€/mois
+  // Chaîne/Franchise - Outils avancés pour scale
   // ==========================================
   PREMIUM: {
     // Tout de TEAM +
-    featureBlog: true,
     featureCRM: true,
     featureEmailing: true,
+    featureBlog: true,
     featureShop: true,
     featureWhatsApp: true,
     featureSMS: true,
     featureSocialMedia: true,
 
-    // Tous les onglets débloqués
-    featureStock: true,         // ✅ Onglet Stock avancé complet
+    // Outils avancés débloqués
+    featureStock: true,         // ✅ Onglet Stock avancé complet (inventaire + alertes + fournisseurs)
 
     // Limites
     featureMultiLocation: true,   // ✅ Illimité
@@ -274,13 +276,13 @@ export function getPlanName(plan: OrgPlan): string {
 export function getPlanPrice(plan: OrgPlan): number {
   const prices: Record<OrgPlan, number> = {
     SOLO: 49,
-    DUO: 89,
-    TEAM: 149,
-    PREMIUM: 249,
+    DUO: 69,
+    TEAM: 119,
+    PREMIUM: 179,
     STARTER: 49,
-    ESSENTIAL: 89,
-    PROFESSIONAL: 149,
-    ENTERPRISE: 249,
+    ESSENTIAL: 69,
+    PROFESSIONAL: 119,
+    ENTERPRISE: 179,
   }
   return prices[plan]
 }
@@ -290,10 +292,10 @@ export function getPlanPrice(plan: OrgPlan): number {
  */
 export function getPlanDescription(plan: OrgPlan): string {
   const descriptions: Record<OrgPlan, string> = {
-    SOLO: 'Parfait pour une esthéticienne indépendante seule',
-    DUO: 'Pour un petit institut avec 2-3 personnes',
-    TEAM: 'Pour les instituts établis avec plusieurs emplacements',
-    PREMIUM: 'Pour les chaînes et franchises',
+    SOLO: 'Parfait pour une esthéticienne indépendante seule - Base uniquement',
+    DUO: 'Pour un petit institut 2-3 personnes - Marketing de base (CRM + Email)',
+    TEAM: 'Pour les instituts établis - E-commerce et communication complète',
+    PREMIUM: 'Pour les chaînes et franchises - Outils avancés pour scale',
     STARTER: 'Parfait pour une esthéticienne indépendante seule',
     ESSENTIAL: 'Pour un petit institut avec 2-3 personnes',
     PROFESSIONAL: 'Pour les instituts établis avec plusieurs emplacements',

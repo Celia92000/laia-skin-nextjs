@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import LaiaInvoicesSection from '@/components/LaiaInvoicesSection'
 
 interface Organization {
   id: string
@@ -402,6 +403,11 @@ export default function SubscriptionPage() {
             </div>
           </div>
         )}
+
+        {/* Factures d'abonnement LAIA */}
+        <div className="mb-8">
+          <LaiaInvoicesSection />
+        </div>
 
         {/* FAQ */}
         <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg shadow-md p-6">

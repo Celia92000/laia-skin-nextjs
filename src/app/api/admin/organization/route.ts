@@ -55,7 +55,8 @@ export async function GET() {
         trialEndsAt: user.organization.trialEndsAt,
         stripeCustomerId: user.organization.stripeCustomerId,
         stripeSubscriptionId: user.organization.stripeSubscriptionId,
-        currentPeriodEnd: user.organization.currentPeriodEnd
+        currentPeriodEnd: user.organization.currentPeriodEnd,
+        isOnboarded: user.organization.isOnboarded
       }
     })
 

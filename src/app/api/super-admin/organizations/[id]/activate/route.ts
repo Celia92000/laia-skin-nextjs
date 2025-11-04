@@ -78,9 +78,9 @@ export async function POST(
     // Préparer les données pour l'email
     const planPrices: Record<string, number> = {
       SOLO: 49,
-      DUO: 89,
-      TEAM: 149,
-      PREMIUM: 249
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179
     }
 
     const adminUrl = process.env.NEXT_PUBLIC_APP_URL

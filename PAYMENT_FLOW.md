@@ -73,7 +73,7 @@ Pour chacune :
 ```typescript
 Plans disponibles :
 ┌─────────────────────────────────────────────────────────┐
-│ SOLO      - 49€/mois   - 1 emplacement, 10 users       │
+│ SOLO: 49€/mois   - 1 emplacement, 10 users       │
 │ DUO       - 99€/mois   - 2 emplacements, 25 users      │
 │ TEAM      - 199€/mois  - 5 emplacements, 100 users     │
 │ PREMIUM   - 399€/mois  - Illimité                      │
@@ -110,7 +110,7 @@ STRIPE_PUBLISHABLE_KEY=pk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 
 # Prix Stripe (à créer sur dashboard Stripe)
-PRICE_SOLO=price_xxx        # 49€/mois
+PRICE_SOLO: 49€/mois
 PRICE_DUO=price_xxx          # 99€/mois
 PRICE_TEAM=price_xxx         # 199€/mois
 PRICE_PREMIUM=price_xxx      # 399€/mois
@@ -563,7 +563,7 @@ Si échec → Suspendre après 3 tentatives
 
 | Plan     | Prix/mois | Emplacements | Users | Services | Produits |
 |----------|-----------|--------------|-------|----------|----------|
-| SOLO     | 49€       | 1            | 10    | 100      | 50       |
+| SOLO: 49€       | 1            | 10    | 100      | 50       |
 | DUO      | 99€       | 2            | 25    | 250      | 150      |
 | TEAM     | 199€      | 5            | 100   | 500      | 500      |
 | PREMIUM  | 399€      | Illimité     | 999   | 999      | 999      |

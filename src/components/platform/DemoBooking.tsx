@@ -280,38 +280,9 @@ export default function DemoBooking() {
 
               {/* Info durée fixe */}
               <div className="mb-6 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl">
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Clock className="w-6 h-6 text-purple-600" />
-                    <div className="font-bold text-purple-900">Durée de la démo - 60 minutes</div>
-                  </div>
-                  <div className="text-sm text-purple-900 font-semibold mb-2">Tout ce dont vous avez besoin pour réussir :</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-purple-700">
-                    <div className="flex items-center gap-1.5">
-                      <span>📅</span>
-                      <span>Réservations en ligne</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span>👥</span>
-                      <span>Gestion des clients</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span>💰</span>
-                      <span>Paiements sécurisés</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span>📊</span>
-                      <span>Analytics avancés</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span>🎁</span>
-                      <span>Programme fidélité</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span>📲</span>
-                      <span>Réseaux sociaux</span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-purple-600" />
+                  <div className="font-bold text-purple-900">Durée de la démo - 60 minutes</div>
                 </div>
               </div>
 

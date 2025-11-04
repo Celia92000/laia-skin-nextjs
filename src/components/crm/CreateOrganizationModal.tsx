@@ -25,15 +25,90 @@ interface CreateOrganizationModalProps {
 }
 
 const PLANS = [
-  { id: 'SOLO', name: 'Solo', price: 49, features: ['1 praticien', '1 emplacement', 'Réservations illimitées', 'Site web vitrine'] },
-  { id: 'DUO', name: 'Duo', price: 89, features: ['Jusqu\'à 3 praticiens', '1 emplacement', 'Blog', 'Intégrations avancées'], popular: true },
-  { id: 'TEAM', name: 'Team', price: 149, features: ['Jusqu\'à 10 praticiens', '3 emplacements', 'Boutique', 'CRM & Leads'] },
-  { id: 'PREMIUM', name: 'Premium', price: 249, features: ['Praticiens illimités', 'Emplacements illimités', 'Stock & Formations', 'Support prioritaire'] }
+  {
+    id: 'SOLO',
+    name: 'Solo',
+    price: 49,
+    description: 'Pour démarrer son activité',
+    roi: '+500€/mois de CA supplémentaire',
+    features: [
+      'Site web professionnel multi-templates',
+      'Réservations en ligne 24/7',
+      'Dashboard avec stats temps réel',
+      'Gestion clients + historique',
+      'Programme fidélité VIP complet',
+      'Cartes cadeaux digitales',
+      'Avis clients + photos avant/après',
+      'Sync Google Reviews',
+      'Comptabilité complète + factures',
+      'Paiement en ligne (Stripe)',
+      'Espace client sécurisé',
+      '1 utilisateur • 1 emplacement'
+    ]
+  },
+  {
+    id: 'DUO',
+    name: 'Duo',
+    price: 69,
+    description: 'Pour développer son CA',
+    roi: '+1200€/mois grâce au CRM',
+    features: [
+      '✨ Tout Solo +',
+      'CRM Commercial complet',
+      'Email Marketing (campagnes illimitées)',
+      'Automations marketing intelligentes',
+      'Pipeline de vente & tunnel',
+      'Segmentation clients avancée',
+      'Gestion devis & propositions',
+      'Campagnes de fidélisation auto',
+      "Jusqu'à 3 utilisateurs • 1 emplacement"
+    ]
+  },
+  {
+    id: 'TEAM',
+    name: 'Team',
+    price: 119,
+    description: '⭐ Le plus rentable',
+    roi: '+3500€/mois avec e-commerce',
+    features: [
+      '✨ Tout Duo +',
+      'Blog professionnel (SEO optimisé)',
+      'Boutique en ligne complète',
+      'Paiement produits & abonnements',
+      'WhatsApp Business',
+      'SMS Marketing',
+      'Réseaux sociaux (Instagram + Facebook)',
+      'Publications automatiques',
+      'Analytics e-commerce complet',
+      "Jusqu'à 10 utilisateurs • 3 emplacements"
+    ],
+    popular: true
+  },
+  {
+    id: 'PREMIUM',
+    name: 'Premium',
+    price: 179,
+    description: 'Pour les instituts établis',
+    roi: '+8000€/mois avec multi-sites',
+    features: [
+      '✨ Tout Team +',
+      'Gestion stock avancée multi-sites',
+      'Alertes stock automatiques',
+      'Inventaire temps réel',
+      'Gestion fournisseurs',
+      'Prévisions stock intelligentes',
+      'API complète pour intégrations',
+      'Export comptable automatique',
+      'Accompagnement personnalisé',
+      'Support prioritaire 24/7',
+      'Utilisateurs illimités • Emplacements illimités'
+    ]
+  }
 ];
 
 export default function CreateOrganizationModal({ lead, onClose, onSuccess }: CreateOrganizationModalProps) {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'info' | 'plan' | 'payment' | 'confirm'>(info');
+  const [step, setStep] = useState<'info' | 'plan' | 'payment' | 'confirm'>('info');
 
   const [formData, setFormData] = useState({
     // Données lead (pré-remplies)
@@ -100,7 +175,8 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
               institutName: formData.name,
               loginEmail: data.adminEmail,
               temporaryPassword: data.defaultPassword,
-              loginUrl: `${window.location.origin}/connexion`
+              loginUrl: `${window.location.origin}/connexion`,
+              leadId: lead.id // Ajouter le leadId pour créer une interaction
             })
           });
         } catch (emailError) {
@@ -332,14 +408,20 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
                       </div>
                     )}
                     <div className="text-2xl font-bold text-gray-900 mb-1">{plan.name}</div>
-                    <div className="text-3xl font-bold text-purple-600 mb-4">
+                    <div className="text-xs text-gray-600 mb-3">{plan.description}</div>
+                    <div className="text-3xl font-bold text-purple-600 mb-3">
                       {plan.price}€<span className="text-sm text-gray-600">/mois</span>
+                    </div>
+                    {/* ROI Badge */}
+                    <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg">
+                      <p className="text-center text-green-800 text-xs font-bold mb-1">💰 ROI MOYEN</p>
+                      <p className="text-center text-green-700 text-xs font-semibold">{plan.roi}</p>
                     </div>
                     <ul className="space-y-2 text-sm text-gray-600">
                       {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-center">
-                          <Check className="w-4 h-4 text-green-500 mr-2" />
-                          {feature}
+                          <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                          <span>{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -349,18 +431,18 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
             </div>
           )}
 
-          {/* Étape 3 : Paiement SEPA (optionnel) */}
+          {/* Étape 3 : Paiement SEPA (obligatoire) */}
           {step === 'payment' && (
             <div className="space-y-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Optionnel</strong> - Vous pouvez configurer le prélèvement SEPA maintenant ou plus tard
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p className="text-sm text-purple-800">
+                  <strong>Obligatoire</strong> - Configurez le prélèvement SEPA pour l'abonnement mensuel
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SIRET
+                  SIRET *
                 </label>
                 <input
                   type="text"
@@ -368,13 +450,14 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
                   onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   placeholder="123 456 789 00012"
+                  required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    IBAN
+                    IBAN *
                   </label>
                   <input
                     type="text"
@@ -382,12 +465,13 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
                     onChange={(e) => setFormData({ ...formData, sepaIban: e.target.value.toUpperCase() })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono"
                     placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+                    required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    BIC
+                    BIC *
                   </label>
                   <input
                     type="text"
@@ -395,32 +479,35 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
                     onChange={(e) => setFormData({ ...formData, sepaBic: e.target.value.toUpperCase() })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono"
                     placeholder="BNPAFRPPXXX"
+                    required
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Titulaire du compte
+                  Titulaire du compte *
                 </label>
                 <input
                   type="text"
                   value={formData.sepaAccountHolder}
                   onChange={(e) => setFormData({ ...formData, sepaAccountHolder: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  required
                 />
               </div>
 
-              {formData.sepaIban && formData.sepaBic && (
-                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer">
+              {formData.sepaIban && formData.sepaBic && formData.sepaAccountHolder && formData.siret && (
+                <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer border-2 border-purple-200">
                   <input
                     type="checkbox"
                     checked={formData.sepaMandate}
                     onChange={(e) => setFormData({ ...formData, sepaMandate: e.target.checked })}
                     className="mt-1"
+                    required
                   />
                   <span className="text-sm text-gray-700">
-                    J'autorise LAIA Connect à effectuer des prélèvements SEPA sur ce compte pour le paiement mensuel de l'abonnement
+                    <strong>J'autorise LAIA Connect</strong> à effectuer des prélèvements SEPA sur ce compte pour le paiement mensuel de l'abonnement *
                   </span>
                 </label>
               )}

@@ -151,7 +151,7 @@ Les montants sont définis dans `stripe-service.ts` :
 
 ```typescript
 const planPrices = {
-  SOLO: 49,      // 49€/mois
+  SOLO: 49€/mois
   DUO: 99,       // 99€/mois
   TEAM: 199,     // 199€/mois
   PREMIUM: 399,  // 399€/mois

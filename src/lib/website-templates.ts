@@ -18,7 +18,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
   {
     id: 'classic',
     name: 'Classic',
-    description: 'Design élégant et intemporel inspiré de LAIA SKIN',
+    description: 'Design élégant et intemporel avec mise en page magazine',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/classic/preview',
     features: [
@@ -91,6 +91,23 @@ export const websiteTemplates: WebsiteTemplate[] = [
       'Couleurs éclatantes',
       'Badges colorés',
       'Typographie audacieuse'
+    ]
+  },
+  {
+    id: 'laia-skin',
+    name: 'Laia Skin Institut',
+    description: 'Minimalisme luxueux avec dégradés rose poudré et élégance moderne',
+    minTier: 'PREMIUM',
+    previewUrl: '/super-admin/templates/laia-skin/preview',
+    features: [
+      'Rose poudré et taupe élégant',
+      'Typographie Playfair + Inter',
+      'Dégradés subtils et raffinés',
+      'Design premium mais chaleureux',
+      'Éléments arrondis et ombres douces',
+      'Placeholders photos/vidéos personnalisables',
+      'Galerie immersive',
+      'Section valeurs sophistiquée'
     ]
   },
 

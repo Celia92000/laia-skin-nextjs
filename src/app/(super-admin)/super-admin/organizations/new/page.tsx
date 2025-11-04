@@ -44,6 +44,17 @@ export default function NewOrganizationPage() {
     slug: '',
     subdomain: '',
     domain: '',            // Domaine personnalisé (optionnel)
+
+    // Déblocages spéciaux (négociation manuelle)
+    customFeatureCRM: false,
+    customFeatureEmailing: false,
+    customFeatureBlog: false,
+    customFeatureShop: false,
+    customFeatureWhatsApp: false,
+    customFeatureSMS: false,
+    customFeatureSocialMedia: false,
+    customFeatureStock: false,
+    customAddonPrice: 0, // Prix mensuel additionnel pour les déblocages
   })
 
   // Pré-remplir le formulaire avec les données depuis l'URL (depuis le CRM)
@@ -109,10 +120,7 @@ export default function NewOrganizationPage() {
       const response = await fetch('/api/super-admin/organizations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          selectedAddons // Ajouter les add-ons sélectionnés
-        })
+        body: JSON.stringify(formData)
       })
 
       if (response.ok) {
@@ -396,10 +404,10 @@ export default function NewOrganizationPage() {
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                     style={{ backgroundColor: 'white' }}
                   >
-                    <option value="SOLO">SOLO - 49€/mois (1 emplacement, 1 admin)</option>
-                    <option value="DUO">DUO - 89€/mois (1 emplacement, 3 utilisateurs)</option>
-                    <option value="TEAM">TEAM - 149€/mois (3 emplacements, 10 utilisateurs)</option>
-                    <option value="PREMIUM">PREMIUM - 249€/mois (illimité)</option>
+                    <option value="SOLO">SOLO - 49€/mois (Pour démarrer • ROI +500€/mois) - 1 user</option>
+                    <option value="DUO">DUO - 69€/mois (Développer son CA • ROI +1200€/mois) - 3 users</option>
+                    <option value="TEAM">TEAM - 119€/mois ⭐ LE PLUS RENTABLE (E-commerce • ROI +3500€/mois) - 10 users</option>
+                    <option value="PREMIUM">PREMIUM - 179€/mois (Instituts établis • ROI +8000€/mois) - Illimité</option>
                   </select>
                 </div>
 
@@ -427,12 +435,166 @@ export default function NewOrganizationPage() {
                 <PlanFeaturesPreview selectedPlan={formData.plan as OrgPlan} />
               </div>
 
-              {/* Sélection des options supplémentaires (add-ons) */}
-              <div className="mt-6">
-                <AddonSelector
-                  selectedPlan={formData.plan as OrgPlan}
-                  onAddonsChange={setSelectedAddons}
-                />
+              {/* Déblocages spéciaux (négociation manuelle) */}
+              <div className="mt-8 p-6 bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-xl">
+                <h3 className="text-lg font-bold text-orange-900 mb-2">
+                  🤝 Déblocages spéciaux (négociation)
+                </h3>
+                <p className="text-sm text-orange-700 mb-4">
+                  Activez manuellement des fonctionnalités supplémentaires pour ce client après négociation commerciale.
+                  Ces déblocages s'ajoutent au prix de base de la formule.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureCRM"
+                      checked={formData.customFeatureCRM}
+                      onChange={(e) => setFormData({ ...formData, customFeatureCRM: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">🎯 CRM Commercial</div>
+                      <div className="text-xs text-gray-600">Pipeline + Prospects + Leads</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureEmailing"
+                      checked={formData.customFeatureEmailing}
+                      onChange={(e) => setFormData({ ...formData, customFeatureEmailing: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📧 Email Marketing</div>
+                      <div className="text-xs text-gray-600">Campagnes illimitées</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureBlog"
+                      checked={formData.customFeatureBlog}
+                      onChange={(e) => setFormData({ ...formData, customFeatureBlog: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📝 Blog</div>
+                      <div className="text-xs text-gray-600">SEO optimisé</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureShop"
+                      checked={formData.customFeatureShop}
+                      onChange={(e) => setFormData({ ...formData, customFeatureShop: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">🛍️ Boutique</div>
+                      <div className="text-xs text-gray-600">E-commerce complet</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureWhatsApp"
+                      checked={formData.customFeatureWhatsApp}
+                      onChange={(e) => setFormData({ ...formData, customFeatureWhatsApp: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📱 WhatsApp</div>
+                      <div className="text-xs text-gray-600">WhatsApp Business</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureSMS"
+                      checked={formData.customFeatureSMS}
+                      onChange={(e) => setFormData({ ...formData, customFeatureSMS: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">💬 SMS</div>
+                      <div className="text-xs text-gray-600">SMS Marketing</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureSocialMedia"
+                      checked={formData.customFeatureSocialMedia}
+                      onChange={(e) => setFormData({ ...formData, customFeatureSocialMedia: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📱 Réseaux sociaux</div>
+                      <div className="text-xs text-gray-600">Instagram + Facebook</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
+                    <input
+                      type="checkbox"
+                      name="customFeatureStock"
+                      checked={formData.customFeatureStock}
+                      onChange={(e) => setFormData({ ...formData, customFeatureStock: e.target.checked })}
+                      className="w-5 h-5 text-orange-600"
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">📦 Stock avancé</div>
+                      <div className="text-xs text-gray-600">Gestion multi-sites</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Prix custom pour les déblocages */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-orange-900 mb-2">
+                    💰 Prix mensuel additionnel pour ces déblocages (€)
+                  </label>
+                  <input
+                    type="number"
+                    name="customAddonPrice"
+                    value={formData.customAddonPrice}
+                    onChange={(e) => setFormData({ ...formData, customAddonPrice: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    placeholder="0"
+                    min="0"
+                    step="5"
+                  />
+                  <p className="mt-2 text-sm text-orange-700">
+                    Exemple : SOLO (49€) + déblocages (20€) = <strong>69€/mois total</strong>
+                  </p>
+                </div>
+
+                {/* Calcul total */}
+                {formData.customAddonPrice > 0 && (
+                  <div className="mt-4 p-4 bg-white border-2 border-green-400 rounded-lg">
+                    <div className="flex justify-between items-center text-lg font-bold">
+                      <span className="text-gray-700">💳 Prix total mensuel :</span>
+                      <span className="text-green-600">
+                        {(
+                          (formData.plan === 'SOLO' ? 49 :
+                           formData.plan === 'DUO' ? 69 :
+                           formData.plan === 'TEAM' ? 119 : 179) +
+                          formData.customAddonPrice
+                        )}€/mois
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Auto-généré */}
@@ -704,10 +866,10 @@ export default function NewOrganizationPage() {
                       En cochant cette case, le client autorise LAIA à prélever automatiquement le montant de l'abonnement mensuel :
                     </p>
                     <ul className="text-gray-700 space-y-1 ml-4 mb-2">
-                      <li>• <strong>SOLO</strong> : 49€/mois</li>
-                      <li>• <strong>DUO</strong> : 89€/mois</li>
-                      <li>• <strong>TEAM</strong> : 149€/mois</li>
-                      <li>• <strong>PREMIUM</strong> : 249€/mois</li>
+                      <li>• <strong>SOLO</strong> : 49€/mois (Pour démarrer • ROI +500€/mois)</li>
+                      <li>• <strong>DUO</strong> : 69€/mois (Développer son CA • ROI +1200€/mois)</li>
+                      <li>• <strong>TEAM</strong> : 119€/mois (E-commerce • ROI +3500€/mois) ⭐</li>
+                      <li>• <strong>PREMIUM</strong> : 179€/mois (Instituts établis • ROI +8000€/mois)</li>
                     </ul>
                     <p className="text-gray-700 text-xs">
                       Le premier prélèvement aura lieu automatiquement à la fin de la période d'essai de 30 jours.

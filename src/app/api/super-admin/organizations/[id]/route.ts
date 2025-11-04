@@ -14,6 +14,7 @@ import {
   getNextBillingDate
 } from '@/lib/subscription-billing'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { decrypt } from '@/lib/encryption-service'
 
 export async function GET(
   request: Request,
@@ -142,8 +143,19 @@ export async function GET(
       monthlyAmount = basePlanPrice + recurringAddonsTotal
     }
 
+    // Déchiffrer le mot de passe temporaire si il existe
+    let decryptedTempPassword = null
+    if (organization.temporaryPassword) {
+      try {
+        decryptedTempPassword = decrypt(organization.temporaryPassword)
+      } catch (error) {
+        console.error('⚠️ Erreur déchiffrement mot de passe temporaire:', error)
+      }
+    }
+
     const enrichedOrganization = {
       ...organization,
+      temporaryPassword: decryptedTempPassword, // Remplacer le mot de passe chiffré par le déchiffré
       monthlyAmount, // Utiliser le monthlyAmount calculé ou existant
       userStats: {
         total: users.length,

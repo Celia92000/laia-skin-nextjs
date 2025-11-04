@@ -243,9 +243,9 @@ export async function POST(request: Request) {
     // Prix adaptés aux revenus des instituts esthétiques
     const planPrices = {
       SOLO: 49,      // 3% du revenu moyen
-      DUO: 89,       // 4% du revenu moyen
-      TEAM: 149,     // 5% du revenu moyen
-      PREMIUM: 249   // <3% du revenu moyen
+      DUO: 69,       // 4% du revenu moyen
+      TEAM: 119,     // 5% du revenu moyen
+      PREMIUM: 179   // <3% du revenu moyen
     }
     const basePlanPrice = planPrices[data.plan as keyof typeof planPrices] || 49
 
@@ -253,8 +253,11 @@ export async function POST(request: Request) {
     const selectedAddonsArray: string[] = data.selectedAddons || []
     const recurringAddonsTotal = calculateRecurringAddons(selectedAddonsArray)
 
-    // Montant mensuel total = forfait de base + add-ons récurrents
-    const monthlyAmount = basePlanPrice + recurringAddonsTotal
+    // Ajouter le prix custom des déblocages spéciaux (négociation)
+    const customAddonPrice = parseFloat(data.customAddonPrice) || 0
+
+    // Montant mensuel total = forfait de base + add-ons récurrents + déblocages custom
+    const monthlyAmount = basePlanPrice + recurringAddonsTotal + customAddonPrice
 
     // Date de fin d'essai (30 jours)
     const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -359,12 +362,16 @@ export async function POST(request: Request) {
         maxStorage: data.plan === 'SOLO' ? 5 : data.plan === 'DUO' ? 10 : data.plan === 'TEAM' ? 50 : 999,
         trialEndsAt: trialEndsAt,
 
-        // Features activées selon le forfait
-        featureBlog: planFeatures.featureBlog,
-        featureProducts: planFeatures.featureProducts,
-        featureCRM: planFeatures.featureCRM,
-        featureStock: planFeatures.featureStock,
+        // Features activées selon le forfait + déblocages custom (négociation)
+        featureBlog: data.customFeatureBlog || planFeatures.featureBlog,
+        featureProducts: data.customFeatureShop || planFeatures.featureProducts,
+        featureCRM: data.customFeatureCRM || planFeatures.featureCRM,
+        featureStock: data.customFeatureStock || planFeatures.featureStock,
         featureFormations: planFeatures.featureFormations,
+        featureEmailing: data.customFeatureEmailing || planFeatures.featureEmailing || false,
+        featureWhatsApp: data.customFeatureWhatsApp || planFeatures.featureWhatsApp || false,
+        featureSMS: data.customFeatureSMS || planFeatures.featureSMS || false,
+        featureSocialMedia: data.customFeatureSocialMedia || planFeatures.featureSocialMedia || false,
 
         // Add-ons sélectionnés
         addons: serializedAddons,
@@ -473,6 +480,17 @@ export async function POST(request: Request) {
       }
     })
 
+    // Stocker le mot de passe temporaire chiffré dans l'organisation
+    try {
+      const encryptedTempPassword = encrypt(generatedPassword)
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: { temporaryPassword: encryptedTempPassword }
+      })
+    } catch (error) {
+      console.error('⚠️ Erreur stockage mot de passe temporaire (non bloquant):', error)
+    }
+
     // Créer le client Stripe avec mandat SEPA (utiliser les données NON chiffrées)
     if (data.sepaIban && data.sepaBic) {
       try {
@@ -550,6 +568,75 @@ export async function POST(request: Request) {
       } catch (invoiceError) {
         console.error('⚠️ Erreur génération facture services ponctuels (non bloquant):', invoiceError)
       }
+    }
+
+    // Générer une facture pour le premier mois d'abonnement (après la période d'essai)
+    try {
+      const subscriptionInvoiceNumber = generateInvoiceNumber()
+      const subscriptionDueDate = trialEndsAt // Échéance = fin de période d'essai
+
+      // Créer les lignes de la facture pour l'abonnement
+      const subscriptionLineItems = []
+
+      // Ligne pour le plan de base
+      subscriptionLineItems.push({
+        description: `Abonnement ${data.plan} - Premier mois`,
+        quantity: 1,
+        unitPrice: basePlanPrice,
+        total: basePlanPrice
+      })
+
+      // Lignes pour les add-ons récurrents
+      for (const addonId of recurringAddons) {
+        const addon = getAddonById(addonId)
+        if (addon) {
+          subscriptionLineItems.push({
+            description: `${addon.name} (mensuel)`,
+            quantity: 1,
+            unitPrice: addon.price,
+            total: addon.price
+          })
+        }
+      }
+
+      // Créer la facture d'abonnement
+      const subscriptionInvoice = await prisma.invoice.create({
+        data: {
+          organizationId: organization.id,
+          invoiceNumber: subscriptionInvoiceNumber,
+          amount: monthlyAmount, // Montant total mensuel (plan + addons récurrents)
+          plan: data.plan,
+          status: 'PENDING',
+          issueDate: new Date(),
+          dueDate: subscriptionDueDate,
+          description: `Abonnement ${data.plan} - Premier mois après période d'essai`,
+          metadata: {
+            type: 'subscription',
+            period: 'first-month',
+            lineItems: subscriptionLineItems
+          } as any
+        }
+      })
+
+      console.log(`✅ Facture ${subscriptionInvoiceNumber} générée pour l'abonnement : ${monthlyAmount}€/mois`)
+
+      // Envoyer la facture par email
+      try {
+        await sendInvoiceEmail({
+          organizationName: data.name,
+          ownerEmail: data.billingEmail || data.ownerEmail,
+          invoiceNumber: subscriptionInvoiceNumber,
+          amount: monthlyAmount,
+          dueDate: subscriptionDueDate,
+          plan: data.plan,
+          lineItems: subscriptionLineItems as any,
+        })
+        console.log(`📧 Facture d'abonnement ${subscriptionInvoiceNumber} envoyée par email`)
+      } catch (emailError) {
+        console.error('⚠️ Erreur envoi email facture abonnement (non bloquant):', emailError)
+      }
+    } catch (invoiceError) {
+      console.error('⚠️ Erreur génération facture abonnement (non bloquant):', invoiceError)
     }
 
     // Générer le template LAIA SKIN INSTITUT pour la nouvelle organisation

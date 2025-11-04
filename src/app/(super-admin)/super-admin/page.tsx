@@ -532,9 +532,6 @@ export default function SuperAdminPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Dernière activité
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -553,7 +550,11 @@ export default function SuperAdminPage() {
                   }
 
                   return (
-                    <tr key={org.id} className="hover:bg-gray-50">
+                    <tr
+                      key={org.id}
+                      onClick={() => router.push(`/super-admin/organizations/${org.id}`)}
+                      className="hover:bg-purple-50 cursor-pointer transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{org.name}</div>
                         <div className="text-xs text-gray-500">@{org.slug}</div>
@@ -574,16 +575,6 @@ export default function SuperAdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(org.lastActivity).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <Link
-                          href={`/super-admin/organizations/${org.id}`}
-                          style={{ color: '#7c3aed' }}
-                          onMouseEnter={(e) => e.currentTarget.style.color = '#8B7355'}
-                          onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
-                        >
-                          Voir détails →
-                        </Link>
                       </td>
                     </tr>
                   )
@@ -698,7 +689,7 @@ export default function SuperAdminPage() {
                     </div>
                     <h4 className="font-semibold text-gray-700 mb-3 mt-6">Revenu moyen par plan :</h4>
                     {analytics.revenue.byPlan.map(plan => {
-                      const planPrices: {[key: string]: number} = { SOLO: 49, DUO: 89, TEAM: 149, PREMIUM: 249 }
+                      const planPrices: {[key: string]: number} = { SOLO: 49, DUO: 69, TEAM: 119, PREMIUM: 179 }
                       return (
                         <div key={plan.plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="font-medium text-gray-700">{plan.plan}</div>

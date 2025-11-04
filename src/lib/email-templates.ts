@@ -272,12 +272,12 @@ export const emailTemplates = {
     subject: "Votre avis compte pour nous 🌟",
     html: (data: { name: string; service: string; date: string }) => `
       <h2 style="color: #2c3e50;">Merci ${data.name} ! 💕</h2>
-      
+
       <p style="color: #666; line-height: 1.8; font-size: 16px;">
         J'espère que vous avez apprécié votre <strong>${data.service}</strong> du ${data.date}.
         Votre satisfaction est ma priorité absolue !
       </p>
-      
+
       <div style="background: #fdfbf7; border: 2px solid #d4b5a0; border-radius: 12px; padding: 25px; margin: 30px 0; text-align: center;">
         <h3 style="color: #d4b5a0; margin-top: 0;">⭐ Partagez votre expérience</h3>
         <p style="color: #666; font-size: 15px; margin: 15px 0;">
@@ -293,23 +293,136 @@ export const emailTemplates = {
           Cela ne prend que 2 minutes ⏱️
         </p>
       </div>
-      
+
       <div style="background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%); border-radius: 8px; padding: 20px; margin: 25px 0;">
         <h4 style="color: #d4b5a0; margin-top: 0;">🎁 En remerciement</h4>
         <p style="color: #666; font-size: 15px;">
           Laissez un avis et recevez <strong>10% de réduction</strong> sur votre prochain soin !
         </p>
       </div>
-      
+
       <p style="color: #666; font-size: 14px; margin-top: 30px;">
-        PS : Si vous préférez, vous pouvez aussi laisser un avis sur 
-        <a href="https://g.page/laia-skin-institut/review" style="color: #d4b5a0;">Google</a> 
+        PS : Si vous préférez, vous pouvez aussi laisser un avis sur
+        <a href="https://g.page/laia-skin-institut/review" style="color: #d4b5a0;">Google</a>
         ou simplement me répondre à cet email.
       </p>
-      
+
       <p style="color: #d4b5a0; font-style: italic; margin-top: 30px;">
         Merci pour votre confiance,<br>
         <strong>Laia</strong>
+      </p>
+    `
+  },
+
+  // Template Confirmation de Paiement LAIA Connect
+  paymentConfirmation: {
+    subject: "✅ Paiement confirmé - {{institutName}} - LAIA Connect",
+    html: (data: { contactName: string; institutName: string; planName: string; amount: number; invoiceUrl?: string }) => `
+      <h2 style="color: #2c3e50;">🎉 Paiement confirmé !</h2>
+
+      <p style="color: #666; line-height: 1.8; font-size: 16px;">
+        Bonjour ${data.contactName},
+      </p>
+
+      <p style="color: #666; line-height: 1.8; font-size: 16px;">
+        Merci pour votre confiance ! Votre paiement pour <strong>${data.institutName}</strong> a bien été enregistré.
+      </p>
+
+      <!-- Payment details -->
+      <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 25px; border-radius: 12px; margin: 30px 0; border-left: 4px solid #10b981;">
+        <h3 style="color: #10b981; font-size: 18px; margin: 0 0 15px 0;">💳 Détails du paiement</h3>
+        <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Institut :</strong> ${data.institutName}</p>
+        <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Forfait :</strong> ${data.planName}</p>
+        <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Montant :</strong> ${data.amount}€</p>
+      </div>
+
+      <!-- What's next -->
+      <div style="background-color: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; border-radius: 8px; margin: 0 0 30px 0;">
+        <h3 style="color: #92400e; font-size: 16px; margin: 0 0 10px 0;">📋 Prochaines étapes</h3>
+        <ul style="color: #92400e; font-size: 14px; margin: 0; padding-left: 20px;">
+          <li style="margin-bottom: 8px;">Notre équipe va <strong>préparer votre espace LAIA Connect</strong></li>
+          <li style="margin-bottom: 8px;">Vous recevrez vos <strong>identifiants de connexion</strong> sous 24h</li>
+          <li style="margin-bottom: 8px;">Vous pourrez <strong>configurer votre site</strong> (template, couleurs, contenus)</li>
+          <li>Votre site sera <strong>en ligne</strong> et prêt à prendre des réservations !</li>
+        </ul>
+      </div>
+
+      ${data.invoiceUrl ? `
+      <div style="text-align: center; padding: 20px 0;">
+        <a href="${data.invoiceUrl}" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #9333ea, #ec4899); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
+          📄 Télécharger ma facture
+        </a>
+      </div>
+      ` : ''}
+
+      <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; text-align: center;">
+        À très bientôt ! 🚀
+      </p>
+    `
+  },
+
+  // Template Invitation Onboarding LAIA Connect
+  onboardingInvitation: {
+    subject: "🎉 Bienvenue sur LAIA Connect - Votre espace est prêt !",
+    html: (data: { institutName: string; loginEmail: string; temporaryPassword: string; loginUrl: string }) => `
+      <div style="text-align: center;">
+        <h1 style="color: #9333ea; font-size: 32px;">🎉 Bienvenue !</h1>
+        <p style="color: #666; font-size: 16px;">Votre espace LAIA Connect est prêt</p>
+      </div>
+
+      <h2 style="color: #2c3e50; font-size: 24px; margin: 30px 0 20px 0;">
+        Votre institut <strong>${data.institutName}</strong> est configuré !
+      </h2>
+
+      <p style="color: #666; line-height: 1.8; font-size: 16px;">
+        Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenant vous connecter et configurer votre site web en 4 étapes simples.
+      </p>
+
+      <!-- Credentials box -->
+      <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 25px; border-radius: 12px; margin: 30px 0; border-left: 4px solid #f59e0b;">
+        <h3 style="color: #92400e; font-size: 18px; margin: 0 0 15px 0;">🔐 Vos identifiants de connexion</h3>
+        <div style="background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+          <p style="color: #666; font-size: 14px; margin: 0 0 5px 0;"><strong>Email :</strong></p>
+          <p style="color: #9333ea; font-size: 16px; font-weight: 700; margin: 0; font-family: monospace;">${data.loginEmail}</p>
+        </div>
+        <div style="background-color: white; padding: 15px; border-radius: 8px;">
+          <p style="color: #666; font-size: 14px; margin: 0 0 5px 0;"><strong>Mot de passe temporaire :</strong></p>
+          <p style="color: #9333ea; font-size: 16px; font-weight: 700; margin: 0; font-family: monospace;">${data.temporaryPassword}</p>
+        </div>
+        <p style="color: #92400e; font-size: 12px; margin: 15px 0 0 0;">
+          ⚠️ <strong>Important :</strong> Vous pourrez changer ce mot de passe après votre première connexion.
+        </p>
+      </div>
+
+      <!-- CTA Button -->
+      <div style="text-align: center; padding: 20px 0;">
+        <a href="${data.loginUrl}" style="display: inline-block; padding: 18px 50px; background: linear-gradient(135deg, #9333ea, #ec4899); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 700; box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);">
+          🚀 Accéder à mon espace
+        </a>
+      </div>
+
+      <!-- Onboarding Steps -->
+      <div style="background: linear-gradient(135deg, #f3e7ff, #fce7f3); padding: 25px; border-radius: 12px; margin: 30px 0;">
+        <h3 style="color: #9333ea; font-size: 18px; margin: 0 0 15px 0;">📝 Configuration en 4 étapes</h3>
+        <ol style="color: #666; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
+          <li><strong>Choisissez votre template de site</strong> - Plus de 12 designs professionnels</li>
+          <li><strong>Personnalisez les couleurs</strong> - Adaptez le design à votre image de marque</li>
+          <li><strong>Ajoutez vos textes et photos</strong> - Racontez votre histoire</li>
+          <li><strong>Validez la configuration</strong> - Votre site est en ligne ! 🎉</li>
+        </ol>
+      </div>
+
+      <!-- Support -->
+      <div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin: 30px 0;">
+        <h4 style="color: #2563eb; margin-top: 0;">💬 Besoin d'aide ?</h4>
+        <p style="color: #666; font-size: 15px; margin: 0;">
+          Notre équipe est là pour vous accompagner. N'hésitez pas à nous contacter à
+          <a href="mailto:support@laia-connect.fr" style="color: #9333ea;">support@laia-connect.fr</a>
+        </p>
+      </div>
+
+      <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; text-align: center;">
+        Bienvenue dans la famille LAIA Connect ! 💜
       </p>
     `
   }

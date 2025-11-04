@@ -348,9 +348,9 @@ export async function calculateTotalMonthlyCost(organizationId: string): Promise
 function getBasePlanPrice(plan: string): number {
   const prices: Record<string, number> = {
     SOLO: 49,
-    DUO: 89,
-    TEAM: 149,
-    PREMIUM: 249
+    DUO: 69,
+    TEAM: 119,
+    PREMIUM: 179
   }
   return prices[plan] || 49
 }

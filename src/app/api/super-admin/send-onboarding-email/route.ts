@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Récupérer les paramètres de l'email
-    const { email, institutName, loginEmail, temporaryPassword, loginUrl } = await request.json()
+    const { email, institutName, loginEmail, temporaryPassword, loginUrl, leadId } = await request.json()
 
     if (!email || !institutName || !loginEmail || !temporaryPassword || !loginUrl) {
       return NextResponse.json(
@@ -52,6 +52,30 @@ export async function POST(request: Request) {
         temporaryPassword,
         loginUrl
       })
+
+      // Enregistrer l'interaction dans le lead si leadId fourni
+      if (leadId) {
+        try {
+          await prisma.leadInteraction.create({
+            data: {
+              leadId: leadId,
+              userId: decoded.userId,
+              type: 'EMAIL',
+              subject: `📨 Email d'onboarding envoyé - ${institutName}`,
+              content: `Email d'invitation à l'onboarding envoyé à ${email}.\n\n` +
+                `**Identifiants de connexion :**\n` +
+                `• Email : ${loginEmail}\n` +
+                `• Mot de passe : ${temporaryPassword}\n` +
+                `• URL de connexion : ${loginUrl}\n\n` +
+                `⚠️ Ces identifiants permettent au client de se connecter à son espace admin.`
+            }
+          })
+          console.log(`✅ Interaction EMAIL enregistrée pour le lead ${leadId}`)
+        } catch (interactionError) {
+          console.error('⚠️ Erreur enregistrement interaction (non bloquant):', interactionError)
+          // Ne pas bloquer si l'enregistrement de l'interaction échoue
+        }
+      }
 
       return NextResponse.json({
         success: true,

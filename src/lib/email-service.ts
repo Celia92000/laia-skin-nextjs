@@ -757,6 +757,10 @@ export async function sendPaymentConfirmationEmail({
   amount,
   invoiceUrl
 }: SendPaymentConfirmationEmailParams) {
+  // ✅ Utilise le template depuis email-templates.ts (modifiable facilement)
+  const { emailTemplates } = await import('./email-templates');
+  const template = emailTemplates.paymentConfirmation;
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -770,67 +774,17 @@ export async function sendPaymentConfirmationEmail({
             <tr>
                 <td align="center">
                     <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
-                        <!-- Header -->
                         <tr>
                             <td style="background: linear-gradient(135deg, #9333ea, #ec4899); padding: 40px; text-align: center;">
                                 <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">LAIA Connect</h1>
                                 <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Logiciel de gestion pour instituts de beauté</p>
                             </td>
                         </tr>
-
-                        <!-- Content -->
                         <tr>
                             <td style="padding: 40px;">
-                                <h2 style="color: #2c3e50; font-size: 24px; margin: 0 0 20px 0;">
-                                    🎉 Paiement confirmé !
-                                </h2>
-
-                                <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                                    Bonjour ${contactName},
-                                </p>
-
-                                <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                                    Merci pour votre confiance ! Votre paiement pour <strong>${institutName}</strong> a bien été enregistré.
-                                </p>
-
-                                <!-- Payment details -->
-                                <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 25px; border-radius: 12px; margin: 0 0 30px 0; border-left: 4px solid #10b981;">
-                                    <h3 style="color: #10b981; font-size: 18px; margin: 0 0 15px 0;">💳 Détails du paiement</h3>
-                                    <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Institut :</strong> ${institutName}</p>
-                                    <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Forfait :</strong> ${planName}</p>
-                                    <p style="color: #666; font-size: 15px; margin: 8px 0;"><strong>Montant :</strong> ${amount}€</p>
-                                </div>
-
-                                <!-- What's next -->
-                                <div style="background-color: #fef3c7; padding: 20px; border-left: 4px solid #f59e0b; border-radius: 8px; margin: 0 0 30px 0;">
-                                    <h3 style="color: #92400e; font-size: 16px; margin: 0 0 10px 0;">📋 Prochaines étapes</h3>
-                                    <ul style="color: #92400e; font-size: 14px; margin: 0; padding-left: 20px;">
-                                        <li style="margin-bottom: 8px;">Notre équipe va <strong>préparer votre espace LAIA Connect</strong></li>
-                                        <li style="margin-bottom: 8px;">Vous recevrez vos <strong>identifiants de connexion</strong> sous 24h</li>
-                                        <li style="margin-bottom: 8px;">Vous pourrez <strong>configurer votre site</strong> (template, couleurs, contenus)</li>
-                                        <li>Votre site sera <strong>en ligne</strong> et prêt à prendre des réservations !</li>
-                                    </ul>
-                                </div>
-
-                                ${invoiceUrl ? `
-                                <table width="100%" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td align="center" style="padding: 20px 0;">
-                                            <a href="${invoiceUrl}" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #9333ea, #ec4899); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                                                📄 Télécharger ma facture
-                                            </a>
-                                        </td>
-                                    </tr>
-                                </table>
-                                ` : ''}
-
-                                <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; text-align: center;">
-                                    À très bientôt ! 🚀
-                                </p>
+                                ${template.html({ contactName, institutName, planName, amount, invoiceUrl })}
                             </td>
                         </tr>
-
-                        <!-- Footer -->
                         <tr>
                             <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
                                 <p style="color: #fff; font-size: 14px; margin: 0 0 10px 0;">
@@ -859,11 +813,12 @@ export async function sendPaymentConfirmationEmail({
     }
 
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <noreply@laia-connect.fr>';
+    const subject = template.subject.replace('{{institutName}}', institutName);
 
     const { data, error } = await getResend().emails.send({
       from: fromEmail,
       to: email,
-      subject: `✅ Paiement confirmé - ${institutName} - LAIA Connect`,
+      subject,
       html: htmlContent,
     });
 
@@ -890,6 +845,10 @@ export async function sendOnboardingInvitationEmail({
   temporaryPassword,
   loginUrl
 }: SendOnboardingInvitationEmailParams) {
+  // ✅ Utilise le template depuis email-templates.ts (modifiable facilement)
+  const { emailTemplates } = await import('./email-templates');
+  const template = emailTemplates.onboardingInvitation;
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -903,70 +862,17 @@ export async function sendOnboardingInvitationEmail({
             <tr>
                 <td align="center">
                     <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
-                        <!-- Header -->
                         <tr>
                             <td style="background: linear-gradient(135deg, #9333ea, #ec4899); padding: 40px; text-align: center;">
-                                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">🎉 Bienvenue !</h1>
-                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Votre espace LAIA Connect est prêt</p>
+                                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">LAIA Connect</h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">Logiciel de gestion pour instituts de beauté</p>
                             </td>
                         </tr>
-
-                        <!-- Content -->
                         <tr>
                             <td style="padding: 40px;">
-                                <h2 style="color: #2c3e50; font-size: 24px; margin: 0 0 20px 0;">
-                                    Votre institut <strong>${institutName}</strong> est configuré !
-                                </h2>
-
-                                <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                                    Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenant vous connecter et configurer votre site web.
-                                </p>
-
-                                <!-- Credentials box -->
-                                <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 25px; border-radius: 12px; margin: 0 0 30px 0; border-left: 4px solid #f59e0b;">
-                                    <h3 style="color: #92400e; font-size: 18px; margin: 0 0 15px 0;">🔐 Vos identifiants de connexion</h3>
-                                    <div style="background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                                        <p style="color: #666; font-size: 14px; margin: 0 0 5px 0;"><strong>Email :</strong></p>
-                                        <p style="color: #9333ea; font-size: 16px; font-weight: 700; margin: 0; font-family: monospace;">${loginEmail}</p>
-                                    </div>
-                                    <div style="background-color: white; padding: 15px; border-radius: 8px;">
-                                        <p style="color: #666; font-size: 14px; margin: 0 0 5px 0;"><strong>Mot de passe temporaire :</strong></p>
-                                        <p style="color: #9333ea; font-size: 16px; font-weight: 700; margin: 0; font-family: monospace;">${temporaryPassword}</p>
-                                    </div>
-                                    <p style="color: #92400e; font-size: 12px; margin: 15px 0 0 0;">
-                                        ⚠️ <strong>Important :</strong> Vous pourrez changer ce mot de passe après votre première connexion.
-                                    </p>
-                                </div>
-
-                                <!-- CTA Button -->
-                                <table width="100%" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td align="center" style="padding: 20px 0;">
-                                            <a href="${loginUrl}" style="display: inline-block; padding: 18px 50px; background: linear-gradient(135deg, #9333ea, #ec4899); color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 700; box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);">
-                                                🚀 Accéder à mon espace
-                                            </a>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <!-- What's next -->
-                                <div style="background-color: #f3e7ff; padding: 20px; border-left: 4px solid #9333ea; border-radius: 8px; margin: 30px 0;">
-                                    <h3 style="color: #7c3aed; font-size: 16px; margin: 0 0 10px 0;">📋 Configuration de votre site (4 étapes)</h3>
-                                    <ol style="color: #7c3aed; font-size: 14px; margin: 0; padding-left: 20px;">
-                                        <li style="margin-bottom: 8px;"><strong>Choix du template</strong> - Sélectionnez le design de votre site parmi 12 templates professionnels</li>
-                                        <li style="margin-bottom: 8px;"><strong>Couleurs</strong> - Personnalisez les couleurs pour correspondre à votre image de marque</li>
-                                        <li style="margin-bottom: 8px;"><strong>Textes & Photos</strong> - Ajoutez vos textes, votre logo et vos photos</li>
-                                        <li><strong>Configuration détaillée</strong> - Complétez les informations (horaires, services, réseaux sociaux, etc.)</li>
-                                    </ol>
-                                </div>
-
-                                <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 20px 0 0 0; text-align: center;">
-                                    Notre équipe reste à votre disposition pour vous accompagner ! 💜
-                                </p>
+                                ${template.html({ institutName, loginEmail, temporaryPassword, loginUrl })}
                             </td>
                         </tr>
-
-                        <!-- Footer -->
                         <tr>
                             <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
                                 <p style="color: #fff; font-size: 14px; margin: 0 0 10px 0;">
@@ -1001,7 +907,7 @@ export async function sendOnboardingInvitationEmail({
     const { data, error } = await getResend().emails.send({
       from: fromEmail,
       to: email,
-      subject: `🎉 Bienvenue sur LAIA Connect - ${institutName}`,
+      subject: template.subject,
       html: htmlContent,
     });
 

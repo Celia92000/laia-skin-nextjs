@@ -289,6 +289,13 @@ export default function CRMPage() {
     applyFilters()
   }, [leads, searchFilters, activeTab])
 
+  useEffect(() => {
+    if (activeTab === 'clients') {
+      // Rediriger vers la page organisations qui a déjà toutes les infos
+      router.push('/super-admin')
+    }
+  }, [activeTab, router])
+
   async function fetchLeads() {
     setLoading(true)
     try {
@@ -1224,90 +1231,12 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* Vue Clients (leads avec organisation créée) */}
+      {/* Vue Clients - Redirection automatique vers la page organisations */}
       {activeTab === 'clients' && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Institut</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organisation</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Forfait</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ville</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date création</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLeads.map(lead => {
-                  // Sécurité: ne devrait afficher que les leads avec organisation
-                  if (!lead.organization) return null
-
-                  return (
-                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="hover:bg-gray-50 cursor-pointer">
-                      <td className="px-6 py-4">
-                        <div
-                          className="text-sm font-medium text-gray-900 hover:text-purple-600"
-                          onClick={(e) => { e.stopPropagation(); quickSearch(lead.institutName); }}
-                          title="Cliquer pour rechercher"
-                        >
-                          {lead.institutName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{lead.contactName}</div>
-                        <div className="text-xs text-gray-500">{lead.contactEmail}</div>
-                        {lead.contactPhone && <div className="text-xs text-gray-400">{lead.contactPhone}</div>}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-purple-600">
-                          {lead.organization.name}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          ID: {lead.organization.id.slice(0, 8)}...
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded ${
-                          lead.organization.plan === 'PREMIUM' ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700' :
-                          lead.organization.plan === 'TEAM' ? 'bg-blue-100 text-blue-700' :
-                          lead.organization.plan === 'DUO' ? 'bg-green-100 text-green-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {lead.organization.plan}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {lead.city || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(lead.organization.createdAt).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            window.open(`/super-admin/organizations`, '_blank')
-                          }}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition"
-                        >
-                          👁️ Voir
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            {filteredLeads.length === 0 && (
-              <div className="text-center py-12 text-gray-500">
-                Aucun client converti. Les leads avec organisation créée apparaîtront ici.
-              </div>
-            )}
-          </div>
+        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="text-6xl mb-4">🔄</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Redirection en cours...</h3>
+          <p className="text-gray-600">Vous allez être redirigé vers la page organisations</p>
         </div>
       )}
 

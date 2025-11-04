@@ -821,6 +821,36 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                   </div>
                 </div>
 
+                {organization.temporaryPassword && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mot de passe temporaire initial
+                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Créé lors de l&apos;onboarding</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={organization.temporaryPassword}
+                        readOnly
+                        id="temp-password"
+                        className="flex-1 px-4 py-2 border rounded-lg bg-blue-50 font-mono"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(organization.temporaryPassword)
+                          alert('✅ Mot de passe copié!')
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      >
+                        Copier
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      ⚠️ Ce mot de passe a été envoyé par email au client lors de la création de l&apos;organisation
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">URL de connexion</label>
                   <div className="flex gap-2">
@@ -1133,15 +1163,19 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             </div>
 
             {/* Liste des factures */}
-            {organization.invoices && organization.invoices.length > 0 && (
-              <div className="bg-white rounded-lg p-6 border">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Dernières factures ({organization.invoices.length})</h3>
+            <div className="bg-white rounded-lg p-6 border">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                Factures {organization.invoices && organization.invoices.length > 0 ? `(${organization.invoices.length})` : ''}
+              </h3>
+
+              {organization.invoices && organization.invoices.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">N° Facture</th>
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Date</th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Description</th>
                         <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600">Plan</th>
                         <th className="text-right py-3 px-4 text-xs font-semibold text-gray-600">Montant</th>
                         <th className="text-center py-3 px-4 text-xs font-semibold text-gray-600">Statut</th>
@@ -1165,6 +1199,9 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                             <td className="py-3 px-4 text-sm text-gray-600">
                               {new Date(invoice.issueDate).toLocaleDateString('fr-FR')}
                             </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {invoice.description || '-'}
+                            </td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
                                 {invoice.plan}
@@ -1187,8 +1224,14 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📄</div>
+                  <p className="text-gray-500 text-lg mb-2">Aucune facture générée</p>
+                  <p className="text-gray-400 text-sm">Les factures apparaîtront ici une fois créées</p>
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-4">
               <Link

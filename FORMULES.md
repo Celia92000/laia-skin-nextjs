@@ -13,7 +13,7 @@
 
 ## 💎 LES 4 FORMULES
 
-| 🏷️ Fonctionnalité | 💫 SOLO<br/>49€/mois | 👥 DUO<br/>89€/mois | 🏢 TEAM<br/>149€/mois | 🌟 PREMIUM<br/>249€/mois |
+| 🏷️ Fonctionnalité | 💫 SOLO: 49€/mois |
 |---|:---:|:---:|:---:|:---:|
 | **LIMITES** |
 | 👤 Nombre d'utilisateurs | 1 admin | 3 utilisateurs | 10 utilisateurs | ♾️ Illimité |
@@ -189,7 +189,7 @@
 
 ## 📊 RÉCAPITULATIF PAR FORMULE
 
-### 💫 SOLO - 49€/mois
+### 💫 SOLO: 49€/mois
 **Pour qui ?** Esthéticienne indépendante seule
 
 **✅ Inclus :**
@@ -220,7 +220,7 @@
 
 ---
 
-### 👥 DUO - 89€/mois
+### 👥 DUO: 69€/mois
 **Pour qui ?** Petit institut 2-3 personnes
 
 **✅ Inclus :**
@@ -241,11 +241,11 @@
 **💰 Exemples de prix total avec add-ons :**
 - DUO + Réseaux Sociaux = **114€/mois**
 - DUO + WhatsApp + SMS = **124€/mois**
-- DUO + Boutique + Réseaux Sociaux = **139€/mois** (presque équivalent à TEAM)
+- DUO + Boutique + Réseaux Sociaux = **149€/mois** (presque équivalent à TEAM)
 
 ---
 
-### 🏢 TEAM - 149€/mois ⭐ **PLUS POPULAIRE**
+### 🏢 TEAM: 119€/mois ⭐ **PLUS POPULAIRE**
 **Pour qui ?** Institut établi avec plusieurs emplacements
 
 **✅ Inclus :**
@@ -267,7 +267,7 @@
 
 ---
 
-### 🌟 PREMIUM - 249€/mois
+### 🌟 PREMIUM: 179€/mois
 **Pour qui ?** Chaîne d'instituts / Franchise
 
 **✅ Inclus :**
@@ -286,19 +286,19 @@
 ## 🎯 QUELLE FORMULE CHOISIR ?
 
 ### Vous êtes **seule** ?
-→ **SOLO** (49€/mois)
+→ **SOLO: 49€/mois)
 Ajoutez ce qui vous manque avec les add-ons selon vos besoins
 
 ### Vous avez **2-3 employés** et voulez communiquer ?
-→ **DUO** (89€/mois)
+→ **DUO: 69€/mois)
 Blog + CRM + Email Marketing inclus
 
 ### Vous avez **plusieurs sites** ou vendez des **produits** ?
-→ **TEAM** (149€/mois) ⭐ **RECOMMANDÉ**
+→ **TEAM: 119€/mois) ⭐ **RECOMMANDÉ**
 Solution complète avec tout le marketing
 
 ### Vous êtes une **chaîne/franchise** ?
-→ **PREMIUM** (249€/mois)
+→ **PREMIUM: 179€/mois)
 Sans limite avec support VIP
 
 ---

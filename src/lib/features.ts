@@ -690,9 +690,9 @@ export function getPlanName(plan: OrgPlan): string {
 export function getPlanPrice(plan: OrgPlan): number {
   const prices: Record<OrgPlan, number> = {
     SOLO: 49,      // Institut solo - 1 personne (3% du revenu ~1500€)
-    DUO: 89,       // Petit institut - 2-3 personnes (4% du revenu ~2000€)
-    TEAM: 149,     // Institut moyen - multi-emplacements (5% du revenu ~3000€)
-    PREMIUM: 249,  // Grand institut/chaîne (moins de 3% du revenu >8000€)
+    DUO: 69,       // Petit institut - 2-3 personnes (4% du revenu ~2000€)
+    TEAM: 119,     // Institut moyen - multi-emplacements (5% du revenu ~3000€)
+    PREMIUM: 179,  // Grand institut/chaîne (moins de 3% du revenu >8000€)
     STARTER: 49,
     ESSENTIAL: 89,
     PROFESSIONAL: 149,

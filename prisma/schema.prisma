@@ -230,6 +230,7 @@ model Organization {
 
   // Onboarding
   isOnboarded Boolean @default(false) // Configuration initiale terminée
+  temporaryPassword String? // Mot de passe temporaire initial (chiffré) - effacé une fois que l'admin change son mot de passe
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2247,21 +2248,6 @@ enum LeadStatus {
   ON_HOLD // En attente
 }
 
-enum LeadSource {
-  WEBSITE // Formulaire site web
-  REFERRAL // Recommandation
-  LINKEDIN // LinkedIn
-  INSTAGRAM // Instagram
-  FACEBOOK // Facebook
-  GOOGLE_ADS // Google Ads
-  EMAIL_CAMPAIGN // Campagne email
-  COLD_EMAIL // Email à froid
-  COLD_CALL // Appel à froid
-  NETWORKING // Networking/Salon professionnel
-  PARTNER // Partenaire commercial
-  OTHER // Autre
-}
-
 enum LeadQualification {
   COLD // Lead froid - peu d'intérêt
   WARM // Lead moyen - intéressé mais pas pressé
@@ -2427,6 +2413,9 @@ model DemoBooking {
   reminderSent Boolean   @default(false)
   completedAt  DateTime?
   cancelledAt  DateTime?
+
+  // Super-admin tracking
+  viewedByAdminAt DateTime? // Date à laquelle le super-admin a vu cette démo
 }
 
 // ============================================

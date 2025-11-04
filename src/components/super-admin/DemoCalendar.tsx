@@ -1731,6 +1731,20 @@ function BookingDetailModal({
 }) {
   const [updating, setUpdating] = useState(false)
 
+  // Marquer la démo comme vue quand le modal s'ouvre
+  useEffect(() => {
+    const markAsViewed = async () => {
+      try {
+        await fetch(`/api/super-admin/demos/${booking.id}/mark-viewed`, {
+          method: 'POST'
+        })
+      } catch (error) {
+        console.error('Erreur marquage démo comme vue:', error)
+      }
+    }
+    markAsViewed()
+  }, [booking.id])
+
   const updateStatus = async (newStatus: string) => {
     setUpdating(true)
     try {

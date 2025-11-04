@@ -48,7 +48,7 @@ const createPrismaClient = () => {
               retries--;
               if (retries > 0) {
                 // Attendre un peu avant de réessayer (backoff exponentiel)
-                const delay = (4 - retries) * 500; // 500ms, 1s, 1.5s
+                const delay = (4 - retries) * 1000; // 1s, 2s, 3s
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
               }
