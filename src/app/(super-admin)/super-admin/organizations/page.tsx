@@ -684,17 +684,18 @@ export default function OrganizationsPage() {
                     </thead>
                     <tbody>
                       {filteredOrgs.filter(org => org.slug === 'laia-skin' || org.slug === 'laia-skin-institut').map((org) => (
-                        <tr key={org.id} className="bg-white hover:bg-amber-50/50">
+                        <tr
+                          key={org.id}
+                          onClick={() => router.push(`/super-admin/organizations/${org.id}`)}
+                          className="bg-white hover:bg-amber-50 cursor-pointer transition-colors"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-2xl" title="Organisation modèle">⭐</span>
-                                <Link
-                                  href={`/super-admin/organizations/${org.id}`}
-                                  className="text-sm font-bold text-amber-900 hover:text-amber-700 hover:underline cursor-pointer"
-                                >
+                                <span className="text-sm font-bold text-amber-900">
                                   {org.name}
-                                </Link>
+                                </span>
                                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center gap-1 shadow-md animate-pulse">
                                   📋 MODÈLE TEMPLATE
                                 </span>
@@ -726,23 +727,27 @@ export default function OrganizationsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {new Date(org.createdAt).toLocaleDateString('fr-FR')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex items-center gap-3 flex-wrap">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Bouton Site vitrine */}
                               <a
                                 href={org.domain
                                   ? `http://${org.domain}:3001`
                                   : `http://${org.subdomain}.localhost:3001`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5"
-                                title="Voir le site web"
+                                className="px-2 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition text-xs font-medium flex items-center gap-1"
+                                title="Voir le site vitrine"
                               >
                                 🌐 Site
                               </a>
+
+                              {/* Bouton Synchroniser (modèles uniquement) */}
                               <button
                                 onClick={handleSyncTemplate}
                                 disabled={syncing}
-                                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:from-amber-600 hover:to-orange-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-2 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 transition text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+                                title="Synchroniser le template"
                               >
                                 {syncing ? (
                                   <>
@@ -750,23 +755,9 @@ export default function OrganizationsPage() {
                                     Sync...
                                   </>
                                 ) : (
-                                  <>
-                                    🔄 Synchroniser
-                                  </>
+                                  <>🔄 Sync</>
                                 )}
                               </button>
-                              <Link
-                                href={`/super-admin/organizations/${org.id}`}
-                                className="text-indigo-600 hover:text-indigo-900"
-                              >
-                                👁️ Voir
-                              </Link>
-                              <Link
-                                href={`/super-admin/organizations/${org.id}/edit`}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                ✏️ Modifier
-                              </Link>
                             </div>
                           </td>
                         </tr>
@@ -813,16 +804,17 @@ export default function OrganizationsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredOrgs.filter(org => org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut').map((org) => (
-                      <tr key={org.id} className="hover:bg-gray-50">
+                      <tr
+                        key={org.id}
+                        onClick={() => router.push(`/super-admin/organizations/${org.id}`)}
+                        className="hover:bg-indigo-50 cursor-pointer transition-colors"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="flex items-center gap-2">
-                              <Link
-                                href={`/super-admin/organizations/${org.id}`}
-                                className="text-sm font-medium text-gray-900 hover:text-indigo-600 hover:underline cursor-pointer"
-                              >
+                              <span className="text-sm font-medium text-gray-900">
                                 {org.name}
-                              </Link>
+                              </span>
                               {isNewOrganization(org.createdAt) && (
                                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center gap-1 shadow-md animate-pulse">
                                   ✨ NOUVEAU
@@ -853,31 +845,57 @@ export default function OrganizationsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(org.createdAt).toLocaleDateString('fr-FR')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-3 flex-wrap">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {/* Bouton Site vitrine */}
                             <a
                               href={org.domain
                                 ? `http://${org.domain}:3001`
                                 : `http://${org.subdomain}.localhost:3001`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-emerald-600 hover:text-emerald-900 font-medium"
-                              title={`Voir le site ${org.websiteTemplateId ? `(template: ${org.websiteTemplateId})` : ''}`}
+                              className="px-2 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition text-xs font-medium flex items-center gap-1"
+                              title="Voir le site vitrine"
                             >
                               🌐 Site
                             </a>
-                            <Link
-                              href={`/super-admin/organizations/${org.id}`}
-                              className="text-indigo-600 hover:text-indigo-900"
+
+                            {/* Bouton Admin */}
+                            <button
+                              onClick={async () => {
+                                const response = await fetch('/api/super-admin/impersonate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ organizationId: org.id })
+                                })
+                                if (response.ok) {
+                                  const data = await response.json()
+                                  window.location.href = data.redirect
+                                }
+                              }}
+                              className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-xs font-medium flex items-center gap-1"
+                              title="Accéder au dashboard admin"
                             >
-                              👁️ Voir
-                            </Link>
-                            <Link
-                              href={`/super-admin/organizations/${org.id}/edit`}
-                              className="text-blue-600 hover:text-blue-900"
+                              🔧 Admin
+                            </button>
+
+                            {/* Bouton Espace Client */}
+                            <button
+                              onClick={async () => {
+                                const response = await fetch('/api/super-admin/impersonate', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ organizationId: org.id })
+                                })
+                                if (response.ok) {
+                                  window.location.href = '/espace-client'
+                                }
+                              }}
+                              className="px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition text-xs font-medium flex items-center gap-1"
+                              title="Accéder à l'espace client"
                             >
-                              ✏️ Modifier
-                            </Link>
+                              👥 Client
+                            </button>
 
                             {/* Boutons de gestion d'abonnement */}
                             {org.status === 'ACTIVE' && (
