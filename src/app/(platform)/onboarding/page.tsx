@@ -85,6 +85,11 @@ function OnboardingForm() {
   const skipQuestionnaire = searchParams.get('skip') === 'true'
   const shouldReset = searchParams.get('reset') === 'true'
 
+  // ✅ Détecter le montage côté client pour éviter l'hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   // ✅ Réinitialiser l'onboarding si ?reset=true
   useEffect(() => {
     if (shouldReset && typeof window !== 'undefined') {
@@ -163,6 +168,7 @@ function OnboardingForm() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [previewTemplate, setPreviewTemplate] = useState<string | null>(null)
   const [previewPage, setPreviewPage] = useState<'home' | 'services' | 'booking' | 'about' | 'contact' | 'blog' | 'shop'>('home')
+  const [isMounted, setIsMounted] = useState(false)
 
   // ✅ Initialiser data avec localStorage ou valeur par défaut
   const [data, setData] = useState<OnboardingData>(() => {
@@ -507,18 +513,22 @@ function OnboardingForm() {
                 LAIA Connect
               </span>
             </Link>
-            <div className="text-sm text-gray-600">
-              Étape {currentStepIndex + 1} sur {steps.length}
-            </div>
+            {isMounted && (
+              <div className="text-sm text-gray-600">
+                Étape {currentStepIndex + 1} sur {steps.length}
+              </div>
+            )}
           </div>
 
           {/* Barre de progression */}
-          <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {isMounted && (
+            <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
