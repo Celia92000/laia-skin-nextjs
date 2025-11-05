@@ -549,7 +549,7 @@ export default function RegisterPage() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-gray-600 mb-2">
-            En créant un compte, vous acceptez nos <a href="/cgv" className="text-purple-600 hover:underline">CGV</a> et notre <a href="/politique-de-confidentialite" className="text-purple-600 hover:underline">politique de confidentialité</a>
+            En créant un compte, vous acceptez nos <a href="/cgv-laia-connect" className="text-purple-600 hover:underline">CGV</a> et notre <a href="/politique-de-confidentialite" className="text-purple-600 hover:underline">politique de confidentialité</a>
           </p>
           <Link href="/platform" className="text-gray-600 hover:text-purple-600 transition">
             ← Retour à l'accueil

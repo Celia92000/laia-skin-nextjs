@@ -915,7 +915,7 @@ export default function PlatformHomePage() {
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">Légal</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-gray-600 hover:text-purple-600 transition">CGV</a></li>
+                <li><Link href="/cgv-laia-connect" className="text-gray-600 hover:text-purple-600 transition">CGV</Link></li>
                 <li><a href="#" className="text-gray-600 hover:text-purple-600 transition">Mentions légales</a></li>
                 <li><a href="#" className="text-gray-600 hover:text-purple-600 transition">RGPD</a></li>
               </ul>
