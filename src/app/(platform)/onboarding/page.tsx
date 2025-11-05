@@ -496,6 +496,34 @@ function OnboardingForm() {
     }
   }, [data.institutName])
 
+  // ✅ Fonction helper pour vérifier si le formulaire billing est valide
+  const isBillingFormValid = (): boolean => {
+    if (!data.legalName || !data.siret || !data.billingEmail ||
+        !data.billingAddress || !data.billingCity || !data.billingPostalCode ||
+        !data.sepaIban || !data.sepaBic || !data.sepaAccountHolder || !data.sepaMandate) {
+      return false
+    }
+
+    // Vérifier la longueur et validité du SIRET
+    if (data.siret.length !== 14) return false
+    if (!validateSIRET(data.siret)) return false
+
+    // Vérifier l'IBAN
+    if (data.sepaIban.length < 27) return false
+    if (!validateIBAN(data.sepaIban)) return false
+
+    // Vérifier le BIC
+    if (data.sepaBic.length < 8) return false
+    if (!validateBIC(data.sepaBic)) return false
+
+    // Vérifier qu'il n'y a pas d'erreurs de validation
+    if (validationErrors.siret || validationErrors.iban || validationErrors.bic) {
+      return false
+    }
+
+    return true
+  }
+
   const handleNext = () => {
     // ✅ Valider les champs obligatoires avant de continuer
     if (currentStep === 'business-info') {
@@ -5327,27 +5355,7 @@ function OnboardingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={
-                  !data.legalName ||
-                  !data.siret ||
-                  !data.billingEmail ||
-                  !data.billingAddress ||
-                  !data.billingPostalCode ||
-                  !data.billingCity ||
-                  !data.sepaIban ||
-                  !data.sepaBic ||
-                  !data.sepaAccountHolder ||
-                  !data.sepaMandate ||
-                  data.siret.length !== 14 ||
-                  !validateSIRET(data.siret) ||
-                  data.sepaIban.length < 27 ||
-                  !validateIBAN(data.sepaIban) ||
-                  data.sepaBic.length < 8 ||
-                  !validateBIC(data.sepaBic) ||
-                  !!validationErrors.siret ||
-                  !!validationErrors.iban ||
-                  !!validationErrors.bic
-                }
+                disabled={!isBillingFormValid()}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer vers le paiement →
