@@ -1098,31 +1098,15 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Mandat SEPA</p>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                      organization.sepaMandate
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {organization.sepaMandate ? 'Actif' : 'Inactif'}
+                    <p className="text-xs text-gray-500 mb-1">Paiement</p>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                      Prélèvement SEPA Stripe
                     </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Géré par Stripe • Sécurisé
+                    </p>
                   </div>
                 </div>
-                {organization.sepaMandate && (
-                  <div className="pt-4 border-t">
-                    <p className="text-xs text-gray-500 mb-2">Informations SEPA</p>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-gray-500">IBAN:</span>{' '}
-                        <span className="font-mono">{organization.sepaIban || '-'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Titulaire:</span>{' '}
-                        <span>{organization.sepaAccountHolder || '-'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 

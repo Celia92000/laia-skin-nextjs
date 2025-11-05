@@ -116,13 +116,9 @@ model Organization {
   billingCity       String? // Ville
   billingCountry    String? @default("France") // Pays
 
-  // Mandat SEPA pour prélèvement automatique
-  sepaIban          String? // IBAN du compte bancaire
-  sepaBic           String? // BIC de la banque
-  sepaAccountHolder String? // Titulaire du compte
-  sepaMandateRef    String? // Référence unique du mandat (RUM)
+  // Paiement géré par Stripe - Plus besoin de stocker les données bancaires
+  sepaMandateRef    String? // Référence unique du mandat (RUM) - pour affichage uniquement
   sepaMandateDate   DateTime? // Date de signature du mandat
-  sepaMandate       Boolean   @default(false) // Mandat signé oui/non
 
   // Prochaine facturation
   nextBillingDate DateTime? // Date du prochain prélèvement

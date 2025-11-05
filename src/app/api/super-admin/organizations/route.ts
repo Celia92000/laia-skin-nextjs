@@ -262,33 +262,7 @@ export async function POST(request: Request) {
     // Date de fin d'essai (30 jours)
     const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
-    // Valider et chiffrer les données SEPA
-    let encryptedIban: string | undefined
-    let encryptedBic: string | undefined
-
-    if (data.sepaIban && data.sepaBic) {
-      // Valider l'IBAN
-      if (!validateIban(data.sepaIban)) {
-        return NextResponse.json(
-          { error: 'IBAN invalide' },
-          { status: 400 }
-        )
-      }
-
-      // Valider le BIC
-      if (!validateBic(data.sepaBic)) {
-        return NextResponse.json(
-          { error: 'BIC invalide' },
-          { status: 400 }
-        )
-      }
-
-      // Chiffrer les données sensibles
-      encryptedIban = encrypt(data.sepaIban)
-      encryptedBic = encrypt(data.sepaBic)
-    }
-
-    // Générer une référence unique de mandat SEPA (RUM)
+    // Les données bancaires sont gérées par Stripe - pas de stockage direct
     const sepaMandateRef = `LAIA-${data.slug.toUpperCase()}-${Date.now()}`
 
     // Obtenir les features selon le plan choisi
@@ -345,13 +319,9 @@ export async function POST(request: Request) {
         billingEmail: data.billingEmail || data.ownerEmail, // Email de facturation
         billingAddress: data.billingAddress || null, // Adresse de facturation
 
-        // Informations SEPA pour prélèvement automatique (CHIFFRÉES)
-        sepaIban: encryptedIban,
-        sepaBic: encryptedBic,
-        sepaAccountHolder: data.sepaAccountHolder,
+        // Mandat SEPA géré par Stripe (pas de stockage des données bancaires)
         sepaMandateRef: sepaMandateRef,
-        sepaMandateDate: new Date(), // Date de signature du mandat = aujourd'hui
-        sepaMandate: data.sepaMandate, // Boolean: mandat accepté
+        sepaMandateDate: new Date(), // Date de création du mandat
 
         // Facturation automatique
         monthlyAmount: monthlyAmount,
@@ -491,22 +461,8 @@ export async function POST(request: Request) {
       console.error('⚠️ Erreur stockage mot de passe temporaire (non bloquant):', error)
     }
 
-    // Créer le client Stripe avec mandat SEPA (utiliser les données NON chiffrées)
-    if (data.sepaIban && data.sepaBic) {
-      try {
-        await createStripeCustomer({
-          organizationId: organization.id,
-          email: data.billingEmail || data.ownerEmail,
-          name: data.legalName || data.name,
-          iban: data.sepaIban, // Utiliser les données non chiffrées pour Stripe
-          bic: data.sepaBic,   // Stripe chiffre ses propres données
-        })
-        console.log('✅ Client Stripe créé avec succès')
-      } catch (stripeError) {
-        console.error('⚠️ Erreur création client Stripe (non bloquant):', stripeError)
-        // On ne bloque pas la création même si Stripe échoue
-      }
-    }
+    // Le client Stripe sera créé lors du premier paiement via Checkout SEPA
+    console.log('ℹ️ Client Stripe sera créé automatiquement lors du premier paiement')
 
     // Générer une facture immédiate pour les add-ons ponctuels (Migration Assistée, etc.)
     const oneTimeTotal = calculateOneTimeAddons(selectedAddonsArray)

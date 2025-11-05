@@ -1105,41 +1105,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
     const finalBillingCity = billingCity || customerObj?.address?.city || ''
     const finalBillingCountry = billingCountry || customerObj?.address?.country || 'France'
 
-    // Récupérer les informations SEPA RÉELLES depuis Stripe
-    let sepaIban = ''
-    let sepaBic = ''
-    let sepaAccountHolder = `${ownerFirstName} ${ownerLastName}`
-
-    try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-09-30.clover'
-      })
-
-      // Récupérer le payment method depuis la subscription
-      if (session.subscription) {
-        const subscriptionId = typeof session.subscription === 'string'
-          ? session.subscription
-          : session.subscription?.id
-
-        if (subscriptionId) {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-            expand: ['default_payment_method']
-          })
-          const paymentMethod = subscription.default_payment_method as Stripe.PaymentMethod
-          if (paymentMethod?.sepa_debit) {
-            sepaIban = paymentMethod.sepa_debit.last4
-              ? `****${paymentMethod.sepa_debit.last4}`
-              : ''
-            sepaBic = paymentMethod.sepa_debit.bank_code || ''
-            sepaAccountHolder = paymentMethod.billing_details.name || sepaAccountHolder
-            console.log(`✅ SEPA récupéré depuis Stripe: ${sepaAccountHolder} - IBAN ${sepaIban}`)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('⚠️ Erreur récupération SEPA depuis Stripe:', error)
-      // Continuer sans les données SEPA (mandat sera validé plus tard)
-    }
+    // Les données bancaires sont gérées par Stripe - pas besoin de les stocker
 
     // Extraire les IDs Stripe (car session.customer et session.subscription peuvent être des objets ou des strings)
     const stripeCustomerId = typeof session.customer === 'string'
@@ -1170,10 +1136,6 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         billingPostalCode: finalBillingPostalCode,
         billingCity: finalBillingCity,
         billingCountry: finalBillingCountry,
-        sepaIban,
-        sepaBic,
-        sepaAccountHolder,
-        sepaMandate,
         sepaMandateRef,
         sepaMandateDate,
         plan: finalPlan,
