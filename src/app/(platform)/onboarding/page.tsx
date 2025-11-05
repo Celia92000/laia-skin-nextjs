@@ -5328,6 +5328,8 @@ function OnboardingForm() {
               <button
                 onClick={handleNext}
                 disabled={
+                  !data.legalName ||
+                  !data.siret ||
                   !data.billingEmail ||
                   !data.billingAddress ||
                   !data.billingPostalCode ||
@@ -5336,8 +5338,15 @@ function OnboardingForm() {
                   !data.sepaBic ||
                   !data.sepaAccountHolder ||
                   !data.sepaMandate ||
+                  data.siret.length !== 14 ||
+                  !validateSIRET(data.siret) ||
                   data.sepaIban.length < 27 ||
-                  data.sepaBic.length < 8
+                  !validateIBAN(data.sepaIban) ||
+                  data.sepaBic.length < 8 ||
+                  !validateBIC(data.sepaBic) ||
+                  !!validationErrors.siret ||
+                  !!validationErrors.iban ||
+                  !!validationErrors.bic
                 }
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
