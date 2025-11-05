@@ -26,79 +26,22 @@ interface Stats {
 
 interface OnboardingTemplate {
   id: string
+  slug: string
   name: string
-  description: string
+  description: string | null
   subject: string
-  usage: string
-  currentlyUsed: boolean
-  previewData: {
-    organizationName: string
-    ownerFirstName: string
-    ownerLastName: string
-    ownerEmail: string
-    tempPassword: string
-    plan: string
-    adminUrl: string
-    monthlyAmount: number
-  }
+  content: string
+  textContent: string | null
+  availableVariables: any
+  category: string | null
+  isActive: boolean
+  isSystem: boolean
+  fromName: string | null
+  fromEmail: string | null
+  language: string
+  createdAt: Date
+  updatedAt: Date
 }
-
-const onboardingTemplates: OnboardingTemplate[] = [
-  {
-    id: 'welcome',
-    name: '🎉 Email de Bienvenue Complet',
-    description: 'Email envoyé après création du compte avec identifiants et guide',
-    subject: '🎉 Bienvenue sur LAIA Connect - Votre site {organizationName} est prêt !',
-    usage: 'Envoyé automatiquement après onboarding',
-    currentlyUsed: true,
-    previewData: {
-      organizationName: 'Beauté Zen Paris',
-      ownerFirstName: 'Sophie',
-      ownerLastName: 'Martin',
-      ownerEmail: 'sophie@beautezen.fr',
-      tempPassword: 'Test123Pass!@#',
-      plan: 'TEAM',
-      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
-      monthlyAmount: 149
-    }
-  },
-  {
-    id: 'pending',
-    name: '⏳ Confirmation Paiement',
-    description: 'Email de confirmation de paiement sans identifiants (activation manuelle)',
-    subject: '✅ Paiement confirmé - Activation sous 24h - {organizationName}',
-    usage: 'Pour activation manuelle (non utilisé)',
-    currentlyUsed: false,
-    previewData: {
-      organizationName: 'Beauté Zen Paris',
-      ownerFirstName: 'Sophie',
-      ownerLastName: 'Martin',
-      ownerEmail: 'sophie@beautezen.fr',
-      tempPassword: '',
-      plan: 'TEAM',
-      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
-      monthlyAmount: 149
-    }
-  },
-  {
-    id: 'activation',
-    name: '✅ Activation du Compte',
-    description: 'Email d\'activation avec identifiants uniquement',
-    subject: '🎉 Votre compte {organizationName} est activé !',
-    usage: 'Pour activation différée (non utilisé)',
-    currentlyUsed: false,
-    previewData: {
-      organizationName: 'Beauté Zen Paris',
-      ownerFirstName: 'Sophie',
-      ownerLastName: 'Martin',
-      ownerEmail: 'sophie@beautezen.fr',
-      tempPassword: 'Test123Pass!@#',
-      plan: 'TEAM',
-      adminUrl: 'https://beaute-zen-paris.laia-connect.fr/admin',
-      monthlyAmount: 149
-    }
-  }
-]
 
 export default function EmailAutomationsPage() {
   const router = useRouter()
@@ -112,12 +55,17 @@ export default function EmailAutomationsPage() {
   const [saving, setSaving] = useState(false)
 
   // Onboarding templates
+  const [onboardingTemplates, setOnboardingTemplates] = useState<OnboardingTemplate[]>([])
+  const [loadingOnboarding, setLoadingOnboarding] = useState(true)
   const [selectedOnboardingTemplate, setSelectedOnboardingTemplate] = useState<OnboardingTemplate | null>(null)
   const [showOnboardingPreview, setShowOnboardingPreview] = useState(false)
+  const [showOnboardingEditModal, setShowOnboardingEditModal] = useState(false)
+  const [editingOnboardingTemplate, setEditingOnboardingTemplate] = useState<OnboardingTemplate | null>(null)
   const [activeTab, setActiveTab] = useState<'crm' | 'onboarding'>('onboarding')
 
   useEffect(() => {
     fetchAutomations()
+    fetchOnboardingTemplates()
   }, [])
 
   async function fetchAutomations() {
@@ -138,6 +86,26 @@ export default function EmailAutomationsPage() {
       console.error('Error fetching automations:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchOnboardingTemplates() {
+    try {
+      setLoadingOnboarding(true)
+      const response = await fetch('/api/super-admin/onboarding-templates')
+
+      if (response.ok) {
+        const data = await response.json()
+        setOnboardingTemplates(data)
+      } else if (response.status === 401) {
+        router.push('/login?redirect=/super-admin/email-automations')
+      } else if (response.status === 403) {
+        router.push('/admin')
+      }
+    } catch (error) {
+      console.error('Error fetching onboarding templates:', error)
+    } finally {
+      setLoadingOnboarding(false)
     }
   }
 

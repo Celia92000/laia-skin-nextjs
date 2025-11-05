@@ -89,10 +89,11 @@ export async function generateOrganizationTemplate(options: TemplateGenerationOp
   console.log(`✅ Configuration du site mise à jour`)
 
   // 8. Activer les features selon le plan + add-ons
-  await activatePlanFeatures(organizationId, plan, options.selectedAddons)
-  console.log(`✅ Features activées pour le plan ${plan}`)
+  // TODO: Réactiver quand les champs featureBlog, featureCRM, etc. seront ajoutés au schéma Organization
+  // await activatePlanFeatures(organizationId, plan, options.selectedAddons)
+  console.log(`⏭️  Features plan ${plan} (activation désactivée temporairement)`)
   if (options.selectedAddons && options.selectedAddons.length > 0) {
-    console.log(`✅ ${options.selectedAddons.length} add-ons activés:`, options.selectedAddons)
+    console.log(`📦 ${options.selectedAddons.length} add-ons sélectionnés:`, options.selectedAddons)
   }
 
   return {

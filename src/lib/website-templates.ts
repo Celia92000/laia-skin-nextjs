@@ -14,185 +14,112 @@ export interface WebsiteTemplate {
 }
 
 export const websiteTemplates: WebsiteTemplate[] = [
-  // ===== TEMPLATES STANDARD (6 templates) =====
+  // Templates classiques
   {
     id: 'classic',
-    name: 'Classic',
-    description: 'Design élégant et intemporel avec mise en page magazine',
+    name: 'Classique',
+    description: 'L\'intemporalité au service de votre image',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/classic/preview',
-    features: [
-      'Design élégant et sophistiqué',
-      'Mise en page magazine',
-      'Sections services détaillées',
-      'Présentation d\'équipe professionnelle'
-    ]
+    features: []
   },
   {
     id: 'modern',
-    name: 'Modern',
-    description: 'Style futuriste et dynamique avec animations',
+    name: 'Moderne',
+    description: 'L\'élégance contemporaine redéfinie',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/modern/preview',
-    features: [
-      'Animations fluides',
-      'Design moderne et épuré',
-      'Effets visuels avancés',
-      'Interface intuitive'
-    ]
+    features: []
   },
   {
     id: 'minimal',
-    name: 'Minimal',
-    description: 'Approche minimaliste type éditorial',
+    name: 'Minimaliste',
+    description: 'La pureté des lignes, l\'essence du raffinement',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/minimal/preview',
-    features: [
-      'Design épuré',
-      'Typographie élégante',
-      'Mise en page aérée',
-      'Focus sur le contenu'
-    ]
+    features: []
   },
   {
     id: 'professional',
-    name: 'Professional',
-    description: 'Look corporatif et structuré',
+    name: 'Professionnel',
+    description: 'La rigueur au service de l\'excellence',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/professional/preview',
-    features: [
-      'Apparence professionnelle',
-      'Structure claire',
-      'Badges de confiance',
-      'Mise en page organisée'
-    ]
+    features: []
   },
   {
     id: 'boutique',
-    name: 'Boutique Chic',
-    description: 'Style boutique intime et chaleureux',
+    name: 'Boutique',
+    description: 'L\'art de l\'accueil avec distinction',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/boutique/preview',
-    features: [
-      'Ambiance chaleureuse',
-      'Design romantique',
-      'Photos arrondies',
-      'Décorations élégantes'
-    ]
+    features: []
   },
   {
     id: 'fresh',
-    name: 'Fresh & Dynamic',
-    description: 'Look jeune et énergique avec couleurs vives',
+    name: 'Dynamique',
+    description: 'L\'énergie sublimée par le design',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/fresh/preview',
-    features: [
-      'Design dynamique',
-      'Couleurs éclatantes',
-      'Badges colorés',
-      'Typographie audacieuse'
-    ]
+    features: []
   },
   {
     id: 'laia-skin',
-    name: 'Laia Skin Institut',
-    description: 'Minimalisme luxueux avec dégradés rose poudré et élégance moderne',
+    name: 'Rose Poudré',
+    description: 'La délicatesse incarnée dans chaque détail',
     minTier: 'PREMIUM',
     previewUrl: '/super-admin/templates/laia-skin/preview',
-    features: [
-      'Rose poudré et taupe élégant',
-      'Typographie Playfair + Inter',
-      'Dégradés subtils et raffinés',
-      'Design premium mais chaleureux',
-      'Éléments arrondis et ombres douces',
-      'Placeholders photos/vidéos personnalisables',
-      'Galerie immersive',
-      'Section valeurs sophistiquée'
-    ]
+    features: []
   },
-
   {
     id: 'luxe',
-    name: 'Luxe',
-    description: 'Design sophistiqué avec fond noir et effets élégants',
+    name: 'Noir',
+    description: 'Le raffinement absolu dans l\'obscurité',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/luxe/preview',
-    features: [
-      'Fond noir sophistiqué',
-      'Animations subtiles',
-      'Section expérience',
-      'Stats élégantes'
-    ]
+    features: []
   },
   {
     id: 'elegance',
-    name: 'Élégance',
-    description: 'Sophistication avec animations et effets modernes',
+    name: 'Élégant',
+    description: 'La grâce et la sophistication réunies',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/elegance/preview',
-    features: [
-      'Header flottant',
-      'Animations fluides',
-      'Effets au survol',
-      'Design raffiné'
-    ]
+    features: []
   },
   {
     id: 'zen',
-    name: 'Zen',
-    description: 'Ambiance naturelle et apaisante',
+    name: 'Nature',
+    description: 'L\'harmonie naturelle au cœur de votre espace',
     minTier: 'STANDARD',
     previewUrl: '/super-admin/templates/zen/preview',
-    features: [
-      'Design organique',
-      'Couleurs naturelles',
-      'Formes douces',
-      'Ambiance zen'
-    ]
+    features: []
   },
 
-  // ===== TEMPLATES PREMIUM (3 nouveaux templates exclusifs) =====
+  // Templates premium
   {
     id: 'medical',
-    name: 'Medical Premium',
-    description: 'Design médical professionnel inspiré des cliniques esthétiques',
+    name: 'Médical Raffiné',
+    description: 'L\'excellence médicale avec prestance',
     minTier: 'PREMIUM',
     previewUrl: '/super-admin/templates/medical/preview',
-    features: [
-      'Design médical premium',
-      'Interface clinique moderne',
-      'Sections avant/après',
-      'Certifications médicales',
-      'Formulaire de consultation'
-    ]
+    features: []
   },
   {
     id: 'spa-luxe',
-    name: 'Spa Luxe Premium',
-    description: 'Expérience spa haut de gamme avec réservation intégrée',
+    name: 'Harmonie Spa',
+    description: 'L\'art du bien-être dans un écrin de luxe',
     minTier: 'PREMIUM',
     previewUrl: '/super-admin/templates/spa-luxe/preview',
-    features: [
-      'Carrousel full-screen',
-      'Vidéo de fond',
-      'Formulaire multi-étapes',
-      'Galerie immersive',
-      'Témoignages vidéo'
-    ]
+    features: []
   },
   {
     id: 'laser-tech',
-    name: 'Laser Tech Premium',
-    description: 'Design technologique pour centres d\'épilation laser',
+    name: 'Précision Laser',
+    description: 'La précision technologique sublimée',
     minTier: 'PREMIUM',
     previewUrl: '/super-admin/templates/laser-tech/preview',
-    features: [
-      'Animations technologiques',
-      'Comparatifs interactifs',
-      'Zones de traitement',
-      'Calculateur de prix',
-      'FAQ interactive'
-    ]
+    features: []
   }
 ]
 

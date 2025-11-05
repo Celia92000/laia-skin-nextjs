@@ -45,13 +45,11 @@ export async function POST(req: NextRequest) {
       billingCity,
       billingCountry,
 
-      // Mandat SEPA
-      sepaIban,
-      sepaBic,
-      sepaAccountHolder,
-      sepaMandate,
+      selectedPlan,
 
-      selectedPlan
+      // Migration de données
+      needsDataMigration,
+      currentSoftware
     } = data
 
     // Validation des champs obligatoires
@@ -69,28 +67,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (!sepaIban || !sepaBic || !sepaAccountHolder || !sepaMandate) {
-      return NextResponse.json(
-        { error: 'Informations de mandat SEPA obligatoires manquantes' },
-        { status: 400 }
-      )
+    // Vérifier si le slug existe déjà et auto-incrémenter si nécessaire
+    let finalSlug = slug
+    let finalSubdomain = subdomain
+    let counter = 1
+
+    while (true) {
+      const existingOrg = await prisma.organization.findFirst({
+        where: {
+          OR: [
+            { slug: finalSlug },
+            { subdomain: finalSubdomain }
+          ]
+        }
+      })
+
+      if (!existingOrg) {
+        break // Slug disponible
+      }
+
+      // Incrémenter le slug
+      counter++
+      finalSlug = `${slug}-${counter}`
+      finalSubdomain = `${subdomain}-${counter}`
+
+      console.log(`⚠️ Slug existant, tentative avec: ${finalSlug}`)
     }
 
-    // Vérifier si le slug existe déjà (évite les doublons avant paiement)
-    const existingOrg = await prisma.organization.findFirst({
-      where: {
-        OR: [
-          { slug },
-          { subdomain }
-        ]
-      }
-    })
-
-    if (existingOrg) {
-      return NextResponse.json(
-        { error: 'Ce nom est déjà utilisé. Veuillez en choisir un autre.' },
-        { status: 400 }
-      )
+    if (counter > 1) {
+      console.log(`✅ Slug unique trouvé: ${finalSlug}`)
     }
 
     // Prix par plan
@@ -115,7 +120,7 @@ export async function POST(req: NextRequest) {
         country: billingCountry || 'FR'
       },
       metadata: {
-        slug,
+        slug: finalSlug,
         siret,
         legalName
       }
@@ -143,27 +148,42 @@ export async function POST(req: NextRequest) {
           quantity: 1
         }
       ],
-      payment_method_options: {
-        sepa_debit: {
-          setup_future_usage: 'off_session' // Autoriser prélèvements futurs
-        }
-      },
       subscription_data: {
         trial_period_days: 30, // 30 jours gratuits
         metadata: {
           type: 'onboarding',
-          slug,
+          slug: finalSlug,
           plan: selectedPlan
         }
       },
+      billing_address_collection: 'auto', // Utiliser l'adresse du customer
+      customer_update: {
+        address: 'auto', // Permettre la mise à jour de l'adresse
+        name: 'auto'
+      },
       metadata: {
         type: 'onboarding',
-        // Stocker TOUTES les données d'onboarding en JSON
-        onboardingData: JSON.stringify(data)
+        // Stocker les données essentielles séparément (limite: 500 chars/champ)
+        // Le webhook va récupérer toutes les infos depuis les champs individuels
+        slug: finalSlug,
+        subdomain: finalSubdomain,
+        plan: selectedPlan,
+        institutName,
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        ownerPhone: ownerPhone || '',
+        legalName,
+        siret,
+        billingEmail: billingEmail || ownerEmail,
+        websiteTemplateId: data.websiteTemplateId || 'modern',
+        needsDataMigration: needsDataMigration ? 'true' : 'false',
+        currentSoftware: currentSoftware || ''
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?step=payment&canceled=true`,
-      allow_promotion_codes: true
+      allow_promotion_codes: true,
+      locale: 'fr' // Interface en français
     })
 
     console.log(`✅ Checkout session créée: ${checkoutSession.id}`)

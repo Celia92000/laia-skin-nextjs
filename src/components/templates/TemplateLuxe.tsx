@@ -325,7 +325,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
                 {/* Barre lumineuse au hover */}
                 <div className="absolute bottom-0 left-0 w-0 h-1 group-hover:w-full transition-all duration-500" style={{
-                  background: `linear-gradient(to right, ${primaryColorDark}, ${primaryColor}, ${primaryColorDark})`
+                  backgroundColor: primaryColor
                 }} />
               </Link>
             ))}

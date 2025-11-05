@@ -145,8 +145,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
 
     // Gérer l'onboarding SaaS (création d'organisation)
-    if (metadata.type === 'onboarding' && metadata.onboardingData) {
-      await handleOnboardingCompleted(session, metadata.onboardingData)
+    if (metadata.type === 'onboarding') {
+      await handleOnboardingCompleted(session, metadata)
       return
     }
 
@@ -1023,12 +1023,12 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
 /**
  * Gère la création d'organisation après validation du paiement (onboarding)
  */
-async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboardingDataJson: string) {
+async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metadata: Record<string, any>) {
   try {
     console.log('🚀 Début création organisation depuis webhook')
 
-    // Parser les données d'onboarding
-    const data = JSON.parse(onboardingDataJson)
+    // Extraire les données depuis metadata (plus besoin de JSON.parse)
+    const data = metadata
 
     const {
       ownerFirstName,
@@ -1045,6 +1045,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
       postalCode,
       primaryColor,
       secondaryColor,
+      accentColor,
       serviceName,
       servicePrice,
       serviceDuration,
@@ -1069,12 +1070,26 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
       billingPostalCode,
       billingCity,
       billingCountry,
-      sepaIban,
-      sepaBic,
-      sepaAccountHolder,
       sepaMandate,
-      selectedPlan
+      plan: metadataPlan,
+      needsDataMigration,
+      currentSoftware
     } = data
+
+    // Récupérer le plan depuis metadata (priorité 1) ou subscription metadata (priorité 2)
+    let finalPlan = metadataPlan
+    if (!finalPlan) {
+      // Essayer de récupérer depuis la subscription
+      const subscriptionObj = typeof session.subscription === 'object' ? session.subscription : null
+      finalPlan = subscriptionObj?.metadata?.plan
+
+      if (finalPlan) {
+        console.log(`⚠️ Plan récupéré depuis subscription metadata: ${finalPlan}`)
+      } else {
+        console.error('❌ ERREUR: Plan non trouvé dans metadata ni dans subscription!')
+        throw new Error('Plan manquant dans les metadata Stripe')
+      }
+    }
 
     const adminEmail = ownerEmail
     const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!'
@@ -1082,6 +1097,58 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
 
     const sepaMandateRef = `LAIA-${slug.toUpperCase()}-${Date.now()}`
     const sepaMandateDate = new Date()
+
+    // Récupérer les adresses de facturation depuis le customer Stripe si manquantes
+    const customerObj = typeof session.customer === 'object' ? session.customer : null
+    const finalBillingAddress = billingAddress || customerObj?.address?.line1 || ''
+    const finalBillingPostalCode = billingPostalCode || customerObj?.address?.postal_code || ''
+    const finalBillingCity = billingCity || customerObj?.address?.city || ''
+    const finalBillingCountry = billingCountry || customerObj?.address?.country || 'France'
+
+    // Récupérer les informations SEPA RÉELLES depuis Stripe
+    let sepaIban = ''
+    let sepaBic = ''
+    let sepaAccountHolder = `${ownerFirstName} ${ownerLastName}`
+
+    try {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2025-09-30.clover'
+      })
+
+      // Récupérer le payment method depuis la subscription
+      if (session.subscription) {
+        const subscriptionId = typeof session.subscription === 'string'
+          ? session.subscription
+          : session.subscription?.id
+
+        if (subscriptionId) {
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+            expand: ['default_payment_method']
+          })
+          const paymentMethod = subscription.default_payment_method as Stripe.PaymentMethod
+          if (paymentMethod?.sepa_debit) {
+            sepaIban = paymentMethod.sepa_debit.last4
+              ? `****${paymentMethod.sepa_debit.last4}`
+              : ''
+            sepaBic = paymentMethod.sepa_debit.bank_code || ''
+            sepaAccountHolder = paymentMethod.billing_details.name || sepaAccountHolder
+            console.log(`✅ SEPA récupéré depuis Stripe: ${sepaAccountHolder} - IBAN ${sepaIban}`)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('⚠️ Erreur récupération SEPA depuis Stripe:', error)
+      // Continuer sans les données SEPA (mandat sera validé plus tard)
+    }
+
+    // Extraire les IDs Stripe (car session.customer et session.subscription peuvent être des objets ou des strings)
+    const stripeCustomerId = typeof session.customer === 'string'
+      ? session.customer
+      : (session.customer && typeof session.customer === 'object' ? session.customer.id : '')
+
+    const stripeSubscriptionId = typeof session.subscription === 'string'
+      ? session.subscription
+      : (session.subscription && typeof session.subscription === 'object' ? session.subscription.id : '')
 
     // Créer l'organisation
     const organization = await prisma.organization.create({
@@ -1099,25 +1166,26 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
         siret,
         tvaNumber: tvaNumber || null,
         billingEmail,
-        billingAddress,
-        billingPostalCode,
-        billingCity,
-        billingCountry: billingCountry || 'France',
+        billingAddress: finalBillingAddress,
+        billingPostalCode: finalBillingPostalCode,
+        billingCity: finalBillingCity,
+        billingCountry: finalBillingCountry,
         sepaIban,
         sepaBic,
         sepaAccountHolder,
         sepaMandate,
         sepaMandateRef,
         sepaMandateDate,
-        plan: selectedPlan,
+        plan: finalPlan,
         status: 'ACTIVE',
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        stripeCustomerId: session.customer as string,
-        subscriptionId: session.subscription as string,
+        stripeCustomerId,
+        stripeSubscriptionId,
         config: {
           create: {
             primaryColor,
             secondaryColor,
+            accentColor,
             siteName: institutName,
             siteDescription: `Institut de beauté ${institutName}`,
             siteTagline: siteTagline || 'Institut de Beauté & Bien-être',
@@ -1188,8 +1256,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
           description: serviceDescription || '',
           price: parseFloat(servicePrice.toString()),
           duration: parseInt(serviceDuration?.toString() || '60'),
-          organizationId: organization.id,
-          locationId: organization.locations[0].id,
+          organization: {
+            connect: { id: organization.id }
+          },
           isActive: true
         }
       })
@@ -1201,7 +1270,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
       await generateOrganizationTemplate({
         organizationId: organization.id,
         organizationName: institutName,
-        plan: selectedPlan,
+        plan: finalPlan,
         ownerFirstName,
         ownerLastName,
         primaryColor,
@@ -1220,19 +1289,54 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
 
     // Générer facture et contrat
     let invoicePdfBuffer: Buffer | undefined
+    let invoiceNumber: string | undefined
     let contractPdfBuffer: Buffer | undefined
+    let contractNumber: string | undefined
+
+    const planPrices: Record<string, number> = {
+      SOLO: 49,
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179
+    }
 
     try {
-      const invoiceResult = await createSubscriptionInvoice(organization.id, true)
+      const hasMigration = needsDataMigration === 'true'
+      const invoiceResult = await createSubscriptionInvoice(organization.id, true, hasMigration)
       invoicePdfBuffer = invoiceResult.pdfBuffer
-      console.log(`✅ Facture générée`)
+      invoiceNumber = invoiceResult.invoiceNumber
+      console.log(`✅ Facture générée: ${invoiceNumber}${hasMigration ? ' (avec migration)' : ''}`)
     } catch (error) {
       console.error('⚠️ Erreur facture:', error)
     }
 
     try {
-      contractPdfBuffer = await createOnboardingContract(organization.id)
-      console.log(`✅ Contrat généré`)
+      const contractResult = await createOnboardingContract({
+        organizationName: institutName,
+        legalName,
+        siret,
+        tvaNumber,
+        billingAddress: finalBillingAddress,
+        billingPostalCode: finalBillingPostalCode,
+        billingCity: finalBillingCity,
+        billingCountry: finalBillingCountry,
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        ownerPhone,
+        plan: finalPlan,
+        monthlyAmount: planPrices[finalPlan] || 49,
+        trialEndsAt: organization.trialEndsAt!,
+        subscriptionStartDate: new Date(),
+        sepaIban,
+        sepaBic,
+        sepaAccountHolder,
+        sepaMandateRef,
+        sepaMandateDate: organization.sepaMandateDate!
+      })
+      contractPdfBuffer = contractResult.pdfBuffer
+      contractNumber = contractResult.contractNumber
+      console.log(`✅ Contrat généré: ${contractNumber}`)
     } catch (error) {
       console.error('⚠️ Erreur contrat:', error)
     }
@@ -1243,40 +1347,26 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
         ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
         : `https://${subdomain}.laia-connect.fr/admin`
 
-      const planPrices: Record<string, number> = {
-        SOLO: 49,
-        DUO: 69,
-        TEAM: 119,
-        PREMIUM: 179
-      }
-
       await sendWelcomeEmail({
         organizationName: institutName,
         ownerFirstName,
         ownerLastName,
         ownerEmail,
         tempPassword,
-        plan: selectedPlan,
+        plan: finalPlan,
         subdomain,
         customDomain: useCustomDomain ? customDomain : undefined,
         adminUrl,
-        monthlyAmount: planPrices[selectedPlan] || 49,
+        monthlyAmount: planPrices[finalPlan] || 49,
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
-      }, invoicePdfBuffer, undefined, contractPdfBuffer, undefined)
+      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
       console.log('✅ Email de bienvenue envoyé')
     } catch (error) {
       console.error('⚠️ Erreur email bienvenue:', error)
     }
 
     try {
-      const planPrices: Record<string, number> = {
-        SOLO: 49,
-        DUO: 69,
-        TEAM: 119,
-        PREMIUM: 179
-      }
-
       await sendSuperAdminNotification({
         organizationId: organization.id,
         organizationName: institutName,
@@ -1285,8 +1375,8 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
         ownerEmail,
         ownerPhone: ownerPhone || undefined,
         city,
-        plan: selectedPlan,
-        monthlyAmount: planPrices[selectedPlan] || 49,
+        plan: finalPlan,
+        monthlyAmount: planPrices[finalPlan] || 49,
         siret: siret || undefined,
         legalName: legalName || undefined,
         subdomain,

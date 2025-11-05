@@ -19,6 +19,7 @@ interface SubscriptionInvoiceData {
   totalTVA: number
   totalTTC: number
   isFirstInvoice?: boolean // Facture d'activation (période d'essai)
+  migrationFee?: number // Frais de migration de données (300€ HT)
 }
 
 /**
@@ -184,44 +185,44 @@ export async function generateSubscriptionInvoicePDF(
       // ======================
       // INFORMATIONS CLIENT
       // ======================
-      doc.moveTo(50, 240)
-         .lineTo(545, 240)
+      doc.moveTo(50, 300)
+         .lineTo(545, 300)
          .strokeColor(grayLight)
          .stroke()
 
       doc.fontSize(11)
          .fillColor(primaryColor)
-         .text('FACTURÉ À', 50, 260)
+         .text('FACTURÉ À', 50, 320)
 
       doc.fontSize(10)
          .fillColor(grayDark)
-         .text(orgInfo.legalName, 50, 280)
+         .text(orgInfo.legalName, 50, 345)
 
       if (orgInfo.ownerFirstName && orgInfo.ownerLastName) {
-        doc.text(`${orgInfo.ownerFirstName} ${orgInfo.ownerLastName}`, 50, 295)
+        doc.text(`${orgInfo.ownerFirstName} ${orgInfo.ownerLastName}`, 50, 360)
       }
 
       if (orgInfo.billingAddress) {
-        doc.text(orgInfo.billingAddress, 50, 310)
-        doc.text(`${orgInfo.billingPostalCode} ${orgInfo.billingCity}`, 50, 325)
-        doc.text(orgInfo.billingCountry, 50, 340)
+        doc.text(orgInfo.billingAddress, 50, 375)
+        doc.text(`${orgInfo.billingPostalCode} ${orgInfo.billingCity}`, 50, 390)
+        doc.text(orgInfo.billingCountry, 50, 405)
       }
 
       if (orgInfo.siret) {
         doc.fontSize(9)
            .fillColor(grayLight)
-           .text(`SIRET : ${orgInfo.siret}`, 50, 360)
+           .text(`SIRET : ${orgInfo.siret}`, 50, 425)
       }
 
       if (orgInfo.tvaNumber) {
-        doc.text(`TVA : ${orgInfo.tvaNumber}`, 50, 375)
+        doc.text(`TVA : ${orgInfo.tvaNumber}`, 50, 440)
       }
 
       doc.fontSize(9)
-         .text(`Email : ${orgInfo.billingEmail}`, 50, 390)
+         .text(`Email : ${orgInfo.billingEmail}`, 50, 455)
 
       if (orgInfo.ownerPhone) {
-        doc.text(`Tél : ${orgInfo.ownerPhone}`, 50, 405)
+        doc.text(`Tél : ${orgInfo.ownerPhone}`, 50, 470)
       }
 
       // ======================
@@ -229,12 +230,12 @@ export async function generateSubscriptionInvoicePDF(
       // ======================
       doc.fontSize(10)
          .fillColor(primaryColor)
-         .text('PÉRIODE DE FACTURATION', 350, 260)
+         .text('PÉRIODE DE FACTURATION', 350, 320)
 
       doc.fontSize(9)
          .fillColor(grayDark)
-         .text(`Du ${data.billingPeriodStart.toLocaleDateString('fr-FR')}`, 350, 280)
-         .text(`Au ${data.billingPeriodEnd.toLocaleDateString('fr-FR')}`, 350, 295)
+         .text(`Du ${data.billingPeriodStart.toLocaleDateString('fr-FR')}`, 350, 345)
+         .text(`Au ${data.billingPeriodEnd.toLocaleDateString('fr-FR')}`, 350, 360)
 
       // ======================
       // TABLEAU DES SERVICES
@@ -283,6 +284,16 @@ export async function generateSubscriptionInvoicePDF(
 
           currentY += 25
         })
+      }
+
+      // Ligne : Migration de données (si applicable)
+      if (data.migrationFee && data.migrationFee > 0) {
+        doc.text('Migration de vos données existantes', 60, currentY + 5)
+           .text('1', 320, currentY + 5)
+           .text(`${data.migrationFee.toFixed(2)} €`, 390, currentY + 5)
+           .text(`${data.migrationFee.toFixed(2)} €`, 480, currentY + 5)
+
+        currentY += 25
       }
 
       // Ligne de séparation
@@ -414,7 +425,7 @@ export async function generateSubscriptionInvoicePDF(
 /**
  * Crée une facture d'abonnement dans la base de données et génère le PDF
  */
-export async function createSubscriptionInvoice(organizationId: string, isFirstInvoice: boolean = false) {
+export async function createSubscriptionInvoice(organizationId: string, isFirstInvoice: boolean = false, includeMigrationFee: boolean = false) {
   try {
     // Récupérer les infos de l'organisation
     const orgInfo = await getOrganizationBillingInfo(organizationId)
@@ -441,7 +452,12 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
 
     // TODO: Mapper les add-ons avec leurs prix depuis addons-manager
     // Pour l'instant, on utilise le monthlyAmount total
-    const totalHT = orgInfo.monthlyAmount || basePlanPrice
+    let totalHT = orgInfo.monthlyAmount || basePlanPrice
+
+    // Ajouter les frais de migration si nécessaire (300€ HT)
+    const migrationFee = includeMigrationFee ? 300 : 0
+    totalHT += migrationFee
+
     const vatRate = 20 // TVA à 20%
     const totalTVA = totalHT * (vatRate / 100)
     const totalTTC = totalHT + totalTVA
@@ -461,7 +477,8 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
       vatRate,
       totalTVA,
       totalTTC,
-      isFirstInvoice
+      isFirstInvoice,
+      migrationFee
     })
 
     // Enregistrer la facture dans la base de données
@@ -477,15 +494,15 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
         description: isFirstInvoice
           ? `Activation abonnement LAIA Connect - Formule ${orgInfo.plan}`
           : `Abonnement mensuel LAIA Connect - Formule ${orgInfo.plan}`,
-        billingPeriodStart,
-        billingPeriodEnd,
         metadata: {
           basePlanPrice,
           addons,
           totalHT,
           vatRate,
           totalTVA,
-          isFirstInvoice
+          isFirstInvoice,
+          billingPeriodStart: billingPeriodStart.toISOString(),
+          billingPeriodEnd: billingPeriodEnd.toISOString()
         } as any
       }
     })

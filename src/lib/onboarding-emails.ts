@@ -1,4 +1,5 @@
 import * as brevo from '@getbrevo/brevo'
+import { prisma } from '@/lib/prisma'
 
 // Configuration Brevo pour LAIA Connect (plateforme SaaS)
 const apiInstance = new brevo.TransactionalEmailsApi()
@@ -8,18 +9,20 @@ apiInstance.setApiKey(
 )
 
 /**
- * Helper pour envoyer un email via Brevo
+ * Helper pour envoyer un email via Brevo et logger dans EmailHistory
  */
 async function sendEmailViaBrevo({
   to,
   subject,
   htmlContent,
-  attachments
+  attachments,
+  template
 }: {
   to: string[]
   subject: string
   htmlContent: string
   attachments?: Array<{ content: string; name: string }>
+  template?: string
 }) {
   const sendSmtpEmail = new brevo.SendSmtpEmail()
 
@@ -35,8 +38,41 @@ async function sendEmailViaBrevo({
     sendSmtpEmail.attachment = attachments
   }
 
-  const data = await apiInstance.sendTransacEmail(sendSmtpEmail)
-  return data
+  try {
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail)
+
+    // Logger dans EmailHistory
+    await prisma.emailHistory.create({
+      data: {
+        from: sendSmtpEmail.sender.email,
+        to: to.join(', '),
+        subject,
+        content: htmlContent,
+        template,
+        status: 'sent',
+        direction: 'outgoing',
+        messageId: data.messageId
+      }
+    }).catch(err => console.error('⚠️ Erreur logging email:', err))
+
+    return data
+  } catch (error) {
+    // Logger l'échec
+    await prisma.emailHistory.create({
+      data: {
+        from: sendSmtpEmail.sender.email,
+        to: to.join(', '),
+        subject,
+        content: htmlContent,
+        template,
+        status: 'failed',
+        direction: 'outgoing',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }).catch(err => console.error('⚠️ Erreur logging email échec:', err))
+
+    throw error
+  }
 }
 
 interface WelcomeEmailData {
@@ -78,6 +114,10 @@ export async function sendWelcomeEmail(
     trialEndsAt,
     sepaMandateRef
   } = data
+
+  if (!plan) {
+    throw new Error('Plan manquant dans les données d\'email de bienvenue')
+  }
 
   const siteUrl = customDomain || `https://${subdomain}.laia-connect.fr`
   const fullName = `${ownerFirstName} ${ownerLastName}`
@@ -384,7 +424,8 @@ export async function sendWelcomeEmail(
       to: [ownerEmail],
       subject: `🎉 Bienvenue sur LAIA Connect - Votre site ${organizationName} est prêt !`,
       htmlContent: emailHtml,
-      attachments: attachments.length > 0 ? attachments : undefined
+      attachments: attachments.length > 0 ? attachments : undefined,
+      template: 'onboarding_welcome'
     })
 
     console.log('✅ Email de bienvenue envoyé via Brevo:', result.messageId)
@@ -1180,7 +1221,8 @@ export async function sendSuperAdminNotification(data: {
     const result = await sendEmailViaBrevo({
       to: [superAdminEmail],
       subject: `🎉 Nouvelle inscription : ${organizationName} - Plan ${plan} (${monthlyAmount}€/mois)`,
-      htmlContent: emailHtml
+      htmlContent: emailHtml,
+      template: 'onboarding_superadmin_notification'
     })
 
     console.log('✅ Notification super-admin envoyée via Brevo:', result.messageId)

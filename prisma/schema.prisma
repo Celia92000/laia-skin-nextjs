@@ -1547,18 +1547,30 @@ model GiftCardSettings {
 
 model EmailTemplate {
   id             String        @id @default(cuid())
-  name           String // Nom du template (ex: "Promotion du mois")
+  slug           String // Identifiant unique (ex: "onboarding-welcome", "payment-confirmation")
+  name           String // Nom du template (ex: "Email de bienvenue onboarding")
+  description    String?       @db.Text // Description du template pour documentation
   subject        String // Sujet de l'email
-  content        String        @db.Text // Contenu de l'email
-  category       String?       @default("general") // general, promo, rappel, nouveaute
+  content        String        @db.Text // Contenu HTML de l'email
+  textContent    String?       @db.Text // Version texte brut (fallback)
+  availableVariables Json? // Liste des variables disponibles (ex: {firstName, organizationName, ...})
+  category       String?       @default("general") // general, onboarding, promo, rappel, transactionnel
   isActive       Boolean       @default(true)
+  isSystem       Boolean       @default(false) // Templates système non modifiables/supprimables
+  fromName       String? // Nom expéditeur (override si besoin)
+  fromEmail      String? // Email expéditeur (override si besoin)
+  language       String        @default("fr") // Langue du template (fr, en, es, ...)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  // Multi-tenant: isolation par organisation
+  // Multi-tenant: isolation par organisation (null = template global LAIA Connect)
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@unique([slug, organizationId]) // Un slug unique par organisation
+  @@index([category])
+  @@index([isActive])
+  @@index([isSystem])
   @@map("email_templates")
 }
 

@@ -45,6 +45,7 @@
     "mailparser": "^3.7.4",
     "moment": "^2.30.1",
     "next": "15.5.1",
+    "next-auth": "^4.24.13",
     "node-fetch": "^3.3.2",
     "openai": "^6.6.0",
     "pdfkit": "^0.17.2",
