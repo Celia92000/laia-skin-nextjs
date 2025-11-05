@@ -1003,7 +1003,7 @@ function OnboardingForm() {
         )}
 
         {/* Étape Welcome */}
-        {currentStep === 'welcome' && (
+        {currentStep === 'welcome' && isMounted && (
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
             <div className="text-center mb-8">
               <div className="text-6xl mb-6">✨</div>
