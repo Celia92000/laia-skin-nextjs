@@ -301,6 +301,47 @@ export default function OrganizationsPage() {
     }
   }
 
+  async function handleSubscriptionAction(org: Organization, action: 'suspend' | 'cancel' | 'resume') {
+    const actionLabels = {
+      suspend: 'suspendre',
+      cancel: 'résilier',
+      resume: 'réactiver'
+    }
+
+    const actionMessages = {
+      suspend: `⏸️ Suspendre l'abonnement de "${org.name}" ?\n\n• Les prélèvements seront mis en pause\n• Les fonctionnalités resteront accessibles\n• Vous pourrez réactiver l'abonnement à tout moment`,
+      cancel: `❌ Résilier l'abonnement de "${org.name}" ?\n\n• L'abonnement se terminera à la fin de la période en cours\n• Aucun nouveau prélèvement ne sera effectué\n• Les données seront conservées`,
+      resume: `▶️ Réactiver l'abonnement de "${org.name}" ?\n\n• Les prélèvements reprendront normalement\n• Toutes les fonctionnalités seront réactivées`
+    }
+
+    if (!confirm(actionMessages[action])) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/super-admin/subscription/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationId: org.id,
+          action
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(`✅ Abonnement ${actionLabels[action]} avec succès`)
+        fetchData()
+      } else {
+        alert(`❌ Erreur : ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Erreur gestion abonnement:', error)
+      alert('❌ Erreur lors de l\'action sur l\'abonnement')
+    }
+  }
+
   async function handleImpersonate(userId: string) {
     try {
       const response = await fetch('/api/super-admin/impersonate', {
@@ -823,6 +864,37 @@ export default function OrganizationsPage() {
                             >
                               ✏️ Modifier
                             </Link>
+
+                            {/* Boutons de gestion d'abonnement */}
+                            {org.status === 'ACTIVE' && (
+                              <>
+                                <button
+                                  onClick={() => handleSubscriptionAction(org, 'suspend')}
+                                  className="text-orange-600 hover:text-orange-900 font-medium"
+                                  title="Suspendre l'abonnement"
+                                >
+                                  ⏸️ Suspendre
+                                </button>
+                                <button
+                                  onClick={() => handleSubscriptionAction(org, 'cancel')}
+                                  className="text-red-600 hover:text-red-900 font-medium"
+                                  title="Résilier l'abonnement"
+                                >
+                                  ❌ Résilier
+                                </button>
+                              </>
+                            )}
+
+                            {(org.status === 'SUSPENDED' || org.status === 'CANCELLED') && (
+                              <button
+                                onClick={() => handleSubscriptionAction(org, 'resume')}
+                                className="text-green-600 hover:text-green-900 font-medium"
+                                title="Réactiver l'abonnement"
+                              >
+                                ▶️ Réactiver
+                              </button>
+                            )}
+
                             <button
                               onClick={() => handleDelete(org)}
                               className="text-red-600 hover:text-red-900"
