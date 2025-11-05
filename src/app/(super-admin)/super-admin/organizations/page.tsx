@@ -689,7 +689,12 @@ export default function OrganizationsPage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="text-2xl" title="Organisation modèle">⭐</span>
-                                <span className="text-sm font-bold text-amber-900">{org.name}</span>
+                                <Link
+                                  href={`/super-admin/organizations/${org.id}`}
+                                  className="text-sm font-bold text-amber-900 hover:text-amber-700 hover:underline cursor-pointer"
+                                >
+                                  {org.name}
+                                </Link>
                                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white flex items-center gap-1 shadow-md animate-pulse">
                                   📋 MODÈLE TEMPLATE
                                 </span>
@@ -812,7 +817,12 @@ export default function OrganizationsPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900">{org.name}</span>
+                              <Link
+                                href={`/super-admin/organizations/${org.id}`}
+                                className="text-sm font-medium text-gray-900 hover:text-indigo-600 hover:underline cursor-pointer"
+                              >
+                                {org.name}
+                              </Link>
                               {isNewOrganization(org.createdAt) && (
                                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center gap-1 shadow-md animate-pulse">
                                   ✨ NOUVEAU
