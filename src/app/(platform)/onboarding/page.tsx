@@ -534,6 +534,15 @@ function OnboardingForm() {
 
       {/* Contenu principal */}
       <div className="max-w-4xl mx-auto px-4 py-12">
+        {!isMounted ? (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Chargement...</p>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* Étape Questionnaire */}
         {currentStep === 'questionnaire' && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -1003,7 +1012,7 @@ function OnboardingForm() {
         )}
 
         {/* Étape Welcome */}
-        {currentStep === 'welcome' && isMounted && (
+        {currentStep === 'welcome' && (
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
             <div className="text-center mb-8">
               <div className="text-6xl mb-6">✨</div>
@@ -5410,6 +5419,8 @@ function OnboardingForm() {
               </svg>
             </Link>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
