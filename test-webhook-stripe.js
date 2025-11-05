@@ -6,15 +6,15 @@
 // Données de test pour l'onboarding
 const testOnboardingData = {
   // Informations personnelles
-  ownerFirstName: 'Marie',
-  ownerLastName: 'Dupont',
-  ownerEmail: 'marie.dupont.test@example.com',
+  ownerFirstName: 'Celia',
+  ownerLastName: 'Ivorra',
+  ownerEmail: 'celia.ivorra95@hotmail.fr',
   ownerPhone: '+33612345678',
 
   // Informations institut
-  institutName: 'Test Institut Beauté',
-  slug: 'test-institut-beaute',
-  subdomain: 'test-institut-beaute',
+  institutName: 'Institut Beauté Celia',
+  slug: 'institut-beaute-celia',
+  subdomain: 'institut-beaute-celia',
   customDomain: null,
   useCustomDomain: false,
   city: 'Paris',
@@ -35,7 +35,7 @@ const testOnboardingData = {
   heroTitle: 'Une peau respectée,',
   heroSubtitle: 'une beauté révélée',
   aboutText: 'Notre institut vous accueille dans un cadre chaleureux',
-  founderName: 'Marie Dupont',
+  founderName: 'Celia Ivorra',
   founderTitle: 'Fondatrice & Experte en soins esthétiques',
   founderQuote: 'La beauté est dans les détails',
 
@@ -56,7 +56,7 @@ const testOnboardingData = {
   },
 
   // Informations légales
-  legalName: 'Test Institut Beauté SARL',
+  legalName: 'Institut Beauté Celia SARL',
   siret: '12345678901234',
   tvaNumber: 'FR12345678901',
   billingEmail: 'comptabilite@test-institut.fr',
@@ -68,7 +68,7 @@ const testOnboardingData = {
   // Mandat SEPA
   sepaIban: 'FR7612345678901234567890123',
   sepaBic: 'BNPAFRPPXXX',
-  sepaAccountHolder: 'Marie Dupont',
+  sepaAccountHolder: 'Celia Ivorra',
   sepaMandate: true,
 
   selectedPlan: 'SOLO'

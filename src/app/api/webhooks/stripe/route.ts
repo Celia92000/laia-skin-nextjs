@@ -1239,27 +1239,60 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboa
 
     // Envoyer emails
     try {
+      const adminUrl = process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
+        : `https://${subdomain}.laia-connect.fr/admin`
+
+      const planPrices: Record<string, number> = {
+        SOLO: 49,
+        DUO: 69,
+        TEAM: 119,
+        PREMIUM: 179
+      }
+
       await sendWelcomeEmail({
-        recipientEmail: ownerEmail,
-        recipientName: `${ownerFirstName} ${ownerLastName}`,
         organizationName: institutName,
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
         tempPassword,
         plan: selectedPlan,
-        invoicePdfBuffer,
-        contractPdfBuffer
-      })
+        subdomain,
+        customDomain: useCustomDomain ? customDomain : undefined,
+        adminUrl,
+        monthlyAmount: planPrices[selectedPlan] || 49,
+        trialEndsAt: organization.trialEndsAt!,
+        sepaMandateRef
+      }, invoicePdfBuffer, undefined, contractPdfBuffer, undefined)
       console.log('✅ Email de bienvenue envoyé')
     } catch (error) {
       console.error('⚠️ Erreur email bienvenue:', error)
     }
 
     try {
+      const planPrices: Record<string, number> = {
+        SOLO: 49,
+        DUO: 69,
+        TEAM: 119,
+        PREMIUM: 179
+      }
+
       await sendSuperAdminNotification({
+        organizationId: organization.id,
         organizationName: institutName,
-        ownerName: `${ownerFirstName} ${ownerLastName}`,
+        ownerFirstName,
+        ownerLastName,
         ownerEmail,
+        ownerPhone: ownerPhone || undefined,
+        city,
         plan: selectedPlan,
-        organizationId: organization.id
+        monthlyAmount: planPrices[selectedPlan] || 49,
+        siret: siret || undefined,
+        legalName: legalName || undefined,
+        subdomain,
+        customDomain: useCustomDomain && customDomain ? customDomain : undefined,
+        trialEndsAt: organization.trialEndsAt!,
+        createdAt: organization.createdAt!
       })
       console.log('✅ Email super-admin envoyé')
     } catch (error) {

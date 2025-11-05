@@ -12,7 +12,7 @@ async function checkOrganization() {
   try {
     const organization = await prisma.organization.findFirst({
       where: {
-        slug: 'test-institut-beaute'
+        slug: 'institut-beaute-celia'
       },
       include: {
         config: true,
