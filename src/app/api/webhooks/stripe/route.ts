@@ -49,14 +49,20 @@ export async function POST(request: NextRequest) {
     // Vérifier la signature du webhook
     let event: Stripe.Event
 
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } catch (err) {
-      console.error('❌ Signature webhook invalide:', err)
-      return NextResponse.json(
-        { error: 'Signature invalide' },
-        { status: 400 }
-      )
+    // Mode test : skip signature si signature = "test_signature"
+    if (signature === 'test_signature' && process.env.NODE_ENV === 'development') {
+      console.log('⚠️ MODE TEST : Skip vérification signature Stripe')
+      event = JSON.parse(body)
+    } else {
+      try {
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      } catch (err) {
+        console.error('❌ Signature webhook invalide:', err)
+        return NextResponse.json(
+          { error: 'Signature invalide' },
+          { status: 400 }
+        )
+      }
     }
 
     console.log(`📨 Webhook reçu: ${event.type}`)
