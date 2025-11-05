@@ -182,8 +182,6 @@ export async function POST(req: NextRequest) {
 
             // Contenu du site (baseline, hero, à propos)
             siteTagline: siteTagline || 'Institut de Beauté & Bien-être',
-            siteEmail: siteEmail || ownerEmail,
-            sitePhone: sitePhone || ownerPhone || '',
             heroTitle: heroTitle || 'Une peau respectée,',
             heroSubtitle: heroSubtitle || 'une beauté révélée',
             aboutText: aboutText || '',
