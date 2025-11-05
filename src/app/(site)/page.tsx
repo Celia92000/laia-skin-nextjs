@@ -19,7 +19,39 @@ export default async function Home() {
   if (host.includes('laiaconnect.fr')) {
     redirect('/platform');
   }
-  const config = await getSiteConfig();
+
+  // Récupérer l'organisation par le subdomain ou domaine
+  let organizationSubdomain = 'laia-skin-institut'; // Par défaut
+
+  const cleanHost = host.split(':')[0].toLowerCase();
+
+  // Extraire le subdomain (première partie avant le premier point)
+  const parts = cleanHost.split('.');
+  if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+    organizationSubdomain = parts[0];
+  }
+
+  console.log(`🌐 Host: ${host} → Subdomain: ${organizationSubdomain}`);
+
+  // Récupérer l'organisation
+  const organization = await prisma.organization.findUnique({
+    where: { subdomain: organizationSubdomain },
+    include: { config: true }
+  });
+
+  if (!organization) {
+    console.log(`❌ Organisation non trouvée pour subdomain: ${organizationSubdomain}, utilisation de laia-skin-institut`);
+    // Rediriger vers le site par défaut ou afficher une erreur
+    const defaultOrg = await prisma.organization.findFirst({
+      where: { slug: 'laia-skin-institut' },
+      include: { config: true }
+    });
+    if (!defaultOrg) {
+      return <div>Organisation non trouvée</div>;
+    }
+  }
+
+  const config = organization?.config || await getSiteConfig();
   let services: any[] = [];
 
   // Parse testimonials from config (JSON)
