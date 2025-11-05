@@ -269,11 +269,30 @@ export async function POST(req: NextRequest) {
 
     const amount = planPrices[selectedPlan] || 49
 
-    // Créer une Stripe Checkout Session avec prélèvement SEPA
+    // Créer un client Stripe avec les informations SEPA
+    const customer = await stripe.customers.create({
+      email: adminEmail,
+      name: `${ownerFirstName} ${ownerLastName}`,
+      phone: ownerPhone,
+      address: {
+        line1: billingAddress,
+        postal_code: billingPostalCode,
+        city: billingCity,
+        country: billingCountry || 'FR'
+      },
+      metadata: {
+        organizationId: organization.id,
+        siret,
+        legalName,
+        sepaMandateRef
+      }
+    })
+
+    // Créer une Stripe Checkout Session avec prélèvement SEPA uniquement
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer_email: adminEmail,
-      payment_method_types: ['sepa_debit', 'card'], // Accepter SEPA et carte
+      customer: customer.id,
+      payment_method_types: ['sepa_debit'], // SEPA uniquement
       line_items: [
         {
           price_data: {
@@ -290,6 +309,11 @@ export async function POST(req: NextRequest) {
           quantity: 1
         }
       ],
+      payment_method_options: {
+        sepa_debit: {
+          setup_future_usage: 'off_session' // Autoriser prélèvements futurs
+        }
+      },
       subscription_data: {
         trial_period_days: 30, // 30 jours gratuits
         metadata: {
@@ -313,11 +337,11 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true
     })
 
-    // Enregistrer la session Stripe pour tracking
+    // Enregistrer le customer ID et la session Stripe pour tracking
     await prisma.organization.update({
       where: { id: organization.id },
       data: {
-        stripeCustomerId: checkoutSession.customer as string || null,
+        stripeCustomerId: customer.id,
         subscriptionId: checkoutSession.subscription as string || null
       }
     })
