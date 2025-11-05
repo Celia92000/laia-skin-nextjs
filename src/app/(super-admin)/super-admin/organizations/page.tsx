@@ -45,6 +45,7 @@ export default function OrganizationsPage() {
   const [orgSearchTerm, setOrgSearchTerm] = useState('')
   const [planFilter, setPlanFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [newFilter, setNewFilter] = useState(false)
   const [orgSortBy, setOrgSortBy] = useState('createdAt')
   const [orgSortOrder, setOrgSortOrder] = useState<'asc' | 'desc'>('desc')
 
@@ -75,6 +76,7 @@ export default function OrganizationsPage() {
     orgSearchTerm,
     planFilter,
     statusFilter,
+    newFilter,
     orgSortBy,
     orgSortOrder,
     users,
@@ -137,6 +139,10 @@ export default function OrganizationsPage() {
 
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter(org => org.status === statusFilter)
+    }
+
+    if (newFilter) {
+      filtered = filtered.filter(org => isNewOrganization(org.createdAt))
     }
 
     filtered.sort((a, b) => {
@@ -413,6 +419,14 @@ export default function OrganizationsPage() {
     CLIENT: users?.filter(u => u.role === 'CLIENT').length || 0
   }
 
+  // Fonction pour vérifier si une organisation est nouvelle (7 derniers jours)
+  const isNewOrganization = (createdAt: string) => {
+    const created = new Date(createdAt)
+    const now = new Date()
+    const diffInDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+    return diffInDays <= 7
+  }
+
   // Pagination for users
   const indexOfLastUser = currentPage * usersPerPage
   const indexOfFirstUser = indexOfLastUser - usersPerPage
@@ -482,6 +496,31 @@ export default function OrganizationsPage() {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Filtres */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            {/* Toggle Nouvelles organisations */}
+            <div className="mb-4 flex items-center gap-2">
+              <button
+                onClick={() => setNewFilter(!newFilter)}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${
+                  newFilter
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {newFilter && <span className="animate-pulse">✨</span>}
+                <span>Nouvelles (7 jours)</span>
+                {newFilter && (
+                  <span className="ml-1 px-2 py-0.5 bg-white/30 rounded-full text-xs">
+                    {organizations.filter(org => isNewOrganization(org.createdAt) && org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut').length}
+                  </span>
+                )}
+              </button>
+              {newFilter && (
+                <span className="text-sm text-gray-600">
+                  Organisations créées dans les 7 derniers jours
+                </span>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -729,7 +768,14 @@ export default function OrganizationsPage() {
                       <tr key={org.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{org.name}</div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{org.name}</span>
+                              {isNewOrganization(org.createdAt) && (
+                                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center gap-1 shadow-md animate-pulse">
+                                  ✨ NOUVEAU
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm text-gray-500">@{org.slug}</div>
                           </div>
                         </td>

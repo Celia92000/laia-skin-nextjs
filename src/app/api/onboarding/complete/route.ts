@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import Stripe from 'stripe'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
-import { sendWelcomeEmail, sendPendingActivationEmail, sendAccountActivationEmail } from '@/lib/onboarding-emails'
+import { sendWelcomeEmail, sendPendingActivationEmail, sendAccountActivationEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 
 const prisma = new PrismaClient()
@@ -387,6 +387,32 @@ export async function POST(req: NextRequest) {
     } catch (emailError) {
       console.error('⚠️ Erreur envoi email (non bloquant):', emailError)
       // On ne bloque pas même si l'email échoue
+    }
+
+    // Envoyer une notification au super-admin
+    try {
+      await sendSuperAdminNotification({
+        organizationId: organization.id,
+        organizationName: institutName,
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        ownerPhone: ownerPhone || undefined,
+        city,
+        plan: selectedPlan,
+        monthlyAmount: amount,
+        siret: siret || undefined,
+        legalName: legalName || undefined,
+        subdomain,
+        customDomain: useCustomDomain && customDomain ? customDomain : undefined,
+        trialEndsAt: organization.trialEndsAt!,
+        createdAt: organization.createdAt!
+      })
+
+      console.log('✅ Notification super-admin envoyée')
+    } catch (notifError) {
+      console.error('⚠️ Erreur notification super-admin (non bloquant):', notifError)
+      // On ne bloque pas même si la notification échoue
     }
 
     return NextResponse.json({

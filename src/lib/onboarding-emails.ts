@@ -868,3 +868,264 @@ export async function sendAccountActivationEmail(data: WelcomeEmailData) {
     throw error
   }
 }
+
+/**
+ * Email de notification au super-admin lors d'une nouvelle inscription
+ */
+export async function sendSuperAdminNotification(data: {
+  organizationId: string
+  organizationName: string
+  ownerFirstName: string
+  ownerLastName: string
+  ownerEmail: string
+  ownerPhone?: string
+  city: string
+  plan: string
+  monthlyAmount: number
+  siret?: string
+  legalName?: string
+  subdomain: string
+  customDomain?: string
+  trialEndsAt: Date
+  createdAt: Date
+}) {
+  const {
+    organizationId,
+    organizationName,
+    ownerFirstName,
+    ownerLastName,
+    ownerEmail,
+    ownerPhone,
+    city,
+    plan,
+    monthlyAmount,
+    siret,
+    legalName,
+    subdomain,
+    customDomain,
+    trialEndsAt,
+    createdAt
+  } = data
+
+  const fullName = `${ownerFirstName} ${ownerLastName}`
+  const siteUrl = customDomain || `https://${subdomain}.laia-connect.fr`
+  const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL}/super-admin/organizations/${organizationId}`
+
+  const planNames: Record<string, string> = {
+    SOLO: 'Solo (49€/mois)',
+    DUO: 'Duo (69€/mois)',
+    TEAM: 'Team (119€/mois)',
+    PREMIUM: 'Premium (179€/mois)'
+  }
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouvelle inscription LAIA Connect</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Arial, sans-serif; background-color: #f9fafb;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+
+        <table role="presentation" style="max-width: 650px; width: 100%; background-color: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="color: white; font-size: 32px; margin: 0 0 10px 0; font-weight: 700;">🎉 Nouvelle Inscription !</h1>
+              <p style="color: rgba(255, 255, 255, 0.95); font-size: 16px; margin: 0;">Une nouvelle organisation vient de s'inscrire</p>
+            </td>
+          </tr>
+
+          <!-- Badge NOUVEAU -->
+          <tr>
+            <td style="padding: 20px 30px; background-color: #ecfdf5; border-bottom: 3px solid #10b981;">
+              <div style="text-align: center;">
+                <span style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                  ✨ Nouveau Client
+                </span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Informations principales -->
+          <tr>
+            <td style="padding: 30px;">
+
+              <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <h2 style="color: #1f2937; font-size: 22px; margin: 0 0 20px 0;">📋 Informations de l'organisation</h2>
+
+                    <table role="presentation" style="width: 100%;">
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px; width: 40%;">Nom de l'institut</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 16px; font-weight: 600;">${organizationName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Raison sociale</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">${legalName || 'Non renseigné'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">SIRET</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-family: monospace;">${siret || 'Non renseigné'}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Ville</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px;">${city}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Subdomain</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-family: monospace;">${subdomain}.laia-connect.fr</td>
+                      </tr>
+                      ${customDomain ? `
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Domaine personnalisé</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-family: monospace;">${customDomain}</td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" style="width: 100%; background-color: #eff6ff; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <h2 style="color: #1f2937; font-size: 22px; margin: 0 0 20px 0;">👤 Propriétaire</h2>
+
+                    <table role="presentation" style="width: 100%;">
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px; width: 40%;">Nom complet</td>
+                        <td style="padding: 10px 0; color: #1f2937; font-size: 16px; font-weight: 600;">${fullName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Email</td>
+                        <td style="padding: 10px 0;">
+                          <a href="mailto:${ownerEmail}" style="color: #3b82f6; font-size: 14px; text-decoration: none;">${ownerEmail}</a>
+                        </td>
+                      </tr>
+                      ${ownerPhone ? `
+                      <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-size: 14px;">Téléphone</td>
+                        <td style="padding: 10px 0;">
+                          <a href="tel:${ownerPhone}" style="color: #3b82f6; font-size: 14px; text-decoration: none;">${ownerPhone}</a>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" style="width: 100%; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <h2 style="color: #92400e; font-size: 22px; margin: 0 0 20px 0;">💰 Abonnement</h2>
+
+                    <table role="presentation" style="width: 100%;">
+                      <tr>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px; width: 40%;">Formule</td>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 16px; font-weight: 600;">${planNames[plan]}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px;">Revenu mensuel</td>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 18px; font-weight: 700;">${monthlyAmount}€ HT/mois</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px;">Période d'essai</td>
+                        <td style="padding: 10px 0; color: #10b981; font-size: 14px; font-weight: 600;">30 jours gratuits</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px;">Fin de l'essai</td>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px; font-weight: 600;">${trialEndsAt.toLocaleDateString('fr-FR')}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px;">Date d'inscription</td>
+                        <td style="padding: 10px 0; color: #92400e; font-size: 14px;">${createdAt.toLocaleDateString('fr-FR')} à ${createdAt.toLocaleTimeString('fr-FR')}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Actions rapides -->
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; border-radius: 6px; margin: 25px 0;">
+                <h3 style="color: #065f46; font-size: 18px; margin: 0 0 15px 0;">⚡ Actions rapides</h3>
+                <table role="presentation" style="width: 100%;">
+                  <tr>
+                    <td align="center" style="padding: 10px 0;">
+                      <a href="${adminUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                        👁️ Voir la fiche organisation
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding: 10px 0;">
+                      <a href="${siteUrl}" target="_blank" style="display: inline-block; background-color: white; border: 2px solid #10b981; color: #10b981; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+                        🌐 Visiter le site
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding: 10px 0;">
+                      <a href="mailto:${ownerEmail}" style="display: inline-block; background-color: white; border: 2px solid #3b82f6; color: #3b82f6; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+                        📧 Contacter le propriétaire
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Informations système -->
+              <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin-top: 25px;">
+                <p style="color: #6b7280; font-size: 12px; margin: 0; font-family: monospace;">
+                  <strong>ID Organisation :</strong> ${organizationId}<br>
+                  <strong>Statut :</strong> ACTIVE (essai gratuit)<br>
+                  <strong>Email envoyé :</strong> Oui ✅
+                </p>
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px; margin: 0;">
+                © ${new Date().getFullYear()} LAIA Connect - Notification Super Admin
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  try {
+    // Email au super-admin (tu devras mettre ton email ici)
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@laia-connect.fr'
+
+    const result = await resend.emails.send({
+      from: 'LAIA Connect Notifications <notifications@laia-connect.fr>',
+      to: [superAdminEmail],
+      subject: `🎉 Nouvelle inscription : ${organizationName} - Plan ${plan} (${monthlyAmount}€/mois)`,
+      html: emailHtml
+    })
+
+    console.log('✅ Notification super-admin envoyée:', result)
+    return result
+  } catch (error) {
+    console.error('❌ Erreur envoi notification super-admin:', error)
+    throw error
+  }
+}
