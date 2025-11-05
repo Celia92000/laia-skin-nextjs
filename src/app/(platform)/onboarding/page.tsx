@@ -497,6 +497,46 @@ function OnboardingForm() {
   }, [data.institutName])
 
   const handleNext = () => {
+    // ✅ Valider les champs obligatoires avant de continuer
+    if (currentStep === 'business-info') {
+      if (!data.institutName || !data.address || !data.city) {
+        alert('❌ Veuillez remplir tous les champs obligatoires (nom commercial, adresse, ville)')
+        return
+      }
+    }
+
+    if (currentStep === 'billing') {
+      // Vérifier les erreurs de validation
+      if (validationErrors.siret || validationErrors.iban || validationErrors.bic) {
+        alert('❌ Veuillez corriger les erreurs de validation avant de continuer')
+        return
+      }
+
+      // Vérifier les champs obligatoires
+      if (!data.legalName || !data.siret || !data.billingAddress || !data.billingCity) {
+        alert('❌ Veuillez remplir tous les champs obligatoires (raison sociale, SIRET, adresse de facturation, ville)')
+        return
+      }
+
+      // Vérifier que le SIRET est valide
+      if (data.siret.length !== 14 || !validateSIRET(data.siret)) {
+        alert('❌ Le numéro SIRET est invalide. Il doit contenir exactement 14 chiffres valides.')
+        return
+      }
+
+      // Vérifier que l'IBAN est valide
+      if (data.sepaIban.length < 27 || !validateIBAN(data.sepaIban)) {
+        alert('❌ L\'IBAN est invalide. Veuillez vérifier votre numéro de compte bancaire.')
+        return
+      }
+
+      // Vérifier que le BIC est valide
+      if (data.sepaBic.length < 8 || !validateBIC(data.sepaBic)) {
+        alert('❌ Le BIC/SWIFT est invalide. Il doit contenir au moins 8 caractères.')
+        return
+      }
+    }
+
     // Parcours simplifié si skip=true : personal-info → business-info → billing → payment → complete
     const simplifiedFlow: Step[] = ['personal-info', 'business-info', 'billing', 'payment', 'complete']
     const fullFlow: Step[] = steps.map(s => s.id)
@@ -1623,49 +1663,6 @@ function OnboardingForm() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Couleur principale
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={data.primaryColor}
-                      onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
-                      className="h-12 w-20 rounded-lg border border-gray-300 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={data.primaryColor}
-                      onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg"
-                      placeholder="#d4b5a0"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Couleur secondaire
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      value={data.secondaryColor}
-                      onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
-                      className="h-12 w-20 rounded-lg border border-gray-300 cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={data.secondaryColor}
-                      onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg"
-                      placeholder="#2c3e50"
-                    />
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <p className="text-sm text-purple-800">
                   💡 <strong>Astuce :</strong> Vous pourrez ajouter votre logo et personnaliser davantage votre espace depuis le tableau de bord.
@@ -1682,7 +1679,7 @@ function OnboardingForm() {
               </button>
               <button
                 onClick={handleNext}
-                disabled={!data.institutName}
+                disabled={!data.institutName || !data.address || !data.city}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer →
