@@ -83,10 +83,22 @@ function OnboardingForm() {
   const searchParams = useSearchParams()
   const planFromUrl = searchParams.get('plan') as OnboardingData['selectedPlan'] || 'SOLO'
   const skipQuestionnaire = searchParams.get('skip') === 'true'
+  const shouldReset = searchParams.get('reset') === 'true'
+
+  // ✅ Réinitialiser l'onboarding si ?reset=true
+  useEffect(() => {
+    if (shouldReset && typeof window !== 'undefined') {
+      localStorage.removeItem('onboarding_data')
+      localStorage.removeItem('onboarding_step')
+      localStorage.removeItem('onboarding_answers')
+      // Rediriger sans le paramètre reset
+      router.replace('/onboarding')
+    }
+  }, [shouldReset, router])
 
   // ✅ Initialiser currentStep avec localStorage ou valeur par défaut
   const [currentStep, setCurrentStep] = useState<Step>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !shouldReset) {
       const savedStep = localStorage.getItem('onboarding_step')
       if (savedStep && !skipQuestionnaire) {
         return savedStep as Step
