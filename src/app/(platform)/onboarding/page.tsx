@@ -84,6 +84,7 @@ function OnboardingForm() {
   const planFromUrl = searchParams.get('plan') as OnboardingData['selectedPlan'] || 'SOLO'
   const skipQuestionnaire = searchParams.get('skip') === 'true'
   const shouldReset = searchParams.get('reset') === 'true'
+  const stepFromUrl = searchParams.get('step') as Step | null
 
   // ✅ Détecter le montage côté client pour éviter l'hydration mismatch
   useEffect(() => {
@@ -103,6 +104,10 @@ function OnboardingForm() {
 
   // ✅ Initialiser currentStep avec localStorage ou valeur par défaut
   const [currentStep, setCurrentStep] = useState<Step>(() => {
+    // Si un step est fourni dans l'URL, l'utiliser
+    if (stepFromUrl) {
+      return stepFromUrl
+    }
     if (typeof window !== 'undefined' && !shouldReset) {
       const savedStep = localStorage.getItem('onboarding_step')
       if (savedStep && !skipQuestionnaire) {
@@ -172,6 +177,65 @@ function OnboardingForm() {
 
   // ✅ Initialiser data avec localStorage ou valeur par défaut
   const [data, setData] = useState<OnboardingData>(() => {
+    // Si on accède directement à l'étape complete, remplir avec des données de test
+    if (stepFromUrl === 'complete') {
+      return {
+        ownerFirstName: 'Célia',
+        ownerLastName: 'Test',
+        ownerEmail: 'contact@laiaconnect.fr',
+        ownerPhone: '0612345678',
+        institutName: 'Institut Test',
+        slug: 'institut-test',
+        subdomain: 'institut-test',
+        customDomain: '',
+        useCustomDomain: false,
+        city: 'Paris',
+        address: '123 Rue de la Beauté',
+        postalCode: '75001',
+        primaryColor: '#d4b5a0',
+        secondaryColor: '#2c3e50',
+        serviceName: 'Soin du visage complet',
+        servicePrice: 89,
+        serviceDuration: 60,
+        serviceDescription: 'Soin visage complet avec nettoyage et massage',
+        websiteTemplateId: 'modern',
+        siteTagline: 'Institut de Beauté & Bien-être',
+        siteEmail: 'contact@laiaconnect.fr',
+        sitePhone: '0612345678',
+        heroTitle: 'Une peau respectée,',
+        heroSubtitle: 'une beauté révélée',
+        aboutText: 'Notre institut vous offre une expérience unique de bien-être et de beauté.',
+        founderName: 'Célia',
+        founderTitle: 'Fondatrice & Experte en soins esthétiques',
+        founderQuote: 'La beauté commence par prendre soin de soi',
+        facebook: '',
+        instagram: '',
+        whatsapp: '',
+        businessHours: {
+          lundi: { isOpen: true, start: '09:00', end: '18:00' },
+          mardi: { isOpen: true, start: '09:00', end: '18:00' },
+          mercredi: { isOpen: true, start: '09:00', end: '18:00' },
+          jeudi: { isOpen: true, start: '09:00', end: '18:00' },
+          vendredi: { isOpen: true, start: '09:00', end: '18:00' },
+          samedi: { isOpen: false, start: '09:00', end: '18:00' },
+          dimanche: { isOpen: false, start: '09:00', end: '18:00' }
+        },
+        legalName: 'Institut Test SARL',
+        siret: '12345678901234',
+        tvaNumber: 'FR12345678901',
+        billingEmail: 'contact@laiaconnect.fr',
+        billingAddress: '123 Rue de la Beauté',
+        billingPostalCode: '75001',
+        billingCity: 'Paris',
+        billingCountry: 'France',
+        sepaIban: 'FR7612345678901234567890123',
+        sepaBic: 'BNPAFRPP',
+        sepaAccountHolder: 'Célia Test',
+        sepaMandate: true,
+        selectedPlan: planFromUrl
+      }
+    }
+
     if (typeof window !== 'undefined') {
       const savedData = localStorage.getItem('onboarding_data')
       if (savedData) {
