@@ -20,33 +20,57 @@ export default async function Home() {
     redirect('/platform');
   }
 
-  // Récupérer l'organisation par le subdomain ou domaine
-  let organizationSubdomain = 'laia-skin-institut'; // Par défaut
-
+  // Récupérer l'organisation par domaine personnalisé ou subdomain
   const cleanHost = host.split(':')[0].toLowerCase();
 
-  // Extraire le subdomain (première partie avant le premier point)
-  const parts = cleanHost.split('.');
-  if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
-    organizationSubdomain = parts[0];
+  console.log(`🌐 Host reçu: ${host} → Clean host: ${cleanHost}`);
+
+  let organization = null;
+
+  // 1️⃣ D'abord, essayer de trouver par domaine personnalisé (custom domain)
+  // Ex: beaute-eternelle.fr → chercher dans organization.domain
+  if (!cleanHost.includes('localhost')) {
+    organization = await prisma.organization.findUnique({
+      where: { domain: cleanHost },
+      include: { config: true }
+    });
+
+    if (organization) {
+      console.log(`✅ Organisation trouvée par domaine personnalisé: ${organization.name}`);
+    }
   }
 
-  console.log(`🌐 Host: ${host} → Subdomain: ${organizationSubdomain}`);
-
-  // Récupérer l'organisation
-  const organization = await prisma.organization.findUnique({
-    where: { subdomain: organizationSubdomain },
-    include: { config: true }
-  });
-
+  // 2️⃣ Si pas trouvé, extraire le subdomain (première partie avant le premier point)
+  // Ex: belle-peau-institut.localhost → belle-peau-institut
   if (!organization) {
-    console.log(`❌ Organisation non trouvée pour subdomain: ${organizationSubdomain}, utilisation de laia-skin-institut`);
-    // Rediriger vers le site par défaut ou afficher une erreur
-    const defaultOrg = await prisma.organization.findFirst({
+    const parts = cleanHost.split('.');
+    let subdomain = 'laia-skin-institut'; // Par défaut
+
+    if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+      subdomain = parts[0];
+    }
+
+    console.log(`🔍 Recherche par subdomain: ${subdomain}`);
+
+    organization = await prisma.organization.findUnique({
+      where: { subdomain: subdomain },
+      include: { config: true }
+    });
+
+    if (organization) {
+      console.log(`✅ Organisation trouvée par subdomain: ${organization.name}`);
+    }
+  }
+
+  // 3️⃣ Fallback vers l'organisation par défaut (LAIA SKIN INSTITUT)
+  if (!organization) {
+    console.log(`⚠️ Aucune organisation trouvée, utilisation de laia-skin-institut par défaut`);
+    organization = await prisma.organization.findFirst({
       where: { slug: 'laia-skin-institut' },
       include: { config: true }
     });
-    if (!defaultOrg) {
+
+    if (!organization) {
       return <div>Organisation non trouvée</div>;
     }
   }
