@@ -5,6 +5,7 @@ import Stripe from 'stripe'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
 import { sendWelcomeEmail, sendPendingActivationEmail, sendAccountActivationEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
+import { createOnboardingContract } from '@/lib/contract-generator'
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -362,6 +363,41 @@ export async function POST(req: NextRequest) {
       console.error('⚠️ Erreur génération facture (non bloquant):', invoiceError)
     }
 
+    // Générer le contrat d'abonnement
+    let contractPdfBuffer: Buffer | undefined
+    let contractNumber: string | undefined
+
+    try {
+      const contractResult = await createOnboardingContract({
+        organizationName: institutName,
+        legalName,
+        siret,
+        tvaNumber: tvaNumber || undefined,
+        billingAddress: billingAddress || address,
+        billingPostalCode: billingPostalCode || postalCode,
+        billingCity: billingCity || city,
+        billingCountry: billingCountry || 'France',
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        ownerPhone: ownerPhone || undefined,
+        plan: selectedPlan,
+        monthlyAmount: amount,
+        trialEndsAt: organization.trialEndsAt!,
+        subscriptionStartDate: organization.createdAt!,
+        sepaIban,
+        sepaBic,
+        sepaAccountHolder,
+        sepaMandateRef,
+        sepaMandateDate
+      })
+      contractPdfBuffer = contractResult.pdfBuffer
+      contractNumber = contractResult.contractNumber
+      console.log(`✅ Contrat ${contractNumber} généré`)
+    } catch (contractError) {
+      console.error('⚠️ Erreur génération contrat (non bloquant):', contractError)
+    }
+
     // Envoyer l'email de bienvenue avec les identifiants de connexion
     try {
       const adminUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -381,7 +417,7 @@ export async function POST(req: NextRequest) {
         monthlyAmount: amount,
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
-      }, invoicePdfBuffer, invoiceNumber)
+      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
 
       console.log('✅ Email de bienvenue avec identifiants envoyé')
     } catch (emailError) {

@@ -23,7 +23,9 @@ interface WelcomeEmailData {
 export async function sendWelcomeEmail(
   data: WelcomeEmailData,
   invoicePdfBuffer?: Buffer,
-  invoiceNumber?: string
+  invoiceNumber?: string,
+  contractPdfBuffer?: Buffer,
+  contractNumber?: string
 ) {
   const {
     organizationName,
@@ -204,6 +206,23 @@ export async function sendWelcomeEmail(
                 </ol>
               </div>
 
+              <!-- Documents contractuels -->
+              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 6px; margin: 30px 0;">
+                <h3 style="color: #92400e; font-size: 18px; margin: 0 0 15px 0;">📄 Vos documents contractuels</h3>
+                <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
+                  Vous trouverez en pièces jointes de cet email :
+                </p>
+                <ul style="color: #92400e; font-size: 14px; line-height: 1.8; margin: 0 0 15px 0;">
+                  ${invoiceNumber ? `<li>📋 Votre facture d'activation (${invoiceNumber})</li>` : ''}
+                  ${contractNumber ? `<li>📝 Votre contrat d'abonnement (${contractNumber})</li>` : ''}
+                </ul>
+                <p style="color: #92400e; font-size: 13px; margin: 0;">
+                  <strong>Important :</strong> Vous pouvez également consulter nos
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.laiaconnect.fr'}/cgv" style="color: #f59e0b; text-decoration: underline;">Conditions Générales de Vente</a>
+                  en ligne à tout moment.
+                </p>
+              </div>
+
               <!-- Informations Abonnement -->
               <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 30px 0;">
                 <tr>
@@ -314,6 +333,13 @@ export async function sendWelcomeEmail(
       attachments.push({
         filename: `Facture_${invoiceNumber}.pdf`,
         content: invoicePdfBuffer
+      })
+    }
+
+    if (contractPdfBuffer && contractNumber) {
+      attachments.push({
+        filename: `Contrat_${contractNumber}.pdf`,
+        content: contractPdfBuffer
       })
     }
 
