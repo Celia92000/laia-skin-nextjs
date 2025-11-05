@@ -8,11 +8,29 @@ import { Shield, User, LogOut, Calculator } from "lucide-react";
 import { logout } from "@/lib/auth-client";
 import { useConfig } from "@/hooks/useConfig";
 
+type OrgPlan = 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM' | 'STARTER' | 'ESSENTIAL' | 'PROFESSIONAL' | 'ENTERPRISE';
+
+interface OrganizationData {
+  name: string;
+  plan: OrgPlan;
+  featureBlog: boolean;
+  featureProducts: boolean;
+  featureFormations: boolean;
+  config: {
+    siteName: string | null;
+    logoUrl: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+  };
+}
+
 export default function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const { config } = useConfig();
+  const [orgData, setOrgData] = useState<OrganizationData | null>(null);
 
   useEffect(() => {
     const checkUser = () => {
@@ -25,7 +43,7 @@ export default function Header() {
         }
       }
     };
-    
+
     checkUser();
     // Vérifier à chaque changement de page
     window.addEventListener('storage', checkUser);
@@ -37,6 +55,21 @@ export default function Header() {
   const [showServices, setShowServices] = useState(false);
 
   useEffect(() => {
+    // Charger les données de l'organisation
+    const loadOrgData = async () => {
+      try {
+        const res = await fetch('/api/organization/current');
+        if (res.ok) {
+          const data = await res.json();
+          setOrgData(data);
+        }
+      } catch (error) {
+        console.log('Could not load organization data');
+      }
+    };
+
+    loadOrgData();
+
     // Vérifier s'il y a des produits, formations et prestations actifs
     const checkContent = async () => {
       try {
@@ -68,13 +101,32 @@ export default function Header() {
     checkContent();
   }, [pathname]);
 
+  // Fonction pour vérifier si un onglet doit être affiché selon le plan
+  const isFeatureEnabled = (feature: 'blog' | 'products' | 'formations') => {
+    if (!orgData) return true; // Si pas encore chargé, afficher tout par défaut
+
+    switch (feature) {
+      case 'blog':
+        // Blog disponible à partir de DUO
+        return ['DUO', 'TEAM', 'PREMIUM', 'ESSENTIAL', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureBlog;
+      case 'products':
+        // Produits disponibles à partir de TEAM
+        return ['TEAM', 'PREMIUM', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureProducts;
+      case 'formations':
+        // Formations disponibles uniquement en PREMIUM
+        return ['PREMIUM', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureFormations;
+      default:
+        return true;
+    }
+  };
+
   const allNavItems = [
     { href: "/", label: "Accueil" },
     { href: "/prestations", label: "Mes Prestations", showCondition: showServices },
-    { href: "/produits", label: "Mes Produits", showCondition: showProducts },
-    { href: "/formations", label: "Mes Formations", showCondition: showFormations },
+    { href: "/produits", label: "Mes Produits", showCondition: showProducts && isFeatureEnabled('products') },
+    { href: "/formations", label: "Mes Formations", showCondition: showFormations && isFeatureEnabled('formations') },
     { href: "/carte-cadeau", label: "Carte Cadeau" },
-    { href: "/blog", label: "Blog" },
+    { href: "/blog", label: "Blog", showCondition: isFeatureEnabled('blog') },
     { href: "/a-propos", label: "À Propos" },
     { href: "/reservation", label: "Réserver" },
     { href: "/contact", label: "Contact" },
@@ -83,22 +135,29 @@ export default function Header() {
 
   const navItems = allNavItems.filter(item => !item.hasOwnProperty('showCondition') || item.showCondition);
 
+  // Couleurs dynamiques
+  const primaryColor = orgData?.config.primaryColor || '#d4b5a0';
+  const secondaryColor = orgData?.config.secondaryColor || '#c9a084';
+  const accentColor = orgData?.config.accentColor || '#2c3e50';
+
   return (
-    <header className="fixed top-0 w-full bg-white/95 backdrop-blur-xl border-b border-[#d4b5a0]/20 z-50 shadow-lg">
+    <header className="fixed top-0 w-full bg-white/95 backdrop-blur-xl border-b z-50 shadow-lg" style={{ borderColor: `${primaryColor}33` }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20 sm:h-24">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
               <Image
-                src={config.logoUrl || "/logo-laia-skin.png"}
-                alt={`${config.siteName} Logo`}
+                src={orgData?.config.logoUrl || config.logoUrl || "/logo-laia-skin.png"}
+                alt={`${orgData?.config.siteName || config.siteName} Logo`}
                 fill
                 className="object-contain"
                 priority
               />
             </div>
-            <h1 className="text-xl sm:text-2xl font-serif font-semibold text-[#2c3e50] tracking-wide">{config.siteName?.toUpperCase() || 'MON INSTITUT'}</h1>
+            <h1 className="text-xl sm:text-2xl font-serif font-semibold tracking-wide" style={{ color: accentColor }}>
+              {(orgData?.config.siteName || config.siteName)?.toUpperCase() || 'MON INSTITUT'}
+            </h1>
           </Link>
 
           {/* Desktop Navigation */}
@@ -108,9 +167,24 @@ export default function Header() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`font-inter inline-flex items-center justify-center min-w-[100px] text-center text-[#2c3e50] font-medium px-4 py-2 rounded-full transition-all duration-300 hover:bg-gradient-to-r hover:from-[#d4b5a0] hover:to-[#c9a084] hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm tracking-normal whitespace-nowrap ${
-                      pathname === item.href ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white" : ""
+                    className={`font-inter inline-flex items-center justify-center min-w-[100px] text-center font-medium px-4 py-2 rounded-full transition-all duration-300 hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm tracking-normal whitespace-nowrap ${
+                      pathname === item.href ? "text-white" : ""
                     }`}
+                    style={
+                      pathname === item.href
+                        ? { background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }
+                        : { color: accentColor }
+                    }
+                    onMouseEnter={(e) => {
+                      if (pathname !== item.href) {
+                        e.currentTarget.style.background = `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (pathname !== item.href) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
                   >
                     {item.label}
                   </Link>
@@ -157,11 +231,11 @@ export default function Header() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2"
           >
-            <svg className="w-6 h-6 text-[#2c3e50]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: accentColor }}>
               {mobileMenuOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
@@ -178,11 +252,14 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`block text-[#2c3e50] font-medium px-6 py-3 rounded-full transition-all duration-300 ${
-                  pathname === item.href 
-                    ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white" 
-                    : "hover:bg-gradient-to-r hover:from-[#d4b5a0]/10 hover:to-[#c9a084]/10"
+                className={`block font-medium px-6 py-3 rounded-full transition-all duration-300 ${
+                  pathname === item.href ? "text-white" : ""
                 }`}
+                style={
+                  pathname === item.href
+                    ? { background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }
+                    : { color: accentColor, backgroundColor: 'transparent' }
+                }
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.label}

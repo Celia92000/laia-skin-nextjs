@@ -76,6 +76,12 @@ export default async function Home() {
   }
 
   const config = organization?.config || await getSiteConfig();
+
+  // Couleurs de l'organisation
+  const primaryColor = organization?.config?.primaryColor || '#d4b5a0';
+  const secondaryColor = organization?.config?.secondaryColor || '#c9a084';
+  const accentColor = organization?.config?.accentColor || '#2c3e50';
+
   let services: any[] = [];
 
   // Parse testimonials from config (JSON)
@@ -128,23 +134,37 @@ export default async function Home() {
 
         {/* Animated Background Elements (fallback or overlay) */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute w-96 h-96 -bottom-48 -left-48 bg-gradient-to-tr from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+          <div
+            className="absolute w-96 h-96 -top-48 -right-48 rounded-full blur-3xl animate-pulse"
+            style={{ background: `linear-gradient(to bottom right, ${primaryColor}33, ${secondaryColor}33)` }}
+          ></div>
+          <div
+            className="absolute w-96 h-96 -bottom-48 -left-48 rounded-full blur-3xl animate-pulse delay-700"
+            style={{ background: `linear-gradient(to top right, ${primaryColor}33, ${secondaryColor}33)` }}
+          ></div>
         </div>
 
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up leading-tight tracking-normal ${config.heroImage ? 'text-white' : 'text-[#2c3e50]'}`}>
+          <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up leading-tight tracking-normal ${config.heroImage ? 'text-white' : ''}`} style={!config.heroImage ? { color: accentColor } : undefined}>
             <span className="block font-normal">{config.heroTitle || "Une peau respectée,"}</span>
-            <span className={`block font-semibold mt-1 ${config.heroImage ? 'text-white/90' : 'text-[#d4b5a0]'}`}>{config.heroSubtitle || "une beauté révélée"}</span>
+            <span className={`block font-semibold mt-1 ${config.heroImage ? 'text-white/90' : ''}`} style={!config.heroImage ? { color: primaryColor } : undefined}>{config.heroSubtitle || "une beauté révélée"}</span>
           </h1>
-          <p className={`font-inter text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal ${config.heroImage ? 'text-white/90' : 'text-[#2c3e50]/60'}`}>
+          <p className={`font-inter text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal ${config.heroImage ? 'text-white/90' : ''}`} style={!config.heroImage ? { color: `${accentColor}99` } : undefined}>
             {config.siteDescription || config.siteTagline || "Institut spécialisé dans les techniques esthétiques avancées"}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
-            <Link href="/reservation" className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link
+              href="/reservation"
+              className="text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
+            >
               Réserver un Soin
             </Link>
-            <Link href="/prestations" className="bg-white text-[#2c3e50] px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link
+              href="/prestations"
+              className="bg-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ color: accentColor }}
+            >
               Découvrir nos Soins
             </Link>
           </div>
@@ -155,10 +175,10 @@ export default async function Home() {
       <section className="py-12 sm:py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-playfair font-normal text-[#2c3e50] mb-4 tracking-normal">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-playfair font-normal mb-4 tracking-normal" style={{ color: accentColor }}>
               Mes Prestations
             </h2>
-            <p className="font-inter text-base md:text-lg text-[#2c3e50]/60 max-w-2xl mx-auto tracking-normal">
+            <p className="font-inter text-base md:text-lg max-w-2xl mx-auto tracking-normal" style={{ color: `${accentColor}99` }}>
               Découvrez notre gamme exclusive de soins innovants pour une peau éclatante et rajeunie
             </p>
           </div>
@@ -450,19 +470,35 @@ export default async function Home() {
       <SocialSection />
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-[#d4b5a0] to-[#c9a084] text-white">
+      <section className="py-24 text-white" style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${secondaryColor})` }}>
         <div className="max-w-4xl mx-auto text-center px-4">
           <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
             Prête pour révéler votre éclat naturel ?
           </h2>
           <p className="text-xl mb-12 opacity-95">
-            Réservez dès maintenant votre soin personnalisé et découvrez la différence LAIA SKIN
+            Réservez dès maintenant votre soin personnalisé et découvrez la différence {config.siteName?.toUpperCase() || 'LAIA SKIN'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/reservation" className="bg-white text-[#2c3e50] px-10 py-4 rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <Link
+              href="/reservation"
+              className="bg-white px-10 py-4 rounded-full font-semibold text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ color: accentColor }}
+            >
               Réserver un soin
             </Link>
-            <Link href="/contact" className="bg-transparent border-2 border-white text-white px-10 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-[#2c3e50] transition-all duration-300">
+            <Link
+              href="/contact"
+              className="bg-transparent border-2 text-white px-10 py-4 rounded-full font-semibold text-lg transition-all duration-300"
+              style={{ borderColor: 'white' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.color = accentColor;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'white';
+              }}
+            >
               Nous contacter
             </Link>
           </div>
