@@ -107,6 +107,17 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             </div>
 
             <div className="flex items-center gap-2">
+              <a
+                href={organization.domain
+                  ? `http://${organization.domain}:3001`
+                  : `http://${organization.subdomain}.localhost:3001`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 text-sm font-medium"
+              >
+                <Eye className="w-4 h-4" />
+                Voir le site
+              </a>
               <button
                 onClick={async () => {
                   try {

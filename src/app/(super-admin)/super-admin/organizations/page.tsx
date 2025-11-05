@@ -724,7 +724,9 @@ export default function OrganizationsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center gap-3 flex-wrap">
                               <a
-                                href={org.slug === 'laia-skin-institut' || org.slug === 'laia-skin' ? '/' : `/${org.slug}`}
+                                href={org.domain
+                                  ? `http://${org.domain}:3001`
+                                  : `http://${org.subdomain}.localhost:3001`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition font-semibold text-xs shadow-md flex items-center gap-1.5"
@@ -844,7 +846,9 @@ export default function OrganizationsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-3 flex-wrap">
                             <a
-                              href={`/${org.slug}`}
+                              href={org.domain
+                                ? `http://${org.domain}:3001`
+                                : `http://${org.subdomain}.localhost:3001`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-emerald-600 hover:text-emerald-900 font-medium"
