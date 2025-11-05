@@ -1,6 +1,43 @@
-import { Resend } from 'resend'
+import * as brevo from '@getbrevo/brevo'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Configuration Brevo pour LAIA Connect (plateforme SaaS)
+const apiInstance = new brevo.TransactionalEmailsApi()
+apiInstance.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY || ''
+)
+
+/**
+ * Helper pour envoyer un email via Brevo
+ */
+async function sendEmailViaBrevo({
+  to,
+  subject,
+  htmlContent,
+  attachments
+}: {
+  to: string[]
+  subject: string
+  htmlContent: string
+  attachments?: Array<{ content: string; name: string }>
+}) {
+  const sendSmtpEmail = new brevo.SendSmtpEmail()
+
+  sendSmtpEmail.subject = subject
+  sendSmtpEmail.htmlContent = htmlContent
+  sendSmtpEmail.sender = {
+    name: process.env.BREVO_FROM_NAME || 'LAIA Connect',
+    email: process.env.BREVO_FROM_EMAIL || 'contact@laiaconnect.fr'
+  }
+  sendSmtpEmail.to = to.map(email => ({ email }))
+
+  if (attachments) {
+    sendSmtpEmail.attachment = attachments
+  }
+
+  const data = await apiInstance.sendTransacEmail(sendSmtpEmail)
+  return data
+}
 
 interface WelcomeEmailData {
   organizationName: string
@@ -326,32 +363,31 @@ export async function sendWelcomeEmail(
   `
 
   try {
-    // Préparer les pièces jointes
+    // Préparer les pièces jointes pour Brevo (format base64)
     const attachments = []
 
     if (invoicePdfBuffer && invoiceNumber) {
       attachments.push({
-        filename: `Facture_${invoiceNumber}.pdf`,
-        content: invoicePdfBuffer
+        content: invoicePdfBuffer.toString('base64'),
+        name: `Facture_${invoiceNumber}.pdf`
       })
     }
 
     if (contractPdfBuffer && contractNumber) {
       attachments.push({
-        filename: `Contrat_${contractNumber}.pdf`,
-        content: contractPdfBuffer
+        content: contractPdfBuffer.toString('base64'),
+        name: `Contrat_${contractNumber}.pdf`
       })
     }
 
-    const result = await resend.emails.send({
-      from: 'LAIA Connect <onboarding@laia-connect.fr>',
+    const result = await sendEmailViaBrevo({
       to: [ownerEmail],
       subject: `🎉 Bienvenue sur LAIA Connect - Votre site ${organizationName} est prêt !`,
-      html: emailHtml,
-      attachments
+      htmlContent: emailHtml,
+      attachments: attachments.length > 0 ? attachments : undefined
     })
 
-    console.log('✅ Email de bienvenue envoyé:', result)
+    console.log('✅ Email de bienvenue envoyé via Brevo:', result.messageId)
     return result
   } catch (error) {
     console.error('❌ Erreur envoi email de bienvenue:', error)
@@ -1138,17 +1174,16 @@ export async function sendSuperAdminNotification(data: {
   `
 
   try {
-    // Email au super-admin (tu devras mettre ton email ici)
-    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@laia-connect.fr'
+    // Email au super-admin
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'contact@laiaconnect.fr'
 
-    const result = await resend.emails.send({
-      from: 'LAIA Connect Notifications <notifications@laia-connect.fr>',
+    const result = await sendEmailViaBrevo({
       to: [superAdminEmail],
       subject: `🎉 Nouvelle inscription : ${organizationName} - Plan ${plan} (${monthlyAmount}€/mois)`,
-      html: emailHtml
+      htmlContent: emailHtml
     })
 
-    console.log('✅ Notification super-admin envoyée:', result)
+    console.log('✅ Notification super-admin envoyée via Brevo:', result.messageId)
     return result
   } catch (error) {
     console.error('❌ Erreur envoi notification super-admin:', error)
