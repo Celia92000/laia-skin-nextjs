@@ -5,6 +5,11 @@ import { generateAndSaveInvoice } from '@/lib/invoice-service'
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '@/lib/payment-emails'
 import { getResend } from '@/lib/resend'
 import { getSiteConfig } from '@/lib/config-service'
+import { generateOrganizationTemplate } from '@/lib/template-generator'
+import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
+import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
+import { createOnboardingContract } from '@/lib/contract-generator'
+import bcrypt from 'bcryptjs'
 import Stripe from 'stripe'
 
 /**
@@ -107,17 +112,6 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session
-        // Vérifier si c'est un paiement Connect (reservation, carte cadeau, etc.)
-        if (session.metadata?.organizationId) {
-          await handleConnectedCheckoutCompleted(session)
-        } else {
-          await handleCheckoutCompleted(session)
-        }
-        break
-      }
-
       default:
         console.log(`⚠️ Événement non géré: ${event.type}`)
     }
@@ -133,7 +127,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Gère la complétion d'une session de checkout (cartes cadeaux, réservations)
+ * Gère la complétion d'une session de checkout (onboarding, cartes cadeaux, réservations)
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
@@ -141,6 +135,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     if (!metadata) {
       console.warn('⚠️ Pas de metadata dans la session')
+      return
+    }
+
+    // Gérer l'onboarding SaaS (création d'organisation)
+    if (metadata.type === 'onboarding' && metadata.onboardingData) {
+      await handleOnboardingCompleted(session, metadata.onboardingData)
+      return
+    }
+
+    // Gérer les paiements Connect (institut)
+    if (metadata.organizationId) {
+      await handleConnectedCheckoutCompleted(session)
       return
     }
 
@@ -1005,6 +1011,260 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
 
   } catch (error) {
     console.error('Erreur handleConnectedCheckoutCompleted:', error)
+  }
+}
+
+/**
+ * Gère la création d'organisation après validation du paiement (onboarding)
+ */
+async function handleOnboardingCompleted(session: Stripe.Checkout.Session, onboardingDataJson: string) {
+  try {
+    console.log('🚀 Début création organisation depuis webhook')
+
+    // Parser les données d'onboarding
+    const data = JSON.parse(onboardingDataJson)
+
+    const {
+      ownerFirstName,
+      ownerLastName,
+      ownerEmail,
+      ownerPhone,
+      institutName,
+      slug,
+      subdomain,
+      customDomain,
+      useCustomDomain,
+      city,
+      address,
+      postalCode,
+      primaryColor,
+      secondaryColor,
+      serviceName,
+      servicePrice,
+      serviceDuration,
+      serviceDescription,
+      websiteTemplateId,
+      siteTagline,
+      heroTitle,
+      heroSubtitle,
+      aboutText,
+      founderName,
+      founderTitle,
+      founderQuote,
+      facebook,
+      instagram,
+      whatsapp,
+      businessHours,
+      legalName,
+      siret,
+      tvaNumber,
+      billingEmail,
+      billingAddress,
+      billingPostalCode,
+      billingCity,
+      billingCountry,
+      sepaIban,
+      sepaBic,
+      sepaAccountHolder,
+      sepaMandate,
+      selectedPlan
+    } = data
+
+    const adminEmail = ownerEmail
+    const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!'
+    const hashedPassword = await bcrypt.hash(tempPassword, 10)
+
+    const sepaMandateRef = `LAIA-${slug.toUpperCase()}-${Date.now()}`
+    const sepaMandateDate = new Date()
+
+    // Créer l'organisation
+    const organization = await prisma.organization.create({
+      data: {
+        name: institutName,
+        slug,
+        subdomain,
+        domain: useCustomDomain && customDomain ? customDomain : null,
+        websiteTemplateId: websiteTemplateId || 'modern',
+        ownerFirstName,
+        ownerLastName,
+        ownerEmail,
+        ownerPhone,
+        legalName,
+        siret,
+        tvaNumber: tvaNumber || null,
+        billingEmail,
+        billingAddress,
+        billingPostalCode,
+        billingCity,
+        billingCountry: billingCountry || 'France',
+        sepaIban,
+        sepaBic,
+        sepaAccountHolder,
+        sepaMandate,
+        sepaMandateRef,
+        sepaMandateDate,
+        plan: selectedPlan,
+        status: 'ACTIVE',
+        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        stripeCustomerId: session.customer as string,
+        subscriptionId: session.subscription as string,
+        config: {
+          create: {
+            primaryColor,
+            secondaryColor,
+            siteName: institutName,
+            siteDescription: `Institut de beauté ${institutName}`,
+            siteTagline: siteTagline || 'Institut de Beauté & Bien-être',
+            heroTitle: heroTitle || 'Une peau respectée,',
+            heroSubtitle: heroSubtitle || 'une beauté révélée',
+            aboutText: aboutText || '',
+            founderName: founderName || `${ownerFirstName} ${ownerLastName}`,
+            founderTitle: founderTitle || 'Fondatrice & Experte en soins esthétiques',
+            founderQuote: founderQuote || '',
+            facebook: facebook || null,
+            instagram: instagram || null,
+            whatsapp: whatsapp || null,
+            contactEmail: ownerEmail,
+            phone: ownerPhone || '',
+            address: address || '',
+            city: city || '',
+            postalCode: postalCode || '',
+            country: 'France',
+            businessHours: JSON.stringify(businessHours),
+            siret,
+            tvaNumber: tvaNumber || null,
+            legalRepName: `${ownerFirstName} ${ownerLastName}`,
+            legalRepTitle: 'Gérant(e)'
+          }
+        },
+        locations: {
+          create: {
+            name: institutName,
+            slug: 'principal',
+            isMainLocation: true,
+            address: address || '',
+            city: city || '',
+            postalCode: postalCode || '',
+            country: 'France',
+            phone: ownerPhone || '',
+            email: ownerEmail,
+            businessHours: JSON.stringify(businessHours)
+          }
+        }
+      },
+      include: {
+        locations: true,
+        config: true
+      }
+    })
+
+    console.log(`✅ Organisation créée: ${organization.id}`)
+
+    // Créer l'utilisateur admin
+    const adminUser = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: `${ownerFirstName} ${ownerLastName}`,
+        phone: ownerPhone || null,
+        password: hashedPassword,
+        role: 'ORG_OWNER',
+        organizationId: organization.id
+      }
+    })
+
+    console.log(`✅ Utilisateur admin créé: ${adminUser.id}`)
+
+    // Créer le premier service si fourni
+    if (serviceName && servicePrice) {
+      await prisma.service.create({
+        data: {
+          name: serviceName,
+          description: serviceDescription || '',
+          price: parseFloat(servicePrice.toString()),
+          duration: parseInt(serviceDuration?.toString() || '60'),
+          organizationId: organization.id,
+          locationId: organization.locations[0].id,
+          isActive: true
+        }
+      })
+      console.log(`✅ Service créé: ${serviceName}`)
+    }
+
+    // Générer le template
+    try {
+      await generateOrganizationTemplate({
+        organizationId: organization.id,
+        organizationName: institutName,
+        plan: selectedPlan,
+        ownerFirstName,
+        ownerLastName,
+        primaryColor,
+        secondaryColor,
+        initialService: serviceName ? {
+          name: serviceName,
+          price: parseFloat(servicePrice.toString()),
+          duration: parseInt(serviceDuration?.toString() || '60'),
+          description: serviceDescription || ''
+        } : undefined
+      })
+      console.log('✅ Template LAIA généré')
+    } catch (error) {
+      console.error('⚠️ Erreur template:', error)
+    }
+
+    // Générer facture et contrat
+    let invoicePdfBuffer: Buffer | undefined
+    let contractPdfBuffer: Buffer | undefined
+
+    try {
+      const invoiceResult = await createSubscriptionInvoice(organization.id, true)
+      invoicePdfBuffer = invoiceResult.pdfBuffer
+      console.log(`✅ Facture générée`)
+    } catch (error) {
+      console.error('⚠️ Erreur facture:', error)
+    }
+
+    try {
+      contractPdfBuffer = await createOnboardingContract(organization.id)
+      console.log(`✅ Contrat généré`)
+    } catch (error) {
+      console.error('⚠️ Erreur contrat:', error)
+    }
+
+    // Envoyer emails
+    try {
+      await sendWelcomeEmail({
+        recipientEmail: ownerEmail,
+        recipientName: `${ownerFirstName} ${ownerLastName}`,
+        organizationName: institutName,
+        tempPassword,
+        plan: selectedPlan,
+        invoicePdfBuffer,
+        contractPdfBuffer
+      })
+      console.log('✅ Email de bienvenue envoyé')
+    } catch (error) {
+      console.error('⚠️ Erreur email bienvenue:', error)
+    }
+
+    try {
+      await sendSuperAdminNotification({
+        organizationName: institutName,
+        ownerName: `${ownerFirstName} ${ownerLastName}`,
+        ownerEmail,
+        plan: selectedPlan,
+        organizationId: organization.id
+      })
+      console.log('✅ Email super-admin envoyé')
+    } catch (error) {
+      console.error('⚠️ Erreur email super-admin:', error)
+    }
+
+    console.log('🎉 Onboarding terminé avec succès!')
+
+  } catch (error) {
+    console.error('❌ Erreur handleOnboardingCompleted:', error)
+    throw error
   }
 }
 
