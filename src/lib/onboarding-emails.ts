@@ -218,7 +218,7 @@ export async function sendWelcomeEmail(
                 </ul>
                 <p style="color: #92400e; font-size: 13px; margin: 0;">
                   <strong>Important :</strong> Vous pouvez également consulter nos
-                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.laiaconnect.fr'}/cgv" style="color: #f59e0b; text-decoration: underline;">Conditions Générales de Vente</a>
+                  <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://www.laiaconnect.fr'}/cgv-laia-connect" style="color: #f59e0b; text-decoration: underline;">Conditions Générales de Vente</a>
                   en ligne à tout moment.
                 </p>
               </div>
