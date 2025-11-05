@@ -64,7 +64,7 @@ export default function CGVPage() {
               <li>WhatsApp Business et SMS Marketing</li>
               <li>Publications automatiques sur réseaux sociaux (Instagram, Facebook, TikTok)</li>
               <li>Multi-utilisateurs et multi-emplacements</li>
-              <li>Support prioritaire et Account Manager dédié</li>
+              <li>Rapports et statistiques avancés</li>
             </ul>
 
             <p className="mt-4 text-sm italic text-gray-600">
@@ -93,7 +93,7 @@ export default function CGVPage() {
 
               <div className="border-l-4 border-purple-500 pl-4">
                 <h3 className="text-lg font-semibold text-gray-800">PREMIUM - 179€ HT/mois</h3>
-                <p className="text-sm">Illimité • Support prioritaire • Account Manager dédié</p>
+                <p className="text-sm">Illimité • Toutes fonctionnalités avancées</p>
               </div>
             </div>
 
@@ -214,11 +214,18 @@ export default function CGVPage() {
             </ul>
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">8.3 - Support Technique</h3>
-            <ul className="list-disc pl-6 space-y-1">
-              <li><strong>Formules SOLO/DUO/TEAM :</strong> Support par email sous 48h ouvrées</li>
-              <li><strong>Formule PREMIUM :</strong> Support prioritaire sous 24h + Account Manager dédié</li>
-              <li><strong>Documentation :</strong> Centre d'aide en ligne accessible 24/7</li>
+            <p>
+              LAIA Connect met à disposition de tous ses Clients, quelle que soit la formule souscrite :
+            </p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li><strong>Support par email :</strong> Réponse sous 48h ouvrées maximum</li>
+              <li><strong>Documentation complète :</strong> Centre d'aide en ligne accessible 24/7</li>
+              <li><strong>Tutoriels vidéo :</strong> Guides pas à pas pour toutes les fonctionnalités</li>
+              <li><strong>Base de connaissances :</strong> FAQ et articles détaillés</li>
             </ul>
+            <p className="mt-3 text-sm italic text-gray-600">
+              Tous les clients bénéficient du même niveau de support, sans distinction selon la formule d'abonnement.
+            </p>
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">8.4 - Évolutions et Mises à Jour</h3>
             <p>
