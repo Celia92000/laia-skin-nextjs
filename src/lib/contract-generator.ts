@@ -2,6 +2,9 @@ import PDFDocument from 'pdfkit'
 import { getInvoiceSettings } from './subscription-invoice-generator'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 interface ContractData {
   // Organisation
@@ -50,6 +53,33 @@ export function generateContractNumber(date: Date = new Date()): string {
 }
 
 /**
+ * Récupère les clauses actives du contrat depuis la DB
+ */
+async function getActiveContractClauses() {
+  try {
+    const clauses = await prisma.contractClause.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' }
+    })
+    return clauses
+  } catch (error) {
+    console.error('Erreur récupération clauses:', error)
+    return []
+  }
+}
+
+/**
+ * Remplace les variables dans le contenu d'une clause
+ */
+function replaceVariables(content: string, variables: Record<string, string>): string {
+  let result = content
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value)
+  }
+  return result
+}
+
+/**
  * Sauvegarde un contrat PDF sur disque
  */
 export async function saveContractPDF(
@@ -85,8 +115,9 @@ export async function generateSubscriptionContract(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Récupérer les settings
+      // Récupérer les settings et les clauses
       const settings = await getInvoiceSettings()
+      const clauses = await getActiveContractClauses()
 
       const doc = new PDFDocument({
         size: 'A4',
@@ -103,6 +134,18 @@ export async function generateSubscriptionContract(
         DUO: 'Duo',
         TEAM: 'Team',
         PREMIUM: 'Premium'
+      }
+
+      // Préparer les variables pour remplacement
+      const variables: Record<string, string> = {
+        plan: planNames[data.plan] || data.plan,
+        monthlyAmount: data.monthlyAmount.toString(),
+        monthlyAmountTTC: (data.monthlyAmount * 1.2).toFixed(2),
+        trialEndsAt: data.trialEndsAt.toLocaleDateString('fr-FR'),
+        sepaMandateRef: data.sepaMandateRef || 'Non fourni',
+        organizationName: data.organizationName,
+        ownerName: `${data.ownerFirstName} ${data.ownerLastName}`,
+        contractNumber: data.contractNumber
       }
 
       // En-tête
@@ -208,147 +251,32 @@ export async function generateSubscriptionContract(
       // Nouvelle page pour les articles
       doc.addPage()
 
-      // Article 1 - Objet
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .text('ARTICLE 1 - OBJET DU CONTRAT')
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(
-          settings.contractArticle1,
-          { align: 'justify' }
-        )
-        .moveDown()
+      // Générer les articles dynamiquement depuis les clauses
+      for (let i = 0; i < clauses.length; i++) {
+        const clause = clauses[i]
+        const processedContent = replaceVariables(clause.content, variables)
 
-      // Article 2 - Formule souscrite
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .text('ARTICLE 2 - FORMULE SOUSCRITE')
-        .moveDown(0.5)
-
-      // Encadré de la formule
-      const boxY = doc.y
-      doc
-        .rect(50, boxY, 495, 100)
-        .fillAndStroke('#f3f4f6', '#d1d5db')
-
-      doc
-        .fillColor('#000')
-        .fontSize(14)
-        .font('Helvetica-Bold')
-        .text(`Formule ${planNames[data.plan]}`, 60, boxY + 15)
-        .fontSize(11)
-        .font('Helvetica')
-        .text(`Prix : ${data.monthlyAmount}€ HT par mois`, 60, boxY + 40)
-        .text(`Soit ${(data.monthlyAmount * 1.2).toFixed(2)}€ TTC par mois (TVA 20%)`, 60, boxY + 60)
-        .text(`Mode de paiement : Prélèvement SEPA automatique`, 60, boxY + 80)
-
-      doc.y = boxY + 110
-      doc.moveDown()
-
-      // Article 3 - Période d'essai
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .text('ARTICLE 3 - PÉRIODE D\'ESSAI GRATUITE')
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(
-          settings.contractArticle3.replace('{trialEndsAt}', data.trialEndsAt.toLocaleDateString('fr-FR')),
-          { align: 'justify' }
-        )
-        .moveDown()
-
-      // Article 4 - Durée
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .text('ARTICLE 4 - DURÉE ET RÉSILIATION')
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(
-          settings.contractArticle4,
-          { align: 'justify' }
-        )
-        .moveDown()
-
-      // Article 5 - Mandat SEPA
-      if (data.sepaMandateRef) {
-        doc.addPage()
-
+        // Titre de l'article
         doc
           .fontSize(12)
           .font('Helvetica-Bold')
-          .text('ARTICLE 5 - MANDAT DE PRÉLÈVEMENT SEPA')
-          .moveDown(0.5)
-
-        // Encadré SEPA
-        const sepaBoxY = doc.y
-        doc
-          .rect(50, sepaBoxY, 495, 150)
-          .fillAndStroke('#fef3c7', '#fbbf24')
-
-        doc
           .fillColor('#000')
-          .fontSize(10)
-          .font('Helvetica-Bold')
-          .text('MANDAT DE PRÉLÈVEMENT SEPA', 60, sepaBoxY + 15)
-          .font('Helvetica')
+          .text(clause.title)
           .moveDown(0.5)
 
-        doc.text(`Référence Unique de Mandat (RUM) : ${data.sepaMandateRef}`, 60)
-
-        if (data.sepaMandateDate) {
-          doc.text(`Date de signature : ${data.sepaMandateDate.toLocaleDateString('fr-FR')}`, 60)
-        }
-
-        if (data.sepaAccountHolder) {
-          doc.text(`Titulaire du compte : ${data.sepaAccountHolder}`, 60)
-        }
-
-        if (data.sepaIban) {
-          // Masquer partiellement l'IBAN pour sécurité
-          const maskedIban = data.sepaIban.slice(0, 8) + '****' + data.sepaIban.slice(-4)
-          doc.text(`IBAN : ${maskedIban}`, 60)
-        }
-
-        if (data.sepaBic) {
-          doc.text(`BIC : ${data.sepaBic}`, 60)
-        }
-
+        // Contenu de l'article
         doc
-          .moveDown(0.5)
-          .fontSize(9)
-          .fillColor('#92400e')
-          .text(
-            'En signant ce mandat, le Client autorise LAIA Connect à envoyer des instructions à sa banque pour débiter son compte, et sa banque à débiter son compte conformément aux instructions de LAIA Connect.',
-            60,
-            sepaBoxY + 110,
-            { width: 475, align: 'justify' }
-          )
+          .fontSize(10)
+          .font('Helvetica')
+          .text(processedContent, { align: 'justify' })
+          .moveDown(1.5)
 
-        doc.y = sepaBoxY + 160
-        doc.fillColor('#000').moveDown()
+        // Vérifier s'il reste assez de place sur la page
+        // Si on est proche du bas (y > 700), ajouter une nouvelle page
+        if (doc.y > 700 && i < clauses.length - 1) {
+          doc.addPage()
+        }
       }
-
-      // Article 6 - CGV
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .text('ARTICLE 6 - CONDITIONS GÉNÉRALES DE VENTE')
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(
-          settings.contractArticle6,
-          { align: 'justify' }
-        )
-        .moveDown(2)
 
       // Signatures
       doc.addPage()

@@ -147,17 +147,19 @@ export default function ContractTemplateEditorPage() {
       const res = await fetch('/api/super-admin/contract-clauses')
       if (res.ok) {
         const data = await res.json()
-        if (data.clauses.length === 0) {
+        if (data.length === 0) {
           // Initialiser avec les clauses par défaut
           setClauses(DEFAULT_CLAUSES.map(c => ({ ...c, id: undefined })))
         } else {
-          setClauses(data.clauses)
+          setClauses(data)
         }
       } else if (res.status === 401) {
         router.push('/login?redirect=/super-admin/billing/contracts/template')
       }
     } catch (error) {
       console.error('Erreur:', error)
+      // En cas d'erreur, charger les clauses par défaut
+      setClauses(DEFAULT_CLAUSES.map(c => ({ ...c, id: undefined })))
     } finally {
       setLoading(false)
     }
@@ -169,7 +171,7 @@ export default function ContractTemplateEditorPage() {
       const res = await fetch('/api/super-admin/contract-clauses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clauses })
+        body: JSON.stringify(clauses)
       })
 
       if (res.ok) {
