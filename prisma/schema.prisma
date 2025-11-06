@@ -210,6 +210,7 @@ model Organization {
   testimonials            Testimonial[]            @relation("OrganizationTestimonials") // Témoignages
   giftCards               GiftCard[]               @relation("OrganizationGiftCards") // Cartes cadeaux
   reviews                 Review[]                 @relation("OrganizationReviews") // Avis clients
+  googleReviews           GoogleReview[] // Avis Google synchronisés
 
   // CRM Relations
   convertedLeads Lead[] // Leads convertis en clients
@@ -369,6 +370,13 @@ model OrganizationConfig {
   // JSON object listing which fields are customized vs inherited
   // Ex: {"primaryColor": "customized", "heroTitle": "template", ...}
   customizedFields String? @default("{}") @db.Text
+
+  // Google My Business - Configuration par organisation
+  googlePlaceId         String?   // ID unique de l'établissement Google (ex: ChIJxxx...)
+  googleBusinessUrl     String?   // URL Google Maps/Business profile
+  googleApiKey          String?   // Clé API (chiffrée) - optionnel
+  lastGoogleSync        DateTime? // Dernière synchronisation Google Reviews
+  autoSyncGoogleReviews Boolean   @default(false) // Activer sync automatique quotidienne
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1161,20 +1169,25 @@ model EmailAutomation {
 }
 
 model GoogleReview {
-  id          String    @id @default(cuid())
-  authorName  String
-  authorPhoto String?
-  rating      Int
-  comment     String
-  reviewId    String    @unique // ID Google pour éviter les doublons
-  publishedAt DateTime
-  replyText   String?
-  replyAt     DateTime?
-  helpful     Int       @default(0)
-  language    String    @default("fr")
-  syncedAt    DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String       @id @default(cuid())
+  organizationId String       // Lien vers l'organisation
+  authorName     String
+  authorPhoto    String?
+  rating         Int
+  comment        String
+  reviewId       String       @unique // ID Google pour éviter les doublons
+  publishedAt    DateTime
+  replyText      String?
+  replyAt        DateTime?
+  helpful        Int          @default(0)
+  language       String       @default("fr")
+  syncedAt       DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, publishedAt])
 }
 
 model BusinessStats {
