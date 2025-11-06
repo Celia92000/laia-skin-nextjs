@@ -1,4 +1,4 @@
--- Migration pour Contrats et Paramètres de Facturation
+-- Migration pour Contrats et Paramètres de Facturation (CORRIGÉE)
 -- À exécuter dans Supabase SQL Editor
 -- Date: 2025-11-06
 
@@ -8,27 +8,48 @@
 
 CREATE TABLE IF NOT EXISTS "InvoiceSettings" (
   "id" TEXT NOT NULL,
-  "companyName" TEXT NOT NULL,
-  "legalName" TEXT NOT NULL,
-  "siret" TEXT,
-  "tvaNumber" TEXT,
-  "address" TEXT NOT NULL,
-  "postalCode" TEXT NOT NULL,
-  "city" TEXT NOT NULL,
+
+  -- Statut juridique
+  "isCompany" BOOLEAN NOT NULL DEFAULT false,
+  "legalStatus" TEXT NOT NULL DEFAULT 'Auto-Entrepreneur',
+
+  -- Informations émetteur (LAIA)
+  "companyName" TEXT NOT NULL DEFAULT 'LAIA Connect',
+  "address" TEXT NOT NULL DEFAULT '[Votre adresse]',
+  "postalCode" TEXT NOT NULL DEFAULT '[Code postal]',
+  "city" TEXT NOT NULL DEFAULT '[Ville]',
   "country" TEXT NOT NULL DEFAULT 'France',
-  "email" TEXT NOT NULL,
-  "phone" TEXT,
-  "website" TEXT,
-  "legalStatus" TEXT NOT NULL DEFAULT 'AUTO_ENTREPRENEUR',
-  "tvaApplicable" BOOLEAN NOT NULL DEFAULT false,
-  "capitalSocial" INTEGER,
-  "rcsCity" TEXT,
-  "rcsNumber" TEXT,
-  "legalMentions" TEXT,
-  "paymentTerms" TEXT NOT NULL DEFAULT 'Paiement à réception de facture',
-  "invoicePrefix" TEXT NOT NULL DEFAULT 'FACT-LAIA',
-  "contractPrefix" TEXT NOT NULL DEFAULT 'CONTRAT-LAIA',
+  "siret" TEXT NOT NULL DEFAULT '[Votre SIRET]',
+  "tvaNumber" TEXT DEFAULT '',
+  "capitalSocial" TEXT DEFAULT '',
+  "rcs" TEXT DEFAULT '',
+  "apeCode" TEXT NOT NULL DEFAULT '6201Z',
+
+  -- Contact
+  "email" TEXT NOT NULL DEFAULT '[Votre email]',
+  "phone" TEXT DEFAULT '[Votre téléphone]',
+  "website" TEXT DEFAULT 'https://www.laia-connect.fr',
+
+  -- Design
   "logoUrl" TEXT,
+  "primaryColor" TEXT NOT NULL DEFAULT '#667eea',
+  "secondaryColor" TEXT NOT NULL DEFAULT '#764ba2',
+
+  -- Paramètres facture
+  "invoicePrefix" TEXT NOT NULL DEFAULT 'LAIA',
+  "tvaRate" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+
+  -- Mentions légales
+  "paymentTerms" TEXT NOT NULL DEFAULT 'Prélèvement SEPA automatique',
+  "latePenalty" TEXT NOT NULL DEFAULT 'En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.',
+  "footerText" TEXT DEFAULT 'Dispensé d''immatriculation au RCS et au RM',
+
+  -- Templates de contrat
+  "contractArticle1" TEXT NOT NULL DEFAULT 'Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.',
+  "contractArticle3" TEXT NOT NULL DEFAULT 'Le Client bénéficie d''une période d''essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra à l''issue de cette période.',
+  "contractArticle4" TEXT NOT NULL DEFAULT 'Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.',
+  "contractArticle6" TEXT NOT NULL DEFAULT 'Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l''adresse : https://www.laiaconnect.fr/cgv-laia-connect. Le Client déclare avoir pris connaissance des CGV et les accepter sans réserve.',
+
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -52,41 +73,41 @@ FOR EACH ROW EXECUTE FUNCTION update_invoice_settings_updated_at();
 -- Insérer les paramètres par défaut
 INSERT INTO "InvoiceSettings" (
   "id",
+  "isCompany",
+  "legalStatus",
   "companyName",
-  "legalName",
-  "siret",
   "address",
   "postalCode",
   "city",
   "country",
+  "siret",
+  "tvaNumber",
   "email",
   "phone",
   "website",
-  "legalStatus",
-  "tvaApplicable",
-  "legalMentions",
-  "paymentTerms",
   "invoicePrefix",
-  "contractPrefix",
+  "tvaRate",
+  "paymentTerms",
+  "footerText",
   "updatedAt"
 ) VALUES (
   'default_settings',
+  false,
+  'Auto-Entrepreneur',
   'LAIA Connect',
-  'LAIA',
-  '12345678900000',
   'Adresse à définir',
   '75001',
   'Paris',
   'France',
+  '12345678900000',
+  '',
   'contact@laia-connect.fr',
   '01 23 45 67 89',
   'https://laia-connect.fr',
-  'AUTO_ENTREPRENEUR',
-  false,
-  'Auto-entrepreneur - Dispensé d''immatriculation au RCS et au RM',
+  'LAIA',
+  0.0,
   'Paiement à réception de facture par prélèvement SEPA',
-  'FACT-LAIA',
-  'CONTRAT-LAIA',
+  'Auto-entrepreneur - Dispensé d''immatriculation au RCS et au RM',
   CURRENT_TIMESTAMP
 )
 ON CONFLICT ("id") DO NOTHING;
@@ -476,4 +497,4 @@ SELECT 'Nombre de clauses insérées:' AS info;
 SELECT COUNT(*) || ' clauses' AS total FROM "ContractClause";
 
 SELECT 'Paramètres de facturation:' AS info;
-SELECT "companyName", "legalStatus", "tvaApplicable" FROM "InvoiceSettings" WHERE "id" = 'default_settings';
+SELECT "companyName", "legalStatus", "isCompany", "tvaRate" FROM "InvoiceSettings" WHERE "id" = 'default_settings';
