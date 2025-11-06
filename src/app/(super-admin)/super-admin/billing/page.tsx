@@ -480,6 +480,12 @@ export default function BillingPage() {
         >
           📄 Factures
         </button>
+        <Link
+          href="/super-admin/billing/contracts"
+          className="px-6 py-3 rounded-lg font-medium transition-all border-2 bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300"
+        >
+          📋 Contrats
+        </Link>
         <button
           onClick={() => setActiveTab('settings')}
           className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${

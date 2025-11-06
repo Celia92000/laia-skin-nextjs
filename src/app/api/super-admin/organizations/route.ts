@@ -14,6 +14,9 @@ import type { OrganizationAddons, AddonPurchaseHistory } from '@/lib/addons'
 import { OrgPlan } from '@prisma/client'
 import { generateInvoiceNumber, getCurrentBillingPeriod, getNextBillingDate } from '@/lib/subscription-billing'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
+import { createOnboardingContract } from '@/lib/contract-generator'
+import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 
 export async function GET() {
   try {
@@ -303,7 +306,7 @@ export async function POST(request: Request) {
 
     const serializedAddons = serializeOrganizationAddons(organizationAddons)
 
-    // Créer l'organisation avec les informations minimales + facturation + SEPA + addons
+    // Créer l'organisation avec les informations minimales + facturation + SEPA + addons + template
     const organization = await prisma.organization.create({
       data: {
         name: data.name,
@@ -332,6 +335,9 @@ export async function POST(request: Request) {
         maxStorage: data.plan === 'SOLO' ? 5 : data.plan === 'DUO' ? 10 : data.plan === 'TEAM' ? 50 : 999,
         trialEndsAt: trialEndsAt,
 
+        // Template de site web
+        websiteTemplateId: data.websiteTemplateId || 'modern',
+
         // Features activées selon le forfait + déblocages custom (négociation)
         featureBlog: data.customFeatureBlog || planFeatures.featureBlog,
         featureProducts: data.customFeatureShop || planFeatures.featureProducts,
@@ -348,7 +354,7 @@ export async function POST(request: Request) {
       }
     })
 
-    // Créer la configuration de l'organisation (avec valeurs par défaut + SIRET)
+    // Créer la configuration de l'organisation (avec valeurs par défaut + SIRET + couleurs)
     await prisma.organizationConfig.create({
       data: {
         organizationId: organization.id,
@@ -358,6 +364,10 @@ export async function POST(request: Request) {
         phone: data.ownerPhone,
         city: data.city,
         siret: data.siret, // SIRET pour facturation
+        // Couleurs du template
+        primaryColor: data.primaryColor || '#d4b5a0',
+        secondaryColor: data.secondaryColor || '#c9a084',
+        accentColor: data.accentColor || '#2c3e50',
         // Le reste sera configuré par l'admin
       }
     })
@@ -614,6 +624,116 @@ export async function POST(request: Request) {
     } catch (templateError) {
       console.error('⚠️ Erreur lors de la génération du template (non bloquant):', templateError)
       // On ne bloque pas la création même si le template échoue
+    }
+
+    // Générer facture et contrat
+    let invoicePdfBuffer: Buffer | undefined
+    let invoiceNumber: string | undefined
+    let contractPdfBuffer: Buffer | undefined
+    let contractNumber: string | undefined
+
+    const planPricesEmail: Record<string, number> = {
+      SOLO: 49,
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179
+    }
+
+    try {
+      const invoiceResult = await createSubscriptionInvoice(organization.id, true, false)
+      invoicePdfBuffer = invoiceResult.pdfBuffer
+      invoiceNumber = invoiceResult.invoiceNumber
+      console.log(`✅ Facture générée: ${invoiceNumber}`)
+    } catch (error) {
+      console.error('⚠️ Erreur facture:', error)
+    }
+
+    try {
+      const contractResult = await createOnboardingContract({
+        organizationName: data.name,
+        legalName: data.legalName,
+        siret: data.siret,
+        tvaNumber: data.tvaNumber,
+        billingAddress: data.billingAddress,
+        billingPostalCode: data.billingPostalCode,
+        billingCity: data.billingCity,
+        billingCountry: data.billingCountry || 'France',
+        ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
+        ownerLastName: data.ownerLastName || '',
+        ownerEmail: data.ownerEmail,
+        ownerPhone: data.ownerPhone,
+        plan: data.plan,
+        monthlyAmount: monthlyAmount,
+        trialEndsAt: trialEndsAt,
+        subscriptionStartDate: new Date(),
+        sepaMandateRef: sepaMandateRef,
+        sepaMandateDate: new Date()
+      })
+      contractPdfBuffer = contractResult.pdfBuffer
+      contractNumber = contractResult.contractNumber
+      console.log(`✅ Contrat généré: ${contractNumber}`)
+
+      // Sauvegarder les infos du contrat dans l'organisation
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: {
+          contractNumber: contractResult.contractNumber,
+          contractPdfPath: contractResult.pdfPath,
+          contractSignedAt: new Date()
+        }
+      })
+      console.log(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
+    } catch (error) {
+      console.error('⚠️ Erreur contrat:', error)
+    }
+
+    // Envoyer email de bienvenue
+    try {
+      const adminUrl = process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
+        : `https://${data.subdomain}.laia-connect.fr/admin`
+
+      await sendWelcomeEmail({
+        organizationName: data.name,
+        ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
+        ownerLastName: data.ownerLastName || '',
+        ownerEmail: data.ownerEmail,
+        tempPassword: generatedPassword,
+        plan: data.plan,
+        subdomain: data.subdomain,
+        customDomain: data.customDomain,
+        adminUrl,
+        monthlyAmount: monthlyAmount,
+        trialEndsAt: trialEndsAt,
+        sepaMandateRef: sepaMandateRef
+      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
+      console.log('✅ Email de bienvenue envoyé')
+    } catch (error) {
+      console.error('⚠️ Erreur email bienvenue:', error)
+    }
+
+    // Envoyer notification au super-admin
+    try {
+      await sendSuperAdminNotification({
+        organizationId: organization.id,
+        organizationName: data.name,
+        ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
+        ownerLastName: data.ownerLastName || '',
+        ownerEmail: data.ownerEmail,
+        ownerPhone: data.ownerPhone,
+        city: data.city,
+        plan: data.plan,
+        monthlyAmount: monthlyAmount,
+        siret: data.siret,
+        legalName: data.legalName,
+        subdomain: data.subdomain,
+        customDomain: data.customDomain,
+        trialEndsAt: trialEndsAt,
+        createdAt: organization.createdAt
+      })
+      console.log('✅ Notification super-admin envoyée')
+    } catch (error) {
+      console.error('⚠️ Erreur notification super-admin:', error)
     }
 
     return NextResponse.json({

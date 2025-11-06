@@ -60,8 +60,14 @@ export default function OrganizationsPage() {
   const [userSortOrder, setUserSortOrder] = useState<'asc' | 'desc'>('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const [usersPerPage] = useState(50)
+  const [viewedOrganizations, setViewedOrganizations] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    // Charger les organisations vues depuis localStorage
+    const viewed = localStorage.getItem('viewedOrganizations')
+    if (viewed) {
+      setViewedOrganizations(new Set(JSON.parse(viewed)))
+    }
     fetchData()
   }, [])
 
@@ -412,6 +418,18 @@ export default function OrganizationsPage() {
     }
   }
 
+  function markOrganizationAsViewed(orgId: string) {
+    const updatedViewed = new Set(viewedOrganizations)
+    updatedViewed.add(orgId)
+    setViewedOrganizations(updatedViewed)
+    localStorage.setItem('viewedOrganizations', JSON.stringify(Array.from(updatedViewed)))
+  }
+
+  function handleOrganizationClick(orgId: string) {
+    markOrganizationAsViewed(orgId)
+    router.push(`/super-admin/organizations/${orgId}`)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -686,7 +704,7 @@ export default function OrganizationsPage() {
                       {filteredOrgs.filter(org => org.slug === 'laia-skin' || org.slug === 'laia-skin-institut').map((org) => (
                         <tr
                           key={org.id}
-                          onClick={() => router.push(`/super-admin/organizations/${org.id}`)}
+                          onClick={() => handleOrganizationClick(org.id)}
                           className="bg-white hover:bg-amber-50 cursor-pointer transition-colors"
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -806,7 +824,7 @@ export default function OrganizationsPage() {
                     {filteredOrgs.filter(org => org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut').map((org) => (
                       <tr
                         key={org.id}
-                        onClick={() => router.push(`/super-admin/organizations/${org.id}`)}
+                        onClick={() => handleOrganizationClick(org.id)}
                         className="hover:bg-indigo-50 cursor-pointer transition-colors"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -815,7 +833,7 @@ export default function OrganizationsPage() {
                               <span className="text-sm font-medium text-gray-900">
                                 {org.name}
                               </span>
-                              {isNewOrganization(org.createdAt) && (
+                              {isNewOrganization(org.createdAt) && !viewedOrganizations.has(org.id) && (
                                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center gap-1 shadow-md animate-pulse">
                                   ✨ NOUVEAU
                                 </span>

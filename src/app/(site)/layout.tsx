@@ -65,9 +65,9 @@ export default async function SiteLayout({
       }}
     >
       <ImpersonationBanner />
-      <Header />
+      <Header organizationData={organization} />
       {children}
-      <Footer />
+      <Footer organizationData={organization} />
       <PWAInstallPrompt />
       <CrispChatLoader />
       <PushNotificationManager />

@@ -6,8 +6,13 @@ import { useState } from "react";
 import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles, CheckCircle } from "lucide-react";
 import { useConfig } from "@/hooks/useConfig";
 
-export default function Footer() {
-  const { config } = useConfig();
+interface FooterProps {
+  organizationData?: any;
+}
+
+export default function Footer({ organizationData }: FooterProps) {
+  const { config: fetchedConfig } = useConfig();
+  const config = organizationData?.config || fetchedConfig;
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);

@@ -184,6 +184,11 @@ model Organization {
   stripeChargesEnabled     Boolean @default(false) // Peut accepter des paiements
   stripePayoutsEnabled     Boolean @default(false) // Peut recevoir des virements
 
+  // Contrat d'abonnement
+  contractNumber    String? // Numéro du contrat (ex: CONTRAT-LAIA-20250106-123456)
+  contractPdfPath   String? // Chemin vers le PDF du contrat (uploads/documents/contracts/...)
+  contractSignedAt  DateTime? // Date de signature électronique du contrat
+
   // Planity - Intégration OAuth pour réservations
   planityConnected      Boolean   @default(false) // Connecté à Planity
   planityAccessToken    String? // Token d'accès (chiffré)
@@ -1995,21 +2000,26 @@ model BillingPayment {
 model InvoiceSettings {
   id String @id @default(cuid())
 
+  // Statut juridique
+  isCompany     Boolean @default(false) // false = auto-entrepreneur, true = société
+  legalStatus   String  @default("Auto-Entrepreneur") // "Auto-Entrepreneur", "SAS", "SARL", "SASU", etc.
+
   // Informations émetteur (LAIA)
-  companyName   String @default("LAIA SAS")
-  address       String @default("123 Avenue de la Beauté")
-  postalCode    String @default("75001")
-  city          String @default("Paris")
+  companyName   String @default("LAIA Connect")
+  address       String @default("[Votre adresse]")
+  postalCode    String @default("[Code postal]")
+  city          String @default("[Ville]")
   country       String @default("France")
-  siret         String @default("123 456 789 00012")
-  tvaNumber     String @default("FR12345678900")
-  capitalSocial String @default("10 000€")
-  rcs           String @default("RCS Paris 123 456 789")
+  siret         String @default("[Votre SIRET]")
+  tvaNumber     String? @default("") // Vide si auto-entrepreneur en franchise
+  capitalSocial String? @default("") // Vide si auto-entrepreneur
+  rcs           String? @default("") // Vide si auto-entrepreneur
+  apeCode       String  @default("6201Z") // Code APE/NAF
 
   // Contact
-  email   String  @default("contact@laia.com")
-  phone   String? @default("+33 1 23 45 67 89")
-  website String? @default("https://laia.com")
+  email   String  @default("[Votre email]")
+  phone   String? @default("[Votre téléphone]")
+  website String? @default("https://www.laia-connect.fr")
 
   // Design
   logoUrl        String? // URL du logo
@@ -2018,15 +2028,37 @@ model InvoiceSettings {
 
   // Paramètres facture
   invoicePrefix String @default("LAIA") // LAIA-2025-001234
-  tvaRate       Float  @default(20.0) // Taux TVA en %
+  tvaRate       Float  @default(0.0) // 0 pour auto-entrepreneur, 20 pour société
 
   // Mentions légales
   paymentTerms String  @default("Prélèvement SEPA automatique")
   latePenalty  String  @default("En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.")
-  footerText   String? @default("TVA intracommunautaire: FR12345678900")
+  footerText   String? @default("Dispensé d'immatriculation au RCS et au RM")
+
+  // Templates de contrat (articles modifiables)
+  contractArticle1 String @db.Text @default("Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.")
+  contractArticle3 String @db.Text @default("Le Client bénéficie d'une période d'essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra à l'issue de cette période.")
+  contractArticle4 String @db.Text @default("Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.")
+  contractArticle6 String @db.Text @default("Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l'adresse : https://www.laiaconnect.fr/cgv-laia-connect\n\nLe Client déclare avoir pris connaissance des CGV et les accepter sans réserve.")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Modèle pour les clauses de contrat (système modulaire et personnalisable)
+model ContractClause {
+  id        String   @id @default(cuid())
+  key       String   @unique // article_1, article_2, etc.
+  title     String   // "ARTICLE 1 - OBJET DU CONTRAT"
+  content   String   @db.Text // Contenu de l'article (supporte {variables})
+  order     Int      @default(0) // Ordre d'affichage dans le contrat
+  isDefault Boolean  @default(true) // Clause par défaut ou personnalisée
+  isActive  Boolean  @default(true) // Afficher dans le contrat ou non
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+  @@index([isActive])
 }
 
 enum SuperAdminEmailKey {

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { validateSIRET, validateEmail, validatePhoneNumber, formatSIRET } from '@/lib/validation'
 import { getPlanPrice, getPlanName } from '@/lib/features-simple'
-import { websiteTemplates } from '@/lib/website-templates'
+import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
 import TemplateClassic from '@/components/templates/TemplateClassic'
 import TemplateModern from '@/components/templates/TemplateModern'
 import TemplateMinimal from '@/components/templates/TemplateMinimal'
@@ -2012,17 +2012,17 @@ function OnboardingForm() {
             </div>
 
             {/* Templates Classiques */}
+            {/* Templates disponibles selon le plan choisi */}
             <div className="mb-10">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
                 <h3 className="text-lg font-semibold text-gray-700 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-full border border-blue-200">
-                  ✨ Templates Classiques
+                  ✨ Templates disponibles - Plan {data.selectedPlan}
                 </h3>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {websiteTemplates
-                  .filter(template => template.minTier === 'STANDARD')
+                {getTemplatesForPlan(data.selectedPlan)
                   .map((template) => (
                   <div
                     key={template.id}
@@ -2192,18 +2192,19 @@ function OnboardingForm() {
             </div>
 
             {/* Templates Premium - Uniquement pour TEAM et PREMIUM */}
-            {(data.selectedPlan === 'TEAM' || data.selectedPlan === 'PREMIUM') && (
+            {/* Templates premium (non accessibles au plan actuel) */}
+            {websiteTemplates.filter(t => !getTemplatesForPlan(data.selectedPlan).includes(t)).length > 0 && (
               <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
                   <h3 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-600 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-full border-2 border-amber-300">
-                    👑 Templates Premium
+                    👑 Templates Premium (upgrade requis)
                   </h3>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {websiteTemplates
-                    .filter(template => template.minTier === 'TEAM' || template.minTier === 'PREMIUM')
+                    .filter(template => !getTemplatesForPlan(data.selectedPlan).includes(template))
                     .map((template) => (
                     <div
                       key={template.id}
@@ -2213,10 +2214,10 @@ function OnboardingForm() {
                           : 'border-amber-200 hover:border-amber-400 hover:shadow-xl hover:shadow-amber-100/50'
                       }`}
                     >
-                      {/* Badge Premium */}
+                      {/* Badge plan requis */}
                       <div className="absolute top-4 left-4 z-10 bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
                         <span>👑</span>
-                        <span>PREMIUM</span>
+                        <span>Plan {template.minTier} requis</span>
                       </div>
 
                       {/* Contenu du template (copier le même contenu que les templates classiques) */}

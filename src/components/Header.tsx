@@ -1,4 +1,5 @@
 "use client";
+// Force recompile for Turbopack cache refresh
 
 import Link from "next/link";
 import Image from "next/image";
@@ -7,6 +8,41 @@ import { useState, useEffect } from "react";
 import { Shield, User, LogOut, Calculator } from "lucide-react";
 import { logout } from "@/lib/auth-client";
 import { useConfig } from "@/hooks/useConfig";
+
+// Composant NavItem séparé pour gérer le hover state
+function NavItem({ item, pathname, primaryColor, secondaryColor, accentColor }: {
+  item: { href: string; label: string };
+  pathname: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const isActive = pathname === item.href;
+
+  return (
+    <li>
+      <span
+        onMouseEnter={() => !isActive && setIsHovered(true)}
+        onMouseLeave={() => !isActive && setIsHovered(false)}
+      >
+        <Link
+          href={item.href}
+          className={`font-inter inline-flex items-center justify-center min-w-[100px] text-center font-medium px-4 py-2 rounded-full transition-all duration-300 hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm tracking-normal whitespace-nowrap ${
+            isActive ? "text-white" : ""
+          }`}
+          style={
+            isActive || isHovered
+              ? { background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }
+              : { color: accentColor }
+          }
+        >
+          {item.label}
+        </Link>
+      </span>
+    </li>
+  );
+}
 
 type OrgPlan = 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM' | 'STARTER' | 'ESSENTIAL' | 'PROFESSIONAL' | 'ENTERPRISE';
 
@@ -25,12 +61,16 @@ interface OrganizationData {
   };
 }
 
-export default function Header() {
+interface HeaderProps {
+  organizationData?: any;
+}
+
+export default function Header({ organizationData }: HeaderProps = {}) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const { config } = useConfig();
-  const [orgData, setOrgData] = useState<OrganizationData | null>(null);
+  const [orgData, setOrgData] = useState<OrganizationData | null>(organizationData || null);
 
   useEffect(() => {
     const checkUser = () => {
@@ -55,20 +95,22 @@ export default function Header() {
   const [showServices, setShowServices] = useState(false);
 
   useEffect(() => {
-    // Charger les données de l'organisation
-    const loadOrgData = async () => {
-      try {
-        const res = await fetch('/api/organization/current');
-        if (res.ok) {
-          const data = await res.json();
-          setOrgData(data);
+    // Charger les données de l'organisation seulement si pas déjà passées en props
+    if (!organizationData) {
+      const loadOrgData = async () => {
+        try {
+          const res = await fetch('/api/organization/current');
+          if (res.ok) {
+            const data = await res.json();
+            setOrgData(data);
+          }
+        } catch (error) {
+          console.log('Could not load organization data');
         }
-      } catch (error) {
-        console.log('Could not load organization data');
-      }
-    };
+      };
 
-    loadOrgData();
+      loadOrgData();
+    }
 
     // Vérifier s'il y a des produits, formations et prestations actifs
     const checkContent = async () => {
@@ -136,9 +178,9 @@ export default function Header() {
   const navItems = allNavItems.filter(item => !item.hasOwnProperty('showCondition') || item.showCondition);
 
   // Couleurs dynamiques
-  const primaryColor = orgData?.config.primaryColor || '#d4b5a0';
-  const secondaryColor = orgData?.config.secondaryColor || '#c9a084';
-  const accentColor = orgData?.config.accentColor || '#2c3e50';
+  const primaryColor = orgData?.config?.primaryColor || '#d4b5a0';
+  const secondaryColor = orgData?.config?.secondaryColor || '#c9a084';
+  const accentColor = orgData?.config?.accentColor || '#2c3e50';
 
   return (
     <header className="fixed top-0 w-full bg-white/95 backdrop-blur-xl border-b z-50 shadow-lg" style={{ borderColor: `${primaryColor}33` }}>
@@ -148,15 +190,15 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
               <Image
-                src={orgData?.config.logoUrl || config.logoUrl || "/logo-laia-skin.png"}
-                alt={`${orgData?.config.siteName || config.siteName} Logo`}
+                src={orgData?.config?.logoUrl || config.logoUrl || "/logo-laia-skin.png"}
+                alt={`${orgData?.config?.siteName || config.siteName} Logo`}
                 fill
                 className="object-contain"
                 priority
               />
             </div>
             <h1 className="text-xl sm:text-2xl font-serif font-semibold tracking-wide" style={{ color: accentColor }}>
-              {(orgData?.config.siteName || config.siteName)?.toUpperCase() || 'MON INSTITUT'}
+              {(orgData?.config?.siteName || config.siteName)?.toUpperCase() || 'MON INSTITUT'}
             </h1>
           </Link>
 
@@ -164,31 +206,14 @@ export default function Header() {
           <div className="hidden lg:block overflow-x-auto overflow-y-hidden flex-1 mx-4 scrollbar-custom">
             <ul className="flex items-center gap-2 min-w-max pb-1">
               {navItems.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`font-inter inline-flex items-center justify-center min-w-[100px] text-center font-medium px-4 py-2 rounded-full transition-all duration-300 hover:text-white hover:-translate-y-0.5 hover:shadow-lg text-sm tracking-normal whitespace-nowrap ${
-                      pathname === item.href ? "text-white" : ""
-                    }`}
-                    style={
-                      pathname === item.href
-                        ? { background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }
-                        : { color: accentColor }
-                    }
-                    onMouseEnter={(e) => {
-                      if (pathname !== item.href) {
-                        e.currentTarget.style.background = `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (pathname !== item.href) {
-                        e.currentTarget.style.background = 'transparent';
-                      }
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
+                <NavItem
+                  key={item.href}
+                  item={item}
+                  pathname={pathname}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                  accentColor={accentColor}
+                />
               ))}
 
               {/* Boutons spéciaux pour les utilisateurs connectés */}

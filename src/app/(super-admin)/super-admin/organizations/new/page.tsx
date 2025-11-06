@@ -6,6 +6,7 @@ import Link from 'next/link'
 import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
 import AddonSelector from '@/components/super-admin/AddonSelector'
 import { OrgPlan } from '@prisma/client'
+import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
 
 export default function NewOrganizationPage() {
   const router = useRouter()
@@ -44,6 +45,12 @@ export default function NewOrganizationPage() {
     slug: '',
     subdomain: '',
     domain: '',            // Domaine personnalisé (optionnel)
+
+    // Design et template
+    websiteTemplateId: 'modern',  // Template de site web
+    primaryColor: '#d4b5a0',      // Couleur principale
+    secondaryColor: '#c9a084',    // Couleur secondaire
+    accentColor: '#2c3e50',       // Couleur d'accent
 
     // Déblocages spéciaux (négociation manuelle)
     customFeatureCRM: false,
@@ -885,6 +892,104 @@ export default function NewOrganizationPage() {
                   🔒 <strong>Sécurité :</strong> Les informations bancaires sont stockées de manière sécurisée et conforme au RGPD.
                   Elles ne seront utilisées que pour les prélèvements automatiques de l'abonnement LAIA.
                 </p>
+              </div>
+            </div>
+
+            {/* Design et Template */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b-2" style={{ borderColor: '#7c3aed' }}>
+                🎨 Design et Template
+              </h2>
+
+              {/* Sélection du template */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Template de site web
+                </label>
+                <select
+                  name="websiteTemplateId"
+                  value={formData.websiteTemplateId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                >
+                  {getTemplatesForPlan(formData.plan as OrgPlan).map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name} - {template.description}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Templates disponibles pour le plan {formData.plan}
+                </p>
+              </div>
+
+              {/* Couleurs */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Couleur principale
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      name="primaryColor"
+                      value={formData.primaryColor}
+                      onChange={handleChange}
+                      className="h-12 w-16 rounded border-2 border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={formData.primaryColor}
+                      onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
+                      className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg"
+                      placeholder="#d4b5a0"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Couleur secondaire
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      name="secondaryColor"
+                      value={formData.secondaryColor}
+                      onChange={handleChange}
+                      className="h-12 w-16 rounded border-2 border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={formData.secondaryColor}
+                      onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
+                      className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg"
+                      placeholder="#c9a084"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Couleur d'accent
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      name="accentColor"
+                      value={formData.accentColor}
+                      onChange={handleChange}
+                      className="h-12 w-16 rounded border-2 border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={formData.accentColor}
+                      onChange={(e) => setFormData({ ...formData, accentColor: e.target.value })}
+                      className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg"
+                      placeholder="#2c3e50"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

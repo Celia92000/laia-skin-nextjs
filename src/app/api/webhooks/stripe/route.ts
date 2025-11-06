@@ -1116,6 +1116,13 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       ? session.subscription
       : (session.subscription && typeof session.subscription === 'object' ? session.subscription.id : '')
 
+    // Activer les features selon le plan
+    const features = {
+      featureBlog: ['DUO', 'TEAM', 'PREMIUM', 'ESSENTIAL', 'PROFESSIONAL', 'ENTERPRISE'].includes(finalPlan),
+      featureProducts: ['TEAM', 'PREMIUM', 'PROFESSIONAL', 'ENTERPRISE'].includes(finalPlan),
+      featureFormations: ['PREMIUM', 'ENTERPRISE'].includes(finalPlan)
+    };
+
     // Créer l'organisation
     const organization = await prisma.organization.create({
       data: {
@@ -1143,6 +1150,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         stripeCustomerId,
         stripeSubscriptionId,
+        ...features,
         config: {
           create: {
             primaryColor,
@@ -1264,10 +1272,11 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
 
     try {
       const hasMigration = needsDataMigration === 'true'
-      const invoiceResult = await createSubscriptionInvoice(organization.id, true, hasMigration)
+      // La facture est PAYÉE car le webhook checkout.session.completed signifie paiement réussi
+      const invoiceResult = await createSubscriptionInvoice(organization.id, true, hasMigration, true)
       invoicePdfBuffer = invoiceResult.pdfBuffer
       invoiceNumber = invoiceResult.invoiceNumber
-      console.log(`✅ Facture générée: ${invoiceNumber}${hasMigration ? ' (avec migration)' : ''}`)
+      console.log(`✅ Facture générée et payée: ${invoiceNumber}${hasMigration ? ' (avec migration)' : ''}`)
     } catch (error) {
       console.error('⚠️ Erreur facture:', error)
     }
@@ -1299,6 +1308,17 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       contractPdfBuffer = contractResult.pdfBuffer
       contractNumber = contractResult.contractNumber
       console.log(`✅ Contrat généré: ${contractNumber}`)
+
+      // Sauvegarder les infos du contrat dans l'organisation
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: {
+          contractNumber: contractResult.contractNumber,
+          contractPdfPath: contractResult.pdfPath,
+          contractSignedAt: new Date()
+        }
+      })
+      console.log(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
     } catch (error) {
       console.error('⚠️ Erreur contrat:', error)
     }

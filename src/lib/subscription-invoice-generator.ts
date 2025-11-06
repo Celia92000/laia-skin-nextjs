@@ -23,6 +23,43 @@ interface SubscriptionInvoiceData {
 }
 
 /**
+ * Récupère ou crée les paramètres de facturation
+ */
+export async function getInvoiceSettings() {
+  let settings = await prisma.invoiceSettings.findFirst()
+
+  if (!settings) {
+    // Créer les settings par défaut si ils n'existent pas
+    settings = await prisma.invoiceSettings.create({
+      data: {
+        isCompany: false,
+        legalStatus: 'Auto-Entrepreneur',
+        companyName: 'LAIA Connect',
+        address: '[Votre adresse]',
+        postalCode: '[Code postal]',
+        city: '[Ville]',
+        country: 'France',
+        siret: '[Votre SIRET]',
+        tvaNumber: '',
+        capitalSocial: '',
+        rcs: '',
+        apeCode: '6201Z',
+        email: '[Votre email]',
+        phone: '[Votre téléphone]',
+        website: 'https://www.laia-connect.fr',
+        invoicePrefix: 'LAIA',
+        tvaRate: 0.0,
+        paymentTerms: 'Prélèvement SEPA automatique',
+        latePenalty: 'En cas de retard de paiement, indemnité forfaitaire de 40€',
+        footerText: 'Dispensé d\'immatriculation au RCS et au RM'
+      }
+    })
+  }
+
+  return settings
+}
+
+/**
  * Récupère les informations complètes d'une organisation pour facturation
  */
 export async function getOrganizationBillingInfo(organizationId: string) {
@@ -70,12 +107,13 @@ export async function getOrganizationBillingInfo(organizationId: string) {
 /**
  * Génère un numéro de facture unique
  */
-export function generateSubscriptionInvoiceNumber(date: Date = new Date()): string {
+export async function generateSubscriptionInvoiceNumber(date: Date = new Date()): Promise<string> {
+  const settings = await getInvoiceSettings()
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const timestamp = date.getTime().toString().slice(-6)
 
-  return `LAIA-${year}${month}-${timestamp}`
+  return `${settings.invoicePrefix}-${year}${month}-${timestamp}`
 }
 
 /**
@@ -99,8 +137,9 @@ export async function generateSubscriptionInvoicePDF(
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Récupérer les infos de l'organisation
+      // Récupérer les infos de l'organisation et les settings
       const orgInfo = await getOrganizationBillingInfo(data.organizationId)
+      const settings = await getInvoiceSettings()
 
       const doc = new PDFDocument({
         size: 'A4',
@@ -133,34 +172,49 @@ export async function generateSubscriptionInvoicePDF(
       // ======================
       doc.fontSize(24)
          .fillColor(primaryColor)
-         .text('LAIA Connect', 50, 50)
+         .text(settings.companyName, 50, 50)
 
       doc.fontSize(10)
          .fillColor(grayLight)
          .text('Plateforme SaaS pour Instituts de Beauté', 50, 80)
 
-      // Informations LAIA (émetteur) - MENTIONS LÉGALES COMPLÈTES
+      // Informations LAIA (émetteur)
       doc.fontSize(9)
          .fillColor(grayDark)
-         .text('LAIA SAS', 50, 110)
-         .text('Société par Actions Simplifiée', 50, 125)
-         .text('123 Avenue de l\'Innovation', 50, 140)
-         .text('75001 Paris, France', 50, 155)
+         .text(settings.companyName, 50, 110)
+         .text(settings.legalStatus, 50, 125)
+         .text(settings.address, 50, 140)
+         .text(`${settings.postalCode} ${settings.city}, ${settings.country}`, 50, 155)
          .text('', 50, 170)
 
       doc.fontSize(8)
          .fillColor(grayLight)
-         .text('SIRET : 123 456 789 00012', 50, 185)
-         .text('N° TVA Intracommunautaire : FR12 123456789', 50, 197)
-         .text('RCS Paris B 123 456 789', 50, 209)
-         .text('Code APE : 6201Z (Programmation informatique)', 50, 221)
-         .text('Capital social : 10 000 €', 50, 233)
+         .text(`SIRET : ${settings.siret}`, 50, 185)
+         .text(`Code APE : ${settings.apeCode} (Programmation informatique)`, 50, 197)
+
+      let currentInfoY = 209
+      if (settings.isCompany && settings.tvaNumber) {
+        doc.text(`TVA : ${settings.tvaNumber}`, 50, currentInfoY)
+        currentInfoY += 12
+      }
+      if (settings.isCompany && settings.rcs) {
+        doc.text(`RCS : ${settings.rcs}`, 50, currentInfoY)
+        currentInfoY += 12
+      }
+      if (settings.isCompany && settings.capitalSocial) {
+        doc.text(`Capital social : ${settings.capitalSocial}`, 50, currentInfoY)
+        currentInfoY += 12
+      }
+      if (!settings.isCompany && settings.footerText) {
+        doc.text(settings.footerText, 50, currentInfoY)
+        currentInfoY += 12
+      }
 
       doc.fontSize(9)
          .fillColor(grayDark)
-         .text('Tél : +33 1 XX XX XX XX', 50, 250)
-         .text('Email : contact@laia-connect.fr', 50, 262)
-         .text('Web : www.laia-connect.fr', 50, 274)
+         .text(`Tél : ${settings.phone || ''}`, 50, currentInfoY + 12)
+         .text(`Email : ${settings.email || ''}`, 50, currentInfoY + 27)
+         .text(`Web : ${settings.website || ''}`, 50, currentInfoY + 42)
 
       // Informations de facture (droite)
       doc.fontSize(20)
@@ -318,16 +372,36 @@ export async function generateSubscriptionInvoicePDF(
       currentY += 20
 
       // TVA
-      doc.text(`TVA (${data.vatRate}%) :`, totalsX, currentY)
-         .text(`${data.totalTVA.toFixed(2)} €`, 480, currentY)
+      if (settings.tvaRate === 0) {
+        // Pas de TVA pour auto-entrepreneur
+        doc.fontSize(9)
+           .fillColor(grayLight)
+           .text('TVA non applicable (art. 293 B du CGI)', totalsX, currentY)
+        currentY += 20
 
-      currentY += 20
+        // Total TTC = Total HT
+        doc.fontSize(12)
+           .fillColor(primaryColor)
+           .text('MONTANT TOTAL :', totalsX, currentY)
+           .text(`${data.totalHT.toFixed(2)} €`, 480, currentY)
+      } else {
+        // TVA applicable pour société
+        const tvaAmount = data.totalHT * (settings.tvaRate / 100)
+        const totalTTC = data.totalHT + tvaAmount
 
-      // Total TTC
-      doc.fontSize(12)
-         .fillColor(primaryColor)
-         .text('TOTAL TTC :', totalsX, currentY)
-         .text(`${data.totalTTC.toFixed(2)} €`, 480, currentY)
+        doc.fontSize(10)
+           .fillColor(grayDark)
+           .text(`TVA (${settings.tvaRate}%) :`, totalsX, currentY)
+           .text(`${tvaAmount.toFixed(2)} €`, 480, currentY)
+
+        currentY += 20
+
+        // Total TTC
+        doc.fontSize(12)
+           .fillColor(primaryColor)
+           .text('MONTANT TOTAL TTC :', totalsX, currentY)
+           .text(`${totalTTC.toFixed(2)} €`, 480, currentY)
+      }
 
       currentY += 40
 
@@ -385,8 +459,6 @@ export async function generateSubscriptionInvoicePDF(
       currentY += 15
       doc.text('• Aucun escompte ne sera accordé en cas de paiement anticipé', 50, currentY, { width: 495 })
       currentY += 15
-      doc.text('• TVA non applicable, art. 293 B du CGI (franchise en base de TVA)', 50, currentY, { width: 495 })
-      currentY += 15
       doc.text('• Conformément à la loi n°2014-344 du 17/03/2014, le client peut demander la médiation du CMAP (cmap.fr)', 50, currentY, { width: 495 })
       currentY += 15
       doc.text('• En cas de litige, compétence exclusive des tribunaux de Paris', 50, currentY, { width: 495 })
@@ -403,12 +475,12 @@ export async function generateSubscriptionInvoicePDF(
 
       doc.fontSize(8)
          .fillColor(grayLight)
-         .text('LAIA SAS - Capital social : 10 000€ - RCS Paris B 123 456 789', 50, footerY + 10, {
+         .text(`${settings.companyName} - ${settings.legalStatus}${settings.footerText ? ' - ' + settings.footerText : ''}`, 50, footerY + 10, {
            align: 'center',
            width: 495
          })
 
-      doc.text('contact@laia-connect.fr - www.laia-connect.fr', 50, footerY + 22, {
+      doc.text(`${settings.email} - ${settings.website}`, 50, footerY + 22, {
         align: 'center',
         width: 495
       })
@@ -425,13 +497,14 @@ export async function generateSubscriptionInvoicePDF(
 /**
  * Crée une facture d'abonnement dans la base de données et génère le PDF
  */
-export async function createSubscriptionInvoice(organizationId: string, isFirstInvoice: boolean = false, includeMigrationFee: boolean = false) {
+export async function createSubscriptionInvoice(organizationId: string, isFirstInvoice: boolean = false, includeMigrationFee: boolean = false, isPaid: boolean = false) {
   try {
-    // Récupérer les infos de l'organisation
+    // Récupérer les infos de l'organisation et les settings
     const orgInfo = await getOrganizationBillingInfo(organizationId)
+    const settings = await getInvoiceSettings()
 
     // Générer le numéro de facture
-    const invoiceNumber = generateSubscriptionInvoiceNumber()
+    const invoiceNumber = await generateSubscriptionInvoiceNumber()
 
     // Dates
     const issueDate = new Date()
@@ -458,7 +531,7 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
     const migrationFee = includeMigrationFee ? 300 : 0
     totalHT += migrationFee
 
-    const vatRate = 20 // TVA à 20%
+    const vatRate = settings.tvaRate
     const totalTVA = totalHT * (vatRate / 100)
     const totalTTC = totalHT + totalTVA
 
@@ -488,9 +561,10 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
         invoiceNumber,
         amount: totalTTC,
         plan: orgInfo.plan,
-        status: 'PENDING',
+        status: isPaid ? 'PAID' : 'PENDING',
         issueDate,
         dueDate,
+        paidAt: isPaid ? new Date() : null,
         description: isFirstInvoice
           ? `Activation abonnement LAIA Connect - Formule ${orgInfo.plan}`
           : `Abonnement mensuel LAIA Connect - Formule ${orgInfo.plan}`,
@@ -507,7 +581,7 @@ export async function createSubscriptionInvoice(organizationId: string, isFirstI
       }
     })
 
-    console.log(`✅ Facture ${invoiceNumber} générée pour ${orgInfo.legalName}`)
+    console.log(`✅ Facture ${invoiceNumber} générée pour ${orgInfo.legalName} - Statut: ${isPaid ? 'PAYÉE' : 'EN ATTENTE'}`)
 
     return {
       invoice,

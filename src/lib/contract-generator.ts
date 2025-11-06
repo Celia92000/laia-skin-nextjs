@@ -1,4 +1,7 @@
 import PDFDocument from 'pdfkit'
+import { getInvoiceSettings } from './subscription-invoice-generator'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 
 interface ContractData {
   // Organisation
@@ -47,13 +50,44 @@ export function generateContractNumber(date: Date = new Date()): string {
 }
 
 /**
+ * Sauvegarde un contrat PDF sur disque
+ */
+export async function saveContractPDF(
+  pdfBuffer: Buffer,
+  contractNumber: string
+): Promise<string> {
+  try {
+    // Créer le dossier uploads/documents/contracts s'il n'existe pas
+    const uploadsDir = join(process.cwd(), 'uploads', 'documents', 'contracts')
+    await mkdir(uploadsDir, { recursive: true })
+
+    // Nettoyer le nom de fichier
+    const sanitizedContractNumber = contractNumber.replace(/[^a-zA-Z0-9-]/g, '_')
+    const fileName = `${sanitizedContractNumber}.pdf`
+    const filePath = join(uploadsDir, fileName)
+
+    // Écrire le fichier
+    await writeFile(filePath, pdfBuffer)
+
+    // Retourner le chemin relatif
+    return `uploads/documents/contracts/${fileName}`
+  } catch (error) {
+    console.error('Erreur sauvegarde PDF contrat:', error)
+    throw error
+  }
+}
+
+/**
  * Génère un PDF du contrat d'abonnement LAIA Connect
  */
 export async function generateSubscriptionContract(
   data: ContractData
 ): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
+      // Récupérer les settings
+      const settings = await getInvoiceSettings()
+
       const doc = new PDFDocument({
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 }
@@ -107,10 +141,24 @@ export async function generateSubscriptionContract(
         .text('LE PRESTATAIRE :')
         .font('Helvetica')
         .moveDown(0.5)
-        .text('LAIA Connect')
-        .text('[Adresse complète à renseigner]')
-        .text('[SIRET à renseigner]')
-        .text('Email : contact@laiaconnect.fr')
+        .text(settings.companyName)
+        .text(`${settings.address}`)
+        .text(`${settings.postalCode} ${settings.city}, ${settings.country}`)
+        .text(`SIRET : ${settings.siret}`)
+
+      if (settings.isCompany && settings.tvaNumber) {
+        doc.text(`N° TVA : ${settings.tvaNumber}`)
+      }
+      if (settings.isCompany && settings.rcs) {
+        doc.text(`RCS : ${settings.rcs}`)
+      }
+      if (!settings.isCompany && settings.footerText) {
+        doc.text(settings.footerText)
+      }
+
+      doc
+        .text(`Email : ${settings.email}`)
+        .text(`Tél : ${settings.phone}`)
         .moveDown()
 
       doc
@@ -169,7 +217,7 @@ export async function generateSubscriptionContract(
         .fontSize(10)
         .font('Helvetica')
         .text(
-          'Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.',
+          settings.contractArticle1,
           { align: 'justify' }
         )
         .moveDown()
@@ -210,7 +258,7 @@ export async function generateSubscriptionContract(
         .fontSize(10)
         .font('Helvetica')
         .text(
-          `Le Client bénéficie d'une période d'essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra le ${data.trialEndsAt.toLocaleDateString('fr-FR')}.`,
+          settings.contractArticle3.replace('{trialEndsAt}', data.trialEndsAt.toLocaleDateString('fr-FR')),
           { align: 'justify' }
         )
         .moveDown()
@@ -224,7 +272,7 @@ export async function generateSubscriptionContract(
         .fontSize(10)
         .font('Helvetica')
         .text(
-          'Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.',
+          settings.contractArticle4,
           { align: 'justify' }
         )
         .moveDown()
@@ -297,12 +345,7 @@ export async function generateSubscriptionContract(
         .fontSize(10)
         .font('Helvetica')
         .text(
-          'Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l\'adresse : https://www.laiaconnect.fr/cgv',
-          { align: 'justify' }
-        )
-        .moveDown()
-        .text(
-          'Le Client déclare avoir pris connaissance des CGV et les accepter sans réserve.',
+          settings.contractArticle6,
           { align: 'justify' }
         )
         .moveDown(2)
@@ -409,8 +452,12 @@ export async function createOnboardingContract(data: {
     contractNumber
   })
 
+  // Sauvegarder le PDF sur disque
+  const pdfPath = await saveContractPDF(contractBuffer, contractNumber)
+
   return {
     contractNumber,
-    pdfBuffer: contractBuffer
+    pdfBuffer: contractBuffer,
+    pdfPath
   }
 }

@@ -78,7 +78,8 @@ function ReservationContent() {
         const formattedServices = data
           .filter((service: any) => service.active && service.category !== 'forfaits')
           .map((service: any) => ({
-            id: service.slug,
+            id: service.id,
+            slug: service.slug,
             name: service.name,
             description: service.shortDescription || service.description,
             duration: `${service.duration} min`,
@@ -91,7 +92,7 @@ function ReservationContent() {
             forfaitDisplayPrice: getForfaitDisplayPrice(service),
             hasPromo: hasPromotion(service),
             discountPercent: hasPromotion(service) ? getDiscountPercentage(service.price, service.promoPrice) : 0,
-            icon: service.slug === 'hydro-naissance' ? "👑" : 
+            icon: service.slug === 'hydro-naissance' ? "👑" :
                   service.slug === 'hydro-cleaning' ? "💧" :
                   service.slug === 'renaissance' ? "✨" :
                   service.slug === 'bb-glow' ? "🌟" : "💡",

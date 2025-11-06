@@ -8,21 +8,26 @@ export default function InvoiceSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
+    // Statut juridique
+    isCompany: false,
+    legalStatus: 'Auto-Entrepreneur',
+
     // Informations émetteur
-    companyName: 'LAIA',
-    address: 'Paris',
-    postalCode: '75000',
-    city: 'Paris',
+    companyName: 'LAIA Connect',
+    address: '[Votre adresse]',
+    postalCode: '[Code postal]',
+    city: '[Ville]',
     country: 'France',
-    siret: 'À remplir',
-    tvaNumber: 'À remplir',
-    capitalSocial: 'À définir',
-    rcs: 'À remplir',
+    siret: '[Votre SIRET]',
+    tvaNumber: '',
+    capitalSocial: '',
+    rcs: '',
+    apeCode: '6201Z',
 
     // Contact
-    email: 'contact@laiaskin.com',
-    phone: 'À remplir',
-    website: 'https://laia-skin-institut.com',
+    email: '[Votre email]',
+    phone: '[Votre téléphone]',
+    website: 'https://www.laia-connect.fr',
 
     // Design
     logoUrl: '',
@@ -31,12 +36,12 @@ export default function InvoiceSettingsPage() {
 
     // Paramètres
     invoicePrefix: 'LAIA',
-    tvaRate: 20.0,
+    tvaRate: 0.0,
 
     // Mentions légales
     paymentTerms: 'Prélèvement SEPA automatique',
-    latePenalty: 'En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.',
-    footerText: 'Logiciel de gestion pour instituts de beauté',
+    latePenalty: 'En cas de retard de paiement, indemnité forfaitaire de 40€',
+    footerText: 'Dispensé d\'immatriculation au RCS et au RM',
   })
 
   useEffect(() => {
@@ -99,6 +104,74 @@ export default function InvoiceSettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Statut Juridique */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow p-6 border-2 border-blue-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            ⚖️ Statut Juridique
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={!settings.isCompany}
+                  onChange={() => setSettings({
+                    ...settings,
+                    isCompany: false,
+                    legalStatus: 'Auto-Entrepreneur',
+                    tvaRate: 0.0,
+                    tvaNumber: '',
+                    capitalSocial: '',
+                    rcs: '',
+                    footerText: 'Dispensé d\'immatriculation au RCS et au RM'
+                  })}
+                  className="w-4 h-4"
+                />
+                <span className="font-medium">Auto-Entrepreneur</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={settings.isCompany}
+                  onChange={() => setSettings({
+                    ...settings,
+                    isCompany: true,
+                    legalStatus: 'Société',
+                    tvaRate: 20.0,
+                    footerText: ''
+                  })}
+                  className="w-4 h-4"
+                />
+                <span className="font-medium">Société (SARL, SAS, etc.)</span>
+              </label>
+            </div>
+
+            {!settings.isCompany && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+                <p className="font-medium text-yellow-800 mb-1">💡 Mode Auto-Entrepreneur :</p>
+                <ul className="text-yellow-700 space-y-1 list-disc list-inside">
+                  <li>TVA non applicable (art. 293 B du CGI)</li>
+                  <li>Pas de numéro de TVA intracommunautaire requis</li>
+                  <li>Dispensé d'immatriculation au RCS et au RM</li>
+                </ul>
+              </div>
+            )}
+
+            {settings.isCompany && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="font-medium text-blue-800 mb-1">🏢 Mode Société :</p>
+                <ul className="text-blue-700 space-y-1 list-disc list-inside">
+                  <li>TVA applicable (par défaut 20%)</li>
+                  <li>Numéro de TVA intracommunautaire requis</li>
+                  <li>RCS et capital social à renseigner</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Informations Émetteur */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -129,6 +202,20 @@ export default function InvoiceSettingsPage() {
                 onChange={(e) => setSettings({ ...settings, siret: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Code APE *
+              </label>
+              <input
+                type="text"
+                value={settings.apeCode}
+                onChange={(e) => setSettings({ ...settings, apeCode: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                required
+                placeholder="Ex: 6201Z"
               />
             </div>
 
@@ -184,42 +271,51 @@ export default function InvoiceSettingsPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                N° TVA Intracommunautaire *
-              </label>
-              <input
-                type="text"
-                value={settings.tvaNumber}
-                onChange={(e) => setSettings({ ...settings, tvaNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                required
-              />
-            </div>
+            {settings.isCompany && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    N° TVA Intracommunautaire *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.tvaNumber || ''}
+                    onChange={(e) => setSettings({ ...settings, tvaNumber: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    required={settings.isCompany}
+                    placeholder="Ex: FR12345678901"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Capital Social
-              </label>
-              <input
-                type="text"
-                value={settings.capitalSocial}
-                onChange={(e) => setSettings({ ...settings, capitalSocial: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Capital Social *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.capitalSocial || ''}
+                    onChange={(e) => setSettings({ ...settings, capitalSocial: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    required={settings.isCompany}
+                    placeholder="Ex: 10 000 €"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                RCS
-              </label>
-              <input
-                type="text"
-                value={settings.rcs}
-                onChange={(e) => setSettings({ ...settings, rcs: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    RCS *
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.rcs || ''}
+                    onChange={(e) => setSettings({ ...settings, rcs: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                    required={settings.isCompany}
+                    placeholder="Ex: Paris B 123 456 789"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -363,7 +459,12 @@ export default function InvoiceSettingsPage() {
                 onChange={(e) => setSettings({ ...settings, tvaRate: parseFloat(e.target.value) })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 required
+                disabled={!settings.isCompany}
+                title={!settings.isCompany ? 'TVA non applicable en Auto-Entrepreneur' : ''}
               />
+              {!settings.isCompany && (
+                <p className="text-xs text-gray-500 mt-1">TVA non applicable (art. 293 B du CGI)</p>
+              )}
             </div>
           </div>
         </div>

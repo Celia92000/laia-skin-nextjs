@@ -6,6 +6,8 @@ import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, getDiscountPercentage } from '@/lib/price-utils';
 import { SocialSection } from '@/components/SocialSection';
 import { getSiteConfig } from '@/lib/config-service';
+import { HoverButton } from '@/components/HoverButton';
+import { TemplateRenderer } from '@/components/TemplateRenderer';
 
 // Force dynamic rendering to avoid build-time database queries
 export const dynamic = 'force-dynamic';
@@ -98,6 +100,7 @@ export default async function Home() {
     // Récupérer les services depuis la base de données (sans les forfaits)
     services = await prisma.service.findMany({
       where: {
+        organizationId: organization.id, // Filtrer par organisation
         active: true,
         category: { not: 'forfaits' } // Exclure les forfaits
       }
@@ -116,6 +119,21 @@ export default async function Home() {
     return (a.order || 0) - (b.order || 0);
   });
 
+  // Si l'organisation a un template personnalisé ET que ce n'est pas LAIA Skin Institut
+  // Utiliser le système de templates
+  if (organization.websiteTemplateId && organization.subdomain !== 'laia-skin-institut') {
+    return (
+      <TemplateRenderer
+        templateId={organization.websiteTemplateId}
+        organization={organization}
+        services={sortedServices}
+        config={config}
+        testimonials={testimonials}
+      />
+    );
+  }
+
+  // Sinon, utiliser le design par défaut (pour LAIA Skin Institut principalement)
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
       {/* Hero Section */}
@@ -486,21 +504,13 @@ export default async function Home() {
             >
               Réserver un soin
             </Link>
-            <Link
+            <HoverButton
               href="/contact"
+              accentColor={accentColor}
               className="bg-transparent border-2 text-white px-10 py-4 rounded-full font-semibold text-lg transition-all duration-300"
-              style={{ borderColor: 'white' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.color = accentColor;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'white';
-              }}
             >
               Nous contacter
-            </Link>
+            </HoverButton>
           </div>
         </div>
       </section>

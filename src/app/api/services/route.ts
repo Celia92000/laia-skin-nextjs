@@ -8,8 +8,46 @@ export async function GET(request: NextRequest) {
     const exclude = searchParams.get('exclude');
     const limit = searchParams.get('limit');
 
-    // Créer une clé de cache unique basée sur les paramètres
-    const cacheKey = `services:${exclude || 'all'}:${limit || 'all'}`;
+    const prisma = await getPrismaClient();
+
+    // Récupérer l'organisation depuis le host
+    const host = request.headers.get('host') || '';
+    const cleanHost = host.split(':')[0].toLowerCase();
+
+    let organization = null;
+
+    // 1. Chercher par domaine personnalisé
+    if (!cleanHost.includes('localhost')) {
+      organization = await prisma.organization.findUnique({
+        where: { domain: cleanHost }
+      });
+    }
+
+    // 2. Chercher par subdomain
+    if (!organization) {
+      const parts = cleanHost.split('.');
+      let subdomain = 'laia-skin-institut'; // Par défaut
+      if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+        subdomain = parts[0];
+      }
+      organization = await prisma.organization.findUnique({
+        where: { subdomain: subdomain }
+      });
+    }
+
+    // 3. Fallback
+    if (!organization) {
+      organization = await prisma.organization.findFirst({
+        where: { slug: 'laia-skin-institut' }
+      });
+    }
+
+    if (!organization) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    }
+
+    // Créer une clé de cache unique basée sur les paramètres ET l'organisation
+    const cacheKey = `services:${organization.id}:${exclude || 'all'}:${limit || 'all'}`;
 
     // Vérifier le cache
     const cachedData = cache.get(cacheKey);
@@ -17,8 +55,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedData);
     }
 
-    const prisma = await getPrismaClient();
-    const where: any = { active: true };
+    const where: any = {
+      organizationId: organization.id,
+      active: true
+    };
 
     if (exclude) {
       where.slug = { not: exclude };

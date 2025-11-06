@@ -92,15 +92,18 @@ export async function POST(request: NextRequest) {
       settings = await prisma.invoiceSettings.update({
         where: { id: existing.id },
         data: {
+          isCompany: data.isCompany,
+          legalStatus: data.legalStatus,
           companyName: data.companyName,
           address: data.address,
           postalCode: data.postalCode,
           city: data.city,
           country: data.country,
           siret: data.siret,
-          tvaNumber: data.tvaNumber,
-          capitalSocial: data.capitalSocial,
-          rcs: data.rcs,
+          tvaNumber: data.tvaNumber || '',
+          capitalSocial: data.capitalSocial || '',
+          rcs: data.rcs || '',
+          apeCode: data.apeCode,
           email: data.email,
           phone: data.phone,
           website: data.website,
@@ -111,22 +114,25 @@ export async function POST(request: NextRequest) {
           tvaRate: data.tvaRate,
           paymentTerms: data.paymentTerms,
           latePenalty: data.latePenalty,
-          footerText: data.footerText,
+          footerText: data.footerText || '',
         }
       })
     } else {
       // Créer
       settings = await prisma.invoiceSettings.create({
         data: {
+          isCompany: data.isCompany,
+          legalStatus: data.legalStatus,
           companyName: data.companyName,
           address: data.address,
           postalCode: data.postalCode,
           city: data.city,
           country: data.country,
           siret: data.siret,
-          tvaNumber: data.tvaNumber,
-          capitalSocial: data.capitalSocial,
-          rcs: data.rcs,
+          tvaNumber: data.tvaNumber || '',
+          capitalSocial: data.capitalSocial || '',
+          rcs: data.rcs || '',
+          apeCode: data.apeCode,
           email: data.email,
           phone: data.phone,
           website: data.website,
@@ -137,7 +143,7 @@ export async function POST(request: NextRequest) {
           tvaRate: data.tvaRate,
           paymentTerms: data.paymentTerms,
           latePenalty: data.latePenalty,
-          footerText: data.footerText,
+          footerText: data.footerText || '',
         }
       })
     }

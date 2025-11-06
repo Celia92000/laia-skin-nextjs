@@ -7,19 +7,19 @@ export interface WebsiteTemplate {
   id: string
   name: string
   description: string
-  minTier: 'STANDARD' | 'TEAM' | 'PREMIUM'
+  minTier: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'
   thumbnail?: string
   previewUrl?: string
   features: string[]
 }
 
 export const websiteTemplates: WebsiteTemplate[] = [
-  // Templates classiques
+  // Templates accessibles à tous (SOLO, DUO, TEAM, PREMIUM)
   {
     id: 'classic',
     name: 'Classique',
     description: 'L\'intemporalité au service de votre image',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/classic/preview',
     features: []
   },
@@ -27,7 +27,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'modern',
     name: 'Moderne',
     description: 'L\'élégance contemporaine redéfinie',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/modern/preview',
     features: []
   },
@@ -35,7 +35,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'minimal',
     name: 'Minimaliste',
     description: 'La pureté des lignes, l\'essence du raffinement',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/minimal/preview',
     features: []
   },
@@ -43,7 +43,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'professional',
     name: 'Professionnel',
     description: 'La rigueur au service de l\'excellence',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/professional/preview',
     features: []
   },
@@ -51,7 +51,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'boutique',
     name: 'Boutique',
     description: 'L\'art de l\'accueil avec distinction',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/boutique/preview',
     features: []
   },
@@ -59,7 +59,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'fresh',
     name: 'Dynamique',
     description: 'L\'énergie sublimée par le design',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/fresh/preview',
     features: []
   },
@@ -75,7 +75,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'luxe',
     name: 'Noir',
     description: 'Le raffinement absolu dans l\'obscurité',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/luxe/preview',
     features: []
   },
@@ -83,7 +83,7 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'elegance',
     name: 'Élégant',
     description: 'La grâce et la sophistication réunies',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/elegance/preview',
     features: []
   },
@@ -91,12 +91,12 @@ export const websiteTemplates: WebsiteTemplate[] = [
     id: 'zen',
     name: 'Nature',
     description: 'L\'harmonie naturelle au cœur de votre espace',
-    minTier: 'STANDARD',
+    minTier: 'SOLO',
     previewUrl: '/super-admin/templates/zen/preview',
     features: []
   },
 
-  // Templates premium
+  // Templates premium (PREMIUM uniquement)
   {
     id: 'medical',
     name: 'Médical Raffiné',
@@ -134,13 +134,16 @@ export function getTemplateById(id: string): WebsiteTemplate | undefined {
  * Récupère les templates disponibles pour un plan donné
  */
 export function getTemplatesForPlan(plan: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'): WebsiteTemplate[] {
-  if (plan === 'PREMIUM') {
-    return websiteTemplates // Tous les templates
-  } else if (plan === 'TEAM') {
-    // TEAM a accès aux standards + quelques premium
-    return websiteTemplates.filter(t => t.minTier === 'STANDARD' || t.minTier === 'TEAM')
-  } else {
-    // SOLO et DUO ont accès uniquement aux standards
-    return websiteTemplates.filter(t => t.minTier === 'STANDARD')
+  const tierHierarchy = {
+    SOLO: ['SOLO'],
+    DUO: ['SOLO', 'DUO'],
+    TEAM: ['SOLO', 'DUO', 'TEAM'],
+    PREMIUM: ['SOLO', 'DUO', 'TEAM', 'PREMIUM']
   }
+
+  const allowedTiers = tierHierarchy[plan] || ['SOLO']
+
+  return websiteTemplates.filter(template =>
+    allowedTiers.includes(template.minTier)
+  )
 }

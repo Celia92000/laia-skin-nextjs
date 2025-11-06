@@ -14,16 +14,18 @@ npx prisma db push
 npx tsx prisma/seed-plans.ts
 ```
 
-### 🔧 Option 2 : Via SQL manuel (si timeout)
+### 🔧 Option 2 : Via SQL manuel (RECOMMANDÉ si timeout ou erreur serveur)
 
-Si `prisma db push` timeout à cause de la connexion lente :
+Si `prisma db push` timeout OU si vous obtenez une erreur serveur :
 
 1. **Ouvrir Supabase SQL Editor** : https://supabase.com/dashboard/project/YOUR_PROJECT/sql
 
-2. **Exécuter le script de migration** :
-   - Copier le contenu de `prisma/migration-manual.sql`
+2. **Exécuter le script de migration COMPLET** :
+   - Copier le contenu de `prisma/migration-complete.sql`
    - Coller dans SQL Editor
    - Cliquer "Run"
+   - ✅ Ce script fait TOUT : retire anciennes colonnes, ajoute nouvelles colonnes, crée SubscriptionPlan
+   - ✅ Vérifie automatiquement que tout s'est bien passé
 
 3. **Exécuter le script de seed** :
    - Copier le contenu de `prisma/seed-plans-sql.sql`
@@ -33,6 +35,12 @@ Si `prisma db push` timeout à cause de la connexion lente :
 4. **Vérifier** que les 4 formules sont créées :
    ```sql
    SELECT "planKey", "name", "priceMonthly" FROM "SubscriptionPlan";
+   ```
+
+5. **Redémarrer le serveur Next.js** :
+   ```bash
+   # Ctrl+C pour arrêter
+   npm run dev
    ```
 
 ---
@@ -142,7 +150,8 @@ Le design est dans `src/app/(platform)/pricing/page.tsx`
 ### **Base de données**
 - `prisma/schema.prisma` : Modèle SubscriptionPlan
 - `prisma/seed-plans.ts` : Seed TypeScript
-- `prisma/migration-manual.sql` : Migration SQL manuelle
+- `prisma/migration-complete.sql` : **Migration SQL complète (RECOMMANDÉ)** - synchronise toute la DB
+- `prisma/migration-manual.sql` : Migration SQL partielle (anciennes versions)
 - `prisma/seed-plans-sql.sql` : Seed SQL manuel
 
 ### **APIs**
@@ -294,11 +303,21 @@ const features = getOrganizationFeatures(
 
 ## 🚨 Dépannage
 
+### **Problème : "Erreur serveur" ou "sepaIban does not exist"**
+
+**Cause** : La base de données n'est pas synchronisée avec le schéma Prisma
+
+**Solution** : Exécuter la migration complète
+1. Ouvrir Supabase SQL Editor
+2. Copier le contenu de `prisma/migration-complete.sql`
+3. Coller dans SQL Editor et cliquer "Run"
+4. Redémarrer le serveur Next.js (`Ctrl+C` puis `npm run dev`)
+
 ### **Problème : "La table SubscriptionPlan n'existe pas"**
 
-**Solution** : Exécuter la migration manuelle
+**Solution** : Exécuter la migration complète
 ```sql
--- Copier le contenu de prisma/migration-manual.sql
+-- Copier le contenu de prisma/migration-complete.sql
 -- Coller dans Supabase SQL Editor
 -- Run
 ```
