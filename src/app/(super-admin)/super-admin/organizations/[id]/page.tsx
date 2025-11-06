@@ -14,7 +14,7 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [organization, setOrganization] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'team' | 'config' | 'access' | 'billing'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'team' | 'config' | 'access' | 'billing' | 'features'>('overview')
 
   useEffect(() => {
     async function fetchData() {
@@ -202,6 +202,16 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
               }`}
             >
               Facturation
+            </button>
+            <button
+              onClick={() => setActiveTab('features')}
+              className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
+                activeTab === 'features'
+                  ? 'border-[#7c3aed] text-[#7c3aed]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Fonctionnalités
             </button>
           </div>
         </div>
@@ -1245,6 +1255,240 @@ export default function OrganizationDetailPage({ params }: { params: Promise<{ i
             </div>
           </div>
         )}
+
+        {/* Onglet Features */}
+        {activeTab === 'features' && (
+          <FeaturesCustomTab organizationId={id} organization={organization} onUpdate={() => fetchData()} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Composant pour gérer les features personnalisées
+function FeaturesCustomTab({ organizationId, organization, onUpdate }: { organizationId: string, organization: any, onUpdate: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [planFeatures, setPlanFeatures] = useState<any>({})
+  const [customEnabled, setCustomEnabled] = useState<string[]>([])
+  const [customDisabled, setCustomDisabled] = useState<string[]>([])
+
+  useEffect(() => {
+    // Parser les custom features de l'organisation
+    try {
+      setCustomEnabled(JSON.parse(organization.customFeaturesEnabled || '[]'))
+      setCustomDisabled(JSON.parse(organization.customFeaturesDisabled || '[]'))
+    } catch (e) {
+      console.error('Error parsing custom features:', e)
+    }
+
+    // Charger les features du plan
+    import('@/lib/features').then((mod) => {
+      const features = mod.PLAN_FEATURES[organization.plan as any] || {}
+      setPlanFeatures(features)
+    })
+  }, [organization])
+
+  async function toggleFeature(featureKey: string, isCurrentlyEnabled: boolean) {
+    const isPlanFeature = planFeatures[featureKey]
+
+    let newEnabled = [...customEnabled]
+    let newDisabled = [...customDisabled]
+
+    if (isPlanFeature) {
+      // Feature est activée par défaut dans le plan
+      if (isCurrentlyEnabled) {
+        // On veut la désactiver
+        newDisabled = [...newDisabled.filter(f => f !== featureKey), featureKey]
+        newEnabled = newEnabled.filter(f => f !== featureKey)
+      } else {
+        // On veut la réactiver (retirer de disabled)
+        newDisabled = newDisabled.filter(f => f !== featureKey)
+      }
+    } else {
+      // Feature n'est pas dans le plan par défaut
+      if (isCurrentlyEnabled) {
+        // On veut la désactiver (retirer de enabled)
+        newEnabled = newEnabled.filter(f => f !== featureKey)
+      } else {
+        // On veut l'activer
+        newEnabled = [...newEnabled.filter(f => f !== featureKey), featureKey]
+        newDisabled = newDisabled.filter(f => f !== featureKey)
+      }
+    }
+
+    await saveCustomFeatures(newEnabled, newDisabled)
+  }
+
+  async function saveCustomFeatures(enabled: string[], disabled: string[]) {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/super-admin/organizations/${organizationId}/features`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customFeaturesEnabled: enabled,
+          customFeaturesDisabled: disabled
+        })
+      })
+
+      if (res.ok) {
+        setCustomEnabled(enabled)
+        setCustomDisabled(disabled)
+        onUpdate()
+      } else {
+        alert('Erreur lors de la sauvegarde')
+      }
+    } catch (error) {
+      console.error('Error saving custom features:', error)
+      alert('Erreur lors de la sauvegarde')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Calculer les features effectives
+  const effectiveFeatures: any = { ...planFeatures }
+  customEnabled.forEach(f => { effectiveFeatures[f] = true })
+  customDisabled.forEach(f => { effectiveFeatures[f] = false })
+
+  // Grouper les features par catégorie
+  const featuresByCategory: Record<string, any[]> = {}
+
+  import('@/lib/features').then((mod) => {
+    mod.FEATURES_INFO.forEach((feature: any) => {
+      if (!featuresByCategory[feature.category]) {
+        featuresByCategory[feature.category] = []
+      }
+      featuresByCategory[feature.category].push(feature)
+    })
+  })
+
+  const [featuresInfo, setFeaturesInfo] = useState<any[]>([])
+
+  useEffect(() => {
+    import('@/lib/features').then((mod) => {
+      setFeaturesInfo(mod.FEATURES_INFO)
+    })
+  }, [])
+
+  const categoryNames: Record<string, string> = {
+    content: '📝 Contenu & Marketing',
+    ecommerce: '🛍️ E-commerce',
+    crm: '📊 CRM & Prospection',
+    loyalty: '⭐ Fidélisation',
+    communication: '📧 Communication',
+    social: '📸 Réseaux Sociaux',
+    management: '🏢 Gestion',
+    accounting: '💼 Comptabilité',
+    reviews: '⭐ Avis & Réputation',
+    payment: '💳 Paiements',
+    customization: '🎨 Personnalisation',
+    support: '🆘 Support'
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Personnalisation des Fonctionnalités</h2>
+            <p className="text-gray-600 mt-2">
+              Plan actuel : <span className="font-semibold text-[#7c3aed]">{organization.plan}</span>
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Ajoutez ou retirez des fonctionnalités pour cette organisation spécifiquement
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+          <div>
+            <p className="text-sm font-medium text-blue-900">Features ajoutées manuellement</p>
+            <p className="text-2xl font-bold text-blue-700">{customEnabled.length}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-red-900">Features retirées manuellement</p>
+            <p className="text-2xl font-bold text-red-700">{customDisabled.length}</p>
+          </div>
+        </div>
+
+        {Object.entries(categoryNames).map(([category, categoryName]) => {
+          const categoryFeatures = featuresInfo.filter((f: any) => f.category === category)
+          if (categoryFeatures.length === 0) return null
+
+          return (
+            <div key={category} className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{categoryName}</h3>
+              <div className="space-y-3">
+                {categoryFeatures.map((feature: any) => {
+                  const isPlanFeature = planFeatures[feature.id]
+                  const isCustomEnabled = customEnabled.includes(feature.id)
+                  const isCustomDisabled = customDisabled.includes(feature.id)
+                  const isEffectivelyEnabled = effectiveFeatures[feature.id]
+
+                  let badge = ''
+                  let badgeColor = ''
+                  if (isCustomEnabled) {
+                    badge = 'Ajouté manuellement'
+                    badgeColor = 'bg-green-100 text-green-800'
+                  } else if (isCustomDisabled) {
+                    badge = 'Retiré manuellement'
+                    badgeColor = 'bg-red-100 text-red-800'
+                  } else if (isPlanFeature) {
+                    badge = `Inclus dans ${organization.plan}`
+                    badgeColor = 'bg-blue-100 text-blue-800'
+                  }
+
+                  return (
+                    <div
+                      key={feature.id}
+                      className={`p-4 rounded-lg border-2 transition ${
+                        isEffectivelyEnabled
+                          ? 'border-green-300 bg-green-50'
+                          : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <span className="text-xl">{feature.icon}</span>
+                            <h4 className="font-semibold text-gray-900">{feature.name}</h4>
+                            {badge && (
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${badgeColor}`}>
+                                {badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">{feature.description}</p>
+                        </div>
+                        <button
+                          onClick={() => toggleFeature(feature.id, isEffectivelyEnabled)}
+                          disabled={saving}
+                          className={`px-4 py-2 rounded-lg font-medium transition disabled:opacity-50 ${
+                            isEffectivelyEnabled
+                              ? 'bg-red-600 text-white hover:bg-red-700'
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                        >
+                          {isEffectivelyEnabled ? 'Désactiver' : 'Activer'}
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+
+        <div className="mt-8 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+          <h4 className="font-semibold text-yellow-900 mb-2">⚠️ Important</h4>
+          <ul className="text-sm text-yellow-800 space-y-1">
+            <li>• Les modifications sont appliquées immédiatement</li>
+            <li>• Elles remplacent la configuration par défaut du plan</li>
+            <li>• Le client verra ces fonctionnalités dans son interface admin</li>
+          </ul>
+        </div>
       </div>
     </div>
   )
