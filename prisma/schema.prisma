@@ -40,6 +40,50 @@ enum OrgPlan {
   ENTERPRISE // Ancien nom - à supprimer après migration
 }
 
+// Formules d'abonnement configurables depuis le super-admin
+model SubscriptionPlan {
+  id            String   @id @default(cuid())
+  planKey       OrgPlan  @unique // SOLO, DUO, TEAM, PREMIUM
+
+  // Informations principales
+  name          String   // "Solo", "Duo", "Team", "Premium"
+  displayName   String   // "Formule Solo" (affiché dans l'interface)
+  description   String   @db.Text // "Parfait pour un institut indépendant..."
+
+  // Tarification
+  priceMonthly  Int      // Prix en euros (49, 69, 119, 179)
+  priceYearly   Int?     // Prix annuel (si différent du mensuel x12)
+
+  // Limites
+  maxLocations  Int      @default(1) // Nombre d'emplacements max
+  maxUsers      Int      @default(1) // Nombre d'utilisateurs max
+  maxStorage    Int      @default(5) // Stockage en GB
+
+  // Features principales (JSON pour flexibilité)
+  features      String   @db.Text @default("[]") // JSON array des features activées
+
+  // Highlights pour affichage marketing
+  highlights    String   @db.Text @default("[]") // JSON array: ["CRM complet", "Blog SEO", ...]
+
+  // Affichage
+  isPopular     Boolean  @default(false) // Badge "Populaire"
+  isRecommended Boolean  @default(false) // Badge "Recommandé"
+  displayOrder  Int      @default(0)     // Ordre d'affichage (1, 2, 3, 4)
+
+  // Stripe
+  stripePriceId String?  // ID du prix Stripe associé
+
+  // Statut
+  isActive      Boolean  @default(true) // Si false, plan non disponible à la souscription
+
+  // Métadonnées
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([planKey])
+  @@index([isActive])
+}
+
 enum OrgStatus {
   PENDING // En attente d'activation (payé mais pas encore activé)
   ACTIVE // Organisation active
@@ -100,6 +144,10 @@ model Organization {
   maxLocations Int @default(1)
   maxUsers     Int @default(1)
   maxStorage   Int @default(5) // En GB
+
+  // Customisation des features (override par le super-admin)
+  customFeaturesEnabled  String? @db.Text @default("[]") // JSON array des features ajoutées manuellement
+  customFeaturesDisabled String? @db.Text @default("[]") // JSON array des features retirées manuellement
 
   // Contact principal
   ownerFirstName String? // Prénom du propriétaire
