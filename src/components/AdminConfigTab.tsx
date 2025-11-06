@@ -110,6 +110,12 @@ interface SiteConfig {
   // Chat en direct
   crispWebsiteId?: string;
   crispEnabled?: boolean;
+
+  // Google My Business
+  googlePlaceId?: string;
+  googleBusinessUrl?: string;
+  lastGoogleSync?: string;
+  autoSyncGoogleReviews?: boolean;
 }
 
 export default function AdminConfigTab() {
@@ -122,7 +128,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api' | 'google'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -229,6 +235,7 @@ export default function AdminConfigTab() {
           { id: 'about', label: 'À propos', icon: User },
           { id: 'location', label: 'Localisation', icon: Map },
           { id: 'seo', label: 'SEO & Tracking', icon: Search },
+          { id: 'google', label: 'Google Business', icon: Star },
           { id: 'integrations', label: 'Intégrations', icon: Zap },
           { id: 'api', label: 'API & Sécurité', icon: Key },
           { id: 'finances', label: 'Finances', icon: CreditCard },
@@ -1530,6 +1537,157 @@ export default function AdminConfigTab() {
               <p className="text-sm text-red-800">
                 <strong>⚠️ Sécurité :</strong> Ces informations bancaires seront utilisées sur vos factures.
                 Assurez-vous de les saisir correctement et de ne jamais les partager publiquement.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'google' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-[#2c3e50] mb-2 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                Google My Business - Synchronisation des avis
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Synchronisez automatiquement les avis Google de votre établissement pour les afficher sur votre site.
+              </p>
+            </div>
+
+            {/* Google Place ID */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Google Place ID
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={config.googlePlaceId || ''}
+                onChange={(e) => setConfig({ ...config, googlePlaceId: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                placeholder="ChIJxxxxxxxxxxxxxxxxxxxxx"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Trouvez votre Place ID sur{' '}
+                <a
+                  href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#d4b5a0] hover:underline"
+                >
+                  Google Place ID Finder
+                </a>
+              </p>
+            </div>
+
+            {/* URL Google Business (auto-générée) */}
+            {config.googlePlaceId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL Google Business (générée automatiquement)
+                </label>
+                <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+                  {`https://www.google.com/maps/place/?q=place_id:${config.googlePlaceId}`}
+                </div>
+              </div>
+            )}
+
+            {/* Synchronisation automatique */}
+            <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <input
+                type="checkbox"
+                checked={config.autoSyncGoogleReviews || false}
+                onChange={(e) => setConfig({ ...config, autoSyncGoogleReviews: e.target.checked })}
+                className="mt-1"
+                id="autoSync"
+              />
+              <div className="flex-1">
+                <label htmlFor="autoSync" className="text-sm font-medium text-blue-900 cursor-pointer">
+                  Activer la synchronisation automatique quotidienne
+                </label>
+                <p className="text-xs text-blue-700 mt-1">
+                  Les avis Google seront automatiquement synchronisés chaque jour à minuit.
+                </p>
+              </div>
+            </div>
+
+            {/* Dernière synchronisation */}
+            {config.lastGoogleSync && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm text-green-800">
+                  ✓ Dernière synchronisation : {new Date(config.lastGoogleSync).toLocaleString('fr-FR')}
+                </p>
+              </div>
+            )}
+
+            {/* Bouton synchroniser maintenant */}
+            <div>
+              <button
+                onClick={async () => {
+                  if (!config.googlePlaceId) {
+                    alert('Veuillez d\'abord entrer votre Google Place ID');
+                    return;
+                  }
+
+                  try {
+                    setSaving(true);
+                    const res = await fetch('/api/admin/google-reviews/sync', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ googlePlaceId: config.googlePlaceId })
+                    });
+
+                    if (res.ok) {
+                      const data = await res.json();
+                      alert(`✓ Synchronisation réussie ! ${data.reviewsCount} avis importés.`);
+                      setConfig({ ...config, lastGoogleSync: new Date().toISOString() });
+                    } else {
+                      const error = await res.json();
+                      alert(`Erreur : ${error.message || 'Synchronisation échouée'}`);
+                    }
+                  } catch (error) {
+                    console.error('Erreur sync:', error);
+                    alert('Erreur lors de la synchronisation');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={!config.googlePlaceId || saving}
+                className="w-full px-6 py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a084] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <Star className="w-5 h-5" />
+                {saving ? 'Synchronisation en cours...' : 'Synchroniser les avis maintenant'}
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Cette action récupère les avis Google et les enregistre dans votre base de données.
+              </p>
+            </div>
+
+            {/* Guide d'utilisation */}
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-2">📚 Comment trouver mon Google Place ID ?</h4>
+              <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+                <li>Recherchez votre établissement sur Google Maps</li>
+                <li>Copiez l'URL de votre fiche Google Business</li>
+                <li>Le Place ID se trouve dans l'URL ou utilisez{' '}
+                  <a
+                    href="https://developers.google.com/maps/documentation/places/web-service/place-id"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#d4b5a0] hover:underline"
+                  >
+                    Place ID Finder
+                  </a>
+                </li>
+                <li>Collez le Place ID ci-dessus et cliquez sur "Synchroniser"</li>
+              </ol>
+            </div>
+
+            {/* Note importante */}
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-sm text-yellow-800">
+                ⚠️ <strong>Note importante :</strong> La synchronisation utilise l'API Google Places qui peut avoir des limitations.
+                Les avis seront affichés publiquement sur votre site vitrine dans la section "Avis clients".
               </p>
             </div>
           </div>

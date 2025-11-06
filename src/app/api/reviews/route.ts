@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
@@ -18,14 +19,23 @@ export async function GET(request: Request) {
   const website = config.customDomain || 'https://votre-institut.fr';
   const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
 
-
   const prisma = await getPrismaClient();
   try {
+    // Récupérer l'organisation courante
+    const organizationId = await getCurrentOrganizationId();
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const approved = searchParams.get('approved');
     const featured = searchParams.get('featured');
     const userOnly = searchParams.get('userOnly');
-    
+
     // Si userOnly, vérifier l'authentification
     let userId = null;
     if (userOnly === 'true') {
@@ -42,8 +52,8 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
       }
     }
-    
-    const where: any = {};
+
+    const where: any = { organizationId };
     if (userId) where.userId = userId;
     if (approved !== null && !userId) where.approved = approved === 'true';
     if (featured !== null) where.featured = featured === 'true';
@@ -91,6 +101,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const prisma = await getPrismaClient();
   try {
+    // Récupérer l'organisation courante
+    const organizationId = await getCurrentOrganizationId();
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
     // Vérifier l'authentification
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -99,7 +119,7 @@ export async function POST(request: Request) {
 
     const token = authHeader.split(' ')[1];
     let userId: string;
-    
+
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       userId = decoded.userId;
@@ -122,12 +142,12 @@ export async function POST(request: Request) {
       if (!reservation) {
         return NextResponse.json({ error: 'Réservation non trouvée' }, { status: 400 });
       }
-      
+
       // Vérifier qu'il n'y a pas déjà un avis pour cette réservation
       const existingReview = await prisma.review.findFirst({
         where: { reservationId }
       });
-      
+
       if (existingReview) {
         return NextResponse.json({ error: 'Un avis existe déjà pour cette réservation' }, { status: 400 });
       }
@@ -135,6 +155,7 @@ export async function POST(request: Request) {
 
     const review = await prisma.review.create({
       data: {
+        organizationId,
         userId,
         reservationId,
         serviceName: serviceName || 'Service',
@@ -157,9 +178,14 @@ export async function POST(request: Request) {
       }
     });
 
-    // URL Google Business ${siteName}
-    const googleUrl = rating === 5 
-      ? 'https://www.google.com/maps/place/?q=place_id:3014602962211627658' 
+    // Récupérer l'URL Google Business de l'organisation
+    const orgConfig = await prisma.organizationConfig.findUnique({
+      where: { organizationId },
+      select: { googleBusinessUrl: true }
+    });
+
+    const googleUrl = rating === 5 && orgConfig?.googleBusinessUrl
+      ? orgConfig.googleBusinessUrl
       : null;
 
     return NextResponse.json({
