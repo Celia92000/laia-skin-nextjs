@@ -365,14 +365,6 @@ export default function SecureLoginPage() {
                   Se déconnecter et utiliser un autre compte
                 </button>
               </div>
-
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 text-center">
-                  Rôle : <span className="font-semibold">{currentUser.role}</span>
-                  <br />
-                  Email : <span className="font-semibold">{currentUser.email}</span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -391,7 +383,7 @@ export default function SecureLoginPage() {
               {isLogin ? "Connexion Sécurisée" : "Créer un compte"}
             </h1>
             <p className="text-sm opacity-90">
-              {isLogin ? "Accédez à votre espace personnel" : "Rejoignez LAIA SKIN Institut"}
+              {isLogin ? "Accédez à votre espace personnel" : "Rejoignez LAIA Connect"}
             </p>
           </div>
 

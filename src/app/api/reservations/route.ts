@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const prisma = await getPrismaClient();
     const body = await request.json();
-    const { services, packages, date, time, notes, totalPrice, clientInfo, rescheduleId, giftCardCode, giftCardUsedAmount } = body;
+    const { services, packages, date, time, notes, totalPrice, staffId, clientInfo, rescheduleId, giftCardCode, giftCardUsedAmount } = body;
     
     // Validation : vérifier qu'il y a au moins un service
     if (!services || !Array.isArray(services) || services.length === 0) {
@@ -271,6 +271,7 @@ export async function POST(request: Request) {
         notes,
         totalPrice: finalPrice,
         status: 'pending', // Toujours en attente de validation admin
+        ...(staffId && { staffId }), // Employé sélectionné par le client
         ...(rescheduleId && { rescheduledFrom: rescheduleId }), // Ajouter la référence si c'est une reprogrammation
         ...(giftCard && giftCardUsedAmount ? {
           giftCardId: giftCard.id,

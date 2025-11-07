@@ -11,16 +11,23 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    
+    let decoded: any;
+
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-      
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+
       // Vérifier que c'est un admin ou employé
-      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE'].includes(decoded.role)) {
+      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE', 'ORG_ADMIN', 'ORG_OWNER', 'SUPER_ADMIN'].includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
       }
     } catch (error) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'organizationId depuis le token
+    const organizationId = decoded.organizationId;
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID manquant' }, { status: 400 });
     }
 
     // Récupérer les paramètres
@@ -67,10 +74,11 @@ export async function GET(request: Request) {
       }
     }
 
-    // Récupérer les réservations passées (réalisées)
+    // Récupérer les réservations passées (réalisées) UNIQUEMENT de cette organisation
     const prisma = await getPrismaClient();
     const pastReservations = await prisma.reservation.findMany({
       where: {
+        organizationId,
         date: {
           gte: startDate,
           lte: now
@@ -81,9 +89,10 @@ export async function GET(request: Request) {
       }
     });
 
-    // Récupérer les réservations futures (prévues)
+    // Récupérer les réservations futures (prévues) UNIQUEMENT de cette organisation
     const futureReservations = await prisma.reservation.findMany({
       where: {
+        organizationId,
         date: {
           gt: now,
           lte: endDate
@@ -131,6 +140,7 @@ export async function GET(request: Request) {
 
     const previousReservations = await prisma.reservation.findMany({
       where: {
+        organizationId,
         date: {
           gte: previousStart,
           lte: previousEnd

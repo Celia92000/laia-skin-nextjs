@@ -14,15 +14,41 @@ export default function UniversalLoginPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [savedEmails, setSavedEmails] = useState<string[]>([])
+  const [showEmailDropdown, setShowEmailDropdown] = useState(false)
 
-  // Charger l'email sauvegardé au chargement de la page
+  // Charger l'email sauvegardé et la liste des emails au chargement de la page
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail')
     if (savedEmail) {
       setFormData(prev => ({ ...prev, email: savedEmail }))
       setRememberMe(true)
     }
+
+    // Charger les emails sauvegardés
+    const savedEmailsStr = localStorage.getItem('savedEmails')
+    if (savedEmailsStr) {
+      try {
+        const emails = JSON.parse(savedEmailsStr)
+        setSavedEmails(emails)
+      } catch (e) {
+        console.error('Erreur chargement emails:', e)
+      }
+    }
   }, [])
+
+  // Fermer le dropdown quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (showEmailDropdown && !target.closest('.email-dropdown-container')) {
+        setShowEmailDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showEmailDropdown])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +64,27 @@ export default function UniversalLoginPage() {
 
       if (response.ok) {
         const data = await response.json()
+
+        // Stocker le token et les infos utilisateur dans localStorage
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        localStorage.setItem('userRole', data.user.role)
+
+        // Cookie httpOnly déjà défini par l'API
+        const maxAge = rememberMe ? 2592000 : 604800 // 30 jours si "Se souvenir", sinon 7 jours
+        document.cookie = `token=${data.token}; path=/; max-age=${maxAge}; SameSite=Strict`
+
+        // Sauvegarder l'email dans la liste des emails utilisés
+        const currentSavedEmails = [...savedEmails]
+        if (!currentSavedEmails.includes(formData.email)) {
+          currentSavedEmails.unshift(formData.email)
+          // Garder max 5 emails
+          if (currentSavedEmails.length > 5) {
+            currentSavedEmails.pop()
+          }
+          localStorage.setItem('savedEmails', JSON.stringify(currentSavedEmails))
+          setSavedEmails(currentSavedEmails)
+        }
 
         // Sauvegarder ou supprimer l'email selon la checkbox
         if (rememberMe) {
@@ -77,20 +124,66 @@ export default function UniversalLoginPage() {
         {/* Formulaire de connexion */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+            <div className="email-dropdown-container">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Adresse email
               </label>
-              <input
-                type="email"
-                id="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
-                placeholder="votre@email.com"
-                disabled={loading}
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onFocus={() => setShowEmailDropdown(savedEmails.length > 0)}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  placeholder="votre@email.com"
+                  disabled={loading}
+                />
+                {savedEmails.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailDropdown(!showEmailDropdown)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-purple-600 transition"
+                  >
+                    <svg
+                      className={`w-5 h-5 transition-transform ${showEmailDropdown ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
+              {/* Dropdown des emails sauvegardés */}
+              {showEmailDropdown && savedEmails.length > 0 && (
+                <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <p className="text-xs text-gray-600 font-medium">Comptes récents</p>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {savedEmails.map((email, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, email }))
+                          setShowEmailDropdown(false)
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-purple-50 transition-colors flex items-center gap-2 group"
+                      >
+                        <svg className="w-4 h-4 text-gray-500 group-hover:text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span className="text-sm text-gray-700 group-hover:text-purple-600">{email}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

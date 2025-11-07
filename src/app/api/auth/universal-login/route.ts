@@ -105,6 +105,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Connexion réussie',
       redirect,
+      token,
       user: {
         id: user.id,
         name: user.name,

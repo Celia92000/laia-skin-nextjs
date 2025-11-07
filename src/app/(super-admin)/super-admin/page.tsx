@@ -244,6 +244,31 @@ export default function SuperAdminPage() {
           </div>
         )}
 
+        {/* Raccourcis CRM & Conversion */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Link href="/super-admin/crm" className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm mb-1 text-white/80">CRM Prospection</p>
+                <p className="text-3xl font-bold text-white">Pipeline Commercial</p>
+                <p className="text-xs mt-2 text-white/70">Gérer les leads et les prospects</p>
+              </div>
+              <div className="text-5xl opacity-30">🎯</div>
+            </div>
+          </Link>
+
+          <Link href="/super-admin/conversion-funnel" className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm mb-1 text-white/80">Funnel de Conversion</p>
+                <p className="text-3xl font-bold text-white">Parcours SaaS</p>
+                <p className="text-xs mt-2 text-white/70">Visiteur → Client payant</p>
+              </div>
+              <div className="text-5xl opacity-30">📊</div>
+            </div>
+          </Link>
+        </div>
+
         {/* Statistiques globales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Link href="/super-admin/organizations" className="bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all cursor-pointer hover:scale-105 border-2 border-purple-200 hover:border-purple-400">

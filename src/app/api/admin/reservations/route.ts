@@ -303,6 +303,7 @@ export async function GET(request: NextRequest) {
         paymentMethod: true,
         giftCardId: true,
         giftCardUsedAmount: true,
+        staffId: true,
         createdAt: true,
         updatedAt: true,
         user: {
@@ -311,6 +312,12 @@ export async function GET(request: NextRequest) {
             name: true,
             email: true,
             phone: true
+          }
+        },
+        staff: {
+          select: {
+            id: true,
+            name: true
           }
         },
         service: {
@@ -395,6 +402,8 @@ export async function GET(request: NextRequest) {
         status: r.status,
         notes: r.notes,
         source: r.source || 'site',
+        staffId: r.staffId,
+        staffName: r.staff?.name || null,
         createdAt: r.createdAt.toISOString(),
         paymentStatus: r.paymentStatus,
         paymentDate: r.paymentDate?.toISOString(),

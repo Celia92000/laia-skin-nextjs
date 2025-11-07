@@ -379,7 +379,7 @@ export default function AdminComptabiliteTab({ reservations, fetchReservations, 
       montantTTC: stats.paidAmount.toFixed(2),
       nombreOperations: reservations.filter(r => r.paymentStatus === 'paid').length
     };
-    
+
     const content = `DÉCLARATION TVA - LAIA SKIN INSTITUT
 ========================================
 Période: ${period === 'month' ? 'Mensuelle' : period === 'quarter' ? 'Trimestrielle' : 'Annuelle'}
@@ -399,8 +399,532 @@ Montant: ${vatReport.tvaCollectee}€
 Régime: TVA sur les encaissements
 SIRET: 123 456 789 00000
 N° TVA Intracommunautaire: FR12 345678900`;
-    
+
     downloadFile(content, `declaration_tva_${formatDateLocal(new Date())}.txt`, 'text/plain');
+  };
+
+  // Export FEC (Fichier des Écritures Comptables) - Format normalisé
+  const exportFEC = () => {
+    const now = new Date();
+    const year = period === 'year' ? now.getFullYear() : now.getFullYear();
+
+    // En-têtes FEC normalisés (18 colonnes obligatoires)
+    const headers = [
+      'JournalCode',
+      'JournalLib',
+      'EcritureNum',
+      'EcritureDate',
+      'CompteNum',
+      'CompteLib',
+      'CompAuxNum',
+      'CompAuxLib',
+      'PieceRef',
+      'PieceDate',
+      'EcritureLib',
+      'Debit',
+      'Credit',
+      'EcritureLet',
+      'DateLet',
+      'ValidDate',
+      'Montantdevise',
+      'Idevise'
+    ];
+
+    const paidReservations = reservations.filter(r => r.paymentStatus === 'paid');
+    const rows: any[] = [];
+
+    paidReservations.forEach((r, index) => {
+      const ecritureNum = `VTE${year}${String(index + 1).padStart(6, '0')}`;
+      const ecritureDate = new Date(r.date).toISOString().split('T')[0].replace(/-/g, '');
+      const pieceRef = r.invoiceNumber || generateInvoiceNumber(new Date(r.date), r.id);
+      const pieceDate = ecritureDate;
+      const validDate = r.paymentDate ? new Date(r.paymentDate).toISOString().split('T')[0].replace(/-/g, '') : ecritureDate;
+
+      const montantTTC = r.paymentAmount || r.totalPrice || 0;
+      const montantHT = montantTTC / 1.20;
+      const montantTVA = montantTTC - montantHT;
+
+      // Ligne 1 : Débit compte client (411)
+      rows.push({
+        'JournalCode': 'VTE',
+        'JournalLib': 'Ventes',
+        'EcritureNum': ecritureNum,
+        'EcritureDate': ecritureDate,
+        'CompteNum': '411000',
+        'CompteLib': 'Clients',
+        'CompAuxNum': r.userId || '',
+        'CompAuxLib': r.userName || 'Client',
+        'PieceRef': pieceRef,
+        'PieceDate': pieceDate,
+        'EcritureLib': Array.isArray(r.services) ? r.services.join(', ') : r.services || 'Prestation',
+        'Debit': montantTTC.toFixed(2),
+        'Credit': '0.00',
+        'EcritureLet': '',
+        'DateLet': '',
+        'ValidDate': validDate,
+        'Montantdevise': montantTTC.toFixed(2),
+        'Idevise': 'EUR'
+      });
+
+      // Ligne 2 : Crédit compte vente (706)
+      rows.push({
+        'JournalCode': 'VTE',
+        'JournalLib': 'Ventes',
+        'EcritureNum': ecritureNum,
+        'EcritureDate': ecritureDate,
+        'CompteNum': '706000',
+        'CompteLib': 'Prestations de services',
+        'CompAuxNum': '',
+        'CompAuxLib': '',
+        'PieceRef': pieceRef,
+        'PieceDate': pieceDate,
+        'EcritureLib': Array.isArray(r.services) ? r.services.join(', ') : r.services || 'Prestation',
+        'Debit': '0.00',
+        'Credit': montantHT.toFixed(2),
+        'EcritureLet': '',
+        'DateLet': '',
+        'ValidDate': validDate,
+        'Montantdevise': montantHT.toFixed(2),
+        'Idevise': 'EUR'
+      });
+
+      // Ligne 3 : Crédit compte TVA collectée (44571)
+      rows.push({
+        'JournalCode': 'VTE',
+        'JournalLib': 'Ventes',
+        'EcritureNum': ecritureNum,
+        'EcritureDate': ecritureDate,
+        'CompteNum': '445710',
+        'CompteLib': 'TVA collectée',
+        'CompAuxNum': '',
+        'CompAuxLib': '',
+        'PieceRef': pieceRef,
+        'PieceDate': pieceDate,
+        'EcritureLib': 'TVA collectée 20%',
+        'Debit': '0.00',
+        'Credit': montantTVA.toFixed(2),
+        'EcritureLet': '',
+        'DateLet': '',
+        'ValidDate': validDate,
+        'Montantdevise': montantTVA.toFixed(2),
+        'Idevise': 'EUR'
+      });
+
+      // Ligne 4 : Encaissement - Débit compte banque (512)
+      rows.push({
+        'JournalCode': 'BQ',
+        'JournalLib': 'Banque',
+        'EcritureNum': `BQ${year}${String(index + 1).padStart(6, '0')}`,
+        'EcritureDate': validDate,
+        'CompteNum': '512000',
+        'CompteLib': 'Banque',
+        'CompAuxNum': '',
+        'CompAuxLib': '',
+        'PieceRef': pieceRef,
+        'PieceDate': validDate,
+        'EcritureLib': `Règlement ${pieceRef} - ${r.paymentMethod || 'CB'}`,
+        'Debit': montantTTC.toFixed(2),
+        'Credit': '0.00',
+        'EcritureLet': '',
+        'DateLet': '',
+        'ValidDate': validDate,
+        'Montantdevise': montantTTC.toFixed(2),
+        'Idevise': 'EUR'
+      });
+
+      // Ligne 5 : Encaissement - Crédit compte client (411)
+      rows.push({
+        'JournalCode': 'BQ',
+        'JournalLib': 'Banque',
+        'EcritureNum': `BQ${year}${String(index + 1).padStart(6, '0')}`,
+        'EcritureDate': validDate,
+        'CompteNum': '411000',
+        'CompteLib': 'Clients',
+        'CompAuxNum': r.userId || '',
+        'CompAuxLib': r.userName || 'Client',
+        'PieceRef': pieceRef,
+        'PieceDate': validDate,
+        'EcritureLib': `Règlement ${pieceRef}`,
+        'Debit': '0.00',
+        'Credit': montantTTC.toFixed(2),
+        'EcritureLet': '',
+        'DateLet': '',
+        'ValidDate': validDate,
+        'Montantdevise': montantTTC.toFixed(2),
+        'Idevise': 'EUR'
+      });
+    });
+
+    // Générer le CSV avec séparateur pipe (|) ou tabulation
+    const csv = [
+      headers.join('\t'),
+      ...rows.map(row => headers.map(h => row[h] || '').join('\t'))
+    ].join('\n');
+
+    downloadFile(csv, `FEC_${year}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.txt`, 'text/plain;charset=utf-8;');
+  };
+
+  // Export Grand Livre
+  const exportGrandLivre = () => {
+    const paidReservations = reservations.filter(r => r.paymentStatus === 'paid');
+
+    // Regrouper par compte comptable
+    const comptes: Record<string, any[]> = {
+      '411000': [], // Clients
+      '512000': [], // Banque
+      '706000': [], // Prestations de services
+      '445710': []  // TVA collectée
+    };
+
+    paidReservations.forEach(r => {
+      const montantTTC = r.paymentAmount || r.totalPrice || 0;
+      const montantHT = montantTTC / 1.20;
+      const montantTVA = montantTTC - montantHT;
+      const date = new Date(r.date).toLocaleDateString('fr-FR');
+      const pieceRef = r.invoiceNumber || generateInvoiceNumber(new Date(r.date), r.id);
+
+      // Compte Clients (411)
+      comptes['411000'].push({
+        date,
+        piece: pieceRef,
+        libelle: `Vente - ${r.userName}`,
+        debit: montantTTC.toFixed(2),
+        credit: '0.00',
+        solde: montantTTC
+      });
+
+      comptes['411000'].push({
+        date: r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('fr-FR') : date,
+        piece: pieceRef,
+        libelle: `Règlement ${r.paymentMethod || 'CB'}`,
+        debit: '0.00',
+        credit: montantTTC.toFixed(2),
+        solde: -montantTTC
+      });
+
+      // Compte Banque (512)
+      comptes['512000'].push({
+        date: r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('fr-FR') : date,
+        piece: pieceRef,
+        libelle: `Encaissement ${r.userName}`,
+        debit: montantTTC.toFixed(2),
+        credit: '0.00',
+        solde: montantTTC
+      });
+
+      // Compte Ventes (706)
+      comptes['706000'].push({
+        date,
+        piece: pieceRef,
+        libelle: Array.isArray(r.services) ? r.services.join(', ') : r.services,
+        debit: '0.00',
+        credit: montantHT.toFixed(2),
+        solde: -montantHT
+      });
+
+      // Compte TVA (445710)
+      comptes['445710'].push({
+        date,
+        piece: pieceRef,
+        libelle: 'TVA collectée 20%',
+        debit: '0.00',
+        credit: montantTVA.toFixed(2),
+        solde: -montantTVA
+      });
+    });
+
+    const comptesLibelles: Record<string, string> = {
+      '411000': 'Clients',
+      '512000': 'Banque',
+      '706000': 'Prestations de services',
+      '445710': 'TVA collectée'
+    };
+
+    let content = `═══════════════════════════════════════════════════════════════
+                    GRAND LIVRE COMPTABLE
+                    LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+
+Période : ${period === 'day' ? 'Journée' : period === 'week' ? 'Semaine' : period === 'month' ? 'Mois' : period === 'quarter' ? 'Trimestre' : 'Année'}
+Date d'édition : ${new Date().toLocaleDateString('fr-FR')}
+
+`;
+
+    Object.entries(comptes).forEach(([numero, lignes]) => {
+      if (lignes.length === 0) return;
+
+      let soldeTotal = 0;
+      lignes.forEach(l => soldeTotal += l.solde);
+
+      content += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPTE ${numero} - ${comptesLibelles[numero]}
+Solde : ${soldeTotal.toFixed(2)}€ ${soldeTotal >= 0 ? 'DÉBITEUR' : 'CRÉDITEUR'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Date       | N° Pièce        | Libellé                          | Débit      | Crédit     | Solde
+-----------|-----------------|----------------------------------|------------|------------|-------------
+`;
+
+      let soldeCumul = 0;
+      lignes.forEach(l => {
+        soldeCumul += l.solde;
+        content += `${l.date.padEnd(10)} | ${l.piece.padEnd(15)} | ${l.libelle.substring(0, 32).padEnd(32)} | ${l.debit.padStart(10)} | ${l.credit.padStart(10)} | ${soldeCumul.toFixed(2).padStart(11)}\n`;
+      });
+
+      content += `                                                           TOTAL | ${lignes.reduce((sum, l) => sum + parseFloat(l.debit), 0).toFixed(2).padStart(10)} | ${lignes.reduce((sum, l) => sum + parseFloat(l.credit), 0).toFixed(2).padStart(10)} | ${soldeTotal.toFixed(2).padStart(11)}\n`;
+    });
+
+    content += `\n
+═══════════════════════════════════════════════════════════════
+Document généré le ${new Date().toLocaleString('fr-FR')}
+LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+`;
+
+    downloadFile(content, `grand_livre_${formatDateLocal(new Date())}.txt`, 'text/plain;charset=utf-8;');
+  };
+
+  // Export Journal des Ventes
+  const exportJournalVentes = () => {
+    const paidReservations = reservations
+      .filter(r => r.paymentStatus === 'paid')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let content = `═══════════════════════════════════════════════════════════════
+                   JOURNAL DES VENTES
+                   LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+
+Période : ${period === 'day' ? 'Journée' : period === 'week' ? 'Semaine' : period === 'month' ? 'Mois' : period === 'quarter' ? 'Trimestre' : 'Année'}
+Date d'édition : ${new Date().toLocaleDateString('fr-FR')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Date       | N° Facture      | Client                    | HT        | TVA       | TTC       | Mode
+-----------|-----------------|---------------------------|-----------|-----------|-----------|--------
+`;
+
+    let totalHT = 0;
+    let totalTVA = 0;
+    let totalTTC = 0;
+
+    paidReservations.forEach(r => {
+      const montantTTC = r.paymentAmount || r.totalPrice || 0;
+      const montantHT = montantTTC / 1.20;
+      const montantTVA = montantTTC - montantHT;
+      const date = new Date(r.date).toLocaleDateString('fr-FR');
+      const pieceRef = r.invoiceNumber || generateInvoiceNumber(new Date(r.date), r.id);
+
+      totalHT += montantHT;
+      totalTVA += montantTVA;
+      totalTTC += montantTTC;
+
+      content += `${date.padEnd(10)} | ${pieceRef.padEnd(15)} | ${(r.userName || 'Client').substring(0, 25).padEnd(25)} | ${montantHT.toFixed(2).padStart(9)} | ${montantTVA.toFixed(2).padStart(9)} | ${montantTTC.toFixed(2).padStart(9)} | ${(r.paymentMethod || 'CB').padEnd(6)}\n`;
+    });
+
+    content += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TOTAUX                                                  | ${totalHT.toFixed(2).padStart(9)} | ${totalTVA.toFixed(2).padStart(9)} | ${totalTTC.toFixed(2).padStart(9)} |
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nombre d'opérations : ${paidReservations.length}
+Taux de TVA : 20%
+
+═══════════════════════════════════════════════════════════════
+Document généré le ${new Date().toLocaleString('fr-FR')}
+LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+`;
+
+    downloadFile(content, `journal_ventes_${formatDateLocal(new Date())}.txt`, 'text/plain;charset=utf-8;');
+  };
+
+  // 📊 Export Balance Comptable (synthèse des comptes)
+  const exportBalanceComptable = () => {
+    const now = new Date();
+    const periodName = {
+      day: 'Journée',
+      week: 'Semaine',
+      month: 'Mois',
+      quarter: 'Trimestre',
+      year: 'Année'
+    }[period];
+
+    const paidReservations = reservations.filter(r => r.paymentStatus === 'paid');
+
+    // Calculer les totaux par compte
+    const comptes: Record<string, { numero: string; libelle: string; debit: number; credit: number }> = {
+      '411000': { numero: '411000', libelle: 'Clients', debit: 0, credit: 0 },
+      '512000': { numero: '512000', libelle: 'Banque', debit: 0, credit: 0 },
+      '706000': { numero: '706000', libelle: 'Prestations de services', debit: 0, credit: 0 },
+      '445710': { numero: '445710', libelle: 'TVA collectée', debit: 0, credit: 0 }
+    };
+
+    paidReservations.forEach(r => {
+      const montantTTC = r.paymentAmount || r.totalPrice || 0;
+      const montantHT = montantTTC / 1.20;
+      const montantTVA = montantTTC - montantHT;
+
+      // Compte Clients (411) - Débit puis Crédit (encaissement)
+      comptes['411000'].debit += montantTTC;
+      comptes['411000'].credit += montantTTC;
+
+      // Compte Banque (512) - Débit (encaissement)
+      comptes['512000'].debit += montantTTC;
+
+      // Compte Ventes (706) - Crédit
+      comptes['706000'].credit += montantHT;
+
+      // Compte TVA collectée (44571) - Crédit
+      comptes['445710'].credit += montantTVA;
+    });
+
+    // Calculer les soldes
+    const comptesArray = Object.values(comptes).map(c => ({
+      ...c,
+      solde: c.debit - c.credit,
+      soldeDebiteur: c.debit - c.credit > 0 ? c.debit - c.credit : 0,
+      soldeCrediteur: c.credit - c.debit > 0 ? c.credit - c.debit : 0
+    }));
+
+    // Calculer totaux généraux
+    const totalDebit = comptesArray.reduce((sum, c) => sum + c.debit, 0);
+    const totalCredit = comptesArray.reduce((sum, c) => sum + c.credit, 0);
+    const totalSoldeDebiteur = comptesArray.reduce((sum, c) => sum + c.soldeDebiteur, 0);
+    const totalSoldeCrediteur = comptesArray.reduce((sum, c) => sum + c.soldeCrediteur, 0);
+
+    let content = `═══════════════════════════════════════════════════════════════
+                  BALANCE COMPTABLE
+                  LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+
+Période: ${periodName}
+Date d'édition: ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR')}
+
+═══════════════════════════════════════════════════════════════
+Compte  | Libellé                      | Débit        | Crédit       | Solde Débiteur | Solde Créditeur
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+`;
+
+    comptesArray.forEach(c => {
+      content += `${c.numero.padEnd(8)}| ${c.libelle.padEnd(28)} | ${c.debit.toFixed(2).padStart(12)} | ${c.credit.toFixed(2).padStart(12)} | ${c.soldeDebiteur.toFixed(2).padStart(14)} | ${c.soldeCrediteur.toFixed(2).padStart(15)}\n`;
+    });
+
+    content += `─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+TOTAUX  |                              | ${totalDebit.toFixed(2).padStart(12)} | ${totalCredit.toFixed(2).padStart(12)} | ${totalSoldeDebiteur.toFixed(2).padStart(14)} | ${totalSoldeCrediteur.toFixed(2).padStart(15)}
+═══════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATION COMPTABLE
+───────────────────────────────────────────────────────────────
+Total Débit  = Total Crédit     : ${totalDebit.toFixed(2)} € = ${totalCredit.toFixed(2)} €
+Balance équilibrée              : ${Math.abs(totalDebit - totalCredit) < 0.01 ? '✅ OUI' : '❌ NON'}
+Différence                      : ${Math.abs(totalDebit - totalCredit).toFixed(2)} €
+
+═══════════════════════════════════════════════════════════════
+
+📋 INFORMATION
+───────────────────────────────────────────────────────────────
+La balance comptable est un document de synthèse obligatoire qui
+récapitule tous les comptes avec leurs mouvements (débits/crédits)
+et leurs soldes. Elle permet de vérifier l'équilibre comptable.
+
+La balance doit toujours être équilibrée (total débits = total crédits).
+
+═══════════════════════════════════════════════════════════════
+Document généré le ${now.toLocaleString('fr-FR')}
+LAIA SKIN INSTITUT
+═══════════════════════════════════════════════════════════════
+`;
+
+    downloadFile(content, `balance_comptable_${formatDateLocal(now)}.txt`, 'text/plain;charset=utf-8;');
+  };
+
+  // 💾 Export format Sage/EBP/Ciel (format compatible logiciels comptables)
+  const exportFormatSage = () => {
+    const now = new Date();
+    const paidReservations = reservations.filter(r => r.paymentStatus === 'paid');
+
+    // Format CSV compatible Sage/EBP : Journal, Date, Compte, Libellé, Débit, Crédit, Pièce
+    const headers = ['Journal', 'Date', 'N° Compte', 'Libellé', 'Débit', 'Crédit', 'N° Pièce', 'Référence'];
+    const rows: any[] = [];
+
+    paidReservations.forEach((r, index) => {
+      const dateComptable = new Date(r.date);
+      const dateStr = `${String(dateComptable.getDate()).padStart(2, '0')}/${String(dateComptable.getMonth() + 1).padStart(2, '0')}/${dateComptable.getFullYear()}`;
+      const pieceRef = `VTE${now.getFullYear()}${String(index + 1).padStart(6, '0')}`;
+
+      const montantTTC = r.paymentAmount || r.totalPrice || 0;
+      const montantHT = montantTTC / 1.20;
+      const montantTVA = montantTTC - montantHT;
+
+      // Ligne 1: Débit Client (411)
+      rows.push({
+        'Journal': 'VTE',
+        'Date': dateStr,
+        'N° Compte': '411000',
+        'Libellé': `Vente - ${r.userName || 'Client'}`,
+        'Débit': montantTTC.toFixed(2),
+        'Crédit': '0.00',
+        'N° Pièce': pieceRef,
+        'Référence': r.invoiceNumber || pieceRef
+      });
+
+      // Ligne 2: Crédit Prestation (706)
+      rows.push({
+        'Journal': 'VTE',
+        'Date': dateStr,
+        'N° Compte': '706000',
+        'Libellé': `Prestation - ${Array.isArray(r.services) ? r.services.join(', ') : r.services || 'Service'}`,
+        'Débit': '0.00',
+        'Crédit': montantHT.toFixed(2),
+        'N° Pièce': pieceRef,
+        'Référence': r.invoiceNumber || pieceRef
+      });
+
+      // Ligne 3: Crédit TVA (44571)
+      rows.push({
+        'Journal': 'VTE',
+        'Date': dateStr,
+        'N° Compte': '445710',
+        'Libellé': 'TVA collectée 20%',
+        'Débit': '0.00',
+        'Crédit': montantTVA.toFixed(2),
+        'N° Pièce': pieceRef,
+        'Référence': r.invoiceNumber || pieceRef
+      });
+
+      // Ligne 4: Débit Banque (512) pour encaissement
+      if (r.paymentStatus === 'paid') {
+        rows.push({
+          'Journal': 'BQ',
+          'Date': dateStr,
+          'N° Compte': '512000',
+          'Libellé': `Encaissement ${r.paymentMethod || 'CB'}`,
+          'Débit': montantTTC.toFixed(2),
+          'Crédit': '0.00',
+          'N° Pièce': pieceRef,
+          'Référence': r.invoiceNumber || pieceRef
+        });
+
+        // Ligne 5: Crédit Client (411) pour solde
+        rows.push({
+          'Journal': 'BQ',
+          'Date': dateStr,
+          'N° Compte': '411000',
+          'Libellé': `Encaissement - ${r.userName || 'Client'}`,
+          'Débit': '0.00',
+          'Crédit': montantTTC.toFixed(2),
+          'N° Pièce': pieceRef,
+          'Référence': r.invoiceNumber || pieceRef
+        });
+      }
+    });
+
+    // Générer le CSV avec point-virgule comme séparateur (standard français)
+    const csv = [
+      headers.join(';'),
+      ...rows.map(row => headers.map(h => row[h] || '').join(';'))
+    ].join('\n');
+
+    downloadFile(csv, `export_sage_${formatDateLocal(now)}.csv`, 'text/csv;charset=utf-8;');
   };
 
   const generateBilanSimple = () => {
@@ -1452,38 +1976,126 @@ Pour toute question: contact@laia-skin-institut.com`;
         
         {expandedSections.export && (
           <div className="bg-white rounded-b-xl shadow-sm p-6 border-t">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <button
+                onClick={exportFEC}
+                className="p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+                title="Fichier des Écritures Comptables (obligatoire)"
+              >
+                <FileText className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">FEC</p>
+                <p className="text-xs text-gray-500 mt-1">Obligatoire</p>
+              </button>
+
+              <button
+                onClick={exportGrandLivre}
+                className="p-4 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+              >
+                <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">Grand Livre</p>
+                <p className="text-xs text-gray-500 mt-1">Comptabilité</p>
+              </button>
+
+              <button
+                onClick={exportBalanceComptable}
+                className="p-4 border-2 border-dashed border-cyan-300 rounded-lg hover:border-cyan-500 hover:bg-cyan-50 transition-all"
+                title="Balance de tous les comptes avec soldes"
+              >
+                <BarChart3 className="w-8 h-8 text-cyan-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">Balance</p>
+                <p className="text-xs text-gray-500 mt-1">Synthèse</p>
+              </button>
+
+              <button
+                onClick={exportJournalVentes}
+                className="p-4 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
+              >
+                <FileDown className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">Journal Ventes</p>
+                <p className="text-xs text-gray-500 mt-1">Recettes</p>
+              </button>
+
               <button
                 onClick={exportLivreRecettes}
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] hover:bg-gray-50"
               >
                 <BookOpen className="w-8 h-8 text-[#d4b5a0] mx-auto mb-2" />
-                <p className="font-medium text-sm">Livre de Recettes</p>
+                <p className="font-medium text-sm">Livre Recettes</p>
+                <p className="text-xs text-gray-500 mt-1">Simplifié</p>
               </button>
-              
+
               <button
                 onClick={exportDeclarationTVA}
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] hover:bg-gray-50"
+                className="p-4 border-2 border-dashed border-red-300 rounded-lg hover:border-red-500 hover:bg-red-50 transition-all"
               >
-                <Receipt className="w-8 h-8 text-[#d4b5a0] mx-auto mb-2" />
+                <Receipt className="w-8 h-8 text-red-600 mx-auto mb-2" />
                 <p className="font-medium text-sm">Déclaration TVA</p>
+                <p className="text-xs text-gray-500 mt-1">Fiscalité</p>
               </button>
-              
+
               <button
                 onClick={exportToExcel}
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] hover:bg-gray-50"
               >
                 <FileDown className="w-8 h-8 text-[#d4b5a0] mx-auto mb-2" />
-                <p className="font-medium text-sm">Export Détaillé</p>
+                <p className="font-medium text-sm">Export Excel</p>
+                <p className="text-xs text-gray-500 mt-1">Détaillé</p>
               </button>
-              
+
               <button
                 onClick={generateBilanSimple}
                 className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] hover:bg-gray-50"
               >
                 <BarChart3 className="w-8 h-8 text-[#d4b5a0] mx-auto mb-2" />
                 <p className="font-medium text-sm">Bilan Simplifié</p>
+                <p className="text-xs text-gray-500 mt-1">KPIs</p>
               </button>
+
+              <button
+                onClick={exportFormatSage}
+                className="p-4 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
+                title="Format CSV pour Sage, EBP, Ciel"
+              >
+                <Download className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">Format Sage</p>
+                <p className="text-xs text-gray-500 mt-1">CSV</p>
+              </button>
+
+              <button
+                onClick={() => {
+                  alert('📚 Exports comptables disponibles:\n\n' +
+                    '✅ FEC : Format normalisé pour l\'administration fiscale\n' +
+                    '✅ Grand Livre : État détaillé de tous les comptes\n' +
+                    '✅ Balance Comptable : Synthèse de tous les comptes avec soldes\n' +
+                    '✅ Journal des Ventes : Récapitulatif chronologique\n' +
+                    '✅ Livre de Recettes : Obligatoire pour micro-entrepreneurs\n' +
+                    '✅ Déclaration TVA : Prête à l\'emploi\n' +
+                    '✅ Format Sage/EBP : Import direct dans logiciels comptables\n\n' +
+                    '💡 Ces documents sont conformes à la législation française');
+                }}
+                className="p-4 border-2 border-dashed border-indigo-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all"
+              >
+                <AlertCircle className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
+                <p className="font-medium text-sm">Aide</p>
+                <p className="text-xs text-gray-500 mt-1">Documentation</p>
+              </button>
+            </div>
+
+            {/* Avertissement légal */}
+            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-900">
+                  <p className="font-semibold mb-2">📋 Documents comptables obligatoires</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li><strong>FEC (Fichier des Écritures Comptables)</strong> : Obligatoire en cas de contrôle fiscal (format normalisé)</li>
+                    <li><strong>Grand Livre</strong> : Document comptable légal regroupant toutes les écritures</li>
+                    <li><strong>Journal des Ventes</strong> : Enregistrement chronologique de toutes les ventes</li>
+                    <li><strong>Déclaration TVA</strong> : Mensuelle ou trimestrielle selon votre régime</li>
+                    <li>Conservation obligatoire : <strong>10 ans minimum</strong></li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}

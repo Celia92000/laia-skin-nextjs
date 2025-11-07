@@ -32,6 +32,8 @@ export default function AdminPlanning() {
   const [showNewReservation, setShowNewReservation] = useState(false);
   const [reservations, setReservations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
   // Charger les réservations depuis l'API
   useEffect(() => {
@@ -56,7 +58,9 @@ export default function AdminPlanning() {
             prix: r.service?.price || 0,
             status: r.status,
             telephone: r.user?.phone || '',
-            email: r.user?.email || ''
+            email: r.user?.email || '',
+            staffId: r.staffId || null,
+            staffName: r.staffName || null
           }));
           setReservations(formattedReservations);
         }
@@ -69,6 +73,35 @@ export default function AdminPlanning() {
 
     fetchReservations();
   }, []);
+
+  // Charger les employés
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch('/api/admin/users', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Filtrer pour ne garder que les employés
+          const employeesList = data.filter((user: any) => user.role === 'EMPLOYEE');
+          setEmployees(employeesList);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des employés:', error);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  // Filtrer les réservations selon l'employé sélectionné
+  const filteredReservations = selectedStaffId
+    ? reservations.filter(r => r.staffId === selectedStaffId)
+    : reservations;
 
   // Générer les créneaux horaires
   const generateTimeSlots = () => {
@@ -112,7 +145,7 @@ export default function AdminPlanning() {
 
   // Vérifier si un créneau est occupé
   const isSlotOccupied = (date: string, time: string) => {
-    return reservations.some(r => {
+    return filteredReservations.some(r => {
       if (r.date !== date) return false;
       const [resHour, resMin] = r.heure.split(':').map(Number);
       const [slotHour, slotMin] = time.split(':').map(Number);
@@ -125,7 +158,7 @@ export default function AdminPlanning() {
 
   // Obtenir la réservation pour un créneau
   const getReservationForSlot = (date: string, time: string) => {
-    return reservations.find(r => r.date === date && r.heure === time);
+    return filteredReservations.find(r => r.date === date && r.heure === time);
   };
 
   return (
@@ -197,9 +230,21 @@ export default function AdminPlanning() {
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="text-[#2c3e50]/70 hover:text-[#2c3e50]">
-                <Filter className="w-5 h-5" />
-              </button>
+              {/* Filtre par employé */}
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[#2c3e50]/70" />
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-[#2c3e50] focus:outline-none focus:border-[#d4b5a0]"
+                >
+                  <option value="">Tous les employés</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <button className="text-[#2c3e50]/70 hover:text-[#2c3e50]">
                 <Download className="w-5 h-5" />
               </button>

@@ -30,6 +30,7 @@ const WhatsAppHub = dynamic(() => import("@/components/WhatsAppHub"), { ssr: fal
 const AdminLoyaltyTab = dynamic(() => import("@/components/AdminLoyaltyTab"), { ssr: false });
 const AdminStatsEnhanced = dynamic(() => import("@/components/AdminStatsEnhanced"), { ssr: false });
 const EmployeeStatsView = dynamic(() => import("@/components/EmployeeStatsView"), { ssr: false });
+const RapportsContent = dynamic(() => import("@/components/RapportsContent"), { ssr: false });
 const AdminReviewsManager = dynamic(() => import("@/components/AdminReviewsManager"), { ssr: false });
 const ClientSegmentation = dynamic(() => import("@/components/ClientSegmentation"), { ssr: false });
 const EmailCompleteInterface = dynamic(() => import("@/components/EmailCompleteInterface"), { ssr: false });
@@ -76,6 +77,14 @@ interface Reservation {
   modifiedAt?: string;
   cancelledAt?: string;
   cancelReason?: string;
+  staffId?: string | null;
+  staffName?: string | null;
+}
+
+interface Employee {
+  id: string;
+  name: string;
+  email: string;
 }
 
 
@@ -87,6 +96,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("stats");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loyaltyProfiles, setLoyaltyProfiles] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()));
   const [loading, setLoading] = useState(true);
@@ -214,6 +224,7 @@ export default function AdminDashboard() {
         await fetchOrganizationFeatures();
         await fetchReservations();
         await fetchClients();
+        await fetchEmployees();
         await fetchServices();
         await fetchLoyaltyProfiles();
         await fetchReviewStatistics();
@@ -439,6 +450,57 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des clients:', error);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Filtrer pour ne garder que les employés
+        const employeesList = data.filter((user: any) => user.role === 'EMPLOYEE');
+        setEmployees(employeesList);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des employés:', error);
+    }
+  };
+
+  const handleAssignStaff = async (reservationId: string, staffId: string | null) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/reservations/assign-staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reservationId, staffId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Mettre à jour la réservation dans le state local
+        setReservations(prev => prev.map(r =>
+          r.id === reservationId
+            ? { ...r, staffId, staffName: data.staffName }
+            : r
+        ));
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Erreur lors de l\'assignation');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'assignation:', error);
+      alert('Erreur lors de l\'assignation');
     }
   };
 
@@ -1453,7 +1515,7 @@ export default function AdminDashboard() {
               <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
                 {userRole === 'EMPLOYEE' ? 'Tableau de bord' : 'Tableau de bord et statistiques'}
               </h2>
-              
+
               {userRole === 'EMPLOYEE' ? (
                 // Vue limitée pour les employés
                 <div className="space-y-6">
@@ -1481,7 +1543,7 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* CA du mois - vue simplifiée */}
                   <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <h3 className="text-lg font-semibold mb-4 text-[#2c3e50]">Évolution du CA</h3>
@@ -1492,7 +1554,7 @@ export default function AdminDashboard() {
                           .filter(r => {
                             const date = new Date(r.date);
                             const now = new Date();
-                            return date.getMonth() === now.getMonth() && 
+                            return date.getMonth() === now.getMonth() &&
                                    date.getFullYear() === now.getFullYear() &&
                                    r.status === 'completed';
                           })
@@ -1500,7 +1562,7 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <p className="text-sm text-blue-800">
                       <strong>Note :</strong> En tant qu'employé, vous avez accès aux statistiques de base.
@@ -1517,7 +1579,7 @@ export default function AdminDashboard() {
                       <TrendingUp className="w-5 h-5 text-[#d4b5a0]" />
                       Vue Performance & Objectifs
                     </h3>
-                    <EmployeeStatsView 
+                    <EmployeeStatsView
                       reservations={reservations}
                       viewMode="month"
                       selectedDate={selectedDate}
@@ -1543,10 +1605,10 @@ export default function AdminDashboard() {
                       Personnaliser les objectifs
                     </button>
                   </div>
-                  
+
                   {showObjectivesSettings && (
                     <div className="mb-6">
-                      <ObjectivesSettings 
+                      <ObjectivesSettings
                         onClose={() => setShowObjectivesSettings(false)}
                         onSave={() => {
                           // Rafraîchir les données si nécessaire
@@ -1555,18 +1617,28 @@ export default function AdminDashboard() {
                       />
                     </div>
                   )}
-                  
+
                   {/* Statistiques réelles depuis la base de données */}
                   <RealTimeStats />
-                  
+
                   {/* Graphiques dynamiques avec période d'analyse */}
                   <DynamicCharts />
-                  
+
                   {/* Export des données */}
                   <DataExport />
-                  
+
                   {/* Statistiques des sources */}
                   <SourceStats reservations={reservations} />
+
+                  {/* Rapports avancés - Nouvelle section */}
+                  <div className="my-8 border-t-2 border-gray-100"></div>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-[#2c3e50] flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-[#d4b5a0]" />
+                      Rapports personnalisés
+                    </h3>
+                  </div>
+                  <RapportsContent />
                 </>
               )}
             </div>
@@ -2103,7 +2175,7 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <ReservationTableAdvanced 
+                  <ReservationTableAdvanced
                     reservations={reservations.map(r => ({
                       ...r,
                       totalPrice: r.totalPrice || 0,
@@ -2111,9 +2183,11 @@ export default function AdminDashboard() {
                       paymentStatus: r.paymentStatus || 'pending'
                     }))}
                     services={cleanServices}
+                    employees={employees}
                     onEdit={openEditModal}
                     onCancel={(reservation) => cancelReservation(reservation.id)}
                     onStatusChange={(id, status) => updateReservationStatus(id, status as any)}
+                    onAssignStaff={handleAssignStaff}
                   />
                 )}
               </div>
@@ -3205,6 +3279,12 @@ export default function AdminDashboard() {
               loyaltyProfiles={loyaltyProfiles}
               reservations={reservations}
               onNewReservation={() => setShowNewReservationModal(true)}
+              onSegmentAction={(action, segmentId, segmentName) => {
+                // Stocker le segment dans localStorage pour l'onglet Email/WhatsApp
+                localStorage.setItem('selectedSegment', JSON.stringify({ id: segmentId, name: segmentName }));
+                // Changer d'onglet
+                setActiveTab(action === 'email' ? 'emailing' : 'whatsapp');
+              }}
             />
           )}
 

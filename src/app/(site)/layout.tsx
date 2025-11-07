@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
@@ -19,35 +19,42 @@ export default async function SiteLayout({
 
   let organization = null;
 
-  // 1️⃣ Domaine personnalisé
-  if (!cleanHost.includes('localhost')) {
-    organization = await prisma.organization.findUnique({
-      where: { domain: cleanHost },
-      include: { config: true }
-    });
-  }
+  try {
+    const prisma = await getPrismaClient();
 
-  // 2️⃣ Subdomain
-  if (!organization) {
-    const parts = cleanHost.split('.');
-    let subdomain = 'laia-skin-institut';
-
-    if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
-      subdomain = parts[0];
+    // 1️⃣ Domaine personnalisé
+    if (!cleanHost.includes('localhost')) {
+      organization = await prisma.organization.findUnique({
+        where: { domain: cleanHost },
+        include: { config: true }
+      });
     }
 
-    organization = await prisma.organization.findUnique({
-      where: { subdomain },
-      include: { config: true }
-    });
-  }
+    // 2️⃣ Subdomain
+    if (!organization) {
+      const parts = cleanHost.split('.');
+      let subdomain = 'laia-skin-institut';
 
-  // 3️⃣ Fallback
-  if (!organization) {
-    organization = await prisma.organization.findFirst({
-      where: { slug: 'laia-skin-institut' },
-      include: { config: true }
-    });
+      if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+        subdomain = parts[0];
+      }
+
+      organization = await prisma.organization.findUnique({
+        where: { subdomain },
+        include: { config: true }
+      });
+    }
+
+    // 3️⃣ Fallback
+    if (!organization) {
+      organization = await prisma.organization.findFirst({
+        where: { slug: 'laia-skin-institut' },
+        include: { config: true }
+      });
+    }
+  } catch (error) {
+    console.error('Error loading organization in layout:', error);
+    // Continuer avec organization = null, les couleurs par défaut seront utilisées
   }
 
   // Couleurs par défaut

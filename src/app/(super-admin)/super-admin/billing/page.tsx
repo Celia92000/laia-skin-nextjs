@@ -49,9 +49,11 @@ interface InvoiceSettings {
   footerText: string
 }
 
+import SuperAdminAccountingExports from '@/components/SuperAdminAccountingExports'
+
 export default function BillingPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'invoices' | 'settings'>('invoices')
+  const [activeTab, setActiveTab] = useState<'invoices' | 'settings' | 'accounting'>('invoices')
 
   // Invoices state
   const [loading, setLoading] = useState(true)
@@ -487,6 +489,17 @@ export default function BillingPage() {
           📋 Contrats
         </Link>
         <button
+          onClick={() => setActiveTab('accounting')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
+            activeTab === 'accounting'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
+          }`}
+          style={activeTab === 'accounting' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          📊 Comptabilité
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
             activeTab === 'settings'
@@ -698,6 +711,18 @@ export default function BillingPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Accounting Tab Content */}
+      {activeTab === 'accounting' && (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 Comptabilité LAIA Connect</h1>
+            <p className="text-gray-600">Exports comptables consolidés de toutes les organisations</p>
+          </div>
+
+          <SuperAdminAccountingExports invoices={invoices} />
         </div>
       )}
 

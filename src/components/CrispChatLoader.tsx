@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import CrispChat from './CrispChat';
 
 export default async function CrispChatLoader() {
@@ -16,6 +16,8 @@ export default async function CrispChatLoader() {
     if (!decoded || !decoded.organizationId) {
       return null;
     }
+
+    const prisma = await getPrismaClient();
 
     // Récupérer la configuration de l'organisation
     const org = await prisma.organization.findUnique({

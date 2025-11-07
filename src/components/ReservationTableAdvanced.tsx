@@ -31,14 +31,23 @@ interface Reservation {
   paymentNotes?: string;
   createdAt: Date | string;
   cancelReason?: string;
+  staffId?: string | null;
+  staffName?: string | null;
+}
+
+interface Employee {
+  id: string;
+  name: string;
 }
 
 interface ReservationTableProps {
   reservations: Reservation[];
   services: Record<string, string>;
+  employees?: Employee[];
   onEdit?: (reservation: Reservation) => void;
   onCancel?: (reservation: Reservation) => void;
   onStatusChange?: (id: string, status: string) => void;
+  onAssignStaff?: (reservationId: string, staffId: string | null) => Promise<void>;
 }
 
 const sourceIcons: Record<string, any> = {
@@ -79,11 +88,13 @@ const statusLabels: Record<string, string> = {
   no_show: 'No show'
 };
 
-export default function ReservationTableAdvanced({ 
-  reservations, 
+export default function ReservationTableAdvanced({
+  reservations,
   services,
+  employees = [],
   onEdit,
-  onStatusChange 
+  onStatusChange,
+  onAssignStaff
 }: ReservationTableProps) {
   const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -373,7 +384,7 @@ export default function ReservationTableAdvanced({
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Heure</th>
-                <th 
+                <th
                   className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => toggleSort('userName')}
                 >
@@ -384,6 +395,7 @@ export default function ReservationTableAdvanced({
                     )}
                   </div>
                 </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Employé</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Services</th>
                 <th 
                   className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
@@ -425,7 +437,7 @@ export default function ReservationTableAdvanced({
             <tbody className="divide-y divide-gray-200">
               {filteredAndSortedReservations.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                     Aucune réservation trouvée
                   </td>
                 </tr>
@@ -458,9 +470,30 @@ export default function ReservationTableAdvanced({
                         </div>
                       </td>
                       <td className="px-4 py-3">
+                        {onAssignStaff ? (
+                          <select
+                            value={reservation.staffId || ''}
+                            onChange={async (e) => {
+                              const newStaffId = e.target.value || null;
+                              await onAssignStaff(reservation.id, newStaffId);
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="">Non assigné</option>
+                            {employees.map(emp => (
+                              <option key={emp.id} value={emp.id}>{emp.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-sm text-gray-600">
+                            {reservation.staffName || 'Non assigné'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="space-y-1">
                           <div className="text-sm">
-                            {reservation.services && reservation.services.length > 0 
+                            {reservation.services && reservation.services.length > 0
                               ? reservation.services.map((s: string) => services[s] || s).join(', ')
                               : 'Aucun service'
                             }

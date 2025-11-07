@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { 
+import {
   User, Phone, Mail, Calendar, Heart, TrendingUp, Award, Edit2, Save, X,
   ChevronDown, ChevronUp, Search, Filter, Download, Plus, Gift, Cake,
   CreditCard, FileText, AlertCircle, Star, Eye, History, UserCheck, Settings,
   Camera, Video, Image, Upload, Trash2, PlayCircle, Send, Paperclip,
-  Target, Users, UserX, ArrowRight, MessageSquare, Clock, FileSpreadsheet
+  Target, Users, UserX, ArrowRight, MessageSquare, Clock, FileSpreadsheet,
+  BarChart3
 } from "lucide-react";
 import ClientDetailModal from "@/components/ClientDetailModal";
 import ClientImportExport from "@/components/ClientImportExport";
 import ClientPhotoEvolution from "@/components/ClientPhotoEvolution";
+import ClientSegmentsTab from "@/components/ClientSegmentsTab";
 import { formatDateLocal } from "@/lib/date-utils";
 
 export interface Client {
@@ -77,16 +79,18 @@ interface UnifiedCRMTabProps {
   loyaltyProfiles: any[];
   reservations: any[];
   onNewReservation?: () => void;
+  onSegmentAction?: (action: 'email' | 'whatsapp', segmentId: string, segmentName: string) => void;
 }
 
-export default function UnifiedCRMTab({ 
-  clients, 
-  setClients, 
-  loyaltyProfiles, 
+export default function UnifiedCRMTab({
+  clients,
+  setClients,
+  loyaltyProfiles,
   reservations,
-  onNewReservation 
+  onNewReservation,
+  onSegmentAction
 }: UnifiedCRMTabProps) {
-  const [activeTab, setActiveTab] = useState<'clients' | 'leads'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'leads' | 'segments'>('clients');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadStats, setLeadStats] = useState<LeadStats | null>(null);
   const [leadStatusFilter, setLeadStatusFilter] = useState('all');
@@ -607,6 +611,17 @@ export default function UnifiedCRMTab({
               {newLeadsCount}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('segments')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'segments'
+              ? 'bg-[#d4b5a0] text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 inline mr-2" />
+          Segmentation
         </button>
       </div>
 
@@ -2220,7 +2235,7 @@ export default function UnifiedCRMTab({
         />
       )}
       </>
-      ) : (
+      ) : activeTab === 'leads' ? (
         /* Section Leads */
         <div className="space-y-4">
           {/* Statistiques des leads */}
@@ -2443,7 +2458,10 @@ export default function UnifiedCRMTab({
             </div>
           )}
         </div>
-      )}
+      ) : activeTab === 'segments' ? (
+        /* Section Segmentation */
+        <ClientSegmentsTab onSegmentAction={onSegmentAction} />
+      ) : null}
     </div>
   );
 }

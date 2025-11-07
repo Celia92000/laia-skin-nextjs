@@ -28,7 +28,7 @@ async function verifyAdmin(request: NextRequest) {
   }
 }
 
-// GET - Récupérer tous les profils de fidélité
+// GET - Récupérer tous les profils de fidélité de l'organisation
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
   const admin = await verifyAdmin(request);
@@ -39,9 +39,22 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Vérifier que l'admin a un organizationId
+  if (!admin.organizationId) {
+    return NextResponse.json(
+      { error: 'Organization ID manquant' },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Récupérer tous les profils de fidélité avec les utilisateurs
+    // Récupérer UNIQUEMENT les profils de fidélité de cette organisation
     const loyaltyProfiles = await prisma.loyaltyProfile.findMany({
+      where: {
+        user: {
+          organizationId: admin.organizationId
+        }
+      },
       include: {
         user: {
           select: {
@@ -61,9 +74,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Récupérer aussi les utilisateurs sans profil de fidélité
+    // Récupérer aussi les utilisateurs sans profil de fidélité (UNIQUEMENT de cette organisation)
     const usersWithoutProfile = await prisma.user.findMany({
       where: {
+        organizationId: admin.organizationId,
         role: 'CLIENT',
         loyaltyProfile: null
       },

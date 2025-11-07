@@ -198,7 +198,7 @@ export default function Header({ organizationData }: HeaderProps = {}) {
               />
             </div>
             <h1 className="text-xl sm:text-2xl font-serif font-semibold tracking-wide" style={{ color: accentColor }}>
-              {(orgData?.config?.siteName || config.siteName)?.toUpperCase() || 'MON INSTITUT'}
+              {pathname === '/login' ? 'LAIA CONNECT' : (orgData?.config?.siteName || config.siteName)?.toUpperCase() || 'MON INSTITUT'}
             </h1>
           </Link>
 

@@ -40,6 +40,8 @@ function ReservationContent() {
   const [giftCardData, setGiftCardData] = useState<any>(null);
   const [isCheckingGiftCard, setIsCheckingGiftCard] = useState(false);
   const [giftCardError, setGiftCardError] = useState("");
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("");
 
   // Pré-remplir le code de la carte cadeau depuis l'URL
   useEffect(() => {
@@ -112,6 +114,19 @@ function ReservationContent() {
         console.error('Erreur lors du chargement des services:', err);
         // Fallback aux données par défaut en cas d'erreur
         setServices([]);
+      });
+  }, []);
+
+  // Charger les employés disponibles
+  useEffect(() => {
+    fetch('/api/public/employees')
+      .then(res => res.json())
+      .then(data => {
+        setEmployees(data);
+      })
+      .catch(err => {
+        console.error('Erreur lors du chargement des employés:', err);
+        setEmployees([]);
       });
   }, []);
 
@@ -458,6 +473,7 @@ function ReservationContent() {
         time: selectedTime,
         notes: formData.notes,
         totalPrice: calculateTotal(),
+        staffId: selectedStaffId || null, // Employé sélectionné ou null (indifférent)
         // Informations carte cadeau
         ...(giftCardData ? {
           giftCardCode: giftCardData.code,
@@ -1219,7 +1235,28 @@ function ReservationContent() {
                       placeholder="06 12 34 56 78"
                     />
                   </div>
-                  
+
+                  {/* Sélection de l'employé */}
+                  <div>
+                    <label className="flex items-center text-lg font-medium text-[#2c3e50] mb-3">
+                      <User className="w-5 h-5 mr-2 text-[#d4b5a0]" />
+                      Préférence d'esthéticienne
+                    </label>
+                    <select
+                      value={selectedStaffId}
+                      onChange={(e) => setSelectedStaffId(e.target.value)}
+                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#d4b5a0] focus:outline-none transition-colors text-lg bg-white"
+                    >
+                      <option value="">Indifférent (toute esthéticienne disponible)</option>
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-sm text-[#2c3e50]/60 mt-2">
+                      Vous pouvez choisir une esthéticienne spécifique ou laisser "Indifférent"
+                    </p>
+                  </div>
+
                   {/* Mot de passe UNIQUEMENT si déjà client */}
                   {!isLoggedIn && hasAccount && (
                     <div>

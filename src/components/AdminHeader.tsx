@@ -65,9 +65,19 @@ export default function AdminHeader({ userName = "Admin" }: { userName?: string 
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      // Appeler l'API de déconnexion pour supprimer le cookie
+      await fetch('/api/auth/logout', { method: 'POST' });
+      // Nettoyer le localStorage
+      localStorage.removeItem('adminToken');
+      // Rediriger vers la page de connexion
+      router.push('/login');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Rediriger quand même
+      router.push('/login');
+    }
   };
 
   const handleSelectResult = (result: SearchResult) => {

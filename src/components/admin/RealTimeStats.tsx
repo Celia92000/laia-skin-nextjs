@@ -53,7 +53,7 @@ export default function RealTimeStats() {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
       const response = await fetch('/api/admin/real-stats', {
         headers: {

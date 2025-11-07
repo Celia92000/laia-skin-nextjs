@@ -22,15 +22,18 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer tous les utilisateurs
+    // Récupérer uniquement les utilisateurs de l'organisation de l'admin
     const users = await prisma.user.findMany({
+      where: {
+        organizationId: decoded.organizationId || admin?.organizationId
+      },
       select: {
         id: true,
         email: true,
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
@@ -94,14 +97,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier si l'email existe déjà
+    const organizationId = decoded.organizationId || admin?.organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organization ID manquant' },
+        { status: 400 }
+      );
+    }
+
+    // Récupérer l'organisation et vérifier la limite d'utilisateurs
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: {
+        maxUsers: true,
+        plan: true,
+        _count: {
+          select: {
+            users: true
+          }
+        }
+      }
+    });
+
+    if (!organization) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
+    // Vérifier si la limite d'utilisateurs est atteinte
+    const currentUserCount = organization._count.users;
+    const maxUsers = organization.maxUsers;
+
+    if (currentUserCount >= maxUsers) {
+      const planNames: Record<string, string> = {
+        'SOLO': 'Solo (1 utilisateur)',
+        'DUO': 'Duo (2 utilisateurs)',
+        'TEAM': 'Team (5 utilisateurs)',
+        'PREMIUM': 'Premium (10 utilisateurs)'
+      };
+
+      return NextResponse.json(
+        {
+          error: `Limite d'utilisateurs atteinte pour votre formule ${planNames[organization.plan] || organization.plan}. Vous avez ${currentUserCount}/${maxUsers} utilisateurs. Passez à une formule supérieure pour ajouter plus d'utilisateurs.`
+        },
+        { status: 403 }
+      );
+    }
+
+    // Vérifier si l'email existe déjà dans cette organisation
     const existingUser = await prisma.user.findFirst({
-      where: { email }
+      where: {
+        email,
+        organizationId
+      }
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Cet email est déjà utilisé' },
+        { error: 'Cet email est déjà utilisé dans votre organisation' },
         { status: 400 }
       );
     }
@@ -109,7 +165,7 @@ export async function POST(request: NextRequest) {
     // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Créer l'utilisateur
+    // Créer l'utilisateur avec l'organizationId
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -117,6 +173,7 @@ export async function POST(request: NextRequest) {
         phone,
         role,
         password: hashedPassword,
+        organizationId,
         // plainPassword removed for security
       },
       select: {
@@ -162,7 +219,7 @@ export async function PATCH(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
@@ -175,6 +232,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { error: 'ID utilisateur requis' },
         { status: 400 }
+      );
+    }
+
+    const organizationId = decoded.organizationId || admin?.organizationId;
+
+    // Vérifier que l'utilisateur à modifier appartient à la même organisation
+    const userToUpdate = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId
+      }
+    });
+
+    if (!userToUpdate) {
+      return NextResponse.json(
+        { error: 'Utilisateur non trouvé ou n\'appartient pas à votre organisation' },
+        { status: 404 }
       );
     }
 
@@ -245,7 +319,7 @@ export async function DELETE(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
@@ -270,9 +344,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Vérifier que l'utilisateur existe
+    const organizationId = decoded.organizationId || admin?.organizationId;
+
+    // Vérifier que l'utilisateur existe ET appartient à la même organisation
     const user = await prisma.user.findFirst({
-      where: { id: userId },
+      where: {
+        id: userId,
+        organizationId
+      },
       include: {
         _count: {
           select: {
@@ -284,7 +363,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
+        { error: 'Utilisateur non trouvé ou n\'appartient pas à votre organisation' },
         { status: 404 }
       );
     }

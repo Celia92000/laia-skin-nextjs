@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Calendar, Users, Package, Euro,
   BarChart3, Settings, FileText, Image, Star,
   MessageCircle, Bell, Gift, TrendingUp, Clock,
-  ChevronLeft, ChevronRight, Sparkles, Heart, MapPin, ThumbsUp
+  ChevronLeft, ChevronRight, Sparkles, Heart, MapPin, ThumbsUp, HelpCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -53,17 +53,10 @@ const menuItems = [
     href: '/admin/finances',
     badge: null
   },
-  { 
-    id: 'statistics', 
-    label: 'Statistiques', 
-    icon: BarChart3, 
-    href: '/admin/stats',
-    badge: 'NEW'
-  },
-  { 
-    id: 'reviews', 
-    label: 'Avis & Photos', 
-    icon: Star, 
+  {
+    id: 'reviews',
+    label: 'Avis & Photos',
+    icon: Star,
     href: '/admin/reviews',
     badge: '3'
   },
@@ -81,12 +74,20 @@ const menuItems = [
     href: '/admin/communications',
     badge: null
   },
-  { 
-    id: 'settings', 
-    label: 'Paramètres', 
-    icon: Settings, 
+  {
+    id: 'settings',
+    label: 'Paramètres',
+    icon: Settings,
     href: '/admin/settings',
     badge: null
+  },
+  {
+    id: 'help',
+    label: 'Centre d\'aide',
+    icon: HelpCircle,
+    href: '/aide',
+    badge: null,
+    external: true
   },
 ];
 
@@ -124,39 +125,69 @@ export default function AdminSidebar({ activeTab, onTabChange }: { activeTab: st
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.id === activeTab;
-              
+
               return (
                 <li key={item.id}>
-                  <button
-                    onClick={() => onTabChange(item.id)}
-                    className={`
-                      w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all
-                      ${isActive 
-                        ? 'bg-gradient-to-r from-laia-primary/10 to-laia-rose/10 text-laia-primary shadow-laia-sm' 
-                        : 'hover:bg-laia-nude text-laia-gray hover:text-laia-dark'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`${isActive ? 'text-laia-primary' : ''}`}>
-                        <Icon className="h-5 w-5" />
+                  {(item as any).external ? (
+                    <Link
+                      href={item.href}
+                      className={`
+                        w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all
+                        hover:bg-laia-nude text-laia-gray hover:text-laia-dark
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        {!isCollapsed && (
+                          <span className="font-medium text-sm">{item.label}</span>
+                        )}
                       </div>
-                      {!isCollapsed && (
-                        <span className="font-medium text-sm">{item.label}</span>
+                      {!isCollapsed && item.badge && (
+                        <span className={`
+                          px-2 py-0.5 text-xs font-bold rounded-full
+                          ${item.badge === 'NEW'
+                            ? 'bg-gradient-to-r from-laia-primary to-laia-rose text-white'
+                            : 'bg-laia-rose-light text-laia-rose-dark'
+                          }
+                        `}>
+                          {item.badge}
+                        </span>
                       )}
-                    </div>
-                    {!isCollapsed && item.badge && (
-                      <span className={`
-                        px-2 py-0.5 text-xs font-bold rounded-full
-                        ${item.badge === 'NEW' 
-                          ? 'bg-gradient-to-r from-laia-primary to-laia-rose text-white' 
-                          : 'bg-laia-rose-light text-laia-rose-dark'
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => onTabChange(item.id)}
+                      className={`
+                        w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all
+                        ${isActive
+                          ? 'bg-gradient-to-r from-laia-primary/10 to-laia-rose/10 text-laia-primary shadow-laia-sm'
+                          : 'hover:bg-laia-nude text-laia-gray hover:text-laia-dark'
                         }
-                      `}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`${isActive ? 'text-laia-primary' : ''}`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        {!isCollapsed && (
+                          <span className="font-medium text-sm">{item.label}</span>
+                        )}
+                      </div>
+                      {!isCollapsed && item.badge && (
+                        <span className={`
+                          px-2 py-0.5 text-xs font-bold rounded-full
+                          ${item.badge === 'NEW'
+                            ? 'bg-gradient-to-r from-laia-primary to-laia-rose text-white'
+                            : 'bg-laia-rose-light text-laia-rose-dark'
+                          }
+                        `}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </li>
               );
             })}

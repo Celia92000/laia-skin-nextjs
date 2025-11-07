@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles, CheckCircle } from "lucide-react";
 import { useConfig } from "@/hooks/useConfig";
 
@@ -11,6 +12,7 @@ interface FooterProps {
 }
 
 export default function Footer({ organizationData }: FooterProps) {
+  const pathname = usePathname();
   const { config: fetchedConfig } = useConfig();
   const config = organizationData?.config || fetchedConfig;
   const [email, setEmail] = useState("");
@@ -62,7 +64,7 @@ export default function Footer({ organizationData }: FooterProps) {
                   className="object-contain"
                 />
               </div>
-              <h3 className="text-xl font-playfair tracking-normal text-white">{config.siteName?.toUpperCase() || 'LAIA SKIN INSTITUT'}</h3>
+              <h3 className="text-xl font-playfair tracking-normal text-white">{pathname === '/login' ? 'LAIA CONNECT' : config.siteName?.toUpperCase() || 'LAIA SKIN INSTITUT'}</h3>
             </div>
             <p className="text-base text-white leading-relaxed mb-4 font-playfair italic">
               {config.siteTagline || 'Une peau respectée, une beauté révélée'}
@@ -285,7 +287,7 @@ export default function Footer({ organizationData }: FooterProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-white/80">
-              © {new Date().getFullYear()} {config.siteName?.toUpperCase() || 'MON INSTITUT'}. Tous droits réservés.
+              © {new Date().getFullYear()} {pathname === '/login' ? 'LAIA CONNECT' : config.siteName?.toUpperCase() || 'MON INSTITUT'}. Tous droits réservés.
             </p>
             <div className="flex gap-6">
               <Link href="/mentions-legales" className="text-sm text-white/80 hover:text-white transition-colors">
