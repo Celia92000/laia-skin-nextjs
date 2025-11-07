@@ -1,12 +1,13 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, ScrollText, Settings, Home, Send, Target, Calendar, Palette } from 'lucide-react'
+import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, ScrollText, Settings, Home, Send, Target, Calendar, Palette, HelpCircle, TrendingDown, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function SuperAdminNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const [newLeadsCount, setNewLeadsCount] = useState(0)
   const [newDemosCount, setNewDemosCount] = useState(0)
 
@@ -37,9 +38,26 @@ export default function SuperAdminNav() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleLogout = async () => {
+    try {
+      // Appeler l'API de déconnexion
+      await fetch('/api/auth/logout', { method: 'POST' })
+      // Nettoyer le localStorage
+      localStorage.removeItem('adminToken')
+      // Rediriger vers la page de connexion
+      router.push('/login')
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error)
+      // Rediriger quand même
+      router.push('/login')
+    }
+  }
+
   const tabs = [
     { name: 'Dashboard', href: '/super-admin', icon: Home },
     { name: 'CRM', href: '/super-admin/crm', icon: Target, badge: newLeadsCount },
+    { name: 'Churn', href: '/super-admin/churn', icon: TrendingDown },
+    { name: 'Workflows', href: '/super-admin/workflows', icon: Zap },
     { name: 'Démos', href: '/super-admin/demos', icon: Calendar, badge: newDemosCount },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },
@@ -52,6 +70,7 @@ export default function SuperAdminNav() {
     { name: 'Push Notifications', href: '/super-admin/push-notifications', icon: Bell },
     { name: 'Logs', href: '/super-admin/logs', icon: ScrollText },
     { name: 'Configuration', href: '/super-admin/settings', icon: Settings },
+    { name: 'Centre d\'aide', href: '/aide', icon: HelpCircle, external: true },
   ]
 
   const isActive = (href: string, external?: boolean) => {
@@ -83,12 +102,12 @@ export default function SuperAdminNav() {
             >
               Site Vitrine ↗
             </a>
-            <a
-              href="/api/auth/logout"
+            <button
+              onClick={handleLogout}
               className="text-sm px-4 py-1.5 rounded-full transition-all bg-white/20 hover:bg-white/30 text-white"
             >
               Déconnexion
-            </a>
+            </button>
           </div>
         </div>
 

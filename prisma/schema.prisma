@@ -267,6 +267,8 @@ model Organization {
 
   // CRM Relations
   convertedLeads Lead[] // Leads convertis en clients
+  segments       ClientSegment[] // Segments de clients
+  funnels        ConversionFunnel[] // Funnels de conversion
 
   // API Tokens (réseaux sociaux, paiements, etc.)
   apiTokens ApiToken[] // Tokens API de l'organisation
@@ -284,6 +286,14 @@ model Organization {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Rapports sauvegardés
+  savedReports SavedReport[]
+
+  // Workflows et churn management
+  workflowExecutions   WorkflowExecution[]
+  churnRiskProfile     ChurnRiskProfile?
+  cancellationFeedback CancellationFeedback[]
 
   @@index([slug])
   @@index([subdomain])
@@ -624,23 +634,25 @@ model User {
   lastLoginAt      DateTime? // Dernière connexion
 
   // Relations
-  organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  locations      UserLocation[] // Emplacements assignés (pour le staff)
-  evolutions     ClientEvolution[]
-  loyaltyHistory LoyaltyHistory[]
-  loyaltyProfile LoyaltyProfile?
-  reservations   Reservation[]
-  reviews        Review[]
-  notifications  Notification[]
-  referralsMade  Referral[]        @relation("ReferralReferrer")
-  referredBy     Referral?         @relation("ReferralReferred")
-  discounts      Discount[]
+  organization      Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations         UserLocation[] // Emplacements assignés (pour le staff)
+  evolutions        ClientEvolution[]
+  loyaltyHistory    LoyaltyHistory[]
+  loyaltyProfile    LoyaltyProfile?
+  reservations      Reservation[]     @relation("UserReservations")
+  staffReservations Reservation[]     @relation("StaffReservations")
+  reviews           Review[]
+  notifications     Notification[]
+  referralsMade     Referral[]        @relation("ReferralReferrer")
+  referredBy        Referral?         @relation("ReferralReferred")
+  discounts         Discount[]
 
   // CRM Relations
   assignedLeads    Lead[]
   leadInteractions LeadInteraction[]
   contactFormLeads ContactFormLead[]
   demoSlots        DemoSlot[]        @relation("DemoSlots")
+  funnelEntries    FunnelEntry[] // Progression dans les funnels
   orders           Order[]
   payments         Payment[]
   stockMovements   StockMovement[]
@@ -723,7 +735,8 @@ model Reservation {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   location           Location?       @relation(fields: [locationId], references: [id])
-  user               User            @relation(fields: [userId], references: [id])
+  user               User            @relation("UserReservations", fields: [userId], references: [id])
+  staff              User?           @relation("StaffReservations", fields: [staffId], references: [id])
   service            Service?        @relation(fields: [serviceId], references: [id])
   giftCard           GiftCard?       @relation("GiftCardReservations", fields: [giftCardId], references: [id])
   review             Review?
@@ -1170,6 +1183,7 @@ model EmailCampaign {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   emails         EmailHistory[]
+  segments       CampaignSegment[]
 }
 
 model Discount {
@@ -2413,8 +2427,9 @@ model Lead {
   tags  String[]
   notes String?  @db.Text
 
-  interactions LeadInteraction[]
-  demoBooking  DemoBooking?      @relation("DemoBookingLead")
+  interactions  LeadInteraction[]
+  demoBooking   DemoBooking?      @relation("DemoBookingLead")
+  funnelEntries FunnelEntry[] // Progression dans les funnels
 
   @@index([status])
   @@index([assignedToUserId])
@@ -2659,3 +2674,342 @@ model WebsiteTemplate {
   @@index([category])
   @@index([isActive, displayOrder])
 }
+
+// ============================================================================
+// CRM: SEGMENTATION CLIENTS
+// ============================================================================
+
+model ClientSegment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String // "Clients VIP", "Inactifs 6 mois", etc.
+  description String?
+  color       String  @default("#3B82F6") // Couleur pour l'UI
+
+  // Critères de segmentation (JSON)
+  criteria Json // {totalSpent: {min: 500}, lastVisit: {daysAgo: {max: 30}}, etc.}
+
+  // Statistiques
+  clientCount Int @default(0)
+  totalValue  Decimal? @db.Decimal(10, 2)
+
+  // Automatisation
+  isAutomatic Boolean @default(true) // Se met à jour automatiquement
+  isActive    Boolean @default(true)
+
+  // Relations
+  campaigns CampaignSegment[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model CampaignSegment {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  segmentId String
+  segment   ClientSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([campaignId, segmentId])
+  @@index([campaignId])
+  @@index([segmentId])
+}
+
+// ============================================================================
+// CRM: FUNNEL DE CONVERSION
+// ============================================================================
+
+enum FunnelStage {
+  AWARENESS      // Prise de conscience
+  INTEREST       // Intérêt
+  CONSIDERATION  // Considération  
+  INTENT         // Intention
+  EVALUATION     // Évaluation
+  PURCHASE       // Achat
+}
+
+model ConversionFunnel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  // Étapes du funnel
+  stages Json // [{name: "Visite site", stage: "AWARENESS"}, ...]
+
+  // Statistiques
+  isActive Boolean @default(true)
+
+  entries FunnelEntry[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model FunnelEntry {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  funnelId String
+  funnel   ConversionFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  // Lead ou Client
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Étape actuelle
+  currentStage FunnelStage @default(AWARENESS)
+  
+  // Progression
+  stages Json // [{stage: "AWARENESS", enteredAt: "...", exitedAt: "..."}]
+
+  // Conversion
+  isConverted   Boolean   @default(false)
+  convertedAt   DateTime?
+  conversionValue Decimal? @db.Decimal(10, 2)
+
+  // Métadonnées
+  source String? // Google Ads, Réseaux sociaux, Référence, etc.
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+
+  @@index([funnelId])
+  @@index([leadId])
+  @@index([userId])
+  @@index([currentStage])
+  @@index([isConverted])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// SAVED REPORTS
+// ============================================================================
+
+model SavedReport {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name            String
+  metrics         Json     // Array of metric IDs
+  period          String   // 7d, 30d, 90d, 1y, custom
+  autoSend        Boolean  @default(false)
+  emailSchedule   String?  // daily, weekly, monthly
+  lastSent        DateTime?
+
+  @@index([organizationId])
+  @@index([autoSend])
+}
+
+// ============================================================================
+// ENUMS ADDITIONNELS
+// ============================================================================
+
+enum SegmentCriteriaType {
+  TOTAL_SPENT
+  LAST_VISIT
+  VISIT_FREQUENCY
+  SERVICE_TYPE
+  PRODUCT_PURCHASED
+  LOYALTY_POINTS
+  REFERRAL_COUNT
+  BOOKING_COUNT
+  AVERAGE_TICKET
+  LIFETIME_VALUE
+}
+
+// ============================================================================
+// WORKFLOWS & CHURN MANAGEMENT (SUPER-ADMIN)
+// ============================================================================
+
+enum WorkflowTrigger {
+  ONBOARDING_DAY_1      // J+1 après inscription
+  ONBOARDING_DAY_7      // J+7 après inscription
+  ONBOARDING_DAY_15     // J+15 après inscription
+  ONBOARDING_DAY_25     // J+25 (5 jours avant fin d'essai)
+  TRIAL_ENDING_SOON     // 5 jours avant fin d'essai
+  TRIAL_ENDED           // Fin de période d'essai
+  NO_LOGIN_7_DAYS       // Pas de connexion depuis 7 jours
+  NO_BOOKINGS_15_DAYS   // 0 rendez-vous créé après 15 jours
+  SUBSCRIPTION_ACTIVE_60_DAYS // Après 60 jours d'utilisation
+  PAYMENT_FAILED        // Échec de paiement
+  SUBSCRIPTION_CANCELLED // Abonnement annulé
+  HIGH_USAGE            // Utilisation élevée (upgrade suggéré)
+  LOW_USAGE             // Faible utilisation (risque churn)
+}
+
+enum WorkflowStatus {
+  ACTIVE     // Workflow actif
+  PAUSED     // Workflow en pause
+  ARCHIVED   // Workflow archivé
+}
+
+// Template de workflow automatique
+model WorkflowTemplate {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Informations
+  name            String   // "Onboarding J+1", "Relance inactif 7j"
+  description     String?  @db.Text
+  trigger         WorkflowTrigger
+  status          WorkflowStatus @default(ACTIVE)
+
+  // Conditions d'exécution
+  delayDays       Int      @default(0) // Délai en jours avant exécution
+  
+  // Email settings
+  subject         String
+  emailTemplate   String   @db.Text // Template HTML de l'email
+  
+  // Statistiques
+  sentCount       Int      @default(0)
+  openRate        Float    @default(0)
+  clickRate       Float    @default(0)
+  
+  // Relations
+  executions      WorkflowExecution[]
+  
+  @@index([trigger])
+  @@index([status])
+}
+
+// Exécution d'un workflow pour une organisation
+model WorkflowExecution {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  executedAt        DateTime?
+  
+  workflowId        String
+  workflow          WorkflowTemplate @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Statut
+  status            String   // pending, sent, failed, opened, clicked
+  error             String?  @db.Text
+  
+  // Tracking email
+  emailSentAt       DateTime?
+  emailOpenedAt     DateTime?
+  emailClickedAt    DateTime?
+  
+  @@index([workflowId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// Métriques de churn et rétention
+model ChurnMetric {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now()) // Date du calcul
+  
+  // Métriques MRR
+  totalMRR        Float    // MRR total
+  newMRR          Float    // MRR des nouveaux clients
+  expansionMRR    Float    // MRR des upgrades
+  contractionMRR  Float    // MRR des downgrades
+  churnedMRR      Float    // MRR perdu
+  
+  // Métriques clients
+  totalCustomers      Int
+  newCustomers        Int
+  churnedCustomers    Int
+  activeTrials        Int
+  
+  // Taux (en %)
+  churnRate           Float  // Taux de churn mensuel
+  retentionRate       Float  // Taux de rétention
+  
+  // LTV moyen
+  averageLTV          Float  // Lifetime Value moyen
+  
+  @@index([date])
+}
+
+// Clients à risque de churn
+model ChurnRiskProfile {
+  id                  String   @id @default(cuid())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  organizationId      String   @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Score de risque (0-100)
+  riskScore           Int      // 0 = aucun risque, 100 = churn imminent
+  
+  // Facteurs de risque
+  daysWithoutLogin    Int      @default(0)
+  daysWithoutBooking  Int      @default(0)
+  bookingsCount       Int      @default(0)
+  usageLevel          String   // low, medium, high
+  
+  // Support tickets
+  supportTicketsCount Int      @default(0)
+  lastSupportDate     DateTime?
+  
+  // Actions prises
+  contactAttempts     Int      @default(0)
+  lastContactDate     DateTime?
+  
+  // Statut
+  isAtRisk            Boolean  @default(false)
+  churned             Boolean  @default(false)
+  churnedAt           DateTime?
+  churnReason         String?  @db.Text
+  
+  @@index([riskScore])
+  @@index([isAtRisk])
+  @@index([churned])
+}
+
+// Raisons d'annulation (post-churn survey)
+model CancellationFeedback {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Raison principale
+  reason            String   // price, features, complexity, competition, other
+  detailedReason    String?  @db.Text
+  
+  // Feedback
+  wouldRecommend    Boolean?
+  rating            Int?     // 1-5
+  suggestions       String?  @db.Text
+  
+  // Context
+  plan              String
+  monthsSubscribed  Int
+  
+  @@index([organizationId])
+  @@index([reason])
+}
+
