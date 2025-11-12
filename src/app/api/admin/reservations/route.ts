@@ -46,9 +46,10 @@ export async function POST(request: NextRequest) {
     const available = await isSlotAvailable(reservationDate, time);
 
     if (!available) {
-      // Vérifier s'il y a déjà une réservation à ce créneau pour un message plus précis
+      // Vérifier s'il y a déjà une réservation DE CETTE ORGANISATION à ce créneau
       const existingReservation = await prisma.reservation.findFirst({
         where: {
+          organizationId: user.organizationId, // 🔒 Sécurité multi-tenant
           date: reservationDate,
           time: time,
           status: {
@@ -75,9 +76,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Créer ou trouver le client
+    // Créer ou trouver le client DE CETTE ORGANISATION
     let clientUser = await prisma.user.findFirst({
-      where: { email: email || `client_${Date.now()}@temp.com` }
+      where: {
+        email: email || `client_${Date.now()}@temp.com`,
+        organizationId: user.organizationId // 🔒 Sécurité multi-tenant
+      }
     });
 
     if (!clientUser) {
@@ -87,7 +91,8 @@ export async function POST(request: NextRequest) {
           email: email || `client_${Date.now()}@temp.com`,
           phone: phone || '',
           password: 'temp_password', // Le client pourra créer son mot de passe plus tard
-          role: 'CLIENT'
+          role: 'CLIENT',
+          organizationId: user.organizationId // 🔒 Sécurité multi-tenant
         }
       });
     } else if (phone && !clientUser.phone) {
@@ -98,9 +103,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Recalculer le prix total basé sur les services de la base de données
+    // Recalculer le prix total basé sur les services DE CETTE ORGANISATION
     let calculatedPrice = 0;
     const dbServices = await prisma.service.findMany({
+      where: {
+        organizationId: user.organizationId // 🔒 Sécurité multi-tenant - CRITIQUE
+      },
       select: {
         id: true,
         slug: true,

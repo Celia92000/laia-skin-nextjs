@@ -135,7 +135,8 @@ export async function POST(request: Request) {
       const reservation = await prisma.reservation.findFirst({
         where: {
           id: reservationId,
-          userId: userId
+          userId: userId,
+          organizationId: organizationId // 🔒 Sécurité multi-tenant
         }
       });
 
@@ -145,7 +146,10 @@ export async function POST(request: Request) {
 
       // Vérifier qu'il n'y a pas déjà un avis pour cette réservation
       const existingReview = await prisma.review.findFirst({
-        where: { reservationId }
+        where: {
+          reservationId,
+          organizationId: organizationId // 🔒 Sécurité multi-tenant
+        }
       });
 
       if (existingReview) {

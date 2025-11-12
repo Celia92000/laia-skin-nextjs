@@ -8,13 +8,50 @@ import { sendConfirmationEmail } from '@/lib/email-service';
 export async function POST(request: Request) {
   try {
     const prisma = await getPrismaClient();
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation depuis le host
+    const host = request.headers.get('host') || '';
+    const cleanHost = host.split(':')[0].toLowerCase();
+
+    let organization = null;
+
+    // 1. Chercher par domaine personnalisé
+    if (!cleanHost.includes('localhost')) {
+      organization = await prisma.organization.findUnique({
+        where: { domain: cleanHost }
+      });
+    }
+
+    // 2. Chercher par subdomain
+    if (!organization) {
+      const parts = cleanHost.split('.');
+      let subdomain = 'laia-skin-institut';
+      if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+        subdomain = parts[0];
+      }
+      organization = await prisma.organization.findUnique({
+        where: { subdomain: subdomain }
+      });
+    }
+
+    // 3. Fallback
+    if (!organization) {
+      organization = await prisma.organization.findFirst({
+        where: { slug: 'laia-skin-institut' }
+      });
+    }
+
+    if (!organization) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { services, packages, date, time, notes, totalPrice, staffId, clientInfo, rescheduleId, giftCardCode, giftCardUsedAmount } = body;
-    
+
     // Validation : vérifier qu'il y a au moins un service
     if (!services || !Array.isArray(services) || services.length === 0) {
-      return NextResponse.json({ 
-        error: 'Veuillez sélectionner au moins un service pour votre réservation.' 
+      return NextResponse.json({
+        error: 'Veuillez sélectionner au moins un service pour votre réservation.'
       }, { status: 400 });
     }
     
@@ -39,30 +76,37 @@ export async function POST(request: Request) {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (token) {
-      // Client connecté
+      // Client connecté - 🔒 Vérifier qu'il appartient à cette organisation
       const decoded = verifyToken(token);
       if (!decoded) {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
       }
       userId = decoded.userId;
       user = await prisma.user.findFirst({
-        where: { id: userId }
+        where: {
+          id: userId,
+          organizationId: organization.id // 🔒 Sécurité multi-tenant
+        }
       });
     } else if (clientInfo && clientInfo.email) {
-      // Nouveau client sans compte - Créer automatiquement le profil
+      // Nouveau client sans compte - 🔒 Chercher dans cette organisation uniquement
       user = await prisma.user.findFirst({
-        where: { email: clientInfo.email }
+        where: {
+          email: clientInfo.email,
+          organizationId: organization.id // 🔒 Sécurité multi-tenant
+        }
       });
       
       if (!user) {
-        // Créer un nouveau client dans le CRM
+        // Créer un nouveau client dans le CRM - 🔒 Lié à cette organisation
         user = await prisma.user.create({
           data: {
             name: clientInfo.name || 'Client',
             email: clientInfo.email,
             phone: clientInfo.phone || '',
             password: `temp_${Date.now()}`, // Mot de passe temporaire
-            role: 'CLIENT' // En majuscules pour cohérence avec le CRM
+            role: 'CLIENT', // En majuscules pour cohérence avec le CRM
+            organizationId: organization.id // 🔒 Sécurité multi-tenant
           }
         });
       } else {
@@ -89,10 +133,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Informations client requises' }, { status: 400 });
     }
 
-    // Récupérer les services de la base de données pour obtenir les durées
+    // Récupérer les services DE CETTE ORGANISATION pour obtenir les durées - 🔒 CRITIQUE
     const dbServices = await prisma.service.findMany({
       where: {
-        slug: { in: services }
+        slug: { in: services },
+        organizationId: organization.id // 🔒 Sécurité multi-tenant - CRITIQUE
       }
     });
 
@@ -111,9 +156,10 @@ export async function POST(request: Request) {
     const normalizedDate = new Date(date);
     normalizedDate.setHours(0, 0, 0, 0);
 
-    // Vérifier qu'il n'y a pas déjà une réservation à ce créneau
+    // 🔒 Vérifier qu'il n'y a pas déjà une réservation à ce créneau DANS CETTE ORGANISATION
     const existingReservation = await prisma.reservation.findFirst({
       where: {
+        organizationId: organization.id,
         date: normalizedDate,
         time: time,
         status: {
@@ -128,9 +174,10 @@ export async function POST(request: Request) {
       }, { status: 409 }); // 409 Conflict
     }
 
-    // Vérifier les conflits avec les autres réservations
+    // 🔒 Vérifier les conflits avec les autres réservations DE CETTE ORGANISATION
     const allReservations = await prisma.reservation.findMany({
       where: {
+        organizationId: organization.id,
         date: normalizedDate,
         status: {
           notIn: ['CANCELLED', 'cancelled']
@@ -154,9 +201,12 @@ export async function POST(request: Request) {
       let existingDuration = 0;
       
       for (const existingServiceSlug of existingServices) {
-        // Utiliser findFirst car slug seul n'est pas unique (nécessite organizationId)
+        // 🔒 Utiliser findFirst avec organizationId
         const service = await prisma.service.findFirst({
-          where: { slug: existingServiceSlug }
+          where: {
+            slug: existingServiceSlug,
+            organizationId: organization.id
+          }
         });
         if (service) {
           existingDuration += service.duration;
@@ -189,8 +239,13 @@ export async function POST(request: Request) {
         
         // Déterminer le nom du service pour un message plus clair
         const serviceName = dbServices[0]?.name || 'le soin';
-        const existingServiceName = existingServices.length > 0 ? 
-          (await prisma.service.findFirst({ where: { slug: existingServices[0] } }))?.name || 'un soin' : 
+        const existingServiceName = existingServices.length > 0 ?
+          (await prisma.service.findFirst({
+            where: {
+              slug: existingServices[0],
+              organizationId: organization.id
+            }
+          }))?.name || 'un soin' :
           'un soin';
         
         return NextResponse.json({ 
@@ -236,12 +291,15 @@ export async function POST(request: Request) {
       isSubscription = Object.values(packagesObj).includes('abonnement');
     }
     
-    // Gérer la carte cadeau si présente
+    // 🔒 Gérer la carte cadeau si présente
     let giftCard = null;
     if (giftCardCode && giftCardUsedAmount && giftCardUsedAmount > 0) {
-      // Récupérer la carte cadeau
-      giftCard = await prisma.giftCard.findUnique({
-        where: { code: giftCardCode.toUpperCase() }
+      // 🔒 Récupérer la carte cadeau DE CETTE ORGANISATION
+      giftCard = await prisma.giftCard.findFirst({
+        where: {
+          code: giftCardCode.toUpperCase(),
+          organizationId: organization.id
+        }
       });
 
       if (!giftCard) {
@@ -258,11 +316,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Créer la réservation avec statut 'pending' (en attente de validation admin)
+    // 🔒 Créer la réservation avec statut 'pending' (en attente de validation admin)
     const reservation = await prisma.reservation.create({
       data: {
         userId: userId,
-        organizationId: user?.organizationId || '', // Ajouter organizationId depuis le user
+        organizationId: organization.id, // 🔒 CRITIQUE : Utiliser l'organization détectée
         services: JSON.stringify(services),
         packages: packages ? JSON.stringify(packages) : '{}',
         isSubscription,
@@ -306,11 +364,12 @@ export async function POST(request: Request) {
       });
     }
     
-    // Créer ou mettre à jour le profil de fidélité pour ce client
+    // 🔒 Créer ou mettre à jour le profil de fidélité pour ce client
     await prisma.loyaltyProfile.upsert({
       where: { userId: userId },
       create: {
         userId: userId,
+        organizationId: organization.id, // 🔒 CRITIQUE
         points: 0,
         individualServicesCount: 0,
         packagesCount: 0,
@@ -416,19 +475,33 @@ export async function GET(request: Request) {
   try {
     const prisma = await getPrismaClient();
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer UNIQUEMENT les réservations de cet utilisateur DANS SON ORGANISATION
     const reservations = await prisma.reservation.findMany({
-      where: { userId: decoded.userId },
+      where: {
+        userId: decoded.userId,
+        organizationId: user.organizationId
+      },
       orderBy: { date: 'desc' }
     });
 

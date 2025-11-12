@@ -12,7 +12,18 @@ export async function GET(req: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    if (decoded.role?.toLowerCase() !== 'admin') {
+
+    // 🔒 Récupérer l'admin avec son organizationId
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (admin.role?.toLowerCase() !== 'admin') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -23,10 +34,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'userId requis' }, { status: 400 });
     }
 
-    // Récupérer les réductions disponibles pour le client
+    // 🔒 Vérifier que le client appartient à cette organisation
+    const client = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: admin.organizationId
+      }
+    });
+
+    if (!client) {
+      return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer les réductions disponibles pour le client DE CETTE ORGANISATION
     const discounts = await prisma.discount.findMany({
       where: {
         userId: userId,
+        organizationId: admin.organizationId,
         status: 'available'
       },
       orderBy: {

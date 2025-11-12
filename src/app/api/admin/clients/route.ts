@@ -146,20 +146,36 @@ export async function PUT(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id, clientId, loyaltyPoints, skinType, allergies, preferences, medicalNotes, adminNotes, ...otherData } = await request.json();
 
     // Utiliser id ou clientId selon ce qui est fourni
     const idToUse = id || clientId;
-    
+
     if (!idToUse) {
       return NextResponse.json({ error: 'ID du client manquant' }, { status: 400 });
+    }
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Vérifier que le client appartient à cette organisation
+    const clientToUpdate = await prisma.user.findFirst({
+      where: {
+        id: idToUse,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!clientToUpdate) {
+      return NextResponse.json({ error: 'Client non trouvé ou accès refusé' }, { status: 404 });
     }
 
     // Mettre à jour le client

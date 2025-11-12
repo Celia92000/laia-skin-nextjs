@@ -69,9 +69,12 @@ export async function POST(request: NextRequest) {
       codeExists = await prisma.giftCard.findUnique({ where: { code } });
     }
 
-    // Créer ou trouver l'utilisateur acheteur
+    // 🔒 Créer ou trouver l'utilisateur acheteur DANS CETTE ORGANISATION
     let purchaser = await prisma.user.findFirst({
-      where: { email: senderEmail }
+      where: {
+        email: senderEmail,
+        organizationId: organizationId
+      }
     });
 
     // Date d'expiration (1 an)
@@ -101,13 +104,16 @@ export async function POST(request: NextRequest) {
     // Si le client veut réserver maintenant, créer une réservation
     let reservation = null;
     if (bookNow && reservationData) {
-      // Créer ou trouver l'utilisateur bénéficiaire
+      // 🔒 Créer ou trouver l'utilisateur bénéficiaire DANS CETTE ORGANISATION
       let recipient = await prisma.user.findFirst({
-        where: { email: recipientEmail }
+        where: {
+          email: recipientEmail,
+          organizationId: organizationId
+        }
       });
 
       if (!recipient) {
-        // Créer un compte pour le bénéficiaire
+        // 🔒 Créer un compte pour le bénéficiaire DANS CETTE ORGANISATION
         const bcrypt = await import('bcryptjs');
         const tempPassword = await bcrypt.hash(Math.random().toString(36), 10);
 
@@ -116,7 +122,8 @@ export async function POST(request: NextRequest) {
             email: recipientEmail,
             name: recipientName,
             password: tempPassword,
-            role: "CLIENT"
+            role: "CLIENT",
+            organizationId: organizationId // 🔒 Sécurité multi-tenant
           }
         });
       }
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
       reservation = await prisma.reservation.create({
         data: {
           userId: recipient.id,
-          organizationId: recipient.organizationId || '', // Ajouter organizationId
+          organizationId: organizationId, // 🔒 Sécurité multi-tenant
           date: new Date(reservationData.date),
           time: reservationData.time,
           services: JSON.stringify(reservationData.services),

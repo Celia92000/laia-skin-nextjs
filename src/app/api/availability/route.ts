@@ -1,23 +1,32 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(request: Request) {
   try {
     const prisma = await getPrismaClient();
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { date, time } = await request.json();
-    
+
     // Normaliser la date pour éviter les problèmes de timezone
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
-    
+
     // Créer une plage de dates pour la journée entière
     const startOfDay = new Date(checkDate);
     const endOfDay = new Date(checkDate);
     endOfDay.setHours(23, 59, 59, 999);
-    
-    // Vérifier si le créneau est déjà pris
+
+    // 🔒 Vérifier si le créneau est déjà pris DANS CETTE ORGANISATION
     const existingReservation = await prisma.reservation.findFirst({
       where: {
+        organizationId: organizationId,
         date: {
           gte: startOfDay,
           lte: endOfDay
@@ -50,9 +59,16 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const prisma = await getPrismaClient();
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-    
+
     if (!date) {
       return NextResponse.json({ error: 'Date requise' }, { status: 400 });
     }
@@ -65,7 +81,7 @@ export async function GET(request: Request) {
     }
 
     // Vérifier si toute la journée est bloquée
-    const dayBlocked = blockedSlots.some(slot => 
+    const dayBlocked = blockedSlots.some(slot =>
       slot.date === date && slot.allDay
     );
 
@@ -78,7 +94,7 @@ export async function GET(request: Request) {
           allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
         }
       }
-      
+
       return NextResponse.json(
         allSlots.map(slot => ({
           time: slot,
@@ -91,14 +107,15 @@ export async function GET(request: Request) {
     // Normaliser la date pour éviter les problèmes de timezone
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
-    
+
     const startOfDay = new Date(checkDate);
     const endOfDay = new Date(checkDate);
     endOfDay.setHours(23, 59, 59, 999);
-    
-    // Récupérer toutes les réservations pour cette date
+
+    // 🔒 Récupérer toutes les réservations POUR CETTE ORGANISATION
     const reservations = await prisma.reservation.findMany({
       where: {
+        organizationId: organizationId,
         date: {
           gte: startOfDay,
           lte: endOfDay

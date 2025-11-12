@@ -367,7 +367,8 @@ export default function CGVPage() {
               <li><strong>Droit d'opposition :</strong> S'opposer au traitement</li>
             </ul>
             <p className="mt-3">
-              Pour exercer ces droits : <strong>contact@laiaconnect.fr</strong>
+              Pour exercer ces droits : <strong>contact@laiaconnect.fr</strong><br />
+              Consultez notre <a href="/rgpd/politique-confidentialite" className="text-purple-600 hover:underline">Politique de Confidentialité complète</a>
             </p>
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">14.4 - Conservation</h3>
@@ -436,9 +437,10 @@ export default function CGVPage() {
               <p className="mb-2">📚 Centre d'aide : <a href="https://help.laiaconnect.fr" className="text-purple-600 hover:underline">help.laiaconnect.fr</a></p>
               <p className="mb-2">🌐 Site web : <a href="https://www.laiaconnect.fr" className="text-purple-600 hover:underline">www.laiaconnect.fr</a></p>
               <p className="text-sm text-gray-600 mt-4">
-                Adresse postale : [À compléter]<br />
-                SIRET : [À compléter]<br />
-                N° TVA intracommunautaire : [À compléter]
+                Adresse postale : 65 rue de la Croix, 92000 Nanterre, France<br />
+                SIREN : 988 691 937<br />
+                SIRET : 988 691 937 00001 (à vérifier selon l'établissement)<br />
+                N° TVA intracommunautaire : FR[XX] 988 691 937 (à calculer via INSEE)
               </p>
             </div>
           </section>

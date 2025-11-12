@@ -21,6 +21,18 @@ export async function POST(request: Request) {
 
     const userId = decoded.userId;
 
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organizationId du user
+    const userAuth = await prisma.user.findFirst({
+      where: { id: userId },
+      select: { organizationId: true }
+    });
+
+    if (!userAuth || !userAuth.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    const organizationId = userAuth.organizationId;
+
     // Récupérer toutes les données du client
     const [
       user,
@@ -29,9 +41,12 @@ export async function POST(request: Request) {
       reviews,
       notifications
     ] = await Promise.all([
-      // Informations du client
+      // 🔒 Informations du client DANS CETTE ORGANISATION
       prisma.user.findFirst({
-        where: { id: userId },
+        where: {
+          id: userId,
+          organizationId: organizationId
+        },
         select: {
           id: true,
           name: true,
@@ -45,9 +60,12 @@ export async function POST(request: Request) {
         }
       }),
 
-      // Réservations du client
+      // 🔒 Réservations du client DANS CETTE ORGANISATION
       prisma.reservation.findMany({
-        where: { userId },
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         include: {
           service: true
         },
@@ -56,9 +74,12 @@ export async function POST(request: Request) {
         }
       }),
 
-      // Profil de fidélité
-      prisma.loyaltyProfile.findUnique({
-        where: { userId },
+      // 🔒 Profil de fidélité DANS CETTE ORGANISATION
+      prisma.loyaltyProfile.findFirst({
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         include: {
           history: {
             orderBy: {
@@ -69,18 +90,22 @@ export async function POST(request: Request) {
         }
       }),
 
-      // Avis du client
+      // 🔒 Avis du client DANS CETTE ORGANISATION
       prisma.review.findMany({
-        where: { userId },
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         orderBy: {
           createdAt: 'desc'
         }
       }),
 
-      // Notifications (si implémenté)
+      // 🔒 Notifications (si implémenté) DANS CETTE ORGANISATION
       prisma.notification.findMany({
         where: {
           userId,
+          organizationId: organizationId,
           read: false
         },
         orderBy: {
@@ -233,6 +258,18 @@ export async function GET(request: Request) {
 
     const userId = decoded.userId;
 
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organizationId du user
+    const userAuth = await prisma.user.findFirst({
+      where: { id: userId },
+      select: { organizationId: true }
+    });
+
+    if (!userAuth || !userAuth.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    const organizationId = userAuth.organizationId;
+
     // Récupérer toutes les données du client
     const [
       user,
@@ -241,9 +278,12 @@ export async function GET(request: Request) {
       reviews,
       notifications
     ] = await Promise.all([
-      // Informations du client
+      // 🔒 Informations du client DANS CETTE ORGANISATION
       prisma.user.findFirst({
-        where: { id: userId },
+        where: {
+          id: userId,
+          organizationId: organizationId
+        },
         select: {
           id: true,
           name: true,
@@ -257,9 +297,12 @@ export async function GET(request: Request) {
         }
       }),
 
-      // Réservations du client
+      // 🔒 Réservations du client DANS CETTE ORGANISATION
       prisma.reservation.findMany({
-        where: { userId },
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         include: {
           service: true
         },
@@ -268,9 +311,12 @@ export async function GET(request: Request) {
         }
       }),
 
-      // Profil de fidélité
-      prisma.loyaltyProfile.findUnique({
-        where: { userId },
+      // 🔒 Profil de fidélité DANS CETTE ORGANISATION
+      prisma.loyaltyProfile.findFirst({
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         include: {
           history: {
             orderBy: {
@@ -281,19 +327,23 @@ export async function GET(request: Request) {
         }
       }),
 
-      // Avis du client
+      // 🔒 Avis du client DANS CETTE ORGANISATION
       prisma.review.findMany({
-        where: { userId },
+        where: {
+          userId,
+          organizationId: organizationId
+        },
         orderBy: {
           createdAt: 'desc'
         }
       }),
 
-      // Notifications (si implémenté)
+      // 🔒 Notifications (si implémenté) DANS CETTE ORGANISATION
       prisma.notification.findMany({
-        where: { 
+        where: {
           userId,
-          read: false 
+          organizationId: organizationId,
+          read: false
         },
         orderBy: {
           createdAt: 'desc'

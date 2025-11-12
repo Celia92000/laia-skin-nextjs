@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { notifyLoyaltyMilestone } from '@/lib/notifications';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { code, clientId } = await request.json();
 
     if (!code || !clientId) {
@@ -15,9 +22,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que le client existe
+    // 🔒 Vérifier que le client existe DANS CETTE ORGANISATION
     const client = await prisma.user.findFirst({
-      where: { id: clientId },
+      where: {
+        id: clientId,
+        organizationId: organizationId
+      },
       include: { loyaltyProfile: true }
     });
 
@@ -36,11 +46,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que le code existe et appartient à un autre client
+    // 🔒 Vérifier que le code existe et appartient à un autre client DE CETTE ORGANISATION
     const referrer = await prisma.loyaltyProfile.findFirst({
-      where: { 
+      where: {
         referralCode: code,
-        userId: { not: clientId }
+        userId: { not: clientId },
+        organizationId: organizationId
       },
       include: { user: true }
     });
@@ -52,11 +63,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Créer ou mettre à jour le profil de fidélité du client
+    // 🔒 Créer ou mettre à jour le profil de fidélité du client DANS CETTE ORGANISATION
     await prisma.loyaltyProfile.upsert({
       where: { userId: clientId },
       create: {
         userId: clientId,
+        organizationId: organizationId,
         referredBy: code
       },
       update: {
@@ -64,10 +76,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Créer l'entrée de parrainage
+    // 🔒 Créer l'entrée de parrainage POUR CETTE ORGANISATION
     await prisma.referral.create({
       data: {
         referrerUserId: referrer.userId,
+        organizationId: organizationId,
         referralCode: code,
         referredUserId: clientId,
         status: 'used',
@@ -75,11 +88,12 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Créer les réductions pour les deux parties
+    // 🔒 Créer les réductions pour les deux parties DANS CETTE ORGANISATION
     // Réduction pour le nouveau client/filleul (utilisable immédiatement) - 10€
     await prisma.discount.create({
       data: {
         userId: clientId,
+        organizationId: organizationId,
         type: 'referral_referred',
         amount: 10,
         status: 'available',
@@ -92,6 +106,7 @@ export async function POST(request: NextRequest) {
     await prisma.discount.create({
       data: {
         userId: referrer.userId,
+        organizationId: organizationId,
         type: 'referral_sponsor',
         amount: 15,
         status: 'pending',
@@ -108,10 +123,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Envoyer une notification au parrain
+    // 🔒 Envoyer une notification au parrain DANS CETTE ORGANISATION
     await prisma.notification.create({
       data: {
         userId: referrer.userId,
+        organizationId: organizationId,
         type: 'referral',
         title: 'Code de parrainage utilisé',
         message: `🎉 ${client.name} a utilisé votre code de parrainage ! Vous recevrez 15€ de réduction après son premier soin.`,
@@ -138,6 +154,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
 
@@ -148,15 +170,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer le code de parrainage du client
-    const profile = await prisma.loyaltyProfile.findUnique({
-      where: { userId: clientId }
+    // 🔒 Récupérer le code de parrainage du client DE CETTE ORGANISATION
+    const profile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId: clientId,
+        organizationId: organizationId
+      }
     });
 
     if (!profile || !profile.referralCode) {
-      // Créer un code de parrainage si n'existe pas
+      // 🔒 Créer un code de parrainage si n'existe pas POUR CETTE ORGANISATION
       const user = await prisma.user.findFirst({
-        where: { id: clientId }
+        where: {
+          id: clientId,
+          organizationId: organizationId
+        }
       });
 
       if (!user) {
@@ -167,11 +195,12 @@ export async function GET(request: NextRequest) {
       }
 
       const code = `LAIA${user.name.slice(0, 3).toUpperCase()}${clientId.slice(-4).toUpperCase()}`;
-      
+
       const newProfile = await prisma.loyaltyProfile.upsert({
         where: { userId: clientId },
         create: {
           userId: clientId,
+          organizationId: organizationId,
           referralCode: code
         },
         update: {

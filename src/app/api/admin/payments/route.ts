@@ -20,11 +20,15 @@ export async function GET(request: NextRequest) {
     // Vérifier que c'est un admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     // Récupérer les paramètres de filtre
@@ -32,8 +36,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const dateRange = searchParams.get('dateRange');
 
-    // Construire le filtre
-    const where: any = {};
+    // 🔒 SÉCURITÉ MULTI-TENANT : Construire le filtre avec organizationId
+    const where: any = {
+      organizationId: user.organizationId
+    };
 
     if (status && status !== 'all') {
       where.status = status;
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Récupérer les paiements avec les relations
+    // Récupérer les paiements DE CETTE ORGANISATION avec les relations
     const payments = await prisma.payment.findMany({
       where,
       include: {

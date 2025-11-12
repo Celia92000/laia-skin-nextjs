@@ -22,6 +22,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide', valid: false }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé', valid: false }, { status: 404 });
+    }
+
     // Récupérer le code de la carte cadeau
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
@@ -30,9 +40,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Code requis', valid: false }, { status: 400 });
     }
 
-    // Chercher la carte cadeau
-    const giftCard = await prisma.giftCard.findUnique({
-      where: { code: code.toUpperCase() },
+    // 🔒 Chercher la carte cadeau DANS CETTE ORGANISATION
+    const giftCard = await prisma.giftCard.findFirst({
+      where: {
+        code: code.toUpperCase(),
+        organizationId: user.organizationId
+      },
       include: {
         purchaser: {
           select: {

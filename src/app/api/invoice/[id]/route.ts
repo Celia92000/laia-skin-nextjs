@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 // Fonction pour obtenir les paramètres de l'entreprise depuis la config
 async function getCompanySettings() {
@@ -56,20 +57,29 @@ export async function GET(
 ) {
   const prisma = await getPrismaClient();
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Vérifier l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
     const config = await getSiteConfig();
     const companyInfo = await getCompanySettings();
-    
-    // Récupérer la réservation avec les infos utilisateur
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
+
+    // 🔒 Récupérer la réservation SEULEMENT SI elle appartient à cette organisation
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: organizationId
+      },
       include: {
         user: true
       }
     });
 
     if (!reservation) {
-      return NextResponse.json({ error: 'Réservation non trouvée' }, { status: 404 });
+      return NextResponse.json({ error: 'Réservation non trouvée ou accès refusé' }, { status: 404 });
     }
 
     // Vérifier que la réservation a été payée

@@ -4,19 +4,6 @@ import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
 
 export async function GET(request: NextRequest) {
-  const config = await getSiteConfig();
-  const siteName = config.siteName || 'Mon Institut';
-  const email = config.email || 'contact@institut.fr';
-  const primaryColor = config.primaryColor || '#d4b5a0';
-  const phone = config.phone || '06 XX XX XX XX';
-  const address = config.address || '';
-  const city = config.city || '';
-  const postalCode = config.postalCode || '';
-  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-  const website = config.customDomain || 'https://votre-institut.fr';
-  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
-
-
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const authHeader = request.headers.get('authorization');
@@ -27,9 +14,9 @@ export async function GET(request: NextRequest) {
     // Vérifier que Resend est bien configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
       console.log('Resend API key not configured, skipping email send');
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Resend non configuré - emails non envoyés' 
+      return NextResponse.json({
+        success: false,
+        message: 'Resend non configuré - emails non envoyés'
       });
     }
 
@@ -40,13 +27,37 @@ export async function GET(request: NextRequest) {
 
     console.log(`Vérification des anniversaires pour le ${todayDay}/${todayMonth}`);
 
-    // Récupérer les clients dont c'est l'anniversaire aujourd'hui
-    const users = await prisma.user.findMany({
-      where: {
-        birthDate: { not: null },
-        email: { not: '' }
-      }
+    // 🔒 Récupérer toutes les organisations actives
+    const organizations = await prisma.organization.findMany({
+      where: { status: 'ACTIVE' }
     });
+
+    let totalSent = 0;
+
+    // 🔒 Traiter chaque organisation séparément
+    for (const organization of organizations) {
+      // Récupérer la config de cette organisation
+      const orgConfig = await prisma.organizationConfig.findUnique({
+        where: { organizationId: organization.id }
+      });
+
+      const siteName = orgConfig?.siteName || organization.name || 'Mon Institut';
+      const email = orgConfig?.email || 'contact@institut.fr';
+      const phone = orgConfig?.phone || '06 XX XX XX XX';
+      const address = orgConfig?.address || '';
+      const city = orgConfig?.city || '';
+      const postalCode = orgConfig?.postalCode || '';
+      const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+      const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+
+      // 🔒 Récupérer les clients DE CETTE ORGANISATION dont c'est l'anniversaire
+      const users = await prisma.user.findMany({
+        where: {
+          organizationId: organization.id,
+          birthDate: { not: null },
+          email: { not: '' }
+        }
+      });
 
     // Filtrer les utilisateurs dont c'est l'anniversaire
     const birthdayUsers = users.filter(user => {
@@ -122,7 +133,7 @@ export async function GET(request: NextRequest) {
           text: `Joyeux anniversaire ${user.name} ! Profitez de -30% sur tous nos soins ce mois-ci.`
         });
 
-        // Enregistrer dans l'historique
+        // 🔒 Enregistrer dans l'historique AVEC organizationId
         await prisma.emailHistory.create({
           data: {
             from: `${email}`,
@@ -132,19 +143,24 @@ export async function GET(request: NextRequest) {
             template: 'birthday',
             status: 'sent',
             direction: 'outgoing',
-            userId: user.id
+            userId: user.id,
+            organizationId: organization.id
           }
         });
 
-        console.log(`Email d'anniversaire envoyé à ${user.name}`);
+        console.log(`[${organization.name}] Email d'anniversaire envoyé à ${user.name}`);
+        totalSent++;
       } catch (emailError) {
-        console.error(`Erreur envoi email à ${user.name}:`, emailError);
+        console.error(`[${organization.name}] Erreur envoi email à ${user.name}:`, emailError);
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `${birthdayUsers.length} email(s) d'anniversaire envoyé(s)` 
+    console.log(`[${organization.name}] ${birthdayUsers.length} anniversaire(s) traité(s)`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${totalSent} email(s) d'anniversaire envoyé(s) sur ${organizations.length} organisation(s)`
     });
 
   } catch (error) {

@@ -258,6 +258,7 @@ model Organization {
   superAdminNotifications SuperAdminNotification[] // Notifications super admin
   auditLogs               AuditLog[] // Logs d'audit
   invoices                Invoice[] // Factures
+  payments                Payment[] // Paiements reçus
   supportTickets          SupportTicket[] // Tickets de support
   subscriptionPromoCodes  SubscriptionPromoCode[]  @relation("SubscriptionPromoUsage") // Codes promo utilisés
   testimonials            Testimonial[]            @relation("OrganizationTestimonials") // Témoignages
@@ -633,6 +634,10 @@ model User {
   resetTokenExpiry DateTime?
   lastLoginAt      DateTime? // Dernière connexion
 
+  // RGPD - Droit à l'oubli (Article 17)
+  deletionRequestedAt DateTime? // Date de demande de suppression
+  scheduledDeletionAt DateTime? // Date de suppression effective (30 jours après demande)
+
   // Relations
   organization      Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   locations         UserLocation[] // Emplacements assignés (pour le staff)
@@ -749,6 +754,25 @@ model Reservation {
   @@index([date])
   @@index([status])
   @@index([createdAt])
+}
+
+// Blocages récurrents du calendrier (ex: fermé tous les dimanches)
+model RecurringBlock {
+  id             String   @id @default(cuid())
+  organizationId String   // 🔒 CRITIQUE : Isolation multi-tenant
+  type           String   // 'daily' | 'weekly' | 'monthly'
+  dayOfWeek      Int?     // 0-6 pour weekly (0=dimanche, 1=lundi, etc.)
+  dayOfMonth     Int?     // 1-31 pour monthly
+  timeSlots      String?  // JSON array de créneaux horaires spécifiques
+  allDay         Boolean  @default(false)
+  startTime      String?  // Format HH:mm
+  endTime        String?  // Format HH:mm
+  reason         String?  // Raison du blocage (ex: "Fermé", "Congés", etc.)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
 }
 
 model Service {
@@ -917,7 +941,7 @@ model ClientEvolution {
 
 model Review {
   id             String       @id @default(cuid())
-  organizationId String? // Organisation (multi-tenant)
+  organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
   userId         String
   reservationId  String?      @unique
   orderId        String?      @unique // Pour avis sur produits/formations
@@ -1025,7 +1049,7 @@ model ContactFormLead {
 
 model SiteConfig {
   id             String  @id @default(cuid())
-  organizationId String? // Organisation (multi-tenant)
+  organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
 
   // Informations générales
   siteName        String  @default("Mon Institut de Beauté")
@@ -1501,7 +1525,7 @@ model Formation {
   // Template tracking (LAIA Connect)
   templateSourceId String? // ID de la formation template d'origine
   isCustomized     Boolean @default(false) // true si modifié par le client
-  organizationId   String? // Organisation propriétaire (multi-tenant)
+  organizationId   String // Organisation propriétaire - OBLIGATOIRE (multi-tenant)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1512,7 +1536,7 @@ model Formation {
 model Order {
   id              String  @id @default(cuid())
   orderNumber     String  @unique // Numéro de commande unique (ex: ORD-2024-00001)
-  organizationId  String? // Organisation (multi-tenant)
+  organizationId  String // Organisation - OBLIGATOIRE (multi-tenant)
   userId          String? // Peut être null pour commandes invités
   customerName    String
   customerEmail   String
@@ -1571,7 +1595,7 @@ model MagicLink {
 
 model GiftCard {
   id             String    @id @default(cuid())
-  organizationId String? // Organisation (multi-tenant)
+  organizationId String // Organisation - OBLIGATOIRE (multi-tenant)
   code           String    @unique // Code unique de la carte cadeau (ex: GIFT-XXXX-XXXX)
   amount         Float // Montant de la carte cadeau
   initialAmount  Float // Montant initial (pour historique)
@@ -1640,7 +1664,7 @@ model EmailTemplate {
   updatedAt      DateTime      @updatedAt
 
   // Multi-tenant: isolation par organisation (null = template global LAIA Connect)
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([slug, organizationId]) // Un slug unique par organisation
@@ -1834,6 +1858,8 @@ model Payment {
   orderId       String?
   giftCardId    String?
   userId        String
+  organizationId String // OBLIGATOIRE - Organisation qui reçoit le paiement
+  organization   Organization @relation(fields: [organizationId], references: [id])
   amount        Float
   currency      String  @default("eur")
   status        String // "pending", "succeeded", "failed", "refunded"
@@ -1859,6 +1885,7 @@ model Payment {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@index([organizationId])
   @@index([reservationId])
   @@index([orderId])
   @@index([status])
@@ -1888,7 +1915,7 @@ model SuperAdminNotification {
   type           NotificationType
   title          String
   message        String           @db.Text
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   userId         String?
   read           Boolean          @default(false)
   actionUrl      String?
@@ -1929,7 +1956,7 @@ model AuditLog {
   action         AuditAction
   targetType     String // ORGANIZATION, USER, LOCATION, etc.
   targetId       String?
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   before         Json? // État avant (pour updates)
   after          Json? // État après (pour updates)
   ipAddress      String?
@@ -2124,7 +2151,7 @@ model ApiToken {
   id String @id @default(cuid())
 
   // Multi-tenant: chaque organisation a ses propres tokens
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   service        String // WHATSAPP, INSTAGRAM, FACEBOOK, STRIPE, RESEND, SNAPCHAT, TIKTOK, LINKEDIN, TWITTER
@@ -2285,7 +2312,7 @@ model Testimonial {
   clientName     String // "Marie Dupont"
   clientRole     String? // "Gérante, Beauté Éternelle Paris"
   clientPhoto    String? // URL de la photo
-  organizationId String? // Lien vers l'organisation (optionnel)
+  organizationId String // Lien vers l'organisation (optionnel)
 
   // Contenu
   content String @db.Text
@@ -2418,7 +2445,7 @@ model Lead {
   expectedCloseDate DateTime?
 
   // Conversion
-  organizationId String?
+  organizationId String? // null pour leads SaaS LAIA, sinon organization cliente
   organization   Organization? @relation(fields: [organizationId], references: [id])
   convertedAt    DateTime?
   lostReason     String?
@@ -2581,7 +2608,7 @@ model PlatformNews {
 // Analyse IA du feed social media
 model ContentAnalysis {
   id             String  @id @default(cuid())
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   platform       String // "instagram", "facebook"
 
   // Analyse du feed
@@ -2604,7 +2631,7 @@ model ContentAnalysis {
 // Suggestions de contenu générées par IA
 model AISuggestion {
   id             String  @id @default(cuid())
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   category       String // "conseils", "avant-apres", etc.
   contentType    String // "post", "story", "reel"
 
@@ -2743,7 +2770,7 @@ model ConversionFunnel {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organizationId String?
+  organizationId String // OBLIGATOIRE
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name        String

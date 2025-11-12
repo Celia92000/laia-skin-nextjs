@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 // Initialiser Stripe (la clé sera dans .env)
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -8,6 +9,15 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
     if (!stripe) {
       // Si Stripe n'est pas configuré, retourner une erreur spécifique
       return NextResponse.json({
@@ -48,7 +58,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Créer la session Stripe Checkout
+    // 🔒 Créer la session Stripe Checkout avec organizationId
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -59,13 +69,15 @@ export async function POST(request: NextRequest) {
       metadata: {
         orderType,
         orderId: orderId || '',
-        customerEmail
+        customerEmail,
+        organizationId // 🔒 CRITIQUE : Pour identifier l'organisation dans le webhook
       },
       // Permet de sauvegarder les infos de paiement pour futurs achats
       payment_intent_data: {
         metadata: {
           orderType,
-          orderId: orderId || ''
+          orderId: orderId || '',
+          organizationId // 🔒 CRITIQUE : Pour identifier l'organisation dans le webhook
         }
       },
       // Mode de facturation

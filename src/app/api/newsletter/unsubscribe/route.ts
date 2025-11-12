@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
 
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { email, token } = await request.json();
 
     if (!email) {
@@ -14,17 +21,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier si l'email existe dans la newsletter
-    let subscriber = await prisma.newsletterSubscriber.findUnique({
-      where: { email }
+    // 🔒 Vérifier si l'email existe dans la newsletter DE CETTE ORGANISATION
+    let subscriber = await prisma.newsletterSubscriber.findFirst({
+      where: {
+        email,
+        organizationId: organizationId
+      }
     });
 
     if (!subscriber) {
-      // Si l'email n'existe pas, créer une entrée avec isActive=false
-      // Cela permet de désinscrire même les clients qui n'étaient pas explicitement inscrits
+      // 🔒 Si l'email n'existe pas, créer une entrée avec isActive=false POUR CETTE ORGANISATION
       subscriber = await prisma.newsletterSubscriber.create({
         data: {
           email,
+          organizationId: organizationId,
           isActive: false,
           unsubscribedAt: new Date()
         }
@@ -32,7 +42,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Désinscrire l'abonné existant
       await prisma.newsletterSubscriber.update({
-        where: { email },
+        where: { id: subscriber.id },
         data: {
           isActive: false,
           unsubscribedAt: new Date()
@@ -40,9 +50,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Optionnel : marquer dans le CRM
+    // 🔒 Optionnel : marquer dans le CRM DE CETTE ORGANISATION
     const user = await prisma.user.findFirst({
-      where: { email }
+      where: {
+        email,
+        organizationId: organizationId
+      }
     });
 
     if (user) {

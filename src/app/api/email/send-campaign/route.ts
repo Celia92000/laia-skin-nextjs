@@ -2,33 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(req: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const prisma = await getPrismaClient();
     const config = await getSiteConfig();
     const siteName = config.siteName || 'Mon Institut';
     const email = config.email || 'contact@institut.fr';
-    const { 
-      recipients, 
-      subject, 
-      content, 
+    const {
+      recipients,
+      subject,
+      content,
       templateType,
-      segment 
+      segment
     } = await req.json();
 
     // Récupérer les emails des destinataires
     let recipientEmails: string[] = [];
-    
+
     if (segment) {
-      // Si c'est une campagne par segment
-      const users = await getSegmentUsers(segment);
+      // 🔒 Si c'est une campagne par segment DE CETTE ORGANISATION
+      const users = await getSegmentUsers(segment, organizationId);
       recipientEmails = users.map(u => u.email);
     } else if (recipients && recipients.length > 0) {
-      // Si des destinataires spécifiques sont sélectionnés
+      // 🔒 Si des destinataires spécifiques sont sélectionnés DE CETTE ORGANISATION
       const users = await prisma.user.findMany({
         where: {
-          id: { in: recipients }
+          id: { in: recipients },
+          organizationId: organizationId
         },
         select: { email: true, name: true }
       });
@@ -54,7 +62,7 @@ export async function POST(req: NextRequest) {
       )
     );
 
-    // Enregistrer la campagne dans la base de données
+    // 🔒 Enregistrer la campagne dans la base de données DE CETTE ORGANISATION
     await prisma.emailCampaign.create({
       data: {
         name: subject,
@@ -63,7 +71,8 @@ export async function POST(req: NextRequest) {
         recipients: JSON.stringify(recipientEmails),
         recipientCount: recipientEmails.length,
         status: 'sent',
-        sentAt: new Date()
+        sentAt: new Date(),
+        organizationId: organizationId
       }
     });
 
@@ -85,7 +94,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function getSegmentUsers(segment: string) {
+// 🔒 Récupérer les utilisateurs d'un segment POUR UNE ORGANISATION SPÉCIFIQUE
+async function getSegmentUsers(segment: string, organizationId: string) {
   const prisma = await getPrismaClient();
   const today = new Date();
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -93,10 +103,11 @@ async function getSegmentUsers(segment: string) {
 
   switch (segment) {
     case 'new':
-      // Nouvelles clientes (inscrites ce mois)
+      // 🔒 Nouvelles clientes (inscrites ce mois) DE CETTE ORGANISATION
       return await prisma.user.findMany({
         where: {
           role: "CLIENT",
+          organizationId: organizationId,
           createdAt: {
             gte: new Date(today.getFullYear(), today.getMonth(), 1)
           }
@@ -105,10 +116,11 @@ async function getSegmentUsers(segment: string) {
       });
 
     case 'loyal':
-      // Clientes fidèles (6+ visites)
+      // 🔒 Clientes fidèles (6+ visites) DE CETTE ORGANISATION
       return await prisma.user.findMany({
         where: {
           role: "CLIENT",
+          organizationId: organizationId,
           loyaltyProfile: {
             individualServicesCount: { gte: 6 }
           }
@@ -117,10 +129,11 @@ async function getSegmentUsers(segment: string) {
       });
 
     case 'inactive':
-      // Clientes inactives (60+ jours sans visite)
+      // 🔒 Clientes inactives (60+ jours sans visite) DE CETTE ORGANISATION
       return await prisma.user.findMany({
         where: {
           role: "CLIENT",
+          organizationId: organizationId,
           lastVisit: {
             lte: sixtyDaysAgo
           }
@@ -129,17 +142,18 @@ async function getSegmentUsers(segment: string) {
       });
 
     case 'birthday':
-      // Anniversaires ce mois
+      // 🔒 Anniversaires ce mois DE CETTE ORGANISATION
       const currentMonth = today.getMonth() + 1;
       return await prisma.user.findMany({
         where: {
           role: "CLIENT",
+          organizationId: organizationId,
           birthDate: {
             not: null
           }
         },
         select: { id: true, email: true, name: true, birthDate: true }
-      }).then(users => 
+      }).then(users =>
         users.filter(user => {
           if (user.birthDate) {
             const birthMonth = new Date(user.birthDate).getMonth() + 1;

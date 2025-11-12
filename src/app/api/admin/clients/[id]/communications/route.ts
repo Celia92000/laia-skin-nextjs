@@ -44,25 +44,46 @@ export async function GET(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+      // 🔒 Récupérer l'utilisateur avec son organizationId
+      const user = await prisma.user.findFirst({
+        where: { id: decoded.userId },
+        select: { organizationId: true, role: true }
+      });
+
+      if (!user || !user.organizationId) {
+        return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+      }
+
       const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
-    } catch (error) {
-      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
-    }
 
-    const clientId = id;
+      const clientId = id;
 
-    // Récupérer l'historique des communications depuis les différentes tables
-    const communications: CommunicationHistory[] = [];
-
-    // 1. Récupérer les emails envoyés
-    try {
-      const emailHistory = await prisma.emailHistory?.findMany({
+      // 🔒 Vérifier que le client appartient à cette organisation
+      const client = await prisma.user.findFirst({
         where: {
-          userId: clientId
-        },
+          id: clientId,
+          organizationId: user.organizationId
+        }
+      });
+
+      if (!client) {
+        return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 });
+      }
+
+      // Récupérer l'historique des communications depuis les différentes tables
+      const communications: CommunicationHistory[] = [];
+
+      // 🔒 1. Récupérer les emails envoyés DANS CETTE ORGANISATION
+      try {
+        const emailHistory = await prisma.emailHistory?.findMany({
+          where: {
+            userId: clientId,
+            organizationId: user.organizationId
+          },
         orderBy: {
           createdAt: 'desc'
         },
@@ -86,12 +107,13 @@ export async function GET(
       console.log('Table emailHistory non trouvée, continuons...');
     }
 
-    // 2. Récupérer les messages WhatsApp
-    try {
-      const whatsappHistory = await prisma.whatsAppHistory?.findMany({
-        where: {
-          userId: clientId
-        },
+      // 🔒 2. Récupérer les messages WhatsApp DE CETTE ORGANISATION
+      try {
+        const whatsappHistory = await prisma.whatsAppHistory?.findMany({
+          where: {
+            userId: clientId,
+            organizationId: user.organizationId
+          },
         orderBy: {
           createdAt: 'desc'
         },
@@ -114,16 +136,17 @@ export async function GET(
       console.log('Table whatsAppHistory non trouvée, continuons...');
     }
 
-    // 3. Récupérer les emails de réservation
-    try {
-      const reservations = await prisma.reservation.findMany({
-        where: {
-          userId: clientId,
-          OR: [
-            { reminderSent: true },
-            { reminderSent: true }
-          ]
-        },
+      // 🔒 3. Récupérer les emails de réservation DE CETTE ORGANISATION
+      try {
+        const reservations = await prisma.reservation.findMany({
+          where: {
+            userId: clientId,
+            organizationId: user.organizationId,
+            OR: [
+              { reminderSent: true },
+              { reminderSent: true }
+            ]
+          },
         orderBy: {
           createdAt: 'desc'
         },
@@ -152,18 +175,22 @@ export async function GET(
             templateUsed: 'Rappel de rendez-vous'
           });
         }
-      });
+        });
+      } catch (error) {
+        console.log('Erreur lors de la récupération des réservations:', error);
+      }
+
+      // Trier par date décroissante
+      communications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      // Retourner les 30 dernières communications
+      const recentCommunications = communications.slice(0, 30);
+
+      return NextResponse.json(recentCommunications);
+
     } catch (error) {
-      console.log('Erreur lors de la récupération des réservations:', error);
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
-
-    // Trier par date décroissante
-    communications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-    // Retourner les 30 dernières communications
-    const recentCommunications = communications.slice(0, 30);
-
-    return NextResponse.json(recentCommunications);
 
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'historique:', error);
@@ -229,30 +256,51 @@ export async function POST(
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+      // 🔒 Récupérer l'utilisateur avec son organizationId
+      const user = await prisma.user.findFirst({
+        where: { id: decoded.userId },
+        select: { organizationId: true, role: true }
+      });
+
+      if (!user || !user.organizationId) {
+        return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+      }
+
       const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
-    } catch (error) {
-      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
-    }
 
-    const { type, content, templateUsed, subject, status = 'sent' } = await request.json();
-    const clientId = id;
+      const { type, content, templateUsed, subject, status = 'sent' } = await request.json();
+      const clientId = id;
 
-    if (type === 'whatsapp') {
-      // Enregistrer dans l'historique WhatsApp
-      try {
-        const whatsappRecord = await prisma.whatsAppHistory?.create({
-          data: {
-            userId: clientId,
-            from: 'system',
-            to: clientId,
-            message: content,
-            status,
-            createdAt: new Date()
-          }
-        });
+      // 🔒 Vérifier que le client appartient à cette organisation
+      const client = await prisma.user.findFirst({
+        where: {
+          id: clientId,
+          organizationId: user.organizationId
+        }
+      });
+
+      if (!client) {
+        return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 });
+      }
+
+      if (type === 'whatsapp') {
+        // 🔒 Enregistrer dans l'historique WhatsApp AVEC organizationId
+        try {
+          const whatsappRecord = await prisma.whatsAppHistory?.create({
+            data: {
+              userId: clientId,
+              organizationId: user.organizationId,
+              from: 'system',
+              to: clientId,
+              message: content,
+              status,
+              createdAt: new Date()
+            }
+          });
         
         return NextResponse.json({ 
           success: true, 
@@ -266,36 +314,40 @@ export async function POST(
           note: 'Enregistré localement (table non disponible)'
         });
       }
-    } else if (type === 'email') {
-      // Enregistrer dans l'historique des emails
-      try {
-        const emailRecord = await prisma.emailHistory?.create({
-          data: {
-            userId: clientId,
-            to: clientId,
-            content,
-            subject,
-            template: templateUsed,
-            status,
-            createdAt: new Date()
-          }
-        });
+      } else if (type === 'email') {
+        // 🔒 Enregistrer dans l'historique des emails AVEC organizationId
+        try {
+          const emailRecord = await prisma.emailHistory?.create({
+            data: {
+              userId: clientId,
+              organizationId: user.organizationId,
+              to: clientId,
+              content,
+              subject,
+              template: templateUsed,
+              status,
+              createdAt: new Date()
+            }
+          });
         
-        return NextResponse.json({ 
-          success: true, 
-          id: emailRecord?.id || Date.now().toString()
-        });
-      } catch (error) {
-        console.log('Table emailHistory non trouvée, simulation d\'enregistrement');
-        return NextResponse.json({ 
-          success: true, 
-          id: Date.now().toString(),
-          note: 'Enregistré localement (table non disponible)'
-        });
+          return NextResponse.json({
+            success: true,
+            id: emailRecord?.id || Date.now().toString()
+          });
+        } catch (error) {
+          console.log('Table emailHistory non trouvée, simulation d\'enregistrement');
+          return NextResponse.json({
+            success: true,
+            id: Date.now().toString(),
+            note: 'Enregistré localement (table non disponible)'
+          });
+        }
       }
-    }
 
-    return NextResponse.json({ error: 'Type de communication non supporté' }, { status: 400 });
+      return NextResponse.json({ error: 'Type de communication non supporté' }, { status: 400 });
+    } catch (error) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
   } catch (error) {
     console.error('Erreur lors de l\'enregistrement:', error);

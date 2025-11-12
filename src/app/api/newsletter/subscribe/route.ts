@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { email, name } = await request.json();
 
     if (!email) {
@@ -14,16 +21,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Vérifier si l'email existe déjà dans la newsletter
-    const existingSubscriber = await prisma.newsletterSubscriber.findUnique({
-      where: { email }
+    // 🔒 Vérifier si l'email existe déjà dans la newsletter DE CETTE ORGANISATION
+    const existingSubscriber = await prisma.newsletterSubscriber.findFirst({
+      where: {
+        email,
+        organizationId: organizationId
+      }
     });
 
     if (existingSubscriber) {
       if (!existingSubscriber.isActive) {
         // Réactiver l'inscription
         await prisma.newsletterSubscriber.update({
-          where: { email },
+          where: { id: existingSubscriber.id },
           data: {
             isActive: true,
             unsubscribedAt: null,
@@ -31,8 +41,13 @@ export async function POST(request: Request) {
           }
         });
 
-        // Mettre à jour les notes admin de l'utilisateur
-        const user = await prisma.user.findFirst({ where: { email } });
+        // 🔒 Mettre à jour les notes admin de l'utilisateur DANS CETTE ORGANISATION
+        const user = await prisma.user.findFirst({
+          where: {
+            email,
+            organizationId: organizationId
+          }
+        });
         if (user) {
           await prisma.user.update({
             where: { id: user.id },
@@ -48,35 +63,41 @@ export async function POST(request: Request) {
       });
     }
 
-    // Créer l'inscription newsletter
+    // 🔒 Créer l'inscription newsletter POUR CETTE ORGANISATION
     const subscriber = await prisma.newsletterSubscriber.create({
       data: {
         email,
-        name
+        name,
+        organizationId: organizationId
       }
     });
 
-    // Vérifier si l'utilisateur existe dans le CRM
+    // 🔒 Vérifier si l'utilisateur existe dans le CRM DE CETTE ORGANISATION
     let user = await prisma.user.findFirst({
-      where: { email }
+      where: {
+        email,
+        organizationId: organizationId
+      }
     });
 
     if (!user) {
-      // Créer automatiquement un compte client dans le CRM
+      // 🔒 Créer automatiquement un compte client dans le CRM DE CETTE ORGANISATION
       user = await prisma.user.create({
         data: {
           email,
           name: name || email.split('@')[0], // Utiliser la partie avant @ si pas de nom
           password: 'NEWSLETTER_ONLY', // Compte non connecté
           role: "CLIENT",
+          organizationId: organizationId,
           adminNotes: 'Inscrit via newsletter'
         }
       });
 
-      // Créer aussi un profil de fidélité
+      // 🔒 Créer aussi un profil de fidélité POUR CETTE ORGANISATION
       await prisma.loyaltyProfile.create({
         data: {
           userId: user.id,
+          organizationId: organizationId,
           points: 0,
           tier: 'BRONZE'
         }
@@ -91,7 +112,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Enregistrer l'action dans l'historique des emails
+    // 🔒 Enregistrer l'action dans l'historique des emails DE CETTE ORGANISATION
     await prisma.emailHistory.create({
       data: {
         to: email,
@@ -99,6 +120,7 @@ export async function POST(request: Request) {
         content: 'Bienvenue dans notre newsletter !',
         status: 'sent',
         direction: 'outgoing',
+        organizationId: organizationId,
         userId: user.id
       }
     });
@@ -125,18 +147,33 @@ export async function POST(request: Request) {
   }
 }
 
-// Récupérer tous les inscrits
+// 🔒 Récupérer tous les inscrits DE CETTE ORGANISATION
 export async function GET() {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer les inscrits DE CETTE ORGANISATION
     const subscribers = await prisma.newsletterSubscriber.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        organizationId: organizationId
+      },
       orderBy: { subscribedAt: 'desc' }
     });
 
-    // Compter le total et les actifs
-    const total = await prisma.newsletterSubscriber.count();
+    // 🔒 Compter le total et les actifs DE CETTE ORGANISATION
+    const total = await prisma.newsletterSubscriber.count({
+      where: { organizationId: organizationId }
+    });
     const active = await prisma.newsletterSubscriber.count({
-      where: { isActive: true }
+      where: {
+        isActive: true,
+        organizationId: organizationId
+      }
     });
 
     return NextResponse.json({

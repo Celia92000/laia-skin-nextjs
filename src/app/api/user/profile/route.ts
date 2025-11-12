@@ -17,10 +17,13 @@ export async function GET(request: Request) {
     
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      
-      // Récupérer les infos utilisateur depuis la base de données
+
+      // 🔒 Récupérer les infos utilisateur ET vérifier l'organizationId
       const user = await prisma.user.findFirst({
-        where: { id: decoded.userId },
+        where: {
+          id: decoded.userId,
+          organizationId: decoded.organizationId
+        },
         select: {
           id: true,
           email: true,
@@ -78,7 +81,19 @@ export async function PUT(request: Request) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       const body = await request.json();
-      
+
+      // 🔒 Vérifier que l'utilisateur appartient à l'organisation
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          id: decoded.userId,
+          organizationId: decoded.organizationId
+        }
+      });
+
+      if (!existingUser) {
+        return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+      }
+
       // Mettre à jour les infos utilisateur
       const updatedUser = await prisma.user.update({
         where: { id: decoded.userId },

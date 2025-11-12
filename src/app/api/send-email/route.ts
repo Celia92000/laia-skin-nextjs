@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const prisma = await getPrismaClient();
     const config = await getSiteConfig();
     const siteName = config.siteName || 'Mon Institut';
@@ -141,7 +148,7 @@ export async function POST(request: NextRequest) {
         text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\n${ownerName}\n${siteName}`
       });
 
-      // Enregistrer dans l'historique
+      // 🔒 Enregistrer dans l'historique DE CETTE ORGANISATION
       try {
         await prisma.emailHistory.create({
           data: {
@@ -151,7 +158,8 @@ export async function POST(request: NextRequest) {
             content: message || '',
             template: 'custom',
             status: 'sent',
-            direction: 'outgoing'
+            direction: 'outgoing',
+            organizationId: organizationId
           }
         });
       } catch (dbError) {
@@ -167,7 +175,7 @@ export async function POST(request: NextRequest) {
     } catch (resendError: any) {
       console.error('Erreur Resend:', resendError);
       
-      // Enregistrer l'échec dans l'historique
+      // 🔒 Enregistrer l'échec dans l'historique DE CETTE ORGANISATION
       try {
         await prisma.emailHistory.create({
           data: {
@@ -178,6 +186,7 @@ export async function POST(request: NextRequest) {
             template: 'custom',
             status: 'failed',
             direction: 'outgoing',
+            organizationId: organizationId,
             errorMessage: resendError.message
           }
         });

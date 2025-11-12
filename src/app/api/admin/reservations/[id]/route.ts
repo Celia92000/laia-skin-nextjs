@@ -2,20 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
-// Fonction pour vérifier l'authentification admin
+// 🔒 Fonction pour vérifier l'authentification admin AVEC organizationId
 async function verifyAdmin(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return null;
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-    
+
     const prisma = await getPrismaClient();
     const user = await prisma.user.findFirst({
-      where: { id: decoded.userId }
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+        organizationId: true
+      }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
@@ -45,8 +50,13 @@ export async function GET(
 
   try {
     const prisma = await getPrismaClient();
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
+
+    // 🔒 Vérifier que la réservation appartient à cette organisation
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: admin.organizationId
+      },
       include: {
         user: {
           select: {
@@ -60,7 +70,7 @@ export async function GET(
 
     if (!reservation) {
       return NextResponse.json(
-        { error: 'Réservation non trouvée' },
+        { error: 'Réservation non trouvée ou accès refusé' },
         { status: 404 }
       );
     }
@@ -125,15 +135,18 @@ export async function PATCH(
     const { status, paymentStatus, paymentAmount, paymentMethod, paymentDate, paymentNotes, giftCardId, giftCardUsedAmount } = body;
     const reservationId = id;
 
-    // Récupérer la réservation actuelle
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+    // 🔒 Récupérer la réservation SEULEMENT SI elle appartient à cette organisation
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id: reservationId,
+        organizationId: admin.organizationId
+      },
       include: { user: true }
     });
 
     if (!reservation) {
       return NextResponse.json(
-        { error: 'Réservation non trouvée' },
+        { error: 'Réservation non trouvée ou accès refusé' },
         { status: 404 }
       );
     }
@@ -192,15 +205,19 @@ export async function PATCH(
           }
         }
 
-        // Récupérer ou créer le profil de fidélité
-        let loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-          where: { userId: reservation.userId }
+        // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
+        let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+          where: {
+            userId: reservation.userId,
+            organizationId: admin.organizationId
+          }
         });
 
         if (!loyaltyProfile) {
           loyaltyProfile = await prisma.loyaltyProfile.create({
             data: {
               userId: reservation.userId,
+              organizationId: admin.organizationId,
               individualServicesCount: 0,
               packagesCount: 0,
               totalSpent: 0,
@@ -220,9 +237,11 @@ export async function PATCH(
             }
           });
 
+          // 🔒 Créer historique POUR CETTE ORGANISATION
           await prisma.loyaltyHistory.create({
             data: {
               userId: reservation.userId,
+              organizationId: admin.organizationId,
               action: 'PACKAGE_COMPLETED',
               points: 1,
               description: `Forfait terminé (${Object.keys(packages).join(', ')})`,
@@ -240,9 +259,11 @@ export async function PATCH(
             }
           });
 
+          // 🔒 Créer historique POUR CETTE ORGANISATION
           await prisma.loyaltyHistory.create({
             data: {
               userId: reservation.userId,
+              organizationId: admin.organizationId,
               action: 'SERVICE_COMPLETED',
               points: 1,
               description: `Soin individuel terminé (${services.join(', ')})`,
@@ -254,11 +275,15 @@ export async function PATCH(
         }
       }
 
-      // Si une carte cadeau est utilisée pour cette validation, débiter son solde
+      // 🔒 Si une carte cadeau est utilisée pour cette validation, débiter son solde
       if (giftCardId && giftCardUsedAmount && giftCardUsedAmount > 0) {
         try {
-          const giftCard = await prisma.giftCard.findUnique({
-            where: { id: giftCardId }
+          // 🔒 Vérifier que la carte cadeau appartient à cette organisation
+          const giftCard = await prisma.giftCard.findFirst({
+            where: {
+              id: giftCardId,
+              organizationId: admin.organizationId
+            }
           });
 
           if (giftCard && giftCard.status === 'active' && giftCard.balance >= giftCardUsedAmount) {
@@ -297,13 +322,16 @@ export async function PATCH(
           services = [reservation.services];
         }
 
-        // Pour chaque service, récupérer et déduire les consommables
+        // 🔒 Pour chaque service, récupérer et déduire les consommables DE CETTE ORGANISATION
         for (const serviceName of services) {
           if (typeof serviceName !== 'string') continue;
 
-          // Trouver le service par son nom
+          // 🔒 Trouver le service par son nom DANS CETTE ORGANISATION
           const service = await prisma.service.findFirst({
-            where: { name: serviceName },
+            where: {
+              name: serviceName,
+              organizationId: admin.organizationId
+            },
             include: {
               stockLinks: {
                 include: {
@@ -327,10 +355,11 @@ export async function PATCH(
                   }
                 });
 
-                // Enregistrer le mouvement dans l'historique
+                // 🔒 Enregistrer le mouvement dans l'historique DE CETTE ORGANISATION
                 await prisma.stockMovement.create({
                   data: {
                     stockId: link.stockId,
+                    organizationId: admin.organizationId,
                     type: 'OUT',
                     quantity: -link.quantityPerUse,
                     reason: `Utilisation pour prestation: ${serviceName}`,
@@ -416,10 +445,11 @@ export async function PUT(
       normalizedDate.setHours(0, 0, 0, 0);
     }
 
-    // Vérifier la disponibilité du nouveau créneau (sauf si on annule)
+    // 🔒 Vérifier la disponibilité du nouveau créneau DANS CETTE ORGANISATION (sauf si on annule)
     if (status !== 'cancelled' && normalizedDate && time) {
       const existingReservation = await prisma.reservation.findFirst({
         where: {
+          organizationId: admin.organizationId,
           date: normalizedDate,
           time: time,
           status: {
@@ -437,6 +467,21 @@ export async function PUT(
           { status: 409 }
         );
       }
+    }
+
+    // 🔒 Vérifier que la réservation appartient à cette organisation avant de la modifier
+    const existingRes = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: admin.organizationId
+      }
+    });
+
+    if (!existingRes) {
+      return NextResponse.json(
+        { error: 'Réservation non trouvée ou accès refusé' },
+        { status: 404 }
+      );
     }
 
     // Mettre à jour la réservation
@@ -499,6 +544,22 @@ export async function DELETE(
 
   try {
     const prisma = await getPrismaClient();
+
+    // 🔒 Vérifier que la réservation appartient à cette organisation avant de la supprimer
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: admin.organizationId
+      }
+    });
+
+    if (!reservation) {
+      return NextResponse.json(
+        { error: 'Réservation non trouvée ou accès refusé' },
+        { status: 404 }
+      );
+    }
+
     await prisma.reservation.delete({
       where: { id }
     });

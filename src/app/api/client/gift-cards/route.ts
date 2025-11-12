@@ -17,10 +17,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Récupérer les cartes cadeaux achetées par le client
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { email: true, name: true, organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer les cartes cadeaux achetées DANS CETTE ORGANISATION
     const purchasedGiftCards = await prisma.giftCard.findMany({
       where: {
-        purchasedBy: decoded.userId
+        purchasedBy: decoded.userId,
+        organizationId: user.organizationId
       },
       include: {
         reservations: {
@@ -41,15 +52,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Récupérer les cartes cadeaux reçues (où purchasedFor correspond à l'email du client)
-    const user = await prisma.user.findFirst({
-      where: { id: decoded.userId },
-      select: { email: true, name: true }
-    });
-
+    // 🔒 Récupérer les cartes cadeaux reçues DANS CETTE ORGANISATION
     const receivedGiftCards = await prisma.giftCard.findMany({
       where: {
-        purchasedFor: user?.email
+        purchasedFor: user.email,
+        organizationId: user.organizationId
       },
       include: {
         purchaser: {

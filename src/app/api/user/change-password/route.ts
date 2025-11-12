@@ -35,9 +35,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Récupérer l'utilisateur
+    // 🔒 Récupérer l'utilisateur avec vérification organizationId
     const user = await prisma.user.findFirst({
-      where: { id: decoded.userId }
+      where: {
+        id: decoded.userId,
+        organizationId: decoded.organizationId
+      }
     });
 
     if (!user) {

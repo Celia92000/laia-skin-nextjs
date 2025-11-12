@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 // GET - Récupérer un élément de stock spécifique par ID
 export async function GET(
@@ -8,11 +9,40 @@ export async function GET(
 ) {
   const prisma = await getPrismaClient();
   try {
+    // 🔒 Authentification
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Vérifier que c'est un admin
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true, organizationId: true }
+    });
+
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!user || !adminRoles.includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
 
-    // Récupérer l'élément de stock avec ses relations
-    const stock = await prisma.stock.findUnique({
-      where: { id },
+    // 🔒 SÉCURITÉ MULTI-TENANT : Vérifier que le stock appartient à cette organisation
+    const stock = await prisma.stock.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         serviceLinks: {
           include: {
@@ -51,7 +81,46 @@ export async function PUT(
 ) {
   const prisma = await getPrismaClient();
   try {
+    // 🔒 Authentification
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Vérifier que c'est un admin
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true, organizationId: true }
+    });
+
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!user || !adminRoles.includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Vérifier que le stock appartient à cette organisation
+    const existingStock = await prisma.stock.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingStock) {
+      return NextResponse.json({ error: 'Élément de stock non trouvé' }, { status: 404 });
+    }
+
     const body = await request.json();
 
     const stockData = {
@@ -92,7 +161,46 @@ export async function DELETE(
 ) {
   const prisma = await getPrismaClient();
   try {
+    // 🔒 Authentification
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Vérifier que c'est un admin
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true, organizationId: true }
+    });
+
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!user || !adminRoles.includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Vérifier que le stock appartient à cette organisation
+    const existingStock = await prisma.stock.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingStock) {
+      return NextResponse.json({ error: 'Élément de stock non trouvé' }, { status: 404 });
+    }
+
     await prisma.stock.delete({
       where: { id }
     });

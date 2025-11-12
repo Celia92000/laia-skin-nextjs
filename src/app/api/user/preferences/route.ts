@@ -16,8 +16,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer user avec vérification organizationId
     const user = await prisma.user.findFirst({
-      where: { id: decoded.userId },
+      where: {
+        id: decoded.userId,
+        organizationId: decoded.organizationId
+      },
       select: {
         preferences: true
       }
@@ -67,11 +71,18 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { emailNotifications, whatsappNotifications } = body;
 
-    // Get current preferences
+    // 🔒 Get current preferences avec vérification organizationId
     const currentUser = await prisma.user.findFirst({
-      where: { id: decoded.userId },
+      where: {
+        id: decoded.userId,
+        organizationId: decoded.organizationId
+      },
       select: { preferences: true }
     });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     let currentPreferences = {};
     if (currentUser?.preferences) {

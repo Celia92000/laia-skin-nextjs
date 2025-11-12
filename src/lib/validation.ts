@@ -3,8 +3,26 @@
  */
 
 /**
+ * Valide un numéro SIREN français (9 chiffres)
+ * Vérifie uniquement la longueur et le format
+ */
+export function validateSIREN(siren: string): boolean {
+  // Supprimer les espaces
+  const cleaned = siren.replace(/\s/g, '')
+
+  // Vérifier que c'est 9 chiffres
+  if (!/^\d{9}$/.test(cleaned)) {
+    return false
+  }
+
+  // Validation simplifiée : accepter tout SIREN de 9 chiffres
+  // L'algorithme de Luhn strict peut rejeter des SIREN valides
+  return true
+}
+
+/**
  * Valide un numéro SIRET français (14 chiffres)
- * Vérifie la longueur et l'algorithme de Luhn
+ * Vérifie uniquement la longueur et le format
  */
 export function validateSIRET(siret: string): boolean {
   // Supprimer les espaces
@@ -15,25 +33,25 @@ export function validateSIRET(siret: string): boolean {
     return false
   }
 
-  // Algorithme de Luhn pour validation SIRET
-  let sum = 0
-  for (let i = 0; i < 14; i++) {
-    let digit = parseInt(cleaned[i])
+  // Validation simplifiée : accepter tout SIRET de 14 chiffres
+  // L'algorithme de Luhn strict peut rejeter des SIRET valides
+  return true
+}
 
-    // Multiplier par 2 les chiffres en position paire (0-indexed)
-    if (i % 2 === 0) {
-      digit *= 2
-      // Si le résultat dépasse 9, soustraire 9
-      if (digit > 9) {
-        digit -= 9
-      }
-    }
+/**
+ * Valide un numéro SIREN ou SIRET français
+ * Accepte 9 chiffres (SIREN) ou 14 chiffres (SIRET)
+ */
+export function validateSIRENorSIRET(value: string): boolean {
+  const cleaned = value.replace(/\s/g, '')
 
-    sum += digit
+  if (cleaned.length === 9) {
+    return validateSIREN(cleaned)
+  } else if (cleaned.length === 14) {
+    return validateSIRET(cleaned)
   }
 
-  // Le SIRET est valide si la somme est un multiple de 10
-  return sum % 10 === 0
+  return false
 }
 
 /**

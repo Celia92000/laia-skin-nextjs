@@ -5,15 +5,22 @@ import { getPrismaClient } from '@/lib/prisma';
 export async function POST(request: Request) {
   const prisma = await getPrismaClient();
   try {
-    const { reservationId } = await request.json();
+    const { reservationId, organizationId } = await request.json();
 
     if (!reservationId) {
       return NextResponse.json({ error: 'reservationId est requis' }, { status: 400 });
     }
 
-    // Récupérer la réservation
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+    if (!organizationId) {
+      return NextResponse.json({ error: 'organizationId est requis' }, { status: 400 });
+    }
+
+    // 🔒 Récupérer la réservation DANS CETTE ORGANISATION
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id: reservationId,
+        organizationId: organizationId
+      },
       include: {
         user: true,
         service: true
@@ -36,8 +43,12 @@ export async function POST(request: Request) {
     } else if (reservation.services) {
       const services = JSON.parse(reservation.services);
       if (services.length > 0) {
+        // 🔒 Récupérer le service DANS CETTE ORGANISATION
         const firstService = await prisma.service.findFirst({
-          where: { slug: services[0] }
+          where: {
+            slug: services[0],
+            organizationId: reservation.organizationId
+          }
         });
         serviceName = firstService?.name || services[0];
       }
@@ -93,46 +104,62 @@ export async function GET() {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(0, 0, 0, 0);
-    
+
     const yesterdayEnd = new Date(yesterday);
     yesterdayEnd.setHours(23, 59, 59, 999);
 
-    const reservations = await prisma.reservation.findMany({
-      where: {
-        status: 'completed',
-        date: {
-          gte: yesterday,
-          lte: yesterdayEnd
-        },
-        reviewEmailSent: false
-      },
-      include: {
-        user: true,
-        service: true
-      }
+    // 🔒 Récupérer toutes les organisations actives
+    const organizations = await prisma.organization.findMany({
+      where: { status: 'ACTIVE' }
     });
 
-    const results = [];
-    for (const reservation of reservations) {
-      try {
-        // Envoyer l'email pour chaque réservation
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/send-request`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reservationId: reservation.id })
-        });
-        
-        const result = await response.json();
-        results.push({ reservationId: reservation.id, ...result });
-      } catch (error) {
-        console.error(`Erreur pour la réservation ${reservation.id}:`, error);
-        results.push({ reservationId: reservation.id, error: true });
+    const allResults = [];
+
+    // 🔒 Traiter chaque organisation séparément
+    for (const organization of organizations) {
+      const reservations = await prisma.reservation.findMany({
+        where: {
+          organizationId: organization.id,
+          status: 'completed',
+          date: {
+            gte: yesterday,
+            lte: yesterdayEnd
+          },
+          reviewEmailSent: false
+        },
+        include: {
+          user: true,
+          service: true
+        }
+      });
+
+      const results = [];
+      for (const reservation of reservations) {
+        try {
+          // Envoyer l'email pour chaque réservation
+          const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/send-request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              reservationId: reservation.id,
+              organizationId: organization.id
+            })
+          });
+
+          const result = await response.json();
+          results.push({ reservationId: reservation.id, ...result });
+        } catch (error) {
+          console.error(`[${organization.name}] Erreur pour la réservation ${reservation.id}:`, error);
+          results.push({ reservationId: reservation.id, error: true });
+        }
       }
+
+      allResults.push(...results);
     }
 
     return NextResponse.json({
-      message: `${results.length} emails d'avis envoyés`,
-      results
+      message: `${allResults.length} emails d'avis envoyés sur ${organizations.length} organisation(s)`,
+      results: allResults
     });
 
   } catch (error) {

@@ -21,9 +21,12 @@ export async function GET(request: Request) {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
 
-    // Récupérer le profil de fidélité avec code de parrainage
-    const loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId: decoded.id },
+    // 🔒 Récupérer le profil de fidélité DE CETTE ORGANISATION
+    const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: {
         user: true
       }
@@ -39,9 +42,12 @@ export async function GET(request: Request) {
       loyaltyProfile.referralCode = code;
     }
 
-    // Récupérer les parrainages effectués
+    // 🔒 Récupérer les parrainages effectués DE CETTE ORGANISATION
     const referrals = await prisma.referral.findMany({
-      where: { referrerUserId: decoded.id },
+      where: {
+        referrerUserId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: {
         referred: true
       },
@@ -89,52 +95,60 @@ export async function POST(request: Request) {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
-    
+
     const { email, name } = await request.json();
 
-    // Vérifier si l'email n'est pas déjà client
+    // 🔒 Vérifier si l'email n'est pas déjà client DE CETTE ORGANISATION
     const existingUser = await prisma.user.findFirst({
-      where: { email }
+      where: {
+        email,
+        organizationId: decoded.organizationId
+      }
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        error: 'Cette personne est déjà cliente' 
+      return NextResponse.json({
+        error: 'Cette personne est déjà cliente'
       }, { status: 400 });
     }
 
-    // Vérifier si pas déjà parrainé
+    // 🔒 Vérifier si pas déjà parrainé DANS CETTE ORGANISATION
     const existingReferral = await prisma.referral.findFirst({
-      where: { 
+      where: {
         referredEmail: email,
+        organizationId: decoded.organizationId,
         status: { not: 'cancelled' }
       }
     });
 
     if (existingReferral) {
-      return NextResponse.json({ 
-        error: 'Cette personne a déjà été parrainée' 
+      return NextResponse.json({
+        error: 'Cette personne a déjà été parrainée'
       }, { status: 400 });
     }
 
-    // Récupérer le profil de fidélité du parrain
-    const loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId: decoded.id },
+    // 🔒 Récupérer le profil de fidélité du parrain DE CETTE ORGANISATION
+    const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: { user: true }
     });
 
     if (!loyaltyProfile?.referralCode) {
       const code = generateReferralCode(decoded.name);
       await prisma.loyaltyProfile.update({
-        where: { userId: decoded.id },
+        where: { id: loyaltyProfile.id },
         data: { referralCode: code }
       });
     }
 
-    // Créer le parrainage
+    // 🔒 Créer le parrainage POUR CETTE ORGANISATION
     const referral = await prisma.referral.create({
       data: {
         referrerUserId: decoded.id,
+        organizationId: decoded.organizationId,
         referralCode: `${loyaltyProfile?.referralCode || generateReferralCode(decoded.name)}-${Date.now()}`,
         referredEmail: email,
         referredName: name,
@@ -170,14 +184,15 @@ export async function PUT(request: Request) {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
-    
+
     const { referralId } = await request.json();
 
-    // Vérifier que le parrainage existe et appartient à l'utilisateur
+    // 🔒 Vérifier que le parrainage existe, appartient à l'utilisateur ET à cette organisation
     const referral = await prisma.referral.findFirst({
       where: {
         id: referralId,
         referrerUserId: decoded.id,
+        organizationId: decoded.organizationId,
         status: 'rewarded',
         rewardUsedAt: null
       }

@@ -2,9 +2,19 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(request: Request) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation du site
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
     // 🔒 Rate limiting : 5 tentatives de connexion max par minute
     const ip = getClientIp(request);
     const { success, limit, remaining } = await checkStrictRateLimit(`login:${ip}`);
@@ -21,9 +31,12 @@ export async function POST(request: Request) {
     // Utiliser getPrismaClient pour s'assurer que la connexion est active
     const prisma = await getPrismaClient();
 
-    // Chercher l'utilisateur par email (utiliser findFirst car email n'est plus unique seul)
+    // 🔒 Chercher l'utilisateur par email ET organizationId pour éviter la connexion cross-tenant
     const user = await prisma.user.findFirst({
-      where: { email },
+      where: {
+        email,
+        organizationId: organizationId
+      },
       include: {
         organization: true
       }

@@ -8,12 +8,12 @@ export async function GET(
 ) {
   const { id } = await params;
   const prisma = await getPrismaClient();
-  
+
   try {
     // Vérifier l'authentification
-    const token = request.cookies.get('token')?.value || 
+    const token = request.cookies.get('token')?.value ||
                  request.headers.get('authorization')?.split(' ')[1];
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -23,9 +23,22 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Récupérer les détails du client
+    // 🔒 Vérifier l'organizationId de l'admin
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true, organizationId: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    // 🔒 Récupérer les détails du client UNIQUEMENT si même organisation
     const client = await prisma.user.findFirst({
-      where: { id },
+      where: {
+        id,
+        organizationId: admin.organizationId
+      },
       include: {
         reservations: {
           orderBy: {
@@ -84,12 +97,12 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const prisma = await getPrismaClient();
-  
+
   try {
     // Vérifier l'authentification
-    const token = request.cookies.get('token')?.value || 
+    const token = request.cookies.get('token')?.value ||
                  request.headers.get('authorization')?.split(' ')[1];
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -99,20 +112,36 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
+    // 🔒 Vérifier que c'est un admin ET récupérer son organizationId
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (!admin || !admin.organizationId) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (admin.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    // 🔒 Vérifier que le client appartient à la même organisation
+    const existingClient = await prisma.user.findFirst({
+      where: {
+        id,
+        organizationId: admin.organizationId
+      }
+    });
+
+    if (!existingClient) {
+      return NextResponse.json({ error: 'Client non trouvé ou accès refusé' }, { status: 404 });
     }
 
     const body = await request.json();
     const { notes, tags, vip, ...updateData } = body;
 
-    // Mettre à jour le client
+    // 🔒 Mettre à jour le client (vérification organizationId déjà faite)
     const updatedClient = await prisma.user.update({
       where: { id },
       data: {

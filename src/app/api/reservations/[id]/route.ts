@@ -18,8 +18,22 @@ export async function GET(
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
 
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer la réservation UNIQUEMENT si même organization
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         user: {
           select: {
@@ -37,7 +51,8 @@ export async function GET(
     }
 
     // Vérifier que l'utilisateur a le droit de voir cette réservation
-    if (reservation.userId !== decoded.userId && decoded.role !== 'admin') {
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
@@ -67,9 +82,22 @@ export async function PUT(
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
 
-    // Récupérer la réservation existante
-    const existingReservation = await prisma.reservation.findUnique({
-      where: { id }
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer la réservation existante DANS CETTE ORGANISATION
+    const existingReservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
     });
 
     if (!existingReservation) {
@@ -78,7 +106,7 @@ export async function PUT(
 
     // Vérifier que l'utilisateur a le droit de modifier
     // Les admins peuvent modifier toutes les réservations
-    const isAdmin = (decoded.role as string) === 'admin' || (decoded.role as string) === 'ADMIN';
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     const isOwner = existingReservation.userId === decoded.userId;
 
     if (!isAdmin && !isOwner) {
@@ -89,10 +117,11 @@ export async function PUT(
     const body = await request.json();
     const { services, date, time, totalPrice, status, paymentStatus, notes } = body;
 
-    // Vérifier la disponibilité du nouveau créneau (sauf si c'est le même)
+    // 🔒 Vérifier la disponibilité du nouveau créneau DANS CETTE ORGANISATION (sauf si c'est le même)
     if (date && time && (date !== formatDateLocal(existingReservation.date) || time !== existingReservation.time)) {
       const conflictingReservation = await prisma.reservation.findFirst({
         where: {
+          organizationId: user.organizationId,
           date: new Date(date),
           time: time,
           status: { in: ['confirmed', 'pending'] },
@@ -164,9 +193,22 @@ export async function DELETE(
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-skin-secret-key-2024') as any;
 
-    // Récupérer la réservation
-    const reservation = await prisma.reservation.findUnique({
-      where: { id },
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer la réservation DANS CETTE ORGANISATION
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: { user: true }
     });
 
@@ -175,7 +217,8 @@ export async function DELETE(
     }
 
     // Vérifier les droits
-    if (reservation.userId !== decoded.userId && decoded.role !== 'admin') {
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

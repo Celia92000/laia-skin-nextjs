@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
-// Fonction pour vérifier l'authentification admin
+// 🔒 Fonction pour vérifier l'authentification admin AVEC organizationId
 async function verifyAdmin(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return null;
   }
@@ -15,7 +15,12 @@ async function verifyAdmin(request: NextRequest) {
 
     const prisma = await getPrismaClient();
     const user = await prisma.user.findFirst({
-      where: { id: decoded.userId }
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+        organizationId: true
+      }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
@@ -144,15 +149,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, discountAmount, reason } = body;
 
-    // Récupérer ou créer le profil de fidélité
-    let loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId }
+    // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
+    let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId,
+        organizationId: admin.organizationId
+      }
     });
 
     if (!loyaltyProfile) {
       loyaltyProfile = await prisma.loyaltyProfile.create({
         data: {
           userId,
+          organizationId: admin.organizationId,
           individualServicesCount: 0,
           packagesCount: 0,
           totalSpent: 0,
@@ -161,10 +170,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Créer une entrée dans l'historique
+    // 🔒 Créer une entrée dans l'historique DE CETTE ORGANISATION
     await prisma.loyaltyHistory.create({
       data: {
         userId,
+        organizationId: admin.organizationId,
         action: 'DISCOUNT_APPLIED',
         points: 0,
         description: `Réduction manuelle de ${discountAmount}€ : ${reason}`

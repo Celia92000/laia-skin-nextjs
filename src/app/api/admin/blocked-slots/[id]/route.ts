@@ -22,18 +22,25 @@ export async function GET(
     // Vérifier que c'est un admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
 
-    // Récupérer le créneau bloqué
-    const blockedSlot = await prisma.blockedSlot.findUnique({
-      where: { id }
+    // 🔒 Récupérer le créneau bloqué UNIQUEMENT si même organisation
+    const blockedSlot = await prisma.blockedSlot.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
     });
 
     if (!blockedSlot) {
@@ -54,7 +61,7 @@ export async function DELETE(
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -67,14 +74,30 @@ export async function DELETE(
     // Vérifier que c'est un admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // 🔒 Vérifier que le créneau appartient à cette organisation avant de supprimer
+    const blockedSlot = await prisma.blockedSlot.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!blockedSlot) {
+      return NextResponse.json({ error: 'Créneau bloqué non trouvé' }, { status: 404 });
+    }
 
     // Supprimer le créneau bloqué
     await prisma.blockedSlot.delete({

@@ -38,10 +38,29 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // Mettre à jour la commande dans la base de données
+        // 🔒 Récupérer l'organizationId depuis les metadata Stripe
         const orderId = session.metadata?.orderId;
+        const organizationId = session.metadata?.organizationId;
+
+        if (!organizationId) {
+          console.error('⚠️ organizationId manquant dans les metadata Stripe');
+          break;
+        }
 
         if (orderId) {
+          // 🔒 Vérifier que la commande appartient à cette organisation
+          const order = await prisma.order.findFirst({
+            where: {
+              id: orderId,
+              organizationId: organizationId
+            }
+          });
+
+          if (!order) {
+            console.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
+            break;
+          }
+
           await prisma.order.update({
             where: { id: orderId },
             data: {
@@ -55,15 +74,12 @@ export async function POST(request: NextRequest) {
 
           // Si c'est une prestation, mettre à jour la réservation
           if (session.metadata?.orderType === 'service') {
-            const order = await prisma.order.findUnique({
-              where: { id: orderId }
-            });
-
-            if (order && order.userId) {
-              // Trouver la réservation correspondante et la confirmer
+            if (order.userId) {
+              // 🔒 Trouver la réservation correspondante DANS CETTE ORGANISATION
               const recentReservation = await prisma.reservation.findFirst({
                 where: {
                   userId: order.userId,
+                  organizationId: organizationId,
                   paymentStatus: 'unpaid'
                 },
                 orderBy: { createdAt: 'desc' }
@@ -92,10 +108,29 @@ export async function POST(request: NextRequest) {
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-        // Marquer le paiement comme échoué
+        // 🔒 Récupérer l'organizationId depuis les metadata
         const orderId = paymentIntent.metadata?.orderId;
+        const organizationId = paymentIntent.metadata?.organizationId;
+
+        if (!organizationId) {
+          console.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
+          break;
+        }
 
         if (orderId) {
+          // 🔒 Vérifier que la commande appartient à cette organisation
+          const order = await prisma.order.findFirst({
+            where: {
+              id: orderId,
+              organizationId: organizationId
+            }
+          });
+
+          if (!order) {
+            console.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
+            break;
+          }
+
           await prisma.order.update({
             where: { id: orderId },
             data: {
@@ -112,10 +147,23 @@ export async function POST(request: NextRequest) {
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
 
-        // Marquer la commande comme remboursée
+        // 🔒 Récupérer l'organizationId depuis le payment_intent
         if (charge.payment_intent) {
+          // Récupérer le PaymentIntent complet pour accéder aux metadata
+          const paymentIntent = await stripe.paymentIntents.retrieve(charge.payment_intent as string);
+          const organizationId = paymentIntent.metadata?.organizationId;
+
+          if (!organizationId) {
+            console.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
+            break;
+          }
+
+          // 🔒 Chercher les commandes UNIQUEMENT dans cette organisation
           const orders = await prisma.order.findMany({
-            where: { transactionId: charge.payment_intent as string }
+            where: {
+              transactionId: charge.payment_intent as string,
+              organizationId: organizationId
+            }
           });
 
           for (const order of orders) {
@@ -128,7 +176,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          console.log(`💰 Remboursement effectué`);
+          console.log(`💰 Remboursement effectué pour ${orders.length} commande(s)`);
         }
         break;
       }

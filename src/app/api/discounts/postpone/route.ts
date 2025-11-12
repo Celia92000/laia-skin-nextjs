@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { discountId, postponeTo, reason } = await request.json();
 
     if (!discountId || !postponeTo) {
@@ -14,9 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que la réduction existe et est disponible
-    const discount = await prisma.discount.findUnique({
-      where: { id: discountId }
+    // 🔒 Vérifier que la réduction existe et appartient à cette organisation
+    const discount = await prisma.discount.findFirst({
+      where: {
+        id: discountId,
+        organizationId: organizationId
+      }
     });
 
     if (!discount) {
@@ -44,10 +54,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Créer une nouvelle réduction pour la date reportée
+    // 🔒 Créer une nouvelle réduction pour la date reportée DANS CETTE ORGANISATION
     await prisma.discount.create({
       data: {
         userId: discount.userId,
+        organizationId: organizationId,
         type: 'postponed',
         amount: discount.amount,
         status: 'available',
@@ -58,10 +69,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Créer une notification
+    // 🔒 Créer une notification POUR CETTE ORGANISATION
     await prisma.notification.create({
       data: {
         userId: discount.userId,
+        organizationId: organizationId,
         type: 'discount',
         title: 'Réduction reportée',
         message: `Votre réduction de ${discount.amount}€ a été reportée au ${new Date(postponeTo).toLocaleDateString('fr-FR')}`,

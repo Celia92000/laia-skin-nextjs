@@ -31,18 +31,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
+    // 🔒 Récupérer l'admin avec son organizationId
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer toutes les campagnes
+    // 🔒 Récupérer toutes les campagnes DE CETTE ORGANISATION
     const campaigns = await prisma.emailCampaign.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         _count: {
           select: {
@@ -66,20 +73,30 @@ export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const data = await request.json();
 
-    // Créer la campagne
+    // 🔒 Créer la campagne AVEC organizationId
     const campaign = await prisma.emailCampaign.create({
       data: {
         name: data.name,
@@ -89,7 +106,8 @@ export async function POST(request: NextRequest) {
         recipients: JSON.stringify(data.recipients),
         recipientCount: data.recipients.length,
         status: data.status || 'draft',
-        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+        organizationId: user.organizationId
       }
     });
 
@@ -129,7 +147,7 @@ export async function POST(request: NextRequest) {
             })
           });
 
-          // Créer l'historique
+          // 🔒 Créer l'historique AVEC organizationId
           await prisma.emailHistory.create({
             data: {
               from: `${email}`,
@@ -139,7 +157,8 @@ export async function POST(request: NextRequest) {
               template: data.template,
               status: response.ok ? 'sent' : 'failed',
               campaignId: campaign.id,
-              userId: recipient.id
+              userId: recipient.id,
+              organizationId: user.organizationId
             }
           });
         } catch (error) {
@@ -168,18 +187,40 @@ export async function PUT(request: NextRequest) {
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id, ...data } = await request.json();
+
+    // 🔒 Vérifier que la campagne appartient à cette organisation
+    const existingCampaign = await prisma.emailCampaign.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingCampaign) {
+      return NextResponse.json({ error: 'Campagne non trouvée' }, { status: 404 });
+    }
 
     // Mettre à jour la campagne
     const campaign = await prisma.emailCampaign.update({
@@ -207,15 +248,25 @@ export async function DELETE(request: NextRequest) {
   const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -223,6 +274,18 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    }
+
+    // 🔒 Vérifier que la campagne appartient à cette organisation
+    const campaign = await prisma.emailCampaign.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campagne non trouvée' }, { status: 404 });
     }
 
     // Supprimer la campagne

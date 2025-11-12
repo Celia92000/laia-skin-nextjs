@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/notifications';
 import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -16,17 +17,26 @@ export async function POST(request: NextRequest) {
   const website = config.customDomain || 'https://votre-institut.fr';
 
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { reservationId } = await request.json();
-    
+
     if (!reservationId) {
       return NextResponse.json({ error: 'ID de réservation requis' }, { status: 400 });
     }
-    
+
     const prisma = await getPrismaClient();
-    
-    // Récupérer la réservation avec les détails
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+
+    // 🔒 Récupérer la réservation SEULEMENT SI elle appartient à cette organisation
+    const reservation = await prisma.reservation.findFirst({
+      where: {
+        id: reservationId,
+        organizationId: organizationId
+      },
       include: {
         user: true,
         service: true

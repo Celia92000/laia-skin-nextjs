@@ -5,65 +5,81 @@ export async function POST(request: Request) {
   try {
     const prisma = await getPrismaClient();
     const data = await request.json();
-    
+
     // Valider les données requises
     if (!data.rating || !data.comment) {
       return NextResponse.json(
-        { error: 'Note et commentaire requis' }, 
+        { error: 'Note et commentaire requis' },
         { status: 400 }
       );
     }
 
-    // Trouver ou créer le client
+    if (!data.organizationId) {
+      return NextResponse.json(
+        { error: 'organizationId requis' },
+        { status: 400 }
+      );
+    }
+
+    // 🔒 Trouver ou créer le client DANS CETTE ORGANISATION
     let client = null;
     if (data.clientEmail) {
       client = await prisma.user.findFirst({
-        where: { email: data.clientEmail }
+        where: {
+          email: data.clientEmail,
+          organizationId: data.organizationId
+        }
       });
-      
+
       if (!client && data.clientName) {
-        // Créer un nouveau client si nécessaire
+        // 🔒 Créer un nouveau client AVEC organizationId
         client = await prisma.user.create({
           data: {
             email: data.clientEmail,
             name: data.clientName,
             phone: data.clientPhone || null,
             password: '', // Les avis peuvent être laissés sans compte
-            role: 'CLIENT'
+            role: 'CLIENT',
+            organizationId: data.organizationId
           }
         });
       }
     }
 
-    // Trouver le service si fourni
+    // 🔒 Trouver le service si fourni DANS CETTE ORGANISATION
     let service = null;
     if (data.serviceId) {
-      service = await prisma.service.findUnique({
-        where: { id: data.serviceId }
+      service = await prisma.service.findFirst({
+        where: {
+          id: data.serviceId,
+          organizationId: data.organizationId
+        }
       });
     }
 
     // Si pas de client, on ne peut pas créer l'avis
     if (!client) {
-      // Créer un utilisateur anonyme temporaire
+      // 🔒 Créer un utilisateur anonyme temporaire AVEC organizationId
       const anonymousUser = await prisma.user.create({
         data: {
           email: `anonymous_${Date.now()}@temp.com`,
           name: data.clientName || 'Client anonyme',
           password: 'not-used',
-          role: "CLIENT"
+          role: "CLIENT",
+          organizationId: data.organizationId
         }
       });
       client = anonymousUser;
     }
 
-    // Créer l'avis
+    // 🔒 Créer l'avis AVEC organizationId
     const review = await prisma.review.create({
       data: {
         rating: data.rating,
         comment: data.comment,
         source: data.source || 'email', // email, whatsapp, website
         userId: client.id,
+        organizationId: data.organizationId,
         serviceName: service?.name || data.serviceName,
         approved: false // Les avis doivent être modérés
       },
@@ -96,26 +112,32 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const reservationId = searchParams.get('reservation');
   const clientEmail = searchParams.get('email');
-  
+  const organizationId = searchParams.get('organizationId');
+
   try {
     const prisma = await getPrismaClient();
     // Récupérer les informations de la réservation si disponible
     let reservationInfo = null;
-    if (reservationId) {
-      const reservation = await prisma.reservation.findUnique({
-        where: { id: reservationId },
+    if (reservationId && organizationId) {
+      // 🔒 Récupérer la réservation DANS CETTE ORGANISATION
+      const reservation = await prisma.reservation.findFirst({
+        where: {
+          id: reservationId,
+          organizationId: organizationId
+        },
         include: {
           user: true
         }
       });
-      
+
       if (reservation) {
         reservationInfo = {
           clientName: reservation.user?.name,
           clientEmail: reservation.user?.email,
           serviceName: null,
           serviceId: reservation.serviceId,
-          date: reservation.date
+          date: reservation.date,
+          organizationId: reservation.organizationId
         };
       }
     }

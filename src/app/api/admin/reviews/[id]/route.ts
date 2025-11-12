@@ -17,7 +17,17 @@ export async function GET(
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     const { id } = await params;
 
@@ -25,8 +35,12 @@ export async function GET(
     const isGoogleReview = id.startsWith('google_');
 
     if (isGoogleReview) {
-      const review = await prisma.googleReview.findUnique({
-        where: { id: id.replace('google_', '') }
+      // 🔒 Récupérer l'avis Google DANS CETTE ORGANISATION
+      const review = await prisma.googleReview.findFirst({
+        where: {
+          id: id.replace('google_', ''),
+          organizationId: user.organizationId
+        }
       });
 
       if (!review) {
@@ -39,8 +53,12 @@ export async function GET(
         isGoogleReview: true
       });
     } else {
-      const review = await prisma.review.findUnique({
-        where: { id },
+      // 🔒 Récupérer l'avis DANS CETTE ORGANISATION
+      const review = await prisma.review.findFirst({
+        where: {
+          id,
+          organizationId: user.organizationId
+        },
         include: {
           user: {
             select: {
@@ -83,20 +101,42 @@ export async function PUT(
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     const { id } = await params;
     const data = await request.json();
 
     // Vérifier si c'est un avis Google ou normal
     const isGoogleReview = id.startsWith('google_');
-    
+
     if (isGoogleReview) {
+      // 🔒 Vérifier que l'avis Google appartient à cette organisation avant de modifier
+      const existingReview = await prisma.googleReview.findFirst({
+        where: {
+          id: id.replace('google_', ''),
+          organizationId: user.organizationId
+        }
+      });
+
+      if (!existingReview) {
+        return NextResponse.json({ error: 'Avis non trouvé' }, { status: 404 });
+      }
+
       // Pour les avis Google, on peut seulement ajouter une réponse
       if (data.response !== undefined) {
         const review = await prisma.googleReview.update({
           where: { id: id.replace('google_', '') },
-          data: { 
+          data: {
             replyText: data.response,
             replyAt: new Date()
           }
@@ -104,17 +144,29 @@ export async function PUT(
         return NextResponse.json(review);
       }
     } else {
+      // 🔒 Vérifier que l'avis appartient à cette organisation avant de modifier
+      const existingReview = await prisma.review.findFirst({
+        where: {
+          id,
+          organizationId: user.organizationId
+        }
+      });
+
+      if (!existingReview) {
+        return NextResponse.json({ error: 'Avis non trouvé' }, { status: 404 });
+      }
+
       // Pour les avis normaux, on peut tout modifier
       const updateData: any = {};
       if (data.published !== undefined) updateData.approved = data.published;
       if (data.response !== undefined) updateData.response = data.response;
       if (data.photos !== undefined) updateData.photos = JSON.stringify(data.photos);
-      
+
       const review = await prisma.review.update({
         where: { id },
         data: updateData
       });
-      
+
       return NextResponse.json(review);
     }
 
@@ -137,15 +189,37 @@ export async function DELETE(
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     const { id } = await params;
-    
+
     // On ne peut supprimer que les avis non-Google
     if (id.startsWith('google_')) {
       return NextResponse.json({ error: 'Impossible de supprimer un avis Google' }, { status: 403 });
     }
-    
+
+    // 🔒 Vérifier que l'avis appartient à cette organisation avant de supprimer
+    const review = await prisma.review.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!review) {
+      return NextResponse.json({ error: 'Avis non trouvé' }, { status: 404 });
+    }
+
     await prisma.review.delete({
       where: { id }
     });

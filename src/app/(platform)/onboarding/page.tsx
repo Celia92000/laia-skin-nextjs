@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { validateSIRET, validateEmail, validatePhoneNumber, formatSIRET } from '@/lib/validation'
+import { validateSIRET, validateSIRENorSIRET, validateEmail, validatePhoneNumber, formatSIRET } from '@/lib/validation'
 import { getPlanPrice, getPlanName } from '@/lib/features-simple'
 import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
 import TemplateClassic from '@/components/templates/TemplateClassic'
@@ -524,9 +524,9 @@ function OnboardingForm() {
       return false
     }
 
-    // Vérifier la longueur et validité du SIRET
-    if (data.siret.length !== 14) return false
-    if (!validateSIRET(data.siret)) return false
+    // Vérifier la longueur et validité du SIREN ou SIRET
+    if (data.siret.length !== 9 && data.siret.length !== 14) return false
+    if (!validateSIRENorSIRET(data.siret)) return false
 
     // Vérifier qu'il n'y a pas d'erreurs de validation
     if (validationErrors.siret) {
@@ -534,6 +534,42 @@ function OnboardingForm() {
     }
 
     return true
+  }
+
+  // ✅ Fonction pour obtenir les champs manquants de business-info
+  const getMissingBusinessInfoFields = (): string[] => {
+    const missing: string[] = []
+
+    if (!data.institutName) missing.push('Nom commercial de votre institut')
+    if (!data.legalName) missing.push('Raison sociale')
+    if (!data.siret) {
+      missing.push('SIREN ou SIRET')
+    } else if (data.siret.length !== 9 && data.siret.length !== 14) {
+      missing.push('SIREN ou SIRET valide (9 ou 14 chiffres)')
+    }
+    if (!data.address) missing.push('Adresse')
+    if (!data.city) missing.push('Ville')
+    if (!data.postalCode) missing.push('Code postal')
+
+    return missing
+  }
+
+  // ✅ Fonction pour obtenir les champs manquants de billing
+  const getMissingBillingFields = (): string[] => {
+    const missing: string[] = []
+
+    if (!data.legalName) missing.push('Raison sociale')
+    if (!data.siret) {
+      missing.push('SIREN ou SIRET')
+    } else if (data.siret.length !== 9 && data.siret.length !== 14) {
+      missing.push('SIREN ou SIRET valide (9 ou 14 chiffres)')
+    }
+    if (!data.billingEmail) missing.push('Email de facturation')
+    if (!data.billingAddress) missing.push('Adresse de facturation')
+    if (!data.billingCity) missing.push('Ville')
+    if (!data.billingPostalCode) missing.push('Code postal')
+
+    return missing
   }
 
   const handleNext = () => {
@@ -554,13 +590,13 @@ function OnboardingForm() {
 
       // Vérifier les champs obligatoires
       if (!data.legalName || !data.siret || !data.billingAddress || !data.billingCity) {
-        alert('❌ Veuillez remplir tous les champs obligatoires (raison sociale, SIRET, adresse de facturation, ville)')
+        alert('❌ Veuillez remplir tous les champs obligatoires (raison sociale, SIREN ou SIRET, adresse de facturation, ville)')
         return
       }
 
-      // Vérifier que le SIRET est valide
-      if (data.siret.length !== 14 || !validateSIRET(data.siret)) {
-        alert('❌ Le numéro SIRET est invalide. Il doit contenir exactement 14 chiffres valides.')
+      // Vérifier que le SIREN ou SIRET est valide
+      if ((data.siret.length !== 9 && data.siret.length !== 14) || !validateSIRENorSIRET(data.siret)) {
+        alert('❌ Le numéro SIREN ou SIRET est invalide. Il doit contenir exactement 9 chiffres (SIREN) ou 14 chiffres (SIRET) valides.')
         return
       }
 
@@ -1497,6 +1533,25 @@ function OnboardingForm() {
               </div>
             )}
 
+            {/* Message d'aide pour les champs manquants (business-info) */}
+            {getMissingBusinessInfoFields().length > 0 && (
+              <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-amber-900 mb-2">
+                      Pour continuer, veuillez compléter :
+                    </h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                      {getMissingBusinessInfoFields().map((field, index) => (
+                        <li key={index}>{field}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1531,7 +1586,7 @@ function OnboardingForm() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Numéro SIRET * (obligatoire)
+                  Numéro SIREN ou SIRET * (obligatoire)
                 </label>
                 <input
                   type="text"
@@ -1540,23 +1595,19 @@ function OnboardingForm() {
                     const value = e.target.value.replace(/\s/g, '')
                     setData({ ...data, siret: value })
                     // Valider en temps réel
-                    if (value.length === 14) {
-                      if (!validateSIRET(value)) {
-                        setValidationErrors({ ...validationErrors, siret: 'SIRET invalide (vérification Luhn échouée)' })
-                      } else {
-                        const newErrors = { ...validationErrors }
-                        delete newErrors.siret
-                        setValidationErrors(newErrors)
-                      }
+                    if (value.length === 9 || value.length === 14) {
+                      const newErrors = { ...validationErrors }
+                      delete newErrors.siret
+                      setValidationErrors(newErrors)
                     } else if (value.length > 0) {
-                      setValidationErrors({ ...validationErrors, siret: 'Le SIRET doit contenir exactement 14 chiffres' })
+                      setValidationErrors({ ...validationErrors, siret: 'Le SIREN doit contenir 9 chiffres ou le SIRET 14 chiffres' })
                     } else {
                       const newErrors = { ...validationErrors }
                       delete newErrors.siret
                       setValidationErrors(newErrors)
                     }
                   }}
-                  placeholder="123 456 789 00012"
+                  placeholder="123456789 (SIREN) ou 12345678900012 (SIRET)"
                   maxLength={14}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                     validationErrors.siret ? 'border-red-500' : 'border-gray-300'
@@ -1565,11 +1616,11 @@ function OnboardingForm() {
                 />
                 {validationErrors.siret ? (
                   <p className="text-xs text-red-600 mt-1">❌ {validationErrors.siret}</p>
-                ) : data.siret.length === 14 && validateSIRET(data.siret) ? (
-                  <p className="text-xs text-green-600 mt-1">✅ SIRET valide</p>
+                ) : (data.siret.length === 9 || data.siret.length === 14) && validateSIRENorSIRET(data.siret) ? (
+                  <p className="text-xs text-green-600 mt-1">✅ {data.siret.length === 9 ? 'SIREN' : 'SIRET'} valide</p>
                 ) : (
                   <p className="text-xs text-gray-500 mt-1">
-                    14 chiffres - Nécessaire pour la facturation légale
+                    9 chiffres (SIREN) ou 14 chiffres (SIRET) - Nécessaire pour la facturation légale
                   </p>
                 )}
               </div>
@@ -3040,6 +3091,25 @@ function OnboardingForm() {
               </div>
             )}
 
+            {/* Message d'aide pour les champs manquants */}
+            {!isBillingFormValid() && getMissingBillingFields().length > 0 && (
+              <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-amber-900 mb-2">
+                      Pour continuer vers le paiement, veuillez compléter :
+                    </h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-amber-800">
+                      {getMissingBillingFields().map((field, index) => (
+                        <li key={index}>{field}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-6">
               {/* Email de facturation */}
               <div>
@@ -3083,7 +3153,7 @@ function OnboardingForm() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        N° SIRET *
+                        N° SIREN ou SIRET *
                       </label>
                       <input
                         type="text"
@@ -3092,17 +3162,19 @@ function OnboardingForm() {
                           const value = e.target.value.replace(/[^0-9]/g, '')
                           setData({ ...data, siret: value })
                           // Valider en temps réel
-                          if (value.length === 14) {
-                            if (!validateSIRET(value)) {
-                              setValidationErrors({ ...validationErrors, siret: 'SIRET invalide' })
-                            } else {
-                              const newErrors = { ...validationErrors }
-                              delete newErrors.siret
-                              setValidationErrors(newErrors)
-                            }
+                          if (value.length === 9 || value.length === 14) {
+                            const newErrors = { ...validationErrors }
+                            delete newErrors.siret
+                            setValidationErrors(newErrors)
+                          } else if (value.length > 0) {
+                            setValidationErrors({ ...validationErrors, siret: 'Le SIREN doit contenir 9 chiffres ou le SIRET 14 chiffres' })
+                          } else {
+                            const newErrors = { ...validationErrors }
+                            delete newErrors.siret
+                            setValidationErrors(newErrors)
                           }
                         }}
-                        placeholder="123 456 789 00012"
+                        placeholder="123456789 ou 12345678900012"
                         maxLength={14}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                         required
@@ -3110,7 +3182,7 @@ function OnboardingForm() {
                       {validationErrors.siret && (
                         <p className="text-xs text-red-500 mt-1">{validationErrors.siret}</p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">14 chiffres</p>
+                      <p className="text-xs text-gray-500 mt-1">9 (SIREN) ou 14 chiffres (SIRET)</p>
                     </div>
 
                     <div>

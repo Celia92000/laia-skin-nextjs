@@ -16,9 +16,24 @@ export async function GET(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
-    const category = await prisma.serviceCategory.findUnique({
-      where: { id },
+
+    // 🔒 Récupérer la catégorie DANS CETTE ORGANISATION
+    const category = await prisma.serviceCategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         subcategories: {
           orderBy: { order: 'asc' }
@@ -64,7 +79,30 @@ export async function PATCH(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // 🔒 Vérifier que la catégorie appartient à cette organisation
+    const existingCat = await prisma.serviceCategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingCat) {
+      return NextResponse.json({ error: 'Catégorie non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { name, description, icon, color, image, metaTitle, metaDescription, keywords, featured, active, order } = body;
 
@@ -78,10 +116,11 @@ export async function PATCH(
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Vérifier si le slug existe déjà (sauf pour cette catégorie)
+      // 🔒 Vérifier si le slug existe déjà DANS CETTE ORGANISATION (sauf pour cette catégorie)
       const existingCategory = await prisma.serviceCategory.findFirst({
         where: {
           slug,
+          organizationId: user.organizationId,
           id: { not: id }
         }
       });
@@ -140,10 +179,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
-    // Vérifier si la catégorie a des services associés
-    const category = await prisma.serviceCategory.findUnique({
-      where: { id },
+
+    // 🔒 Vérifier si la catégorie a des services associés DANS CETTE ORGANISATION
+    const category = await prisma.serviceCategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         _count: {
           select: { services: true }

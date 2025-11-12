@@ -52,9 +52,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // Trouver la réservation
+    // 🔒 Trouver la réservation avec organizationId
     const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId }
+      where: { id: reservationId },
+      select: { userId: true, organizationId: true }
     });
 
     if (!reservation) {
@@ -77,12 +78,13 @@ export async function POST(request: Request) {
         }
       });
 
-      // Créer une entrée dans Payment
+      // 🔒 Créer une entrée dans Payment avec organizationId
       await prisma.payment.create({
         data: {
           type: 'reservation',
           reservationId: reservationId,
           userId: reservation.userId,
+          organizationId: reservation.organizationId, // 🔒 Sécurité multi-tenant
           amount: paymentAmount,
           currency: payment.amount.currency,
           status: 'succeeded',

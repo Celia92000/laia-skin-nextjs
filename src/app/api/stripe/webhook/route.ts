@@ -59,6 +59,17 @@ export async function POST(request: Request) {
         const userId = session.metadata?.userId;
 
         if (reservationId) {
+          // 🔒 Récupérer la réservation avec son organizationId
+          const reservation = await prisma.reservation.findUnique({
+            where: { id: reservationId },
+            select: { organizationId: true }
+          });
+
+          if (!reservation) {
+            console.error(`Réservation ${reservationId} non trouvée`);
+            break;
+          }
+
           // Mettre à jour la réservation
           await prisma.reservation.update({
             where: { id: reservationId },
@@ -71,12 +82,13 @@ export async function POST(request: Request) {
             }
           });
 
-          // Créer une entrée dans Payment
+          // Créer une entrée dans Payment avec organizationId
           await prisma.payment.create({
             data: {
               type: 'reservation',
               reservationId: reservationId,
               userId: userId || session.customer_email || '',
+              organizationId: reservation.organizationId, // 🔒 Sécurité multi-tenant
               amount: session.amount_total / 100, // Convertir de centimes en euros
               currency: session.currency,
               status: 'succeeded',

@@ -16,9 +16,24 @@ export async function GET(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
-    const subcategory = await prisma.serviceSubcategory.findUnique({
-      where: { id },
+
+    // 🔒 Récupérer la sous-catégorie DANS CETTE ORGANISATION
+    const subcategory = await prisma.serviceSubcategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         category: true,
         services: {
@@ -62,7 +77,30 @@ export async function PATCH(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
+
+    // 🔒 Vérifier que la sous-catégorie appartient à cette organisation
+    const existingSubcat = await prisma.serviceSubcategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      }
+    });
+
+    if (!existingSubcat) {
+      return NextResponse.json({ error: 'Sous-catégorie non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
     const { categoryId, name, description, icon, image, active, order } = body;
 
@@ -76,10 +114,11 @@ export async function PATCH(
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Vérifier si le slug existe déjà (sauf pour cette sous-catégorie)
+      // 🔒 Vérifier si le slug existe déjà DANS CETTE ORGANISATION (sauf pour cette sous-catégorie)
       const existingSubcategory = await prisma.serviceSubcategory.findFirst({
         where: {
           slug,
+          organizationId: user.organizationId,
           id: { not: id }
         }
       });
@@ -92,10 +131,13 @@ export async function PATCH(
       }
     }
 
-    // Si changement de catégorie parente, vérifier qu'elle existe
+    // 🔒 Si changement de catégorie parente, vérifier qu'elle existe DANS CETTE ORGANISATION
     if (categoryId) {
-      const category = await prisma.serviceCategory.findUnique({
-        where: { id: categoryId }
+      const category = await prisma.serviceCategory.findFirst({
+        where: {
+          id: categoryId,
+          organizationId: user.organizationId
+        }
       });
 
       if (!category) {
@@ -148,10 +190,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: auth.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id } = await params;
-    // Vérifier si la sous-catégorie a des services associés
-    const subcategory = await prisma.serviceSubcategory.findUnique({
-      where: { id },
+
+    // 🔒 Vérifier si la sous-catégorie a des services associés DANS CETTE ORGANISATION
+    const subcategory = await prisma.serviceSubcategory.findFirst({
+      where: {
+        id,
+        organizationId: user.organizationId
+      },
       include: {
         _count: {
           select: { services: true }

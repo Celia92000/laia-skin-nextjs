@@ -6,59 +6,84 @@ import { getSiteConfig } from '@/lib/config-service';
 
 // Cette API doit être appelée tous les jours à 10h (via un cron job)
 export async function GET(request: Request) {
-  const config = await getSiteConfig();
-  const siteName = config.siteName || 'Mon Institut';
-  const email = config.email || 'contact@institut.fr';
-  const primaryColor = config.primaryColor || '#d4b5a0';
-  const phone = config.phone || '06 XX XX XX XX';
-  const address = config.address || '';
-  const city = config.city || '';
-  const postalCode = config.postalCode || '';
-  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-  const website = config.customDomain || 'https://votre-institut.fr';
-  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
-
-
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
     const secret = searchParams.get('secret');
-    
+
     if (secret !== process.env.CRON_SECRET) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
+
+    // Vérifier que Resend est configuré
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
+      console.log('Resend non configuré - emails non envoyés');
+      return NextResponse.json({
+        success: false,
+        message: 'Resend non configuré - emails non envoyés'
+      });
+    }
+
+    // 🔒 Récupérer toutes les organisations actives
+    const organizations = await prisma.organization.findMany({
+      where: { status: 'ACTIVE' }
+    });
+
+    console.log(`📧 Traitement de ${organizations.length} organisation(s)`);
 
     // Récupérer les réservations d'il y a 3 jours qui sont terminées
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     threeDaysAgo.setHours(0, 0, 0, 0);
-    
+
     const threeDaysAgoEnd = new Date(threeDaysAgo);
     threeDaysAgoEnd.setHours(23, 59, 59, 999);
 
-    const completedReservations = await prisma.reservation.findMany({
-      where: {
-        date: {
-          gte: threeDaysAgo,
-          lte: threeDaysAgoEnd
+    let totalSentCount = 0;
+
+    // 🔒 Traiter chaque organisation séparément
+    for (const organization of organizations) {
+      // Récupérer la config de cette organisation
+      const orgConfig = await prisma.organizationConfig.findUnique({
+        where: { organizationId: organization.id }
+      });
+
+      const siteName = orgConfig?.siteName || organization.name || 'Mon Institut';
+      const email = orgConfig?.email || 'contact@institut.fr';
+      const primaryColor = orgConfig?.primaryColor || '#d4b5a0';
+      const phone = orgConfig?.phone || '06 XX XX XX XX';
+      const address = orgConfig?.address || '';
+      const city = orgConfig?.city || '';
+      const postalCode = orgConfig?.postalCode || '';
+      const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+      const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+      const ownerName = orgConfig?.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+      // 🔒 Récupérer les réservations DE CETTE ORGANISATION
+      const completedReservations = await prisma.reservation.findMany({
+        where: {
+          organizationId: organization.id,
+          date: {
+            gte: threeDaysAgo,
+            lte: threeDaysAgoEnd
+          },
+          status: 'confirmed',
+          reviewEmailSent: false
         },
-        status: 'confirmed', // Seulement les RDV confirmés/effectués
-        reviewEmailSent: false // Pas déjà envoyé
-      },
-      include: {
-        user: {
-          include: {
-            loyaltyProfile: true
+        include: {
+          user: {
+            include: {
+              loyaltyProfile: true
+            }
           }
         }
-      }
-    });
+      });
 
-    console.log(`📧 ${completedReservations.length} demandes d'avis à envoyer`);
+      console.log(`[${organization.name}] ${completedReservations.length} demande(s) d'avis à envoyer`);
 
-    let sentCount = 0;
-    
-    for (const reservation of completedReservations) {
+      let sentCount = 0;
+
+      for (const reservation of completedReservations) {
       if (!reservation.user?.email) continue;
 
       try {
@@ -99,12 +124,6 @@ export async function GET(request: Request) {
         } else {
           loyaltyProgress = `Félicitations ! Vous êtes une cliente VIP avec ${sessionsCount} séances et ${packagesCount} forfaits`;
           nextReward = `Profitez de vos avantages exclusifs !`;
-        }
-
-        // Vérifier que Resend est configuré
-        if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-          console.log('Resend non configuré - emails non envoyés');
-          continue;
         }
 
         const htmlContent = `
@@ -173,7 +192,7 @@ export async function GET(request: Request) {
           data: { reviewEmailSent: true }
         });
 
-        // Enregistrer dans l'historique
+        // 🔒 Enregistrer dans l'historique AVEC organizationId
         await prisma.emailHistory.create({
           data: {
             from: `${email}`,
@@ -183,7 +202,8 @@ export async function GET(request: Request) {
             template: 'review_request',
             status: 'sent',
             direction: 'outgoing',
-            userId: reservation.userId
+            userId: reservation.userId,
+            organizationId: organization.id
           }
         });
 
@@ -217,18 +237,23 @@ Merci infiniment ! 🙏
             console.error('Erreur WhatsApp:', whatsappError);
           }
         }
-        
+
         sentCount++;
-        console.log(`✅ Avis envoyé à: ${reservation.user.email}`);
+        totalSentCount++;
+        console.log(`[${organization.name}] ✅ Avis envoyé à: ${reservation.user.email}`);
       } catch (error) {
-        console.error(`Erreur envoi avis pour ${reservation.id}:`, error);
+        console.error(`[${organization.name}] Erreur envoi avis pour ${reservation.id}:`, error);
       }
     }
 
-    return NextResponse.json({ 
+      console.log(`[${organization.name}] ${sentCount} demande(s) d'avis envoyée(s)`);
+    }
+
+    return NextResponse.json({
       success: true,
-      message: `${sentCount} demandes d'avis envoyées`,
-      total: completedReservations.length
+      message: `${totalSentCount} demandes d'avis envoyées sur ${organizations.length} organisation(s)`,
+      totalSent: totalSentCount,
+      organizationsProcessed: organizations.length
     });
 
   } catch (error) {
@@ -241,22 +266,13 @@ Merci infiniment ! 🙏
 
 // Endpoint manuel pour tester
 export async function POST(request: Request) {
-  const config = await getSiteConfig();
-  const siteName = config.siteName || 'Mon Institut';
-  const email = config.email || 'contact@institut.fr';
-  const phone = config.phone || '06 XX XX XX XX';
-  const address = config.address || '';
-  const city = config.city || '';
-  const postalCode = config.postalCode || '';
-  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-  const website = config.customDomain || 'https://votre-institut.fr';
-
   try {
     const { reservationId } = await request.json();
 
-    const reservation = await prisma.reservation.findUnique({
+    // 🔒 ÉTAPE 1 : Récupérer la réservation avec son organizationId
+    const reservation = await prisma.reservation.findFirst({
       where: { id: reservationId },
-      include: { 
+      include: {
         user: {
           include: {
             loyaltyProfile: true
@@ -268,6 +284,30 @@ export async function POST(request: Request) {
     if (!reservation || !reservation.user?.email) {
       return NextResponse.json({ error: 'Réservation non trouvée' }, { status: 404 });
     }
+
+    // 🔒 ÉTAPE 2 : Vérifier que la réservation a un organizationId
+    if (!reservation.organizationId) {
+      return NextResponse.json({ error: 'Organisation non définie pour cette réservation' }, { status: 400 });
+    }
+
+    // 🔒 ÉTAPE 3 : Récupérer la config DE CETTE ORGANISATION
+    const orgConfig = await prisma.organizationConfig.findUnique({
+      where: { organizationId: reservation.organizationId }
+    });
+
+    const organization = await prisma.organization.findUnique({
+      where: { id: reservation.organizationId }
+    });
+
+    // 🔒 Utiliser la config spécifique à cette organisation
+    const siteName = orgConfig?.siteName || organization?.name || 'Mon Institut';
+    const email = orgConfig?.email || 'contact@institut.fr';
+    const phone = orgConfig?.phone || '06 XX XX XX XX';
+    const address = orgConfig?.address || '';
+    const city = orgConfig?.city || '';
+    const postalCode = orgConfig?.postalCode || '';
+    const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+    const website = orgConfig?.customDomain || 'https://votre-institut.fr';
 
     // Envoyer l'email d'avis
     const services = JSON.parse(reservation.services as string);
@@ -381,7 +421,7 @@ export async function POST(request: Request) {
       data: { reviewEmailSent: true }
     });
 
-    // Enregistrer dans l'historique
+    // 🔒 Enregistrer dans l'historique AVEC organizationId
     await prisma.emailHistory.create({
       data: {
         from: `${email}`,
@@ -391,7 +431,8 @@ export async function POST(request: Request) {
         template: 'review_request',
         status: 'sent',
         direction: 'outgoing',
-        userId: reservation.userId
+        userId: reservation.userId,
+        organizationId: reservation.organizationId // 🔒 CRITIQUE
       }
     });
 

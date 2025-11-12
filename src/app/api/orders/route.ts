@@ -23,6 +23,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation depuis le host
+    const host = request.headers.get('host') || '';
+    const cleanHost = host.split(':')[0].toLowerCase();
+
+    let organization = null;
+
+    // 1. Chercher par domaine personnalisé
+    if (!cleanHost.includes('localhost')) {
+      organization = await prisma.organization.findUnique({
+        where: { domain: cleanHost }
+      });
+    }
+
+    // 2. Chercher par subdomain
+    if (!organization) {
+      const parts = cleanHost.split('.');
+      let subdomain = 'laia-skin-institut';
+      if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+        subdomain = parts[0];
+      }
+      organization = await prisma.organization.findUnique({
+        where: { subdomain: subdomain }
+      });
+    }
+
+    // 3. Fallback
+    if (!organization) {
+      organization = await prisma.organization.findFirst({
+        where: { slug: 'laia-skin-institut' }
+      });
+    }
+
+    if (!organization) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     // Vérifier si utilisateur connecté
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     let userId = null;
@@ -39,6 +75,7 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         orderNumber,
+        organizationId: organization.id, // 🔒 Sécurité multi-tenant
         userId,
         customerName: body.customerName,
         customerEmail: body.customerEmail,
@@ -61,20 +98,11 @@ export async function POST(request: NextRequest) {
     if (body.orderType === 'service' && body.selectedDate && body.selectedTime) {
       const serviceItem = body.items[0];
 
-      // Récupérer l'organizationId de l'utilisateur
-      let organizationId = '';
-      if (userId) {
-        const user = await prisma.user.findFirst({
-          where: { id: userId },
-          select: { organizationId: true }
-        });
-        organizationId = user?.organizationId || '';
-      }
-
+      // 🔒 Utiliser l'organizationId déjà récupéré
       await prisma.reservation.create({
         data: {
           userId: userId || 'guest',
-          organizationId, // Ajouter organizationId
+          organizationId: organization.id, // 🔒 Sécurité multi-tenant
           serviceId: serviceItem.id,
           services: JSON.stringify([serviceItem.id]),
           packages: '{}',
@@ -122,14 +150,26 @@ export async function GET(request: NextRequest) {
     // Vérifier si admin
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
+
+    if (!user) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     let orders;
 
-    if ((user?.role as string) === 'admin' || (user?.role as string) === 'ADMIN') {
-      // Admin voit toutes les commandes
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (adminRoles.includes(user.role)) {
+      // 🔒 SÉCURITÉ MULTI-TENANT : Admin voit seulement les commandes de SON organisation
+      if (!user.organizationId) {
+        return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+      }
+
       orders = await prisma.order.findMany({
+        where: {
+          organizationId: user.organizationId
+        },
         orderBy: { createdAt: 'desc' },
         include: {
           user: {

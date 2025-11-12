@@ -29,9 +29,10 @@ export async function POST(request: Request) {
         const orderId = resource.id || resource.supplementary_data?.related_ids?.order_id;
 
         if (orderId) {
-          // Trouver la réservation associée
+          // 🔒 Trouver la réservation avec organizationId
           const reservation = await prisma.reservation.findFirst({
-            where: { stripePaymentId: orderId }
+            where: { stripePaymentId: orderId },
+            select: { id: true, userId: true, organizationId: true, totalPrice: true }
           });
 
           if (reservation) {
@@ -53,12 +54,13 @@ export async function POST(request: Request) {
               }
             });
 
-            // Créer une entrée dans Payment
+            // 🔒 Créer une entrée dans Payment avec organizationId
             await prisma.payment.create({
               data: {
                 type: 'reservation',
                 reservationId: reservation.id,
                 userId: reservation.userId,
+                organizationId: reservation.organizationId, // 🔒 Sécurité multi-tenant
                 amount: paymentAmount || reservation.totalPrice || 0,
                 currency: 'EUR',
                 status: 'succeeded',

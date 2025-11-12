@@ -13,18 +13,34 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    // Récupérer les avis de la base de données
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer les avis DE CETTE ORGANISATION uniquement
     const reviews = await prisma.review.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         user: true
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    // Récupérer aussi les avis Google
+    // 🔒 Récupérer aussi les avis Google DE CETTE ORGANISATION
     const googleReviews = await prisma.googleReview.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -77,15 +93,27 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     const data = await request.json();
-    
+
+    // 🔒 Créer l'avis AVEC organizationId
     const review = await prisma.review.create({
       data: {
         rating: data.rating,
         comment: data.comment,
         userId: data.clientId,
+        organizationId: user.organizationId,
         serviceName: data.serviceName,
         source: data.source || 'website',
         approved: data.published || false
