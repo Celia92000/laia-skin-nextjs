@@ -18,6 +18,7 @@ import OnboardingWizard from "@/components/OnboardingWizard";
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
 const AdminServicesTab = dynamic(() => import("@/components/AdminServicesTab"), { ssr: false });
 const AdminStockTab = dynamic(() => import("@/components/AdminStockTab"), { ssr: false });
+const AdminBlogTab = dynamic(() => import("@/components/AdminBlogTab"), { ssr: false });
 const AdminConfigTab = dynamic(() => import("@/components/AdminConfigTab"), { ssr: false });
 const AdminDashboardOptimized = dynamic(() => import("@/components/AdminDashboardOptimized"), { ssr: false });
 const UnifiedCRMTab = dynamic(() => import("@/components/UnifiedCRMTab"), { ssr: false });
@@ -3580,21 +3581,7 @@ export default function AdminDashboard() {
           {activeTab === "pending" && orgFeatures?.featureShop && <AdminOrdersTab />}
 
           {/* Stock Avancé - PREMIUM uniquement */}
-          {activeTab === "stock-advanced" && orgFeatures?.featureStock && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <Archive className="w-8 h-8 text-amber-600" />
-                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">Stock Avancé</h2>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
-                <Archive className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">Module Stock Avancé en développement</p>
-                <p className="text-sm text-gray-600">
-                  Inventaire multi-emplacements • Alertes de stock • Gestion fournisseurs • Valorisation • Codes-barres
-                </p>
-              </div>
-            </div>
-          )}
+          {activeTab === "stock-advanced" && orgFeatures?.featureStock && <AdminStockTab />}
 
           {activeTab === "whatsapp" && orgFeatures?.featureWhatsApp && <WhatsAppHub />}
 
@@ -3622,21 +3609,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Blog - TEAM+ uniquement */}
-          {activeTab === "blog" && orgFeatures?.featureBlog && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <FileText className="w-8 h-8 text-blue-600" />
-                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">Blog Professionnel</h2>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
-                <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">Module Blog en développement</p>
-                <p className="text-sm text-gray-600">
-                  Articles • Catégories • SEO • Images • Planning de publication
-                </p>
-              </div>
-            </div>
-          )}
+          {activeTab === "blog" && orgFeatures?.featureBlog && <AdminBlogTab />}
 
           {activeTab === "notifications" && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
             <AdminNotificationsTab />
