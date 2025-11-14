@@ -42,13 +42,14 @@ export async function POST(request: Request) {
       })
       console.log('👤 Target user by userId:', targetUser?.email)
     } else if (organizationId) {
-      // Impersonnation du propriétaire de l'organisation
+      // Impersonnation du premier admin de l'organisation (ORG_OWNER ou ORG_ADMIN)
       targetUser = await prisma.user.findFirst({
         where: {
           organizationId: organizationId,
-          role: 'ORG_OWNER'
+          role: { in: ['ORG_OWNER', 'ORG_ADMIN'] }
         },
-        include: { organization: true }
+        include: { organization: true },
+        orderBy: { createdAt: 'asc' } // Prendre le premier créé (= le propriétaire)
       })
       console.log('🏢 Target user by organizationId:', targetUser?.email, 'Organization:', targetUser?.organization?.slug)
     } else {
