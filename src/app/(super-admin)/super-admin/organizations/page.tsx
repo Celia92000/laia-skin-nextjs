@@ -15,6 +15,12 @@ interface Organization {
   websiteTemplateId: string | null
   createdAt: string
   locations: any[]
+  stats?: {
+    totalUsers: number
+    admins: number
+    staff: number
+    clients: number
+  }
 }
 
 interface User {
@@ -45,6 +51,7 @@ export default function OrganizationsPage() {
   const [orgSearchTerm, setOrgSearchTerm] = useState('')
   const [planFilter, setPlanFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [configFilter, setConfigFilter] = useState('ALL') // Nouveau filtre
   const [newFilter, setNewFilter] = useState(false)
   const [orgSortBy, setOrgSortBy] = useState('createdAt')
   const [orgSortOrder, setOrgSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -82,6 +89,7 @@ export default function OrganizationsPage() {
     orgSearchTerm,
     planFilter,
     statusFilter,
+    configFilter,
     newFilter,
     orgSortBy,
     orgSortOrder,
@@ -145,6 +153,15 @@ export default function OrganizationsPage() {
 
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter(org => org.status === statusFilter)
+    }
+
+    // Filtre de configuration
+    if (configFilter === 'NO_ADMIN') {
+      filtered = filtered.filter(org => !org.stats || org.stats.admins === 0)
+    } else if (configFilter === 'NO_CLIENTS') {
+      filtered = filtered.filter(org => !org.stats || org.stats.clients === 0)
+    } else if (configFilter === 'COMPLETE') {
+      filtered = filtered.filter(org => org.stats && org.stats.admins > 0 && org.stats.clients > 0)
     }
 
     if (newFilter) {
@@ -580,7 +597,7 @@ export default function OrganizationsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Rechercher
@@ -625,6 +642,22 @@ export default function OrganizationsPage() {
                   <option value="TRIAL">Essai</option>
                   <option value="SUSPENDED">Suspendu</option>
                   <option value="CANCELLED">Annulé</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Configuration
+                </label>
+                <select
+                  value={configFilter}
+                  onChange={(e) => setConfigFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="ALL">Toutes</option>
+                  <option value="NO_ADMIN">⚠️ Sans admin</option>
+                  <option value="NO_CLIENTS">⚠️ Sans clients</option>
+                  <option value="COMPLETE">✅ Complètes</option>
                 </select>
               </div>
 

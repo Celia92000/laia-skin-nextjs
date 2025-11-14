@@ -31,11 +31,16 @@ export async function POST(request: Request) {
     // Utiliser getPrismaClient pour s'assurer que la connexion est active
     const prisma = await getPrismaClient();
 
-    // 🔒 Chercher l'utilisateur par email ET organizationId pour éviter la connexion cross-tenant
+    // 🔒 Chercher l'utilisateur par email
+    // Pour le super-admin : accepter sans organizationId
+    // Pour les autres : vérifier l'organizationId pour éviter la connexion cross-tenant
     const user = await prisma.user.findFirst({
       where: {
         email,
-        organizationId: organizationId
+        OR: [
+          { role: 'SUPER_ADMIN' }, // Super-admin peut se connecter depuis n'importe où
+          { organizationId: organizationId } // Utilisateurs normaux doivent être sur le bon site
+        ]
       },
       include: {
         organization: true

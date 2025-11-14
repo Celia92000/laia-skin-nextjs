@@ -28,7 +28,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    // Récupérer toutes les organisations - optimisé avec juste le count des locations
+    // Récupérer toutes les organisations avec les stats des utilisateurs
     const organizations = await prisma.organization.findMany({
       select: {
         id: true,
@@ -41,7 +41,10 @@ export async function GET() {
         websiteTemplateId: true,
         createdAt: true,
         _count: {
-          select: { locations: true }
+          select: {
+            locations: true,
+            users: true
+          }
         }
       },
       orderBy: {
@@ -49,21 +52,52 @@ export async function GET() {
       }
     })
 
-    // Transformer pour garder la même structure (locations comme array avec length = count)
-    const organizationsWithLocations = organizations.map(org => ({
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      plan: org.plan,
-      status: org.status,
-      subdomain: org.subdomain,
-      domain: org.domain,
-      websiteTemplateId: org.websiteTemplateId,
-      createdAt: org.createdAt,
-      locations: Array(org._count.locations).fill({}) // Compatibilité: array vide avec la bonne longueur
-    }))
+    // Pour chaque organisation, compter les différents types d'utilisateurs
+    const organizationsWithStats = await Promise.all(
+      organizations.map(async (org) => {
+        const [adminCount, staffCount, clientCount] = await Promise.all([
+          prisma.user.count({
+            where: {
+              organizationId: org.id,
+              role: { in: ['ORG_ADMIN', 'SUPER_ADMIN', 'ORG_OWNER'] }
+            }
+          }),
+          prisma.user.count({
+            where: {
+              organizationId: org.id,
+              role: 'STAFF'
+            }
+          }),
+          prisma.user.count({
+            where: {
+              organizationId: org.id,
+              role: 'CLIENT'
+            }
+          })
+        ])
 
-    return NextResponse.json({ organizations: organizationsWithLocations })
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          plan: org.plan,
+          status: org.status,
+          subdomain: org.subdomain,
+          domain: org.domain,
+          websiteTemplateId: org.websiteTemplateId,
+          createdAt: org.createdAt,
+          locations: Array(org._count.locations).fill({}), // Compatibilité
+          stats: {
+            totalUsers: org._count.users,
+            admins: adminCount,
+            staff: staffCount,
+            clients: clientCount
+          }
+        }
+      })
+    )
+
+    return NextResponse.json({ organizations: organizationsWithStats })
 
   } catch (error) {
     console.error('Erreur récupération organisations:', error)

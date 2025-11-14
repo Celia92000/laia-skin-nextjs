@@ -16,15 +16,18 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
   try {
     // Nettoyer le host (enlever le port)
     const cleanHost = host.split(':')[0].toLowerCase()
+    console.log('🌐 Host reçu:', host, '→ Clean host:', cleanHost)
 
     // Vérifier le cache
     if (orgCache.has(cleanHost)) {
+      console.log('✅ Organisation trouvée en cache')
       return orgCache.get(cleanHost)!
     }
 
     let organization: Organization | null = null
 
     // Vérifier si c'est un domaine personnalisé (ex: beaute-eternelle.fr)
+    console.log('🔍 Recherche par domaine:', cleanHost)
     organization = await prisma.organization.findUnique({
       where: { domain: cleanHost },
       include: {
@@ -42,6 +45,7 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
     // Si pas trouvé, vérifier si c'est un subdomain (ex: laia-skin.localhost ou laia-skin.myplatform.com)
     if (!organization) {
       const subdomain = cleanHost.split('.')[0]
+      console.log('🔍 Recherche par subdomain:', subdomain)
 
       organization = await prisma.organization.findUnique({
         where: { subdomain },
@@ -58,10 +62,11 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
       })
     }
 
-    // Si pas trouvé, retourner l'organisation par défaut (Laia Skin)
+    // Si pas trouvé, retourner l'organisation par défaut (Laia Skin Institut)
     if (!organization) {
+      console.log('🔍 Fallback sur slug: laia-skin-institut')
       organization = await prisma.organization.findFirst({
-        where: { slug: 'laia-skin' },
+        where: { slug: 'laia-skin-institut' },
         include: {
           config: true,
           locations: {
@@ -77,7 +82,10 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
 
     // Mettre en cache
     if (organization) {
+      console.log('✅ Organisation trouvée par subdomain:', organization.subdomain)
       orgCache.set(cleanHost, organization)
+    } else {
+      console.log('❌ Aucune organisation trouvée')
     }
 
     return organization
