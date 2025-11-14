@@ -1,9 +1,8 @@
 // Service de gestion des tenants (organisations)
-import { PrismaClient, Organization } from '@prisma/client'
+import { Organization } from '@prisma/client'
 import { cache } from 'react'
 import { getActiveFeatures, type OrgFeatures } from './features-simple'
-
-const prisma = new PrismaClient()
+import prisma from './prisma'
 
 // Cache des organisations par domaine/subdomain (optimisation)
 const orgCache = new Map<string, Organization>()
