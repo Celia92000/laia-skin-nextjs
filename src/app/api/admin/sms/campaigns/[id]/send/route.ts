@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { sendBulkSMS, replaceVariables } from '@/lib/sms-service';
 
 // POST - Envoyer une campagne SMS
 export async function POST(
@@ -104,34 +105,56 @@ export async function POST(
       return NextResponse.json({ error: 'Aucun destinataire trouvé avec un numéro de téléphone' }, { status: 400 });
     }
 
-    // TODO: Intégrer ici l'API SMS (Twilio, Brevo, etc.)
-    // Pour l'instant, simulation de l'envoi
+    // Récupérer le nom de l'organisation pour l'expéditeur SMS
+    const organization = await prisma.organization.findUnique({
+      where: { id: decoded.organizationId },
+      select: { name: true }
+    });
 
-    const sentCount = recipients.length;
-    const deliveredCount = Math.floor(recipients.length * 0.95); // Simulation: 95% de taux de livraison
-    const failedCount = recipients.length - deliveredCount;
+    const organizationName = organization?.name || 'LAIA';
 
-    // Créer les logs d'envoi (simulation)
-    const smsLogs = recipients.map(recipient => ({
-      organizationId: decoded.organizationId,
-      campaignId: campaign.id,
-      clientId: recipient.id,
-      clientName: `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),
+    // Préparer les messages personnalisés pour chaque destinataire
+    const smsToSend = recipients.map(recipient => ({
       phoneNumber: recipient.phone || '',
-      message: campaign.message
-        .replace('{{prenom}}', recipient.firstName || '')
-        .replace('{{nom}}', recipient.lastName || '')
-        .replace('{{institut}}', decoded.organizationName || 'notre institut'),
-      status: Math.random() > 0.05 ? 'delivered' : 'failed', // 95% de succès
-      cost: 0.08 // Coût moyen d'un SMS en France
+      message: replaceVariables(campaign.message, {
+        prenom: recipient.firstName || '',
+        nom: recipient.lastName || '',
+        institut: organizationName
+      })
     }));
+
+    // Envoyer les SMS via Brevo API
+    const { totalSent, totalFailed, results } = await sendBulkSMS(
+      smsToSend,
+      organizationName
+    );
+
+    // Créer les logs d'envoi avec les résultats réels
+    const smsLogs = recipients.map((recipient, index) => {
+      const result = results[index];
+
+      return {
+        organizationId: decoded.organizationId,
+        campaignId: campaign.id,
+        clientId: recipient.id,
+        clientName: `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),
+        phoneNumber: recipient.phone || '',
+        message: smsToSend[index].message,
+        status: result.success ? (result.status || 'sent') : 'failed',
+        errorMessage: result.errorMessage || null,
+        cost: result.cost || 0.035
+      };
+    });
 
     // Créer tous les logs en une seule transaction
     await prisma.sMSLog.createMany({
       data: smsLogs
     });
 
-    // Mettre à jour la campagne
+    // Calculer le coût total
+    const totalCost = smsLogs.reduce((sum, log) => sum + (log.cost || 0), 0);
+
+    // Mettre à jour la campagne avec les résultats réels
     const updatedCampaign = await prisma.sMSCampaign.update({
       where: {
         id: params.id
@@ -139,17 +162,17 @@ export async function POST(
       data: {
         status: 'SENT',
         sentAt: new Date(),
-        sentCount,
-        deliveredCount,
-        failedCount,
-        totalCost: sentCount * 0.08
+        sentCount: totalSent,
+        deliveredCount: totalSent, // Brevo confirme l'envoi, pas forcément la livraison immédiate
+        failedCount: totalFailed,
+        totalCost
       }
     });
 
     return NextResponse.json({
       success: true,
       campaign: updatedCampaign,
-      message: `Campagne envoyée avec succès à ${sentCount} destinataires !`
+      message: `Campagne envoyée avec succès ! ${totalSent} SMS envoyés, ${totalFailed} échecs. Coût total: ${totalCost.toFixed(2)}€`
     });
   } catch (error) {
     console.error('Error sending SMS campaign:', error);
