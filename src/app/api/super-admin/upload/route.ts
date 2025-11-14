@@ -4,6 +4,7 @@ import { join } from 'path';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url });
 
   } catch (error) {
-    console.error('Erreur upload image:', error);
+    log.error('Erreur upload image:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

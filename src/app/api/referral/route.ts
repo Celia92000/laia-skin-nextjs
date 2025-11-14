@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // Générer un code de parrainage unique
 function generateReferralCode(name: string): string {
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
       shareUrl: `https://laiaskin.fr/register?ref=${loyaltyProfile?.referralCode}`
     });
   } catch (error) {
-    console.error('Erreur récupération parrainage:', error);
+    log.error('Erreur récupération parrainage:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la récupération des informations' 
     }, { status: 500 });
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
       message: 'Invitation envoyée avec succès'
     });
   } catch (error) {
-    console.error('Erreur création parrainage:', error);
+    log.error('Erreur création parrainage:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la création du parrainage' 
     }, { status: 500 });
@@ -215,7 +216,7 @@ export async function PUT(request: Request) {
       message: `Réduction de ${referral.rewardAmount}€ appliquée`
     });
   } catch (error) {
-    console.error('Erreur utilisation récompense:', error);
+    log.error('Erreur utilisation récompense:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'utilisation de la récompense' 
     }, { status: 500 });

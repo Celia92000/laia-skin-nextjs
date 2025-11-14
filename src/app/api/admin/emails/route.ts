@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(emails);
   } catch (error) {
-    console.error('Erreur récupération emails:', error);
+    log.error('Erreur récupération emails:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

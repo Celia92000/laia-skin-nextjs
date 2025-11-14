@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getPrismaClient } from '@/lib/prisma';
 import nodemailer from 'nodemailer';
+import { log } from '@/lib/logger';
 
 // Configuration du transporteur email
 const transporter = nodemailer.createTransport({
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
     
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
         });
         */
         
-        console.log(`Email d'invitation envoyé à ${client.email}`);
+        log.info(`Email d'invitation envoyé à ${client.email}`);
         sentCount++;
         
         // Enregistrer l'invitation dans la base de données (optionnel)
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
         // });
         
       } catch (error) {
-        console.error(`Erreur envoi email à ${client.email}:`, error);
+        log.error(`Erreur envoi email à ${client.email}:`, error);
         errors.push(client.email);
       }
     }
@@ -174,7 +175,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur dans invite-google-review:', error);
+    log.error('Erreur dans invite-google-review:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi des invitations' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -101,7 +102,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur réinitialisation mot de passe:', error)
+    log.error('Erreur réinitialisation mot de passe:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la réinitialisation' },
       { status: 500 }

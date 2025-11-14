@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -44,23 +45,23 @@ export async function GET() {
       take: 10
     });
 
-    console.log(`\n🔍 DEBUG Clients WhatsApp:`);
-    console.log(`Total clients: ${clients.length}`);
+    log.info(`\n🔍 DEBUG Clients WhatsApp:`);
+    log.info(`Total clients: ${clients.length}`);
     
     clients.forEach(client => {
-      console.log(`\n👤 ${client.name}:`);
-      console.log(`  - Email: ${client.email}`);
-      console.log(`  - Phone: ${client.phone || 'NON RENSEIGNÉ'}`);
-      console.log(`  - Réservations: ${client.reservations.length}`);
-      console.log(`  - Total dépensé: ${client.totalSpent || 0}€`);
+      log.info(`\n👤 ${client.name}:`);
+      log.info(`  - Email: ${client.email}`);
+      log.info(`  - Phone: ${client.phone || 'NON RENSEIGNÉ'}`);
+      log.info(`  - Réservations: ${client.reservations.length}`);
+      log.info(`  - Total dépensé: ${client.totalSpent || 0}€`);
       if (client.birthDate) {
-        console.log(`  - Date naissance: ${new Date(client.birthDate).toLocaleDateString('fr-FR')}`);
+        log.info(`  - Date naissance: ${new Date(client.birthDate).toLocaleDateString('fr-FR')}`);
       }
       if (client.skinType) {
-        console.log(`  - Type de peau: ${client.skinType}`);
+        log.info(`  - Type de peau: ${client.skinType}`);
       }
       if (client.allergies) {
-        console.log(`  - ⚠️ Allergies: ${client.allergies}`);
+        log.info(`  - ⚠️ Allergies: ${client.allergies}`);
       }
     });
 
@@ -80,7 +81,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Erreur debug clients:', error);
+    log.error('Erreur debug clients:', error);
     return NextResponse.json({ 
       error: 'Erreur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

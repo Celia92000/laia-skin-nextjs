@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -91,11 +92,11 @@ export async function POST(req: NextRequest) {
       finalSlug = `${slug}-${counter}`
       finalSubdomain = `${subdomain}-${counter}`
 
-      console.log(`⚠️ Slug existant, tentative avec: ${finalSlug}`)
+      log.info(`⚠️ Slug existant, tentative avec: ${finalSlug}`)
     }
 
     if (counter > 1) {
-      console.log(`✅ Slug unique trouvé: ${finalSlug}`)
+      log.info(`✅ Slug unique trouvé: ${finalSlug}`)
     }
 
     // Prix par plan
@@ -189,9 +190,9 @@ export async function POST(req: NextRequest) {
       locale: 'fr' // Interface en français
     })
 
-    console.log(`✅ Checkout session créée: ${checkoutSession.id}`)
-    console.log(`📦 Customer ID: ${customer.id}`)
-    console.log(`🏢 Organisation sera créée après paiement: ${institutName}`)
+    log.info(`✅ Checkout session créée: ${checkoutSession.id}`)
+    log.info(`📦 Customer ID: ${customer.id}`)
+    log.info(`🏢 Organisation sera créée après paiement: ${institutName}`)
 
     // Retourner l'URL de la session Stripe
     return NextResponse.json({
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Erreur création checkout session:', error)
+    log.error('❌ Erreur création checkout session:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

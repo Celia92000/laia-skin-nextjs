@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { verifyAuth } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ settings });
   } catch (error) {
-    console.error('Erreur lors de la récupération des paramètres de fidélité:', error);
+    log.error('Erreur lors de la récupération des paramètres de fidélité:', error);
     // Retourner les valeurs par défaut en cas d'erreur
     return NextResponse.json({
       settings: {
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -73,7 +74,7 @@ export async function PUT(request: NextRequest) {
       message: 'Paramètres de fidélité mis à jour avec succès',
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des paramètres de fidélité:', error);
+    log.error('Erreur lors de la mise à jour des paramètres de fidélité:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour des paramètres' },
       { status: 500 }

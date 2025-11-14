@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdminRole } from '@/lib/admin-roles';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur test connexion Mollie:', error);
+    log.error('Erreur test connexion Mollie:', error);
     return NextResponse.json({
       error: error.message || 'Erreur lors du test de connexion'
     }, { status: 500 });

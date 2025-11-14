@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateJitsiMeetingUrl } from '@/lib/jitsi/generateMeetingUrl'
 import { sendDemoConfirmationEmail } from '@/lib/email-service'
+import { log } from '@/lib/logger';
 
 /**
  * API publique pour réserver une démo depuis le site vitrine
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ slots: publicSlots })
 
   } catch (error) {
-    console.error('Erreur récupération créneaux publics:', error)
+    log.error('Erreur récupération créneaux publics:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur réservation démo:', error)
+    log.error('Erreur réservation démo:', error)
 
     // Gérer l'erreur de créneau déjà réservé
     if (error instanceof Error && error.message === 'SLOT_ALREADY_BOOKED') {

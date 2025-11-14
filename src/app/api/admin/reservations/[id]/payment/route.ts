@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { sendWhatsApp, sendEmail } from '@/lib/notifications';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Fonction pour générer un numéro de facture
 async function generateInvoiceNumber(): Promise<string> {
@@ -63,7 +64,7 @@ export async function GET(
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -107,7 +108,7 @@ export async function GET(
       invoiceNumber: reservation.invoiceNumber
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des informations de paiement:', error);
+    log.error('Erreur lors de la récupération des informations de paiement:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des informations de paiement' },
       { status: 500 }
@@ -137,7 +138,7 @@ export async function POST(
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -193,7 +194,7 @@ export async function POST(
           }
         });
 
-        console.log(`🎂 Réduction anniversaire appliquée pour l'utilisateur ${currentReservation.userId}`);
+        log.info(`🎂 Réduction anniversaire appliquée pour l'utilisateur ${currentReservation.userId}`);
       }
     }
 
@@ -225,7 +226,7 @@ export async function POST(
         });
 
         remainingDiscount -= discount.amount;
-        console.log(`✅ Réduction ${discount.originalReason} (${discount.amount}€) marquée comme utilisée`);
+        log.info(`✅ Réduction ${discount.originalReason} (${discount.amount}€) marquée comme utilisée`);
       }
     }
 
@@ -335,7 +336,7 @@ export async function POST(
           }
         });
 
-        console.log(`💰 Paiement enregistré pour ${reservation.user.name}: ${amount}€`);
+        log.info(`💰 Paiement enregistré pour ${reservation.user.name}: ${amount}€`);
 
         // Vérifier si c'est le premier paiement d'un client parrainé
         if (loyaltyProfile.referredBy && amount > 0) {
@@ -403,9 +404,9 @@ L'équipe ${siteName}`;
 
                   try {
                     await sendWhatsApp(sponsorProfile.user.phone, message);
-                    console.log(`📱 WhatsApp envoyé au parrain ${sponsorProfile.user.name}`);
+                    log.info(`📱 WhatsApp envoyé au parrain ${sponsorProfile.user.name}`);
                   } catch (error) {
-                    console.error('Erreur envoi WhatsApp au parrain:', error);
+                    log.error('Erreur envoi WhatsApp au parrain:', error);
                     // Envoyer par email en cas d'échec WhatsApp
                     if (sponsorProfile.user.email) {
                       await sendEmail(
@@ -417,7 +418,7 @@ L'équipe ${siteName}`;
                   }
                 }
 
-                console.log(`🎁 Réduction parrain activée pour ${sponsorProfile.user.name}`);
+                log.info(`🎁 Réduction parrain activée pour ${sponsorProfile.user.name}`);
               }
             }
           }
@@ -427,7 +428,7 @@ L'équipe ${siteName}`;
 
     return NextResponse.json(reservation);
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement du paiement:', error);
+    log.error('Erreur lors de l\'enregistrement du paiement:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'enregistrement du paiement' },
       { status: 500 }
@@ -454,7 +455,7 @@ export async function DELETE(
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
@@ -507,7 +508,7 @@ export async function DELETE(
           }
         });
 
-        console.log(`💰 Paiement annulé pour ${currentReservation.user.name}: -${currentReservation.paymentAmount}€`);
+        log.info(`💰 Paiement annulé pour ${currentReservation.user.name}: -${currentReservation.paymentAmount}€`);
       }
     }
 
@@ -526,7 +527,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Paiement annulé avec succès', reservation });
   } catch (error) {
-    console.error('Erreur lors de l\'annulation du paiement:', error);
+    log.error('Erreur lors de l\'annulation du paiement:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'annulation du paiement' },
       { status: 500 }

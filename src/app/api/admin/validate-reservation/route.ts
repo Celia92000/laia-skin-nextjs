@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
 import { sendReservationConfirmationEmail } from '@/lib/resend-email-service';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   const config = await getSiteConfig();
@@ -79,9 +80,9 @@ export async function POST(request: Request) {
             totalPrice: reservation.totalPrice,
             reservationId: reservation.id
           });
-          console.log(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
+          log.info(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
         } catch (emailError) {
-          console.error('Erreur envoi email:', emailError);
+          log.error('Erreur envoi email:', emailError);
         }
       }
       
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
           message: confirmMessage
         }).catch(console.error);
         
-        console.log(`📱 WhatsApp de confirmation envoyé à ${reservation.user.phone}`);
+        log.info(`📱 WhatsApp de confirmation envoyé à ${reservation.user.phone}`);
       }
       
       // 3. Programmer le rappel 24h avant (sera envoyé par le CRON)
@@ -142,7 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
     
   } catch (error) {
-    console.error('Erreur validation réservation:', error);
+    log.error('Erreur validation réservation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -159,7 +160,7 @@ async function scheduleReminder(reservation: any) {
   // - Bull Queue
   // - AWS EventBridge
   
-  console.log(`Rappel programmé pour ${reservation.user.name} le ${reminderDate.toISOString()}`);
+  log.info(`Rappel programmé pour ${reservation.user.name} le ${reminderDate.toISOString()}`);
   
   // Pour l'instant, stocker dans la DB
   // TODO: Créer le modèle Reminder dans le schéma Prisma
@@ -175,7 +176,7 @@ async function scheduleReminder(reservation: any) {
     });
   } catch (error) {
     // La table reminder n'existe peut-être pas encore
-    console.log('Table reminder à créer dans le schéma Prisma');
+    log.info('Table reminder à créer dans le schéma Prisma');
   }
   */
 }

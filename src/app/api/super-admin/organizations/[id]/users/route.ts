@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les utilisateurs de l'organisation
 export async function GET(
@@ -70,7 +71,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Erreur récupération utilisateurs:', error)
+    log.error('Erreur récupération utilisateurs:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -175,7 +176,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur création utilisateur:', error)
+    log.error('Erreur création utilisateur:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création' },
       { status: 500 }

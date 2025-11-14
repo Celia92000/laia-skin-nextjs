@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les articles
 export async function GET(request: Request) {
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -40,10 +41,10 @@ export async function GET(request: Request) {
       orderBy: { publishedAt: 'desc' }
     });
 
-    console.log('📚 Articles trouvés dans la DB:', posts.length);
+    log.info('📚 Articles trouvés dans la DB:', posts.length);
     return NextResponse.json(posts);
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des articles:', error);
+    log.error('❌ Erreur lors de la récupération des articles:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(post);
   } catch (error) {
-    console.error('Erreur lors de la création de l\'article:', error);
+    log.error('Erreur lors de la création de l\'article:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Cette API doit être appelée tous les jours à 10h (via un cron job)
 export async function GET(request: Request) {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
 
     // Vérifier que Resend est configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-      console.log('Resend non configuré - emails non envoyés');
+      log.info('Resend non configuré - emails non envoyés');
       return NextResponse.json({
         success: false,
         message: 'Resend non configuré - emails non envoyés'
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
       where: { status: 'ACTIVE' }
     });
 
-    console.log(`📧 Traitement de ${organizations.length} organisation(s)`);
+    log.info(`📧 Traitement de ${organizations.length} organisation(s)`);
 
     // Récupérer les réservations d'il y a 3 jours qui sont terminées
     const threeDaysAgo = new Date();
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
         }
       });
 
-      console.log(`[${organization.name}] ${completedReservations.length} demande(s) d'avis à envoyer`);
+      log.info(`[${organization.name}] ${completedReservations.length} demande(s) d'avis à envoyer`);
 
       let sentCount = 0;
 
@@ -232,21 +233,21 @@ Merci infiniment ! 🙏
               to: reservation.user.phone,
               message: whatsappMessage
             });
-            console.log(`📱 WhatsApp avis envoyé à: ${reservation.user.phone}`);
+            log.info(`📱 WhatsApp avis envoyé à: ${reservation.user.phone}`);
           } catch (whatsappError) {
-            console.error('Erreur WhatsApp:', whatsappError);
+            log.error('Erreur WhatsApp:', whatsappError);
           }
         }
 
         sentCount++;
         totalSentCount++;
-        console.log(`[${organization.name}] ✅ Avis envoyé à: ${reservation.user.email}`);
+        log.info(`[${organization.name}] ✅ Avis envoyé à: ${reservation.user.email}`);
       } catch (error) {
-        console.error(`[${organization.name}] Erreur envoi avis pour ${reservation.id}:`, error);
+        log.error(`[${organization.name}] Erreur envoi avis pour ${reservation.id}:`, error);
       }
     }
 
-      console.log(`[${organization.name}] ${sentCount} demande(s) d'avis envoyée(s)`);
+      log.info(`[${organization.name}] ${sentCount} demande(s) d'avis envoyée(s)`);
     }
 
     return NextResponse.json({
@@ -257,7 +258,7 @@ Merci infiniment ! 🙏
     });
 
   } catch (error) {
-    console.error('Erreur cron review:', error);
+    log.error('Erreur cron review:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des demandes d\'avis' 
     }, { status: 500 });
@@ -442,7 +443,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur envoi avis manuel:', error);
+    log.error('Erreur envoi avis manuel:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi' 
     }, { status: 500 });

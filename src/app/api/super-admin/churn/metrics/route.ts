@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/churn/metrics
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
       });
     } catch (error) {
       // Non bloquant si la table n'existe pas encore
-      console.warn('ChurnMetric table not ready:', error);
+      log.warn('ChurnMetric table not ready:', error);
     }
 
     return NextResponse.json({
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur métriques churn:', error);
+    log.error('Erreur métriques churn:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

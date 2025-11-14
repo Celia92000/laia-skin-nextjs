@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer un élément de stock spécifique par ID
 export async function GET(
@@ -26,7 +27,7 @@ export async function GET(
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -70,7 +71,7 @@ export async function GET(
 
     return NextResponse.json(stock);
   } catch (error) {
-    console.error('Erreur lors de la récupération du stock:', error);
+    log.error('Erreur lors de la récupération du stock:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -98,7 +99,7 @@ export async function PUT(
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -150,7 +151,7 @@ export async function PUT(
 
     return NextResponse.json(stock);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du stock:', error);
+    log.error('Erreur lors de la mise à jour du stock:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -178,7 +179,7 @@ export async function DELETE(
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -207,7 +208,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Stock supprimé avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la suppression du stock:', error);
+    log.error('Erreur lors de la suppression du stock:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

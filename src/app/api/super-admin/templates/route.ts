@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les templates
 export async function GET() {
@@ -47,7 +48,7 @@ export async function GET() {
     return NextResponse.json({ templates })
 
   } catch (error) {
-    console.error('Erreur récupération templates:', error)
+    log.error('Erreur récupération templates:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -115,12 +116,12 @@ export async function POST(request: Request) {
       }
     })
 
-    console.log('✅ Template créé:', template.name)
+    log.info('✅ Template créé:', template.name)
 
     return NextResponse.json({ template })
 
   } catch (error) {
-    console.error('Erreur création template:', error)
+    log.error('Erreur création template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

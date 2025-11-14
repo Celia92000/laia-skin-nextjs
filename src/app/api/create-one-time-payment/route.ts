@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-09-30.clover'
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
       locale: 'fr'
     });
 
-    console.log(`✅ Paiement unique créé: ${checkoutSession.id} - ${amount}€ - ${description}`);
+    log.info(`✅ Paiement unique créé: ${checkoutSession.id} - ${amount}€ - ${description}`);
 
     return NextResponse.json({
       url: checkoutSession.url,
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Erreur création paiement unique:', error);
+    log.error('❌ Erreur création paiement unique:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur lors de la création du paiement' },
       { status: 500 }

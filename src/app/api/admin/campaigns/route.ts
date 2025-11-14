@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(formattedCampaigns);
 
   } catch (error) {
-    console.error('Erreur récupération campagnes:', error);
+    log.error('Erreur récupération campagnes:', error);
 
     // En cas d'erreur, retourner des données de démo
     return NextResponse.json([

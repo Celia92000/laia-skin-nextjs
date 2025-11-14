@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { calculateInvoiceTotal } from '@/lib/subscription-billing'
 import { getPlanPrice } from '@/lib/features-simple'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -297,7 +298,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur analytics:', error)
+    log.error('Erreur analytics:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

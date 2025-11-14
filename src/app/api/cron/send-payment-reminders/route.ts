@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
+import { log } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    console.log('🔄 Démarrage envoi relances paiement...')
+    log.info('🔄 Démarrage envoi relances paiement...')
 
     const now = new Date()
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log(`📊 ${overdueInvoices.length} factures impayées trouvées`)
+    log.info(`📊 ${overdueInvoices.length} factures impayées trouvées`)
 
     const results = {
       firstReminder: [] as string[],
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
 
         // Première relance après 7 jours
         if (daysSinceIssue >= 7 && daysSinceIssue < 14 && !lastReminder) {
-          console.log(`📧 Envoi 1ère relance à ${org.name}`)
+          log.info(`📧 Envoi 1ère relance à ${org.name}`)
 
           await resend.emails.send({
             from: 'LAIA Platform <noreply@laiaskin.com>',
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
 
         // Deuxième relance après 14 jours
         else if (daysSinceIssue >= 14 && daysSinceIssue < 21) {
-          console.log(`📧 Envoi 2ème relance à ${org.name}`)
+          log.info(`📧 Envoi 2ème relance à ${org.name}`)
 
           await resend.emails.send({
             from: 'LAIA Platform <noreply@laiaskin.com>',
@@ -131,7 +132,7 @@ export async function GET(request: NextRequest) {
 
         // Suspension après 21 jours
         else if (daysSinceIssue >= 21 && org.status !== 'SUSPENDED') {
-          console.log(`🚫 Suspension de ${org.name}`)
+          log.info(`🚫 Suspension de ${org.name}`)
 
           await prisma.organization.update({
             where: { id: org.id },
@@ -160,7 +161,7 @@ export async function GET(request: NextRequest) {
         }
 
       } catch (error) {
-        console.error(`❌ Erreur pour ${invoice.organization.name}:`, error)
+        log.error(`❌ Erreur pour ${invoice.organization.name}:`, error)
         results.errors.push({
           org: invoice.organization.name,
           error: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -168,11 +169,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('✅ Relances envoyées')
-    console.log(`   - 1ères relances: ${results.firstReminder.length}`)
-    console.log(`   - 2èmes relances: ${results.secondReminder.length}`)
-    console.log(`   - Suspensions: ${results.suspended.length}`)
-    console.log(`   - Erreurs: ${results.errors.length}`)
+    log.info('✅ Relances envoyées')
+    log.info(`   - 1ères relances: ${results.firstReminder.length}`)
+    log.info(`   - 2èmes relances: ${results.secondReminder.length}`)
+    log.info(`   - Suspensions: ${results.suspended.length}`)
+    log.info(`   - Erreurs: ${results.errors.length}`)
 
     return NextResponse.json({
       success: true,
@@ -188,7 +189,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Erreur critique envoi relances:', error)
+    log.error('❌ Erreur critique envoi relances:', error)
     return NextResponse.json(
       {
         success: false,

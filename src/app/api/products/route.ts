@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { cache } from '@/lib/cache';
+import { log } from '@/lib/logger';
 
 // API publique pour vérifier s'il y a des produits actifs
 export async function GET(request: NextRequest) {
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error('Erreur lors de la récupération des produits:', error);
+    log.error('Erreur lors de la récupération des produits:', error);
     return NextResponse.json([], { status: 200 }); // Retourne tableau vide en cas d'erreur
   }
 }

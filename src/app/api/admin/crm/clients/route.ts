@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -55,19 +56,19 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`📱 API Clients: ${clients.length} clients trouvés`);
+    log.info(`📱 API Clients: ${clients.length} clients trouvés`);
     
     // Log les clients avec téléphone pour debug
     const clientsWithPhone = clients.filter(c => c.phone);
-    console.log(`📞 Clients avec téléphone: ${clientsWithPhone.length}`);
+    log.info(`📞 Clients avec téléphone: ${clientsWithPhone.length}`);
     clientsWithPhone.forEach(c => {
-      console.log(`  - ${c.name}: ${c.phone}`);
+      log.info(`  - ${c.name}: ${c.phone}`);
     });
 
     return NextResponse.json(clients);
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des clients:', error);
+    log.error('Erreur lors de la récupération des clients:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`✅ Nouveau client créé: ${newClient.name}`);
+    log.info(`✅ Nouveau client créé: ${newClient.name}`);
 
     return NextResponse.json({
       id: newClient.id,
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la création du client:', error);
+    log.error('Erreur lors de la création du client:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

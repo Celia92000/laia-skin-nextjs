@@ -3,6 +3,7 @@ import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       total: recipientEmails.length
     });
   } catch (error) {
-    console.error('Erreur envoi campagne:', error);
+    log.error('Erreur envoi campagne:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi de la campagne' },
       { status: 500 }

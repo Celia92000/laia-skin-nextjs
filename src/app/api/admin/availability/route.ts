@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer les dates bloquées et horaires de travail
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       workingHours
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des disponibilités:', error);
+    log.error('Erreur lors de la récupération des disponibilités:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
+    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(blockedSlot);
   } catch (error) {
-    console.error('Erreur lors du blocage du créneau:', error);
+    log.error('Erreur lors du blocage du créneau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -93,7 +94,7 @@ export async function DELETE(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
+    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -110,7 +111,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ message: 'Créneau débloqué avec succès' });
   } catch (error) {
-    console.error('Erreur lors du déblocage du créneau:', error);
+    log.error('Erreur lors du déblocage du créneau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
+    if (!decoded || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -186,7 +187,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ message: 'Horaires mis à jour avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des horaires:', error);
+    log.error('Erreur lors de la mise à jour des horaires:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

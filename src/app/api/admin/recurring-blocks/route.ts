@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // ✅ CORRIGÉ : Utilisation de la base de données avec isolation multi-tenant
 // 🔒 Table RecurringBlock avec organizationId pour séparer les données
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(recurringBlocks);
   } catch (error) {
-    console.error('Erreur lors de la récupération des récurrences:', error);
+    log.error('Erreur lors de la récupération des récurrences:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newBlock);
   } catch (error) {
-    console.error('Erreur lors de la création de la récurrence:', error);
+    log.error('Erreur lors de la création de la récurrence:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -157,7 +158,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ message: 'Récurrence supprimée avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de la récurrence:', error);
+    log.error('Erreur lors de la suppression de la récurrence:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { SocialMediaPublisher } from '@/lib/social-media-publisher';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
           userId: decoded.userId ?? null,
         }
       }).catch((err) => {
-        console.error('Erreur création post:', err);
+        log.error('Erreur création post:', err);
         return null;
       });
     }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('Erreur publication:', error);
+    log.error('Erreur publication:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       details: error.message
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -184,7 +185,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur:', error);
+    log.error('Erreur:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

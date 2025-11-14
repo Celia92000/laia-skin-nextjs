@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-session';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       reviewsCount: syncedCount
     });
   } catch (error) {
-    console.error('Erreur synchronisation Google:', error);
+    log.error('Erreur synchronisation Google:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation' },
       { status: 500 }

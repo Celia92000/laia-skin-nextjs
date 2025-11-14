@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   // Récupérer la configuration du site
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         services = reservation.services;
       }
     } catch (e) {
-      console.error('Erreur lors du parsing des services, utilisation du string directement', e);
+      log.error('Erreur lors du parsing des services, utilisation du string directement', e);
       services = reservation.services ? [reservation.services] : [];
     }
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     try {
       packages = typeof reservation.packages === 'string' ? JSON.parse(reservation.packages || '{}') : (reservation.packages || {});
     } catch (e) {
-      console.error('Erreur lors du parsing des packages', e);
+      log.error('Erreur lors du parsing des packages', e);
       packages = {};
     }
 
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     try {
       options = typeof reservation.options === 'string' ? JSON.parse(reservation.options || '[]') : (reservation.options || []);
     } catch (e) {
-      console.error('Erreur lors du parsing des options', e);
+      log.error('Erreur lors du parsing des options', e);
       options = [];
     }
     
@@ -284,9 +285,9 @@ export async function POST(request: NextRequest) {
 
     // Vérifier si Resend est configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_123456789') {
-      console.log('📧 Email de confirmation (mode simulation)');
-      console.log('Destinataire:', to);
-      console.log('Réservation:', { date, time: reservation.time, services, total: reservation.totalPrice });
+      log.info('📧 Email de confirmation (mode simulation)');
+      log.info('Destinataire:', to);
+      log.info('Réservation:', { date, time: reservation.time, services, total: reservation.totalPrice });
       return NextResponse.json({ 
         success: true,
         simulated: true,
@@ -304,15 +305,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Erreur Resend:', error);
+      log.error('Erreur Resend:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    console.log('✅ Email de confirmation envoyé:', to);
+    log.info('✅ Email de confirmation envoyé:', to);
     return NextResponse.json({ success: true, data });
 
   } catch (error) {
-    console.error('Erreur:', error);
+    log.error('Erreur:', error);
     return NextResponse.json({ 
       success: false,
       error: error instanceof Error ? error.message : 'Erreur inconnue'

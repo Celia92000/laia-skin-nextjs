@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -52,7 +53,7 @@ export async function GET(
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la commande:', error);
+    log.error('Erreur lors de la récupération de la commande:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -109,7 +110,7 @@ export async function PATCH(
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la commande:', error);
+    log.error('Erreur lors de la mise à jour de la commande:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

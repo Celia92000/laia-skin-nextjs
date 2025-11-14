@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
           }
         })
         updatedStatus = 'SUSPENDED'
-        console.log(`✅ Abonnement ${organization.subscriptionId} suspendu`)
+        log.info(`✅ Abonnement ${organization.subscriptionId} suspendu`)
         break
 
       case 'cancel':
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
           cancel_at_period_end: true
         })
         updatedStatus = 'CANCELLED'
-        console.log(`✅ Abonnement ${organization.subscriptionId} résilié (fin de période)`)
+        log.info(`✅ Abonnement ${organization.subscriptionId} résilié (fin de période)`)
         break
 
       case 'resume':
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
         }
 
         updatedStatus = 'ACTIVE'
-        console.log(`✅ Abonnement ${organization.subscriptionId} repris`)
+        log.info(`✅ Abonnement ${organization.subscriptionId} repris`)
         break
     }
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur gestion abonnement:', error)
+    log.error('Erreur gestion abonnement:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

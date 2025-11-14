@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // POST - Renouveler un token
 export async function POST(
@@ -9,7 +10,7 @@ export async function POST(
 ) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -128,7 +129,7 @@ export async function POST(
       instructions,
     });
   } catch (error) {
-    console.error('Erreur renouvellement token:', error);
+    log.error('Erreur renouvellement token:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(accounts);
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des comptes:', error);
+    log.error('❌ Erreur lors de la récupération des comptes:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(account, { status: 201 });
   } catch (error) {
-    console.error('❌ Erreur lors de la création du compte:', error);
+    log.error('❌ Erreur lors de la création du compte:', error);
     return NextResponse.json({
       error: 'Erreur lors de la création',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -172,7 +173,7 @@ export async function PUT(request: Request) {
     if (type === 'social') {
       // Vérifier que le compte appartient à l'utilisateur
       const existing = await prisma.socialMediaConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -194,7 +195,7 @@ export async function PUT(request: Request) {
       });
     } else if (type === 'whatsapp') {
       const existing = await prisma.whatsAppConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -216,7 +217,7 @@ export async function PUT(request: Request) {
       });
     } else if (type === 'email') {
       const existing = await prisma.emailConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -240,7 +241,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(account);
   } catch (error) {
-    console.error('❌ Erreur lors de la mise à jour du compte:', error);
+    log.error('❌ Erreur lors de la mise à jour du compte:', error);
     return NextResponse.json({
       error: 'Erreur lors de la mise à jour',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -270,21 +271,21 @@ export async function DELETE(request: Request) {
 
     if (type === 'social') {
       const existing = await prisma.socialMediaConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
       await prisma.socialMediaConfig.delete({ where: { id } });
     } else if (type === 'whatsapp') {
       const existing = await prisma.whatsAppConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
       await prisma.whatsAppConfig.delete({ where: { id } });
     } else if (type === 'email') {
       const existing = await prisma.emailConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -293,7 +294,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: 'Compte supprimé' });
   } catch (error) {
-    console.error('❌ Erreur lors de la suppression du compte:', error);
+    log.error('❌ Erreur lors de la suppression du compte:', error);
     return NextResponse.json({
       error: 'Erreur lors de la suppression',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAvailableSlots, getBlockedDatesForMonth, getWorkingHours } from '@/lib/availability-service';
 import { formatDateLocal } from '@/lib/date-utils';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer les disponibilités publiques
 export async function GET(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ workingHours });
     }
   } catch (error) {
-    console.error('Erreur lors de la récupération des disponibilités:', error);
+    log.error('Erreur lors de la récupération des disponibilités:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

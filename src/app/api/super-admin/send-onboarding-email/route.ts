@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendOnboardingInvitationEmail } from '@/lib/email-service'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/super-admin/send-onboarding-email
@@ -70,9 +71,9 @@ export async function POST(request: Request) {
                 `⚠️ Ces identifiants permettent au client de se connecter à son espace admin.`
             }
           })
-          console.log(`✅ Interaction EMAIL enregistrée pour le lead ${leadId}`)
+          log.info(`✅ Interaction EMAIL enregistrée pour le lead ${leadId}`)
         } catch (interactionError) {
-          console.error('⚠️ Erreur enregistrement interaction (non bloquant):', interactionError)
+          log.error('⚠️ Erreur enregistrement interaction (non bloquant):', interactionError)
           // Ne pas bloquer si l'enregistrement de l'interaction échoue
         }
       }
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
         message: 'Email d\'onboarding envoyé avec succès'
       })
     } catch (emailError: any) {
-      console.error('Erreur envoi email onboarding:', emailError)
+      log.error('Erreur envoi email onboarding:', emailError)
       return NextResponse.json(
         { error: emailError.message || 'Erreur lors de l\'envoi de l\'email' },
         { status: 500 }
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
     }
 
   } catch (error: any) {
-    console.error('Erreur endpoint send-onboarding-email:', error)
+    log.error('Erreur endpoint send-onboarding-email:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

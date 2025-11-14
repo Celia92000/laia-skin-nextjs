@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { sendBulkSMS, replaceVariables } from '@/lib/sms-service';
+import { log } from '@/lib/logger';
 
 // POST - Envoyer une campagne SMS
 export async function POST(
@@ -175,7 +176,7 @@ export async function POST(
       message: `Campagne envoyée avec succès ! ${totalSent} SMS envoyés, ${totalFailed} échecs. Coût total: ${totalCost.toFixed(2)}€`
     });
   } catch (error) {
-    console.error('Error sending SMS campaign:', error);
+    log.error('Error sending SMS campaign:', error);
     return NextResponse.json({ error: 'Erreur lors de l\'envoi de la campagne' }, { status: 500 });
   }
 }

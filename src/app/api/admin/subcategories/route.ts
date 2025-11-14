@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(subcategories);
   } catch (error) {
-    console.error('Erreur lors de la récupération des sous-catégories:', error);
+    log.error('Erreur lors de la récupération des sous-catégories:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des sous-catégories' },
       { status: 500 }
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(subcategory, { status: 201 });
   } catch (error) {
-    console.error('Erreur lors de la création de la sous-catégorie:', error);
+    log.error('Erreur lors de la création de la sous-catégorie:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la création de la sous-catégorie' },
       { status: 500 }

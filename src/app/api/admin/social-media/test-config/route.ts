@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { SocialMediaPublisher } from '@/lib/social-media-publisher';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    if (!decoded || (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+    if (!decoded || (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur test config:', error);
+    log.error('Erreur test config:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

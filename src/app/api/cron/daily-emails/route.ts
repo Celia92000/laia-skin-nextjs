@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 import { getSiteConfig } from '@/lib/config-service';
 import { headers } from 'next/headers';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const config = await getSiteConfig();
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     // ========================================
     // 1. CONFIRMATIONS DE RENDEZ-VOUS (J-1)
     // ========================================
-    console.log('🔔 Recherche des réservations à confirmer...');
+    log.info('🔔 Recherche des réservations à confirmer...');
 
     const reservationsToConfirm = await prisma.reservation.findMany({
       where: {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`📅 ${reservationsToConfirm.length} réservations trouvées pour demain`);
+    log.info(`📅 ${reservationsToConfirm.length} réservations trouvées pour demain`);
 
     for (const reservation of reservationsToConfirm) {
       try {
@@ -142,16 +143,16 @@ export async function GET(request: NextRequest) {
         });
 
         emailsSent.confirmations++;
-        console.log(`✅ Confirmation envoyée à ${reservation.user.email}`);
+        log.info(`✅ Confirmation envoyée à ${reservation.user.email}`);
       } catch (error) {
-        console.error(`❌ Erreur envoi confirmation pour ${reservation.user.email}:`, error);
+        log.error(`❌ Erreur envoi confirmation pour ${reservation.user.email}:`, error);
       }
     }
 
     // ========================================
     // 2. EMAILS D'ANNIVERSAIRE
     // ========================================
-    console.log('🎂 Recherche des anniversaires du jour...');
+    log.info('🎂 Recherche des anniversaires du jour...');
 
     const today = new Date();
     const todayMonth = today.getMonth() + 1;
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
       return birthDate.getMonth() + 1 === todayMonth && birthDate.getDate() === todayDay;
     });
 
-    console.log(`🎉 ${birthdayUsers.length} anniversaires aujourd'hui`);
+    log.info(`🎉 ${birthdayUsers.length} anniversaires aujourd'hui`);
 
     for (const user of birthdayUsers) {
       try {
@@ -245,15 +246,15 @@ export async function GET(request: NextRequest) {
         });
 
         emailsSent.birthdays++;
-        console.log(`✅ Email anniversaire envoyé à ${user.email}`);
+        log.info(`✅ Email anniversaire envoyé à ${user.email}`);
       } catch (error) {
-        console.error(`❌ Erreur envoi anniversaire pour ${user.email}:`, error);
+        log.error(`❌ Erreur envoi anniversaire pour ${user.email}:`, error);
       }
     }
 
-    console.log('📊 Résumé des envois emails:');
-    console.log(`- Confirmations RDV: ${emailsSent.confirmations}`);
-    console.log(`- Anniversaires: ${emailsSent.birthdays}`);
+    log.info('📊 Résumé des envois emails:');
+    log.info(`- Confirmations RDV: ${emailsSent.confirmations}`);
+    log.info(`- Anniversaires: ${emailsSent.birthdays}`);
 
     return NextResponse.json({
       success: true,
@@ -262,7 +263,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Erreur cron emails quotidiens:', error);
+    log.error('❌ Erreur cron emails quotidiens:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi des emails' },
       { status: 500 }

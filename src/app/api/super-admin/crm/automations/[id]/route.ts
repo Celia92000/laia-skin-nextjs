@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * PATCH /api/super-admin/crm/automations/[id]
@@ -38,7 +39,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Error updating automation:', error)
+    log.error('Error updating automation:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour' },
       { status: 500 }
@@ -79,7 +80,7 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('Error deleting automation:', error)
+    log.error('Error deleting automation:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la suppression' },
       { status: 500 }

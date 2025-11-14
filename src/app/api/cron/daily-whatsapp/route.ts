@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { WhatsAppService } from '@/lib/whatsapp-service';
 import { headers } from 'next/headers';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     // ========================================
     // 1. RAPPELS DE RENDEZ-VOUS PAR WHATSAPP (J-1)
     // ========================================
-    console.log('📱 Recherche des rappels WhatsApp à envoyer...');
+    log.info('📱 Recherche des rappels WhatsApp à envoyer...');
 
     const reservationsForReminder = await prisma.reservation.findMany({
       where: {
@@ -49,13 +50,13 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`📅 ${reservationsForReminder.length} rappels WhatsApp à envoyer pour demain`);
+    log.info(`📅 ${reservationsForReminder.length} rappels WhatsApp à envoyer pour demain`);
 
     for (const reservation of reservationsForReminder) {
       try {
         // Vérifier que le client a un numéro de téléphone
         if (!reservation.user.phone) {
-          console.log(`⚠️ Pas de téléphone pour ${reservation.user.name}`);
+          log.info(`⚠️ Pas de téléphone pour ${reservation.user.name}`);
           continue;
         }
 
@@ -107,19 +108,19 @@ Pour toute modification : 📞 ${contactPhone}
         });
 
         messagesSent.reminders++;
-        console.log(`✅ Rappel WhatsApp envoyé à ${reservation.user.phone}`);
+        log.info(`✅ Rappel WhatsApp envoyé à ${reservation.user.phone}`);
 
         // Attendre un peu entre chaque envoi pour éviter le spam
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        console.error(`❌ Erreur envoi rappel WhatsApp pour ${reservation.user.phone}:`, error);
+        log.error(`❌ Erreur envoi rappel WhatsApp pour ${reservation.user.phone}:`, error);
       }
     }
 
     // ========================================
     // 2. DEMANDES D'AVIS PAR WHATSAPP (J+1)
     // ========================================
-    console.log('⭐ Recherche des demandes d\'avis à envoyer...');
+    log.info('⭐ Recherche des demandes d\'avis à envoyer...');
 
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -142,12 +143,12 @@ Pour toute modification : 📞 ${contactPhone}
       }
     });
 
-    console.log(`⭐ ${completedReservations.length} demandes d'avis à envoyer`);
+    log.info(`⭐ ${completedReservations.length} demandes d'avis à envoyer`);
 
     for (const reservation of completedReservations) {
       try {
         if (!reservation.user.phone) {
-          console.log(`⚠️ Pas de téléphone pour ${reservation.user.name}`);
+          log.info(`⚠️ Pas de téléphone pour ${reservation.user.name}`);
           continue;
         }
 
@@ -187,18 +188,18 @@ Merci pour votre confiance,
         });
 
         messagesSent.reviews++;
-        console.log(`✅ Demande d'avis WhatsApp envoyée à ${reservation.user.phone}`);
+        log.info(`✅ Demande d'avis WhatsApp envoyée à ${reservation.user.phone}`);
 
         // Attendre entre chaque envoi
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        console.error(`❌ Erreur envoi demande d'avis pour ${reservation.user.phone}:`, error);
+        log.error(`❌ Erreur envoi demande d'avis pour ${reservation.user.phone}:`, error);
       }
     }
 
-    console.log('📊 Résumé des envois WhatsApp:');
-    console.log(`- Rappels RDV: ${messagesSent.reminders}`);
-    console.log(`- Demandes d'avis: ${messagesSent.reviews}`);
+    log.info('📊 Résumé des envois WhatsApp:');
+    log.info(`- Rappels RDV: ${messagesSent.reminders}`);
+    log.info(`- Demandes d'avis: ${messagesSent.reviews}`);
 
     return NextResponse.json({
       success: true,
@@ -207,7 +208,7 @@ Merci pour votre confiance,
     });
 
   } catch (error) {
-    console.error('❌ Erreur cron WhatsApp quotidien:', error);
+    log.error('❌ Erreur cron WhatsApp quotidien:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi des messages WhatsApp' },
       { status: 500 }

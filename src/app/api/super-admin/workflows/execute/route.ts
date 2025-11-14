@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { Resend } from 'resend';
+import { log } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -120,14 +121,14 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      console.error('Erreur envoi email workflow:', emailError);
+      log.error('Erreur envoi email workflow:', emailError);
       return NextResponse.json({
         error: 'Échec envoi email: ' + emailError.message
       }, { status: 500 });
     }
 
   } catch (error: any) {
-    console.error('Erreur exécution workflow:', error);
+    log.error('Erreur exécution workflow:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

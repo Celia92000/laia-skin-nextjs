@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/admin/assign-template
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
       },
     })
   } catch (error: any) {
-    console.error('[assign-template] Erreur:', error)
+    log.error('[assign-template] Erreur:', error)
     return NextResponse.json(
       { error: 'Erreur serveur', details: error.message },
       { status: 500 }

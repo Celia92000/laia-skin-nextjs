@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erreur vérification carte cadeau:', error);
+    log.error('Erreur vérification carte cadeau:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       valid: false

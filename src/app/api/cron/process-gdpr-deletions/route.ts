@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 /**
  * CRON JOB - Traitement des suppressions RGPD
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
     // 🗑️ Traiter chaque utilisateur individuellement
     for (const user of usersToDelete) {
       try {
-        console.log(`[GDPR] Traitement suppression utilisateur: ${user.email} (ID: ${user.id})`);
+        log.info(`[GDPR] Traitement suppression utilisateur: ${user.email} (ID: ${user.id})`);
 
         // 🔥 SUPPRESSION EN CASCADE
         // Grâce aux relations Prisma avec onDelete: Cascade, la plupart des données
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
           where: { id: user.id }
         });
 
-        console.log(`[GDPR] ✅ Suppression réussie : ${user.email}`);
+        log.info(`[GDPR] ✅ Suppression réussie : ${user.email}`);
 
         deletionResults.push({
           userId: user.id,
@@ -136,7 +137,7 @@ export async function GET(request: NextRequest) {
         });
 
       } catch (error) {
-        console.error(`[GDPR] ❌ Erreur suppression ${user.email}:`, error);
+        log.error(`[GDPR] ❌ Erreur suppression ${user.email}:`, error);
         deletionResults.push({
           userId: user.id,
           email: user.email,
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur CRON RGPD suppression:', error);
+    log.error('Erreur CRON RGPD suppression:', error);
     return NextResponse.json(
       { error: 'Erreur lors du traitement des suppressions RGPD' },
       { status: 500 }

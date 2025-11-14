@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/public/leads
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     return NextResponse.json(lead, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur création lead public:', error)
+    log.error('Erreur création lead public:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création du lead' },
       { status: 500 }

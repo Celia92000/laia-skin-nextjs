@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { encrypt, decrypt, encryptConfig, decryptConfig } from '@/lib/encryption';
 import { z } from 'zod';
+import { log } from '@/lib/logger';
 
 // Schémas de validation
 const createIntegrationSchema = z.object({
@@ -36,14 +37,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer toutes les intégrations (avec select pour optimiser)
+    // Récupérer le type depuis les query params
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get('type');
+
+    // Construire le where clause
+    const whereClause: any = {
+      OR: [
+        { userId: decoded.userId },
+        { userId: null } // Config globale
+      ]
+    };
+
+    if (type) {
+      whereClause.type = type;
+    }
+
+    // Récupérer les intégrations (avec select pour optimiser)
     const integrations = await prisma.integration.findMany({
-      where: {
-        OR: [
-          { userId: decoded.userId },
-          { userId: null } // Config globale
-        ]
-      },
+      where: whereClause,
       select: {
         id: true,
         type: true,
@@ -55,10 +67,32 @@ export async function GET(request: Request) {
         errorMessage: true,
         createdAt: true,
         updatedAt: true,
-        config: true // Nécessaire pour vérifier hasConfig
+        config: true // Nécessaire pour déchiffrer ou vérifier hasConfig
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Si on filtre par type et qu'il y a un résultat, déchiffrer la config
+    if (type && integrations.length === 1) {
+      const int = integrations[0];
+      const decryptedConfig = decryptConfig(int.config as string);
+
+      return NextResponse.json({
+        integration: {
+          id: int.id,
+          type: int.type,
+          enabled: int.enabled,
+          status: int.status,
+          displayName: int.displayName,
+          description: int.description,
+          lastSync: int.lastSync,
+          errorMessage: int.errorMessage,
+          createdAt: int.createdAt,
+          updatedAt: int.updatedAt,
+          config: decryptedConfig
+        }
+      });
+    }
 
     // Ne pas renvoyer les configs chiffrées complètes, juste le statut
     const safeIntegrations = integrations.map(int => ({
@@ -78,7 +112,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(safeIntegrations);
   } catch (error) {
-    console.error('Erreur récupération intégrations:', error);
+    log.error('Erreur récupération intégrations:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -151,15 +185,18 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      id: integration.id,
-      type: integration.type,
-      enabled: integration.enabled,
-      status: integration.status,
-      displayName: integration.displayName,
-      description: integration.description
+      integration: {
+        id: integration.id,
+        type: integration.type,
+        enabled: integration.enabled,
+        status: integration.status,
+        displayName: integration.displayName,
+        description: integration.description,
+        config: config || {}
+      }
     });
   } catch (error) {
-    console.error('Erreur création intégration:', error);
+    log.error('Erreur création intégration:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -221,7 +258,7 @@ export async function PUT(request: Request) {
       displayName: integration.displayName
     });
   } catch (error) {
-    console.error('Erreur mise à jour intégration:', error);
+    log.error('Erreur mise à jour intégration:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -254,7 +291,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression intégration:', error);
+    log.error('Erreur suppression intégration:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

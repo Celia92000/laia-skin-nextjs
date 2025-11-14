@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { decryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     try {
       config = decryptConfig(sumupIntegration.config as string);
     } catch (error) {
-      console.error('Erreur déchiffrement config SumUp:', error);
+      log.error('Erreur déchiffrement config SumUp:', error);
       return NextResponse.json({ error: 'Erreur de configuration' }, { status: 500 });
     }
 
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
 
     if (!checkoutResponse.ok) {
       const errorText = await checkoutResponse.text();
-      console.error('Erreur création checkout SumUp:', errorText);
+      log.error('Erreur création checkout SumUp:', errorText);
       let errorMessage = 'Erreur de création de checkout SumUp';
       try {
         const error = JSON.parse(errorText);
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur création checkout SumUp:', error);
+    log.error('Erreur création checkout SumUp:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json([]);
   } catch (error) {
-    console.error('Erreur lors de la récupération des sessions photo:', error);
+    log.error('Erreur lors de la récupération des sessions photo:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       message: 'Session photo sauvegardée avec succès'
     });
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde de la session photo:', error);
+    log.error('Erreur lors de la sauvegarde de la session photo:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   } finally {
     await prisma.$disconnect();

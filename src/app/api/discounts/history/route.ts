@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(discounts);
 
   } catch (error) {
-    console.error('Erreur récupération historique réductions:', error);
+    log.error('Erreur récupération historique réductions:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de l\'historique' },
       { status: 500 }

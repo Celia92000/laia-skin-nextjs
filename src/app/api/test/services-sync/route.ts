@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getReservationWithServiceNamesFromDB } from '@/lib/service-utils-server';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const results: any = {
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(results);
     
   } catch (error) {
-    console.error('Erreur lors du test:', error);
+    log.error('Erreur lors du test:', error);
     
     results.tests.push({
       name: 'Erreur générale',

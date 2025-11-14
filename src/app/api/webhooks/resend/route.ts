@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import crypto from 'crypto';
+import { log } from '@/lib/logger';
 
 // Vérifier la signature du webhook Resend
 function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
@@ -33,13 +34,13 @@ export async function POST(request: NextRequest) {
     
     // Vérifier la signature si configurée
     if (webhookSecret && !verifyWebhookSignature(body, signature, webhookSecret)) {
-      console.error('Invalid webhook signature');
+      log.error('Invalid webhook signature');
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
     
     // Parser le JSON
     const data = JSON.parse(body);
-    console.log('Webhook Resend reçu:', data);
+    log.info('Webhook Resend reçu:', data);
     
     // Traiter selon le type d'événement
     switch (data.type) {
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
       case 'email.received':
       case 'inbound':
         // Email reçu (réponse du client)
-        console.log('Email entrant reçu:', data.data);
+        log.info('Email entrant reçu:', data.data);
         
         const inboundEmail = data.data;
         if (inboundEmail) {
@@ -146,18 +147,18 @@ export async function POST(request: NextRequest) {
             }
           });
           
-          console.log('Email entrant enregistré');
+          log.info('Email entrant enregistré');
         }
         break;
         
       default:
-        console.log('Type d\'événement non géré:', data.type);
+        log.info('Type d\'événement non géré:', data.type);
     }
     
     return NextResponse.json({ received: true });
     
   } catch (error) {
-    console.error('Erreur webhook Resend:', error);
+    log.error('Erreur webhook Resend:', error);
     return NextResponse.json({ error: 'Webhook error' }, { status: 500 });
   }
 }

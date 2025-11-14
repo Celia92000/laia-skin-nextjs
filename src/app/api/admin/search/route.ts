@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 interface SearchFilter {
   type: string;
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       try {
         filters = JSON.parse(filterParam);
       } catch (e) {
-        console.error('Erreur parsing filters:', e);
+        log.error('Erreur parsing filters:', e);
       }
     }
 
@@ -312,7 +313,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ results: uniqueResults });
   } catch (error) {
-    console.error('Erreur de recherche:', error);
+    log.error('Erreur de recherche:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la recherche' },
       { status: 500 }
@@ -612,7 +613,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ results: uniqueResults });
   } catch (error) {
-    console.error('Erreur de recherche:', error);
+    log.error('Erreur de recherche:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la recherche' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -42,7 +43,7 @@ export async function GET() {
     return NextResponse.json({ organization })
 
   } catch (error) {
-    console.error('Erreur récupération organisation:', error)
+    log.error('Erreur récupération organisation:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

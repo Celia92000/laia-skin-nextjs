@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { listApiTokens, storeApiToken } from '@/lib/api-token-manager';
+import { log } from '@/lib/logger';
 
 // GET - Liste tous les tokens (sans les déchiffrer)
 export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification admin
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(sanitizedTokens);
   } catch (error) {
-    console.error('Erreur récupération tokens:', error);
+    log.error('Erreur récupération tokens:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       message: 'Token enregistré avec succès',
     });
   } catch (error) {
-    console.error('Erreur enregistrement token:', error);
+    log.error('Erreur enregistrement token:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les templates
 async function getDefaultTemplates() {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(templates);
   } catch (error) {
-    console.error('Erreur lors de la récupération des templates:', error);
+    log.error('Erreur lors de la récupération des templates:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des templates' },
       { status: 500 }
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       template
     });
   } catch (error) {
-    console.error('Erreur lors de la création du template:', error);
+    log.error('Erreur lors de la création du template:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la création du template' },
       { status: 500 }
@@ -202,7 +203,7 @@ export async function PUT(request: NextRequest) {
       template
     });
   } catch (error) {
-    console.error('Erreur lors de la modification du template:', error);
+    log.error('Erreur lors de la modification du template:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification du template' },
       { status: 500 }

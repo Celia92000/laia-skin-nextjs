@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
         `
       });
     } catch (emailError) {
-      console.error('Erreur envoi email:', emailError);
+      log.error('Erreur envoi email:', emailError);
       return NextResponse.json(
         { error: 'Erreur lors de l\'envoi de l\'email' },
         { status: 500 }
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur magic link:', error);
+    log.error('Erreur magic link:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération du lien magique' },
       { status: 500 }

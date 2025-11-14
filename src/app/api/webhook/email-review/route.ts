@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // Cette API reçoit les avis envoyés par email (via webhook de votre service email)
 export async function POST(request: NextRequest) {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (!user) {
-      console.log(`Utilisateur non trouvé pour l'email : ${userEmail}`);
+      log.info(`Utilisateur non trouvé pour l'email : ${userEmail}`);
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
     
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (!lastReservation) {
-      console.log(`Aucune réservation complétée pour : ${userEmail}`);
+      log.info(`Aucune réservation complétée pour : ${userEmail}`);
       return NextResponse.json({ error: 'Aucune réservation trouvée' }, { status: 404 });
     }
     
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
     // Créer une notification pour l'admin
     const adminUsers = await prisma.user.findMany({
       where: {
-        role: { in: ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'] }
+        role: { in: ['SUPER_ADMIN', 'ORG_OWNER'] }
       }
     });
     
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    console.log(`📧 Avis reçu par email de ${user.name}: ${rating}⭐`);
+    log.info(`📧 Avis reçu par email de ${user.name}: ${rating}⭐`);
     
     return NextResponse.json({
       success: true,
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Erreur traitement avis par email:', error);
+    log.error('Erreur traitement avis par email:', error);
     return NextResponse.json(
       { error: 'Erreur lors du traitement de l\'avis' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       user 
     });
   } catch (error) {
-    console.error('Erreur de vérification:', error);
+    log.error('Erreur de vérification:', error);
     return NextResponse.json({ error: 'Erreur de vérification' }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
           }
         });
       } catch (dbError) {
-        console.log('Erreur enregistrement historique:', dbError);
+        log.info('Erreur enregistrement historique:', dbError);
       }
 
       return NextResponse.json({ 
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (resendError: any) {
-      console.error('Erreur Resend:', resendError);
+      log.error('Erreur Resend:', resendError);
       
       // 🔒 Enregistrer l'échec dans l'historique DE CETTE ORGANISATION
       try {
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
           }
         });
       } catch (dbError) {
-        console.log('Erreur enregistrement historique:', dbError);
+        log.info('Erreur enregistrement historique:', dbError);
       }
 
       return NextResponse.json({ 
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Erreur générale:', error);
+    log.error('Erreur générale:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

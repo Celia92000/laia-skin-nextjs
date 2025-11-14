@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { formatDateLocal } from "@/lib/date-utils";
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error);
+    log.error('Erreur lors de la récupération des statistiques:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des statistiques' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { decryptConfig } from '@/lib/encryption';
 import { generateInvoiceNumber, getNextBillingDate } from '@/lib/subscription-billing';
 import { sendInvoiceEmail } from '@/lib/email-service';
 import { getAddonById, parseOrganizationAddons } from '@/lib/addons';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     try {
       event = stripe.webhooks.constructEvent(body, signature, config.webhookSecret);
     } catch (err: any) {
-      console.error('Erreur de vérification webhook:', err);
+      log.error('Erreur de vérification webhook Stripe', err);
       return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
 
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
           });
 
           if (!reservation) {
-            console.error(`Réservation ${reservationId} non trouvée`);
+            log.error('Réservation non trouvée', undefined, { reservationId });
             break;
           }
 
@@ -258,12 +259,12 @@ export async function POST(request: Request) {
               plan: org.plan,
               lineItems: lineItems as any,
             });
-            console.log(`📧 Facture ${invoiceNumber} envoyée à ${org.billingEmail || org.ownerEmail}`);
+            log.email('facture envoyée', org.billingEmail || org.ownerEmail, { invoiceNumber, amount });
           } catch (emailError) {
-            console.error('⚠️ Erreur envoi email facture:', emailError);
+            log.error('Erreur envoi email facture', emailError, { invoiceNumber, organizationId: org.id });
           }
 
-          console.log(`✅ Facture ${invoiceNumber} générée pour ${org.name} - ${amount}€`);
+          log.stripe('Facture générée', { invoiceNumber, organization: org.name, amount });
         }
         break;
 
@@ -295,18 +296,18 @@ export async function POST(request: Request) {
             }
           });
 
-          console.log(`⚠️ Paiement échoué pour ${failedOrg.name} - Organisation suspendue`);
+          log.warn('Paiement Stripe échoué - Organisation suspendue', { organization: failedOrg.name, organizationId: failedOrg.id });
         }
         break;
 
       default:
-        console.log(`Événement non géré: ${event.type}`);
+        log.debug('Événement Stripe non géré', { eventType: event.type });
     }
 
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Erreur webhook Stripe:', error);
+    log.error('Erreur webhook Stripe', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

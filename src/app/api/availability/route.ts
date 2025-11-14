@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     });
 
     if (existingReservation) {
-      console.log('Créneau déjà réservé:', date, time, 'Réservation:', existingReservation);
+      log.info('Créneau déjà réservé:', date, time, 'Réservation:', existingReservation);
       return NextResponse.json({ 
         available: false, 
         message: 'Ce créneau est déjà réservé' 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
       message: 'Créneau disponible'
     });
   } catch (error) {
-    console.error('Error checking availability:', error);
+    log.error('Error checking availability:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -195,7 +196,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(availability);
   } catch (error) {
-    console.error('Error fetching availability:', error);
+    log.error('Error fetching availability:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

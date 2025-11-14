@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
+import { log } from '@/lib/logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -48,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json(updatedLocation)
   } catch (error) {
-    console.error('Error updating location:', error)
+    log.error('Error updating location:', error)
     return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
   }
 }
@@ -98,7 +99,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     return NextResponse.json({ message: 'Emplacement supprimé' }, { status: 200 })
   } catch (error) {
-    console.error('Error deleting location:', error)
+    log.error('Error deleting location:', error)
     return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 })
   }
 }

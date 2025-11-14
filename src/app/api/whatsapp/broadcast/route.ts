@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // POST - Envoyer une campagne de messages groupés
 export async function POST(request: NextRequest) {
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       results
     });
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de la campagne:', error);
+    log.error('Erreur lors de l\'envoi de la campagne:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi de la campagne' },
       { status: 500 }

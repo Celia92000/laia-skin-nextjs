@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 /**
  * API Cron job pour la facturation mensuelle automatique
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
       }
     })
 
-    console.log(`🔄 ${organizationsToBill.length} organisation(s) à facturer aujourd'hui`)
+    log.info(`🔄 ${organizationsToBill.length} organisation(s) à facturer aujourd'hui`)
 
     const results = []
 
@@ -86,10 +87,10 @@ export async function GET(request: Request) {
           stripeInvoiceId: invoice.id
         })
 
-        console.log(`✅ Facture créée pour ${org.name} - ${org.monthlyAmount}€`)
+        log.info(`✅ Facture créée pour ${org.name} - ${org.monthlyAmount}€`)
 
       } catch (error: any) {
-        console.error(`❌ Erreur facturation ${org.name}:`, error.message)
+        log.error(`❌ Erreur facturation ${org.name}:`, error.message)
         results.push({
           organizationId: org.id,
           organizationName: org.name,
@@ -107,7 +108,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('❌ Erreur cron facturation mensuelle:', error)
+    log.error('❌ Erreur cron facturation mensuelle:', error)
     return NextResponse.json({
       success: false,
       error: error.message

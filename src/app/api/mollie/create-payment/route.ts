@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { decryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     try {
       config = decryptConfig(mollieIntegration.config as string);
     } catch (error) {
-      console.error('Erreur déchiffrement config Mollie:', error);
+      log.error('Erreur déchiffrement config Mollie:', error);
       return NextResponse.json({ error: 'Erreur de configuration' }, { status: 500 });
     }
 
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
 
     if (!paymentResponse.ok) {
       const error = await paymentResponse.json();
-      console.error('Erreur création paiement Mollie:', error);
+      log.error('Erreur création paiement Mollie:', error);
       return NextResponse.json({ error: 'Erreur de création de paiement Mollie' }, { status: 500 });
     }
 
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur création paiement Mollie:', error);
+    log.error('Erreur création paiement Mollie:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

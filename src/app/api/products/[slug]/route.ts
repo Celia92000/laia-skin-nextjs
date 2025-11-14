@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur lors de la récupération du produit:', error);
+    log.error('Erreur lors de la récupération du produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

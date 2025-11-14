@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkExpiringTokens } from '@/lib/api-token-manager';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 /**
  * Cron job pour vérifier les tokens expirants
@@ -30,13 +31,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔄 [Cron] Vérification des tokens expirants...');
+    log.info('🔄 [Cron] Vérification des tokens expirants...');
 
     // Vérifier les tokens qui expirent dans les 7 prochains jours
     const expiringTokens = await checkExpiringTokens(7);
 
     if (expiringTokens.length === 0) {
-      console.log('✅ [Cron] Aucun token n\'expire dans les 7 prochains jours');
+      log.info('✅ [Cron] Aucun token n\'expire dans les 7 prochains jours');
       return NextResponse.json({
         success: true,
         message: 'Aucun token expirant trouvé',
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
           include: {
             users: {
               where: {
-                role: { in: ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'] }
+                role: { in: ['SUPER_ADMIN', 'ORG_OWNER'] }
               }
             }
           }
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`✅ [Cron] ${expiringTokens.length} notification(s) créée(s) pour les tokens expirants`);
+    log.info(`✅ [Cron] ${expiringTokens.length} notification(s) créée(s) pour les tokens expirants`);
 
     return NextResponse.json({
       success: true,
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [Cron] Erreur lors de la vérification des tokens:', error);
+    log.error('❌ [Cron] Erreur lors de la vérification des tokens:', error);
     return NextResponse.json(
       {
         error: 'Erreur lors de la vérification des tokens',

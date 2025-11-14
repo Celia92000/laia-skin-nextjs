@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur verification magic link:', error);
+    log.error('Erreur verification magic link:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la vérification du lien' },
       { status: 500 }

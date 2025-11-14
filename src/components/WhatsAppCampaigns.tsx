@@ -8,6 +8,7 @@ import {
   MessageCircle, UserCheck, Activity, BarChart3,
   Sparkles, Zap, FileText, Download, Upload, Play
 } from 'lucide-react';
+import ClientAdvancedFilters, { ClientFilterCriteria } from '@/components/ClientAdvancedFilters';
 
 interface Campaign {
   id: string;
@@ -54,12 +55,15 @@ export default function WhatsAppCampaigns() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'scheduled' | 'draft'>('all');
-  
+
   // États pour les filtres
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'scheduled' | 'sent' | 'draft'>('all');
   const [filterDateRange, setFilterDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [searchCampaign, setSearchCampaign] = useState('');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'name' | 'performance'>('date-desc');
+
+  // Filtres avancés pour ciblage clients
+  const [advancedFilters, setAdvancedFilters] = useState<ClientFilterCriteria>({});
 
   useEffect(() => {
     loadCampaigns();

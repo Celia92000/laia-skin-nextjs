@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération statut parrainage:', error);
+    log.error('Erreur récupération statut parrainage:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

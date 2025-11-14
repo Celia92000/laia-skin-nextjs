@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { getPrismaClient } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/admin/reservations/assign-staff
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       select: { role: true, organizationId: true }
     })
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur assignation employé:', error)
+    log.error('Erreur assignation employé:', error)
     return NextResponse.json(
       { error: 'Erreur lors de l\'assignation' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function DELETE(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -43,7 +44,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Erreur suppression email:', error);
+    log.error('Erreur suppression email:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

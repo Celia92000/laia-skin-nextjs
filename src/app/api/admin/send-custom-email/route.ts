@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (resendError: any) {
-      console.error('Erreur Resend:', resendError);
+      log.error('Erreur Resend:', resendError);
 
       // Enregistrer l'échec dans l'historique
       await prisma.emailHistory.create({
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('Erreur envoi email personnalisé:', error);
+    log.error('Erreur envoi email personnalisé:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

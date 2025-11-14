@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { log } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur auto-exécution workflows:', error);
+    log.error('Erreur auto-exécution workflows:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

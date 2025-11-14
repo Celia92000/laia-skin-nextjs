@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/super-admin/invoices/[id]/regenerate
@@ -136,7 +137,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur régénération facture:', error)
+    log.error('Erreur régénération facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

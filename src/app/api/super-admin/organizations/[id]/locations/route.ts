@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -63,7 +64,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Erreur récupération emplacements:', error)
+    log.error('Erreur récupération emplacements:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -156,7 +157,7 @@ export async function POST(
     return NextResponse.json(location)
 
   } catch (error) {
-    console.error('Erreur création emplacement:', error)
+    log.error('Erreur création emplacement:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

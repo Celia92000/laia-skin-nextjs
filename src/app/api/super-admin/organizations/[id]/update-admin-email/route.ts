@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -84,7 +85,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur modification email:', error)
+    log.error('Erreur modification email:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur téléchargement document:', error)
+    log.error('Erreur téléchargement document:', error)
     return NextResponse.json(
       { error: 'Erreur lors du téléchargement' },
       { status: 500 }

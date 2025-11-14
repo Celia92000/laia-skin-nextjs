@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 // PUT - Modifier un utilisateur
 export async function PUT(
@@ -99,7 +100,7 @@ export async function PUT(
     })
 
   } catch (error) {
-    console.error('Erreur modification utilisateur:', error)
+    log.error('Erreur modification utilisateur:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }
@@ -172,7 +173,7 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('Erreur suppression utilisateur:', error)
+    log.error('Erreur suppression utilisateur:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la suppression' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import jsPDF from 'jspdf';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -313,7 +314,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Erreur lors de la génération du rapport:', error);
+    log.error('Erreur lors de la génération du rapport:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération du rapport' },
       { status: 500 }

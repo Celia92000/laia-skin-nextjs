@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // Générer un numéro de commande unique
 function generateOrderNumber() {
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Erreur création commande:', error);
+    log.error('Erreur création commande:', error);
     return NextResponse.json({
       success: false,
       error: 'Erreur lors de la création de la commande'
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
 
     let orders;
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (adminRoles.includes(user.role)) {
       // 🔒 SÉCURITÉ MULTI-TENANT : Admin voit seulement les commandes de SON organisation
       if (!user.organizationId) {
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(orders);
 
   } catch (error) {
-    console.error('Erreur récupération commandes:', error);
+    log.error('Erreur récupération commandes:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

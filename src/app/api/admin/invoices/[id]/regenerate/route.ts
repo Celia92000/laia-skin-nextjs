@@ -3,11 +3,12 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/admin/invoices/[id]/regenerate
  * Régénère une facture (crée une nouvelle facture et marque l'ancienne comme remplacée)
- * Accessible par ORG_ADMIN, ORG_OWNER uniquement
+ * Accessible par ORG_OWNER uniquement
  */
 export async function POST(
   request: Request,
@@ -42,7 +43,7 @@ export async function POST(
     }
 
     // Vérifier les permissions
-    if (!['ORG_ADMIN', 'ORG_OWNER'].includes(user.role)) {
+    if (!['ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -143,7 +144,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur régénération facture:', error)
+    log.error('Erreur régénération facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

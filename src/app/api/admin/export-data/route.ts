@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { formatDateLocal } from "@/lib/date-utils";
+import { log } from '@/lib/logger';
 
 function convertToCSV(data: any[], headers: string[]): string {
   // Créer l'en-tête CSV
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -335,7 +336,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur export CSV:', error);
+    log.error('Erreur export CSV:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'export des données' },
       { status: 500 }

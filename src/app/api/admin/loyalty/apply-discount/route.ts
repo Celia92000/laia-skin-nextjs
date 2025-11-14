@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   const prisma = await getPrismaClient();
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log(`Réduction de ${amount}€ créée pour l'utilisateur ${userId}: ${description}`);
+    log.info(`Réduction de ${amount}€ créée pour l'utilisateur ${userId}: ${description}`);
 
     return NextResponse.json({
       success: true,
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Erreur application réduction:', error);
+    log.error('Erreur application réduction:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'application de la réduction' },
       { status: 500 }

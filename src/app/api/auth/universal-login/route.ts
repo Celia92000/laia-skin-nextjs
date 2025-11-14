@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur lors de la connexion:', error)
+    log.error('Erreur lors de la connexion:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur leads:', error)
+    log.error('Erreur leads:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -224,7 +225,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(lead, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur création lead:', error)
+    log.error('Erreur création lead:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

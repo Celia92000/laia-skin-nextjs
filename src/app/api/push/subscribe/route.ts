@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { log } from '@/lib/logger';
 // import { getPrismaClient } from '@/lib/prisma';
 // import { verifyAuth } from '@/lib/auth';
 
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[Push Subscribe] Erreur:', error);
+    log.error('[Push Subscribe] Erreur:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'abonnement' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function DELETE(
   request: NextRequest,
@@ -50,7 +51,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: 'Rapport supprimé avec succès' });
 
   } catch (error) {
-    console.error('Erreur lors de la suppression du rapport:', error);
+    log.error('Erreur lors de la suppression du rapport:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression du rapport' },
       { status: 500 }
@@ -101,7 +102,7 @@ export async function GET(
     return NextResponse.json(report);
 
   } catch (error) {
-    console.error('Erreur lors de la récupération du rapport:', error);
+    log.error('Erreur lors de la récupération du rapport:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération du rapport' },
       { status: 500 }

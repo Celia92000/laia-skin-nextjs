@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
         // Note: Le champ photos n'existe pas dans le modèle Review actuel
         // Pour implémenter cette fonctionnalité, il faudrait ajouter ce champ au schéma Prisma
         // ou créer une table séparée pour les photos d'avis
-        console.log(`Tentative d'ajout de ${uploadedUrls.length} photo(s) à l'avis ${reviewId}`);
+        log.info(`Tentative d'ajout de ${uploadedUrls.length} photo(s) à l'avis ${reviewId}`);
         // await prisma.review.update({
         //   where: { id: reviewId },
         //   data: {
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur upload photos:', error);
+    log.error('Erreur upload photos:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'upload des photos' },
       { status: 500 }
@@ -98,13 +99,13 @@ export async function GET(request: NextRequest) {
     // Note: Le champ photos n'existe pas dans le modèle Review actuel
     // Pour l'instant, on retourne un tableau vide
     if (reviewId) {
-      console.log(`Recherche des photos pour l'avis ${reviewId}`);
+      log.info(`Recherche des photos pour l'avis ${reviewId}`);
       // const review = await prisma.review.findUnique({
       //   where: { id: reviewId }
       // });
       // photos = (review as any)?.photos || [];
     } else if (clientId) {
-      console.log(`Recherche des photos pour le client ${clientId}`);
+      log.info(`Recherche des photos pour le client ${clientId}`);
       // const reviews = await prisma.review.findMany({
       //   where: { userId: clientId }
       // });
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération photos:', error);
+    log.error('Erreur récupération photos:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des photos' },
       { status: 500 }

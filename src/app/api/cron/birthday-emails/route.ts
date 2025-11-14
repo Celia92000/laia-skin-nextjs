@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Vérifier que Resend est bien configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-      console.log('Resend API key not configured, skipping email send');
+      log.info('Resend API key not configured, skipping email send');
       return NextResponse.json({
         success: false,
         message: 'Resend non configuré - emails non envoyés'
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const todayMonth = today.getMonth() + 1;
     const todayDay = today.getDate();
 
-    console.log(`Vérification des anniversaires pour le ${todayDay}/${todayMonth}`);
+    log.info(`Vérification des anniversaires pour le ${todayDay}/${todayMonth}`);
 
     // 🔒 Récupérer toutes les organisations actives
     const organizations = await prisma.organization.findMany({
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       return birthday.getMonth() + 1 === todayMonth && birthday.getDate() === todayDay;
     });
 
-    console.log(`${birthdayUsers.length} anniversaire(s) trouvé(s)`);
+    log.info(`${birthdayUsers.length} anniversaire(s) trouvé(s)`);
 
     // Envoyer un email à chaque personne
     for (const user of birthdayUsers) {
@@ -148,14 +149,14 @@ export async function GET(request: NextRequest) {
           }
         });
 
-        console.log(`[${organization.name}] Email d'anniversaire envoyé à ${user.name}`);
+        log.info(`[${organization.name}] Email d'anniversaire envoyé à ${user.name}`);
         totalSent++;
       } catch (emailError) {
-        console.error(`[${organization.name}] Erreur envoi email à ${user.name}:`, emailError);
+        log.error(`[${organization.name}] Erreur envoi email à ${user.name}:`, emailError);
       }
     }
 
-    console.log(`[${organization.name}] ${birthdayUsers.length} anniversaire(s) traité(s)`);
+    log.info(`[${organization.name}] ${birthdayUsers.length} anniversaire(s) traité(s)`);
     }
 
     return NextResponse.json({
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur cron anniversaires:', error);
+    log.error('Erreur cron anniversaires:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des emails d\'anniversaire',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

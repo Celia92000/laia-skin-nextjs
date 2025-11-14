@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function PATCH(
   request: Request,
@@ -30,7 +31,7 @@ export async function PATCH(
       }
     });
 
-    console.log(`✅ Automatisation ${updatedAutomation.name} ${enabled ? 'activée' : 'désactivée'}`);
+    log.info(`✅ Automatisation ${updatedAutomation.name} ${enabled ? 'activée' : 'désactivée'}`);
 
     return NextResponse.json({
       success: true,
@@ -39,7 +40,7 @@ export async function PATCH(
     });
 
   } catch (error) {
-    console.error('Erreur mise à jour automatisation:', error);
+    log.error('Erreur mise à jour automatisation:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -68,7 +69,7 @@ export async function GET(
 
     return NextResponse.json(automation);
   } catch (error) {
-    console.error('Erreur récupération automatisation:', error);
+    log.error('Erreur récupération automatisation:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -102,7 +103,7 @@ export async function DELETE(
       message: 'Automatisation supprimée avec succès' 
     });
   } catch (error) {
-    console.error('Erreur suppression automatisation:', error);
+    log.error('Erreur suppression automatisation:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

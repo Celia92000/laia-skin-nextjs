@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Liste des templates SMS
 export async function GET(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(templates);
   } catch (error) {
-    console.error('Error fetching SMS templates:', error);
+    log.error('Error fetching SMS templates:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(template, { status: 201 });
   } catch (error) {
-    console.error('Error creating SMS template:', error);
+    log.error('Error creating SMS template:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

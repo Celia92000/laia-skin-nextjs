@@ -41,7 +41,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
         const data = await response.json();
 
         if (requireAdmin) {
-          const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+          const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
           if (!adminRoles.includes(data.user.role)) {
             router.push('/espace-client');
             return;

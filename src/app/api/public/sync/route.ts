@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   const config = await getSiteConfig();
@@ -230,7 +231,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Erreur lors de la synchronisation publique:', error);
+    log.error('Erreur lors de la synchronisation publique:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des données' },
       { status: 500 }

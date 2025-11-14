@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { PrismaClient } from '@prisma/client';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       merchantId: org?.paypalMerchantId
     });
   } catch (error: any) {
-    console.error('Erreur GET PayPal status:', error);
+    log.error('Erreur GET PayPal status:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   } finally {
     await prisma.$disconnect();
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur PayPal OAuth:', error);
+    log.error('Erreur PayPal OAuth:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

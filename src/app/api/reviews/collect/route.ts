@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     });
     
   } catch (error) {
-    console.error('Erreur lors de la collecte de l\'avis:', error);
+    log.error('Erreur lors de la collecte de l\'avis:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'enregistrement de votre avis' }, 
       { status: 500 }
@@ -159,7 +160,7 @@ export async function GET(request: Request) {
     });
     
   } catch (error) {
-    console.error('Erreur lors de la récupération du formulaire:', error);
+    log.error('Erreur lors de la récupération du formulaire:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des informations' }, 
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('Erreur changement mot de passe:', error);
+    log.error('Erreur changement mot de passe:', error);
     return NextResponse.json(
       { error: 'Erreur lors du changement de mot de passe' },
       { status: 500 }

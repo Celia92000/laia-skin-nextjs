@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import jsPDF from 'jspdf';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -435,11 +436,11 @@ export async function POST(request: NextRequest) {
 
     // Vérifier que Resend est configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
-      console.log('\n📧 SIMULATION D\'ENVOI DE RAPPORT PAR EMAIL');
-      console.log('Destinataire:', emailTo);
-      console.log('Période:', periodLabel);
-      console.log('Métriques:', reportConfig.metrics.join(', '));
-      console.log('\n');
+      log.info('\n📧 SIMULATION D\'ENVOI DE RAPPORT PAR EMAIL');
+      log.info('Destinataire:', emailTo);
+      log.info('Période:', periodLabel);
+      log.info('Métriques:', reportConfig.metrics.join(', '));
+      log.info('\n');
       return NextResponse.json({
         success: true,
         simulated: true,
@@ -465,7 +466,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Erreur Resend:', error);
+      log.error('Erreur Resend:', error);
       return NextResponse.json({ error: 'Erreur lors de l\'envoi de l\'email' }, { status: 500 });
     }
 
@@ -477,7 +478,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('✅ Rapport envoyé par email:', emailTo);
+    log.info('✅ Rapport envoyé par email:', emailTo);
     return NextResponse.json({
       success: true,
       message: 'Rapport envoyé avec succès',
@@ -485,7 +486,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'envoi du rapport:', error);
+    log.error('Erreur lors de l\'envoi du rapport:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi du rapport' },
       { status: 500 }

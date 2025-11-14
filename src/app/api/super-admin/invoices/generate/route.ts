@@ -10,6 +10,7 @@ import {
   getNextBillingDate
 } from '@/lib/subscription-billing'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/super-admin/invoices/generate
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
     return NextResponse.json(invoice)
 
   } catch (error) {
-    console.error('Erreur génération facture:', error)
+    log.error('Erreur génération facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -169,9 +170,9 @@ async function generateInvoiceForOrganization(
       lineItems: metadata.lineItems,
       prorata: metadata.prorata
     })
-    console.log(`✅ Facture ${invoiceNumber} envoyée par email à ${invoice.organization.ownerEmail}`)
+    log.info(`✅ Facture ${invoiceNumber} envoyée par email à ${invoice.organization.ownerEmail}`)
   } catch (emailError) {
-    console.error('⚠️ Erreur envoi email facture:', emailError)
+    log.error('⚠️ Erreur envoi email facture:', emailError)
     // On ne bloque pas la création de la facture si l'envoi email échoue
   }
 

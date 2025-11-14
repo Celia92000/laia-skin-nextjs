@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET: Récupérer tous les créneaux de démo (avec réservations)
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ slots })
 
   } catch (error) {
-    console.error('Erreur récupération créneaux:', error)
+    log.error('Erreur récupération créneaux:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(slot, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur création créneau:', error)
+    log.error('Erreur création créneau:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -202,7 +203,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'ID requis' }, { status: 400 })
 
   } catch (error) {
-    console.error('Erreur suppression:', error)
+    log.error('Erreur suppression:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

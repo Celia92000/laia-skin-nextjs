@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ notifications, stats })
 
   } catch (error) {
-    console.error('Erreur notifications:', error)
+    log.error('Erreur notifications:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -121,7 +122,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur mise à jour notifications:', error)
+    log.error('Erreur mise à jour notifications:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -169,7 +170,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression notifications:', error)
+    log.error('Erreur suppression notifications:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

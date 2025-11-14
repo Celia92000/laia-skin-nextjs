@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
+import { log } from '@/lib/logger';
   getAvailableAddonsForPlan,
   activateAddons,
   deactivateAddons,
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Seuls les admins peuvent voir/gérer les add-ons
-    if (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur récupération add-ons:', error)
+    log.error('Erreur récupération add-ons:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Seuls les admins peuvent activer des add-ons
-    if (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur activation add-ons:', error)
+    log.error('Erreur activation add-ons:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }
@@ -179,7 +180,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Seuls les admins peuvent désactiver des add-ons
-    if (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -193,7 +194,7 @@ export async function DELETE(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur désactivation add-ons:', error)
+    log.error('Erreur désactivation add-ons:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

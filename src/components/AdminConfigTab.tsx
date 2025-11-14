@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Save, Settings, Mail, Phone, MapPin, Facebook, Instagram,
   MessageCircle, Palette, Clock, FileText, Globe, Building, Shield,
-  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart, Zap, Key, Layout, Eye
+  Linkedin, Youtube, Map, User, BookOpen, Star, CreditCard, Search, BarChart, Zap, Key, Layout, Eye, Smartphone
 } from 'lucide-react';
 import SocialMediaAPISync from './SocialMediaAPISync';
 import SocialMediaPreferences from './admin/SocialMediaPreferences';
@@ -12,6 +12,10 @@ import IntegrationsTab from './IntegrationsTab';
 import SocialMediaTokensManager from './SocialMediaTokensManager';
 import SocialMediaPublisher from './SocialMediaPublisher';
 import ApiTokensManager from './ApiTokensManager';
+import AdminSMSConfigTab from './AdminSMSConfigTab';
+import AdminEmailConfigTab from './AdminEmailConfigTab';
+import AdminWhatsAppConfigTab from './AdminWhatsAppConfigTab';
+import ConfigurationChecklist from './ConfigurationChecklist';
 import { websiteTemplates } from '@/lib/website-templates';
 
 interface SiteConfig {
@@ -128,7 +132,7 @@ export default function AdminConfigTab() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api' | 'google'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api' | 'google' | 'sms' | 'email' | 'whatsapp'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
@@ -221,6 +225,12 @@ export default function AdminConfigTab() {
         </button>
       </div>
 
+      {/* Configuration Progress Checklist */}
+      <ConfigurationChecklist
+        currentTabId={activeTab}
+        onTabChange={setActiveTab}
+      />
+
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto border-b border-gray-200 pb-2">
         {[
@@ -238,6 +248,9 @@ export default function AdminConfigTab() {
           { id: 'google', label: 'Google Business', icon: Star },
           { id: 'integrations', label: 'Intégrations', icon: Zap },
           { id: 'api', label: 'API & Sécurité', icon: Key },
+          { id: 'sms', label: 'SMS Marketing', icon: Smartphone },
+          { id: 'email', label: 'Emailing', icon: Mail },
+          { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
           { id: 'finances', label: 'Finances', icon: CreditCard },
           { id: 'legal', label: 'Légal', icon: Shield }
         ].map((tab) => (
@@ -1759,6 +1772,15 @@ Les prix sont indiqués en euros TTC..."
             </div>
           </div>
         )}
+
+        {/* SMS Marketing */}
+        {activeTab === 'sms' && <AdminSMSConfigTab />}
+
+        {/* Emailing */}
+        {activeTab === 'email' && <AdminEmailConfigTab />}
+
+        {/* WhatsApp */}
+        {activeTab === 'whatsapp' && <AdminWhatsAppConfigTab />}
       </div>
     </div>
   );

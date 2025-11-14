@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   const config = await getSiteConfig();
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Erreur récupération avis Google:', error);
+    log.error('Erreur récupération avis Google:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des avis' },
       { status: 500 }
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
       reviewsCount: mockGoogleReviews.length
     });
   } catch (error) {
-    console.error('Erreur synchronisation Google:', error);
+    log.error('Erreur synchronisation Google:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation' },
       { status: 500 }

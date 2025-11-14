@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/plans
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ plans: parsedPlans })
   } catch (error) {
-    console.error('Erreur récupération plans:', error)
+    log.error('Erreur récupération plans:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

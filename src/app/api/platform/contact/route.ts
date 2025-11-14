@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * API publique pour recevoir les demandes de contact du site vitrine
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur création lead depuis contact:', error)
+    log.error('Erreur création lead depuis contact:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

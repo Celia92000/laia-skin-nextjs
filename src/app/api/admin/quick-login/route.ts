@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
 import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   const prisma = await getPrismaClient();
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
           where: { id: decoded.userId }
         });
         
-        const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+        const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
         if (!adminUser || !adminRoles.includes(adminUser.role)) {
           return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
         }
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Erreur quick login:', error);
+    log.error('Erreur quick login:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

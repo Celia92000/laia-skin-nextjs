@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -23,7 +24,7 @@ export async function GET(
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur récupération campagne:', error);
+    log.error('Erreur récupération campagne:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -54,7 +55,7 @@ export async function PUT(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
+    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -90,7 +91,7 @@ export async function PUT(
       }
     });
 
-    console.log(`✅ Campagne ${updatedCampaign.name} modifiée`);
+    log.info(`✅ Campagne ${updatedCampaign.name} modifiée`);
 
     return NextResponse.json({
       success: true,
@@ -98,7 +99,7 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Erreur modification campagne:', error);
+    log.error('Erreur modification campagne:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -129,7 +130,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
+    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -154,7 +155,7 @@ export async function DELETE(
       where: { id }
     });
 
-    console.log(`🗑️ Campagne ${existingCampaign.name} supprimée`);
+    log.info(`🗑️ Campagne ${existingCampaign.name} supprimée`);
 
     return NextResponse.json({ 
       success: true, 
@@ -162,7 +163,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    console.error('Erreur suppression campagne:', error);
+    log.error('Erreur suppression campagne:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

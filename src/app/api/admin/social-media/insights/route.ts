@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getApiTokenWithMetadata } from '@/lib/api-token-manager';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
         accountId = tokenData.metadata?.accountId || tokenData.metadata?.account_id;
       }
     } catch (error) {
-      console.error('❌ Erreur récupération token:', error);
+      log.error('❌ Erreur récupération token:', error);
     }
 
     // Fallback vers env
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (!insightsResponse.ok) {
-      console.error('Erreur API Instagram Insights');
+      log.error('Erreur API Instagram Insights');
       // Si les insights ne sont pas disponibles, retourner des données de base
     }
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     if (!accountResponse.ok) {
       const error = await accountResponse.json();
-      console.error('Erreur API Instagram:', error);
+      log.error('Erreur API Instagram:', error);
       return NextResponse.json({
         error: 'Erreur lors de la récupération des données Instagram'
       }, { status: 400 });
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération insights:', error);
+    log.error('Erreur récupération insights:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des insights' },
       { status: 500 }

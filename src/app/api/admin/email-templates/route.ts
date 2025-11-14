@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(templates);
 
   } catch (error: any) {
-    console.error('Erreur récupération templates:', error);
+    log.error('Erreur récupération templates:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       message: error.message
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(template, { status: 201 });
 
   } catch (error: any) {
-    console.error('Erreur création template:', error);
+    log.error('Erreur création template:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       message: error.message

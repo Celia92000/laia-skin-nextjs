@@ -8,6 +8,7 @@ import {
   getNextBillingDate
 } from '@/lib/subscription-billing'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { log } from '@/lib/logger';
 
 /**
  * Cron job pour générer les factures mensuelles automatiquement
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    console.log('🔄 Démarrage génération factures mensuelles...')
+    log.info('🔄 Démarrage génération factures mensuelles...')
 
     // Récupérer toutes les organisations ACTIVE
     const organizations = await prisma.organization.findMany({
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log(`📊 ${organizations.length} organisations actives trouvées`)
+    log.info(`📊 ${organizations.length} organisations actives trouvées`)
 
     const results = {
       success: [] as string[],
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
       try {
         // Vérifier si l'organisation est en période d'essai
         if (org.trialEndsAt && new Date(org.trialEndsAt) > now) {
-          console.log(`⏭️  ${org.name} - En période d'essai jusqu'au ${new Date(org.trialEndsAt).toLocaleDateString('fr-FR')}`)
+          log.info(`⏭️  ${org.name} - En période d'essai jusqu'au ${new Date(org.trialEndsAt).toLocaleDateString('fr-FR')}`)
           results.skipped.push(org.name)
           continue
         }
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (existingInvoice) {
-          console.log(`⏭️  Facture déjà existante pour ${org.name} (${existingInvoice.invoiceNumber})`)
+          log.info(`⏭️  Facture déjà existante pour ${org.name} (${existingInvoice.invoiceNumber})`)
           results.skipped.push(org.name)
           continue
         }
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
         const amount = calculateInvoiceTotal(org.plan, org.addons)
         const invoiceNumber = generateInvoiceNumber()
 
-        console.log(`💰 Génération facture pour ${org.name} - ${org.plan} (${amount}€)`)
+        log.info(`💰 Génération facture pour ${org.name} - ${org.plan} (${amount}€)`)
 
         // Créer la facture dans la base de données
         const invoice = await prisma.invoice.create({
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
           }
         })
 
-        console.log(`✅ Facture ${invoiceNumber} créée pour ${org.name}`)
+        log.info(`✅ Facture ${invoiceNumber} créée pour ${org.name}`)
 
         // Envoyer la facture par email automatiquement
         try {
@@ -136,16 +137,16 @@ export async function GET(request: NextRequest) {
             lineItems: metadata.lineItems,
             prorata: metadata.prorata
           })
-          console.log(`📧 Email envoyé à ${org.ownerEmail}`)
+          log.info(`📧 Email envoyé à ${org.ownerEmail}`)
         } catch (emailError) {
-          console.error(`⚠️  Erreur envoi email pour ${org.name}:`, emailError)
+          log.error(`⚠️  Erreur envoi email pour ${org.name}:`, emailError)
           // On continue même si l'email échoue
         }
 
         results.success.push(org.name)
 
       } catch (error) {
-        console.error(`❌ Erreur pour ${org.name}:`, error)
+        log.error(`❌ Erreur pour ${org.name}:`, error)
         results.errors.push({
           org: org.name,
           error: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
 
     // Envoyer notification aux admins si des erreurs
     if (results.errors.length > 0) {
-      console.warn('⚠️  Erreurs détectées lors de la génération:', results.errors)
+      log.warn('⚠️  Erreurs détectées lors de la génération:', results.errors)
 
       // TODO: Envoyer email de notification au super-admin
       // await sendAdminNotification({
@@ -164,10 +165,10 @@ export async function GET(request: NextRequest) {
       // })
     }
 
-    console.log('✅ Génération factures terminée')
-    console.log(`   - Réussies: ${results.success.length}`)
-    console.log(`   - Ignorées: ${results.skipped.length}`)
-    console.log(`   - Erreurs: ${results.errors.length}`)
+    log.info('✅ Génération factures terminée')
+    log.info(`   - Réussies: ${results.success.length}`)
+    log.info(`   - Ignorées: ${results.skipped.length}`)
+    log.info(`   - Erreurs: ${results.errors.length}`)
 
     // Logger l'activité (ActivityLog n'existe pas encore dans le schéma)
     // TODO: Créer le modèle ActivityLog si nécessaire
@@ -186,7 +187,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Erreur critique génération factures:', error)
+    log.error('❌ Erreur critique génération factures:', error)
     return NextResponse.json(
       {
         success: false,

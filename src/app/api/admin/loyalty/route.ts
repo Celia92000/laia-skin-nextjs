@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // 🔒 Fonction pour vérifier l'authentification admin AVEC organizationId
 async function verifyAdmin(request: NextRequest) {
@@ -23,7 +24,7 @@ async function verifyAdmin(request: NextRequest) {
       }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return null;
     }
 
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(processedProfiles);
   } catch (error) {
-    console.error('Erreur lors de la récupération des profils:', error);
+    log.error('Erreur lors de la récupération des profils:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de l\'application de la réduction:', error);
+    log.error('Erreur lors de l\'application de la réduction:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'application' },
       { status: 500 }

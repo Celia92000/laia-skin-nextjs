@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { verifyToken } from '@/lib/auth-utils'
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient()
 
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Log pour le super admin
-    console.log(`📝 Nouvel avis LAIA Connect reçu de ${clientName} (${rating}★) - Organisation: ${user.organization?.name || 'N/A'}`)
+    log.info(`📝 Nouvel avis LAIA Connect reçu de ${clientName} (${rating}★) - Organisation: ${user.organization?.name || 'N/A'}`)
 
     return NextResponse.json({
       success: true,
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error submitting LAIA rating:', error)
+    log.error('Error submitting LAIA rating:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

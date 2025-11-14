@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -42,14 +43,14 @@ export async function GET(request: Request) {
         const parsed = JSON.parse(user.preferences);
         userPreferences = { ...userPreferences, ...parsed };
       } catch (e) {
-        console.error('Error parsing user preferences:', e);
+        log.error('Error parsing user preferences:', e);
       }
     }
 
     return NextResponse.json(userPreferences);
 
   } catch (error) {
-    console.error('Erreur récupération préférences:', error);
+    log.error('Erreur récupération préférences:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -89,7 +90,7 @@ export async function PUT(request: Request) {
       try {
         currentPreferences = JSON.parse(currentUser.preferences);
       } catch (e) {
-        console.error('Error parsing current preferences:', e);
+        log.error('Error parsing current preferences:', e);
       }
     }
 
@@ -114,7 +115,7 @@ export async function PUT(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur mise à jour préférences:', error);
+    log.error('Erreur mise à jour préférences:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

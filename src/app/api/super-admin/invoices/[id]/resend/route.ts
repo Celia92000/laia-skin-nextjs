@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendInvoiceEmail } from '@/lib/email-service'
+import { log } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -63,7 +64,7 @@ export async function POST(
       prorata: metadata?.prorata
     })
 
-    console.log(`📧 Facture ${invoice.invoiceNumber} renvoyée par email à ${invoice.organization.billingEmail || invoice.organization.ownerEmail}`)
+    log.info(`📧 Facture ${invoice.invoiceNumber} renvoyée par email à ${invoice.organization.billingEmail || invoice.organization.ownerEmail}`)
 
     return NextResponse.json({
       message: 'Facture renvoyée avec succès',
@@ -71,7 +72,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur renvoi facture:', error)
+    log.error('Erreur renvoi facture:', error)
     return NextResponse.json(
       { error: 'Erreur lors du renvoi de la facture' },
       { status: 500 }

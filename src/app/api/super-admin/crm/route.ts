@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAuth } from '@/lib/auth'
+import { log } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -152,7 +153,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Erreur récupération données CRM:', error)
+    log.error('Erreur récupération données CRM:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    console.log('Webhook SumUp reçu:', body.event_type);
+    log.info('Webhook SumUp reçu:', body.event_type);
 
     // SumUp envoie un event_type dans le webhook
     const eventType = body.event_type;
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     const reservationId = checkout.checkout_reference || checkout.id;
 
     if (!reservationId) {
-      console.log('Pas de checkout_reference dans le webhook SumUp');
+      log.info('Pas de checkout_reference dans le webhook SumUp');
       return NextResponse.json({ received: true });
     }
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     });
 
     if (!reservation) {
-      console.log('Réservation non trouvée:', reservationId);
+      log.info('Réservation non trouvée:', reservationId);
       return NextResponse.json({ received: true });
     }
 
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Erreur webhook SumUp:', error);
+    log.error('Erreur webhook SumUp:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

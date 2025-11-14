@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   const prisma = await getPrismaClient();
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(discounts);
 
   } catch (error) {
-    console.error('Erreur récupération réductions:', error);
+    log.error('Erreur récupération réductions:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des réductions' },
       { status: 500 }

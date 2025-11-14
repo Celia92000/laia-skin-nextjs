@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword
     });
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
+    log.error('Erreur lors de l\'inscription:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'inscription' },
       { status: 500 }

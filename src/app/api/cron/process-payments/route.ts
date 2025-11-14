@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processAutomaticCharges } from '@/lib/stripe-service'
+import { log } from '@/lib/logger';
 
 /**
  * Cronjob pour traiter les prélèvements automatiques
@@ -37,12 +38,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('🕐 Démarrage du traitement des prélèvements automatiques...')
+    log.info('🕐 Démarrage du traitement des prélèvements automatiques...')
 
     // Traiter les prélèvements
     const results = await processAutomaticCharges()
 
-    console.log(`✅ Traitement terminé : ${results.success.length} réussis, ${results.failed.length} échecs`)
+    log.info(`✅ Traitement terminé : ${results.success.length} réussis, ${results.failed.length} échecs`)
 
     return NextResponse.json({
       success: true,
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
       failedIds: results.failed,
     })
   } catch (error) {
-    console.error('❌ Erreur traitement des prélèvements:', error)
+    log.error('❌ Erreur traitement des prélèvements:', error)
 
     return NextResponse.json(
       {

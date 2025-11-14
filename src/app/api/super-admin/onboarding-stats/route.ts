@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -217,7 +218,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('Erreur lors de la récupération des stats d\'onboarding:', error)
+    log.error('Erreur lors de la récupération des stats d\'onboarding:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

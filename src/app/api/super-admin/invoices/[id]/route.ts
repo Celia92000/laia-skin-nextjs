@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/invoices/[id]
@@ -68,7 +69,7 @@ export async function GET(
     return NextResponse.json(invoice)
 
   } catch (error) {
-    console.error('Erreur récupération facture:', error)
+    log.error('Erreur récupération facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -153,7 +154,7 @@ export async function PATCH(
     return NextResponse.json(invoice)
 
   } catch (error) {
-    console.error('Erreur modification facture:', error)
+    log.error('Erreur modification facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -222,7 +223,7 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('Erreur suppression facture:', error)
+    log.error('Erreur suppression facture:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

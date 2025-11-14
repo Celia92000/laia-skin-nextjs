@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedMessages);
   } catch (error) {
-    console.error('Erreur récupération historique WhatsApp:', error);
+    log.error('Erreur récupération historique WhatsApp:', error);
     return NextResponse.json(
       { error: 'Erreur serveur', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }

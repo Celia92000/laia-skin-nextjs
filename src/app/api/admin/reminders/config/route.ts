@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer la configuration des rappels
 export async function GET(request: Request) {
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
     return NextResponse.json(config);
 
   } catch (error) {
-    console.error('Erreur dans GET /api/admin/reminders/config:', error);
+    log.error('Erreur dans GET /api/admin/reminders/config:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de la configuration' },
       { status: 500 }
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     // Si les rappels sont activés, on peut programmer les tâches cron
     if (config.enabled) {
       // Logique pour activer les rappels automatiques
-      console.log('Rappels automatiques activés:', config);
+      log.info('Rappels automatiques activés:', config);
     }
 
     return NextResponse.json({ 
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur dans POST /api/admin/reminders/config:', error);
+    log.error('Erreur dans POST /api/admin/reminders/config:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la sauvegarde de la configuration' },
       { status: 500 }

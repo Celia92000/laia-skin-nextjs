@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -45,8 +46,8 @@ export async function POST(
     });
 
     // Simuler l'envoi des messages
-    console.log(`🚀 Lancement de la campagne "${campaign.name}"`);
-    console.log(`📱 Envoi à ${campaign.recipientCount} destinataires`);
+    log.info(`🚀 Lancement de la campagne "${campaign.name}"`);
+    log.info(`📱 Envoi à ${campaign.recipientCount} destinataires`);
     
     // Si Twilio est configuré, envoyer réellement les messages
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && campaign.templateId) {
@@ -69,13 +70,13 @@ export async function POST(
             });
             sentCount++;
           } catch (error) {
-            console.error(`Erreur envoi à ${phoneNumber}:`, error);
+            log.error(`Erreur envoi à ${phoneNumber}:`, error);
           }
         }
         
-        console.log(`✅ ${sentCount}/${recipients.length} messages envoyés via Twilio`);
+        log.info(`✅ ${sentCount}/${recipients.length} messages envoyés via Twilio`);
       } catch (error) {
-        console.log('Twilio non configuré, mode simulation');
+        log.info('Twilio non configuré, mode simulation');
       }
     }
 
@@ -94,7 +95,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Erreur lancement campagne:', error);
+    log.error('Erreur lancement campagne:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

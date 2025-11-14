@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/crm/scoring
@@ -183,7 +184,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error calculating RFM scoring:', error)
+    log.error('Error calculating RFM scoring:', error)
     return NextResponse.json(
       { error: 'Erreur lors du calcul du scoring' },
       { status: 500 }
@@ -226,7 +227,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error refreshing RFM scores:', error)
+    log.error('Error refreshing RFM scores:', error)
     return NextResponse.json(
       { error: 'Erreur lors du rafraîchissement des scores' },
       { status: 500 }

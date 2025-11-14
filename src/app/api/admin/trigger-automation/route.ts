@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
         });
 
       } catch (error) {
-        console.error(`Erreur envoi à ${client.email}:`, error);
+        log.error(`Erreur envoi à ${client.email}:`, error);
         results.push({
           email: client.email,
           name: client.name,
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur déclenchement automatisation:', error);
+    log.error('Erreur déclenchement automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

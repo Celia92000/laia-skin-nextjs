@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getEmailTemplate } from '@/lib/email-templates'
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur prévisualisation email:', error)
+    log.error('Erreur prévisualisation email:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

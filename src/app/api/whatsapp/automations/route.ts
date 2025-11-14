@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer toutes les automatisations
 export async function GET(request: Request) {
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedAutomations);
   } catch (error) {
-    console.error('Erreur récupération automatisations:', error);
+    log.error('Erreur récupération automatisations:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(automation);
   } catch (error) {
-    console.error('Erreur création automatisation:', error);
+    log.error('Erreur création automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -99,7 +100,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(automation);
   } catch (error) {
-    console.error('Erreur mise à jour automatisation:', error);
+    log.error('Erreur mise à jour automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -127,7 +128,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression automatisation:', error);
+    log.error('Erreur suppression automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer les paramètres de carte cadeau
 export async function GET(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Erreur lors de la récupération des paramètres:', error);
+    log.error('Erreur lors de la récupération des paramètres:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -116,7 +117,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des paramètres:', error);
+    log.error('Erreur lors de la mise à jour des paramètres:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

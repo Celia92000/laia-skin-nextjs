@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/admin/laia-invoices
@@ -13,17 +14,17 @@ export async function GET() {
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
-      console.log('[laia-invoices] Pas de token')
+      log.info('[laia-invoices] Pas de token')
       return NextResponse.json({ error: 'Non authentifié', invoices: [] }, { status: 401 })
     }
 
     const decoded = verifyToken(token)
     if (!decoded || !decoded.userId || !decoded.organizationId) {
-      console.log('[laia-invoices] Token invalide')
+      log.info('[laia-invoices] Token invalide')
       return NextResponse.json({ error: 'Token invalide', invoices: [] }, { status: 401 })
     }
 
-    console.log('[laia-invoices] Récupération factures pour organisation:', decoded.organizationId)
+    log.info('[laia-invoices] Récupération factures pour organisation:', decoded.organizationId)
 
     // Vérifier que l'utilisateur est admin de l'organisation
     const user = await prisma.user.findFirst({
@@ -31,8 +32,8 @@ export async function GET() {
       select: { role: true, organizationId: true }
     })
 
-    if (!user || !['ORG_ADMIN', 'ORG_OWNER', 'ACCOUNTANT'].includes(user.role)) {
-      console.log('[laia-invoices] Accès refusé - rôle:', user?.role)
+    if (!user || !['ORG_OWNER', 'ACCOUNTANT'].includes(user.role)) {
+      log.info('[laia-invoices] Accès refusé - rôle:', user?.role)
       return NextResponse.json({ error: 'Accès refusé', invoices: [] }, { status: 403 })
     }
 
@@ -46,11 +47,11 @@ export async function GET() {
       }
     })
 
-    console.log('[laia-invoices] Factures trouvées:', invoices.length)
+    log.info('[laia-invoices] Factures trouvées:', invoices.length)
     return NextResponse.json({ invoices })
 
   } catch (error: any) {
-    console.error('[laia-invoices] Erreur:', error?.message || error)
+    log.error('[laia-invoices] Erreur:', error?.message || error)
     return NextResponse.json(
       { error: 'Erreur serveur', details: error?.message, invoices: [] },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 /**
  * API RGPD - Annulation du Droit à l'oubli
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur annulation suppression RGPD:', error);
+    log.error('Erreur annulation suppression RGPD:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'annulation de la demande' },
       { status: 500 }

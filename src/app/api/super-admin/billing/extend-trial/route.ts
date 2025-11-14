@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog, getIpAddress, getUserAgent } from '@/lib/audit-logger'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json(updated)
 
   } catch (error) {
-    console.error('Erreur prolongation essai:', error)
+    log.error('Erreur prolongation essai:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

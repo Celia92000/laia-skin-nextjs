@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer un lien service-stock
 export async function GET(
@@ -48,7 +49,7 @@ export async function GET(
       currentQuantity: link.stock.currentQuantity
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération du lien:', error);
+    log.error('Erreur lors de la récupération du lien:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -78,7 +79,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de la suppression du lien:', error);
+    log.error('Erreur lors de la suppression du lien:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -130,7 +131,7 @@ export async function PUT(
       unit: link.stock.unit
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour du lien:', error);
+    log.error('Erreur lors de la mise à jour du lien:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

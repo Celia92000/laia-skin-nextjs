@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateJitsiMeetingUrl } from '@/lib/jitsi/generateMeetingUrl'
+import { log } from '@/lib/logger';
 
 /**
  * POST: Créer une nouvelle réservation (pour RDV de suivi)
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(booking, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur création réservation:', error)
+    log.error('Erreur création réservation:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   const prisma = await getPrismaClient();
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -304,7 +305,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(dashboardData);
   } catch (error) {
-    console.error('Erreur lors de la récupération des données du dashboard:', error);
+    log.error('Erreur lors de la récupération des données du dashboard:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des données' },
       { status: 500 }

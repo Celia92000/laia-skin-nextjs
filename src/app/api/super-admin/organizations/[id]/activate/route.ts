@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendAccountActivationEmail } from '@/lib/onboarding-emails'
 import { verifyAuth } from '@/lib/auth'
+import { log } from '@/lib/logger';
 
 export async function POST(
   req: NextRequest,
@@ -104,9 +105,9 @@ export async function POST(
         sepaMandateRef: organization.sepaMandateRef || ''
       })
 
-      console.log(`✅ Email d'activation envoyé à ${owner.email}`)
+      log.info(`✅ Email d'activation envoyé à ${owner.email}`)
     } catch (emailError) {
-      console.error('⚠️ Erreur envoi email activation:', emailError)
+      log.error('⚠️ Erreur envoi email activation:', emailError)
       // On continue même si l'email échoue
     }
 
@@ -122,7 +123,7 @@ export async function POST(
     })
 
   } catch (error: any) {
-    console.error('Erreur activation compte:', error)
+    log.error('Erreur activation compte:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

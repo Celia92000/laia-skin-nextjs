@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcrypt'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur inscription:', error)
+    log.error('Erreur inscription:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création de votre institut. Veuillez réessayer.' },
       { status: 500 }

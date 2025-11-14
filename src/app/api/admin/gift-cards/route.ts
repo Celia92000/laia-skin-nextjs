@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(giftCards);
   } catch (error) {
-    console.error('Erreur lors de la récupération des cartes cadeaux:', error);
+    log.error('Erreur lors de la récupération des cartes cadeaux:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(giftCard, { status: 201 });
   } catch (error) {
-    console.error('Erreur lors de la création de la carte cadeau:', error);
+    log.error('Erreur lors de la création de la carte cadeau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { encryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 /**
  * Callback OAuth Planity
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
 
     // Gérer les erreurs OAuth
     if (error) {
-      console.error('Erreur OAuth Planity:', error);
+      log.error('Erreur OAuth Planity:', error);
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=planity_${error}`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     const redirectUri = `${baseUrl}/api/admin/integrations/planity/callback`;
 
     if (!planityClientId || !planityClientSecret) {
-      console.error('Configuration Planity manquante');
+      log.error('Configuration Planity manquante');
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=planity_config_missing`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Erreur échange token Planity:', errorData);
+      log.error('Erreur échange token Planity:', errorData);
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=planity_token_exchange_failed`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -104,14 +105,14 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`✅ Planity connecté pour organisation ${organizationId} (${businessName})`);
+    log.info(`✅ Planity connecté pour organisation ${organizationId} (${businessName})`);
 
     // Rediriger vers les paramètres avec succès
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&success=planity_connected`;
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
-    console.error('Erreur callback Planity:', error);
+    log.error('Erreur callback Planity:', error);
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=planity_callback_error`;
     return NextResponse.redirect(redirectUrl);
   }

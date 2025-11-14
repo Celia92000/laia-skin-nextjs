@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer toutes les campagnes
 export async function GET(request: Request) {
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedCampaigns);
   } catch (error) {
-    console.error('Erreur récupération campagnes:', error);
+    log.error('Erreur récupération campagnes:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur création campagne:', error);
+    log.error('Erreur création campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -147,7 +148,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur mise à jour campagne:', error);
+    log.error('Erreur mise à jour campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -177,7 +178,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression campagne:', error);
+    log.error('Erreur suppression campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * Marquer l'onboarding comme terminé pour l'organisation
@@ -20,13 +21,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    // Vérifier que l'utilisateur a le rôle ORG_ADMIN ou ORG_OWNER
+    // Vérifier que l'utilisateur a le rôle ORG_OWNER
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true, organizationId: true }
     })
 
-    if (!user || !['ORG_ADMIN', 'ORG_OWNER'].includes(user.role)) {
+    if (!user || !['ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur completion onboarding:', error)
+    log.error('Erreur completion onboarding:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

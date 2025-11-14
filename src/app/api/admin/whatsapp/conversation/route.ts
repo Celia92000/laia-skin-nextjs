@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { WhatsAppService } from '@/lib/whatsapp-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(messages);
 
   } catch (error) {
-    console.error('Erreur récupération conversation WhatsApp:', error);
+    log.error('Erreur récupération conversation WhatsApp:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

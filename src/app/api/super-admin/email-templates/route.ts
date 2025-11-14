@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     return NextResponse.json(templates)
 
   } catch (error) {
-    console.error('Erreur email templates:', error)
+    log.error('Erreur email templates:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
     return NextResponse.json(template)
 
   } catch (error) {
-    console.error('Erreur création template:', error)
+    log.error('Erreur création template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

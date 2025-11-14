@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // Fonction pour vérifier l'authentification admin
 async function verifyAdmin(request: NextRequest) {
@@ -18,7 +19,7 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return null;
     }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`Trouvé ${clientsWithoutProfile.length} clients sans profil de fidélité`);
+    log.info(`Trouvé ${clientsWithoutProfile.length} clients sans profil de fidélité`);
 
     // Créer un profil de fidélité pour chaque client
     const createdProfiles = [];
@@ -93,9 +94,9 @@ export async function POST(request: NextRequest) {
         });
 
         createdProfiles.push(profile);
-        console.log(`Profil créé pour ${client.name}`);
+        log.info(`Profil créé pour ${client.name}`);
       } catch (error) {
-        console.error(`Erreur lors de la création du profil pour ${client.name}:`, error);
+        log.error(`Erreur lors de la création du profil pour ${client.name}:`, error);
       }
     }
 
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       totalClients: clientsWithoutProfile.length + createdProfiles.length
     });
   } catch (error) {
-    console.error('Erreur lors de la synchronisation:', error);
+    log.error('Erreur lors de la synchronisation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation des profils' },
       { status: 500 }
@@ -175,7 +176,7 @@ export async function GET(request: NextRequest) {
       synced: totalClients === profilesCount
     });
   } catch (error) {
-    console.error('Erreur lors de la vérification:', error);
+    log.error('Erreur lors de la vérification:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la vérification' },
       { status: 500 }

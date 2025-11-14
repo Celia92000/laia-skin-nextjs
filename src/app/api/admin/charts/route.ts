@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { formatDateLocal } from '@/lib/date-utils';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -105,7 +106,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(chartData);
   } catch (error) {
-    console.error('Erreur lors de la récupération des données graphiques:', error);
+    log.error('Erreur lors de la récupération des données graphiques:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la récupération des données',
       dailyRevenue: [],
@@ -286,7 +287,7 @@ async function calculateServiceDistribution(organizationId: string) {
       .sort((a, b) => b.value - a.value)
       .slice(0, 5); // Top 5 services
   } catch (error) {
-    console.error('Erreur calcul services:', error);
+    log.error('Erreur calcul services:', error);
     return [
       { name: 'Hydro\'Naissance', value: 15, percentage: 30 },
       { name: 'BB Glow', value: 12, percentage: 24 },

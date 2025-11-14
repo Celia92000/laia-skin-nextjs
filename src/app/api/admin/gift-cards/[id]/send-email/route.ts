@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -41,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
@@ -190,7 +191,7 @@ export async function POST(
     });
 
     if (error) {
-      console.error('Erreur Resend:', error);
+      log.error('Erreur Resend:', error);
       return NextResponse.json({ error: 'Erreur lors de l\'envoi de l\'email' }, { status: 500 });
     }
 
@@ -201,7 +202,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Erreur envoi email carte cadeau:', error);
+    log.error('Erreur envoi email carte cadeau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

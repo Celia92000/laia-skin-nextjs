@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   const prisma = await getPrismaClient();
@@ -14,7 +15,7 @@ export async function GET() {
       databaseUrl: process.env.DATABASE_URL ? 'Définie' : 'Non définie'
     });
   } catch (error: any) {
-    console.error('Erreur de connexion DB:', error);
+    log.error('Erreur de connexion DB:', error);
     
     return NextResponse.json({
       success: false,

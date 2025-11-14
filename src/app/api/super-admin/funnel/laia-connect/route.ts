@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -167,7 +168,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des stats funnel:', error);
+    log.error('Erreur lors de la récupération des stats funnel:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -256,7 +257,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(entry);
 
   } catch (error) {
-    console.error('Erreur lors de la création de l\'entrée funnel:', error);
+    log.error('Erreur lors de la création de l\'entrée funnel:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

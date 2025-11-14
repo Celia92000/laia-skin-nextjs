@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -84,7 +85,7 @@ export async function GET(
       });
     }
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'avis:', error);
+    log.error('Erreur lors de la récupération de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -172,7 +173,7 @@ export async function PUT(
 
     return NextResponse.json({ error: 'Aucune modification' }, { status: 400 });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'avis:', error);
+    log.error('Erreur lors de la mise à jour de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -226,7 +227,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Avis supprimé' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de l\'avis:', error);
+    log.error('Erreur lors de la suppression de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer un produit spécifique
 export async function GET(
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur récupération produit:', error);
+    log.error('Erreur récupération produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -88,7 +89,7 @@ export async function PUT(
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur mise à jour produit:', error);
+    log.error('Erreur mise à jour produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -120,7 +121,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression produit:', error);
+    log.error('Erreur suppression produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

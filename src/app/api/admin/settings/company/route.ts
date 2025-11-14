@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const config = await getSiteConfig();
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(JSON.parse(settings.value));
   } catch (error) {
-    console.error('Erreur GET company settings:', error);
+    log.error('Erreur GET company settings:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des paramètres' },
       { status: 500 }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: companyData });
   } catch (error) {
-    console.error('Erreur POST company settings:', error);
+    log.error('Erreur POST company settings:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la sauvegarde des paramètres' },
       { status: 500 }

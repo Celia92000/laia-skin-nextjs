@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'STAFF'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'STAFF'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(evolutions);
   } catch (error) {
-    console.error('Erreur lors de la récupération des évolutions:', error);
+    log.error('Erreur lors de la récupération des évolutions:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'STAFF'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'STAFF'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(evolution);
   } catch (error) {
-    console.error('Erreur lors de la création de l\'évolution:', error);
+    log.error('Erreur lors de la création de l\'évolution:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -17,6 +17,7 @@ import { sendInvoiceEmail } from '@/lib/email-service'
 import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
 import { createOnboardingContract } from '@/lib/contract-generator'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -189,7 +190,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Erreur récupération organisations:', error)
+    log.error('Erreur récupération organisations:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -455,7 +456,7 @@ export async function POST(request: Request) {
         email: data.ownerEmail,
         password: hashedPassword,
         name: data.ownerEmail.split('@')[0],
-        role: 'ORG_ADMIN',
+        role: 'ORG_OWNER',
         phone: data.ownerPhone
       }
     })
@@ -468,11 +469,11 @@ export async function POST(request: Request) {
         data: { temporaryPassword: encryptedTempPassword }
       })
     } catch (error) {
-      console.error('⚠️ Erreur stockage mot de passe temporaire (non bloquant):', error)
+      log.error('⚠️ Erreur stockage mot de passe temporaire (non bloquant):', error)
     }
 
     // Le client Stripe sera créé lors du premier paiement via Checkout SEPA
-    console.log('ℹ️ Client Stripe sera créé automatiquement lors du premier paiement')
+    log.info('ℹ️ Client Stripe sera créé automatiquement lors du premier paiement')
 
     // Générer une facture immédiate pour les add-ons ponctuels (Migration Assistée, etc.)
     const oneTimeTotal = calculateOneTimeAddons(selectedAddonsArray)
@@ -513,7 +514,7 @@ export async function POST(request: Request) {
           }
         })
 
-        console.log(`✅ Facture ${invoiceNumber} générée pour les services ponctuels : ${oneTimeTotal}€`)
+        log.info(`✅ Facture ${invoiceNumber} générée pour les services ponctuels : ${oneTimeTotal}€`)
 
         // Envoyer la facture immédiatement par email
         try {
@@ -526,13 +527,13 @@ export async function POST(request: Request) {
             plan: data.plan,
             lineItems: lineItems as any,
           })
-          console.log(`📧 Facture ${invoiceNumber} envoyée par email à ${data.billingEmail || data.ownerEmail}`)
+          log.info(`📧 Facture ${invoiceNumber} envoyée par email à ${data.billingEmail || data.ownerEmail}`)
         } catch (emailError) {
-          console.error('⚠️ Erreur envoi email facture (non bloquant):', emailError)
+          log.error('⚠️ Erreur envoi email facture (non bloquant):', emailError)
           // Ne pas bloquer la création si l'email échoue
         }
       } catch (invoiceError) {
-        console.error('⚠️ Erreur génération facture services ponctuels (non bloquant):', invoiceError)
+        log.error('⚠️ Erreur génération facture services ponctuels (non bloquant):', invoiceError)
       }
     }
 
@@ -584,7 +585,7 @@ export async function POST(request: Request) {
         }
       })
 
-      console.log(`✅ Facture ${subscriptionInvoiceNumber} générée pour l'abonnement : ${monthlyAmount}€/mois`)
+      log.info(`✅ Facture ${subscriptionInvoiceNumber} générée pour l'abonnement : ${monthlyAmount}€/mois`)
 
       // Envoyer la facture par email
       try {
@@ -597,12 +598,12 @@ export async function POST(request: Request) {
           plan: data.plan,
           lineItems: subscriptionLineItems as any,
         })
-        console.log(`📧 Facture d'abonnement ${subscriptionInvoiceNumber} envoyée par email`)
+        log.info(`📧 Facture d'abonnement ${subscriptionInvoiceNumber} envoyée par email`)
       } catch (emailError) {
-        console.error('⚠️ Erreur envoi email facture abonnement (non bloquant):', emailError)
+        log.error('⚠️ Erreur envoi email facture abonnement (non bloquant):', emailError)
       }
     } catch (invoiceError) {
-      console.error('⚠️ Erreur génération facture abonnement (non bloquant):', invoiceError)
+      log.error('⚠️ Erreur génération facture abonnement (non bloquant):', invoiceError)
     }
 
     // Générer le template LAIA SKIN INSTITUT pour la nouvelle organisation
@@ -617,12 +618,12 @@ export async function POST(request: Request) {
         secondaryColor: data.secondaryColor,
         selectedAddons: data.selectedAddons || [] // Passer les add-ons achetés
       })
-      console.log('✅ Template LAIA généré:', templateResult)
+      log.info('✅ Template LAIA généré:', templateResult)
       if (data.selectedAddons && data.selectedAddons.length > 0) {
-        console.log('✅ Add-ons activés:', data.selectedAddons)
+        log.info('✅ Add-ons activés:', data.selectedAddons)
       }
     } catch (templateError) {
-      console.error('⚠️ Erreur lors de la génération du template (non bloquant):', templateError)
+      log.error('⚠️ Erreur lors de la génération du template (non bloquant):', templateError)
       // On ne bloque pas la création même si le template échoue
     }
 
@@ -643,9 +644,9 @@ export async function POST(request: Request) {
       const invoiceResult = await createSubscriptionInvoice(organization.id, true, false)
       invoicePdfBuffer = invoiceResult.pdfBuffer
       invoiceNumber = invoiceResult.invoiceNumber
-      console.log(`✅ Facture générée: ${invoiceNumber}`)
+      log.info(`✅ Facture générée: ${invoiceNumber}`)
     } catch (error) {
-      console.error('⚠️ Erreur facture:', error)
+      log.error('⚠️ Erreur facture:', error)
     }
 
     try {
@@ -671,7 +672,7 @@ export async function POST(request: Request) {
       })
       contractPdfBuffer = contractResult.pdfBuffer
       contractNumber = contractResult.contractNumber
-      console.log(`✅ Contrat généré: ${contractNumber}`)
+      log.info(`✅ Contrat généré: ${contractNumber}`)
 
       // Sauvegarder les infos du contrat dans l'organisation
       await prisma.organization.update({
@@ -682,9 +683,9 @@ export async function POST(request: Request) {
           contractSignedAt: new Date()
         }
       })
-      console.log(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
+      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
     } catch (error) {
-      console.error('⚠️ Erreur contrat:', error)
+      log.error('⚠️ Erreur contrat:', error)
     }
 
     // Envoyer email de bienvenue
@@ -707,9 +708,9 @@ export async function POST(request: Request) {
         trialEndsAt: trialEndsAt,
         sepaMandateRef: sepaMandateRef
       }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
-      console.log('✅ Email de bienvenue envoyé')
+      log.info('✅ Email de bienvenue envoyé')
     } catch (error) {
-      console.error('⚠️ Erreur email bienvenue:', error)
+      log.error('⚠️ Erreur email bienvenue:', error)
     }
 
     // Envoyer notification au super-admin
@@ -731,9 +732,9 @@ export async function POST(request: Request) {
         trialEndsAt: trialEndsAt,
         createdAt: organization.createdAt
       })
-      console.log('✅ Notification super-admin envoyée')
+      log.info('✅ Notification super-admin envoyée')
     } catch (error) {
-      console.error('⚠️ Erreur notification super-admin:', error)
+      log.error('⚠️ Erreur notification super-admin:', error)
     }
 
     return NextResponse.json({
@@ -744,7 +745,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur création organisation:', error)
+    log.error('Erreur création organisation:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création' },
       { status: 500 }

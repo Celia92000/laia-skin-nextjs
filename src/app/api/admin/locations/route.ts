@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(locations)
   } catch (error) {
-    console.error('Error fetching locations:', error)
+    log.error('Error fetching locations:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(location, { status: 201 })
   } catch (error) {
-    console.error('Error creating location:', error)
+    log.error('Error creating location:', error)
     return NextResponse.json({ error: 'Erreur lors de la création' }, { status: 500 })
   }
 }

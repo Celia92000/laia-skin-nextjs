@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // API publique pour vérifier s'il y a des formations actives
 export async function GET(request: NextRequest) {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formations);
   } catch (error) {
-    console.error('Erreur lors de la récupération des formations:', error);
+    log.error('Erreur lors de la récupération des formations:', error);
     return NextResponse.json([], { status: 200 }); // Retourne tableau vide en cas d'erreur
   }
 }

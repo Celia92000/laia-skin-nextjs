@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient()
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(clauses)
   } catch (error) {
-    console.error('Erreur lors de la récupération des clauses:', error)
+    log.error('Erreur lors de la récupération des clauses:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des clauses' },
       { status: 500 }
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
       count: result.length
     })
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde des clauses:', error)
+    log.error('Erreur lors de la sauvegarde des clauses:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la sauvegarde des clauses' },
       { status: 500 }

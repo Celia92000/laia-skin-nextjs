@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
-    console.error('Erreur lors de l\'upload:', error);
+    log.error('Erreur lors de l\'upload:', error);
     return NextResponse.json({ error: 'Erreur lors de l\'upload du fichier' }, { status: 500 });
   }
 }

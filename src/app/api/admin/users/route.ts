@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request: NextRequest) {
@@ -25,8 +26,9 @@ export async function GET(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+      return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
     // Récupérer uniquement les utilisateurs de l'organisation de l'admin
@@ -53,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Erreur récupération utilisateurs:', error);
+    log.error('Erreur récupération utilisateurs:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des utilisateurs' },
       { status: 500 }
@@ -83,8 +85,9 @@ export async function POST(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+      return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
     const { email, name, phone, role, password } = await request.json();
@@ -106,17 +109,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Récupérer l'organisation et vérifier la limite d'utilisateurs
+    // Récupérer l'organisation et vérifier la limite d'utilisateurs selon la formule
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: {
-        maxUsers: true,
         plan: true,
-        _count: {
-          select: {
-            users: true
-          }
-        }
       }
     });
 
@@ -127,21 +124,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier si la limite d'utilisateurs est atteinte
-    const currentUserCount = organization._count.users;
-    const maxUsers = organization.maxUsers;
+    // Limites d'utilisateurs par formule
+    const USER_LIMITS: Record<string, number | null> = {
+      SOLO: 1,           // 1 seul utilisateur
+      DUO: 3,            // 3 utilisateurs max
+      TEAM: 10,          // 10 utilisateurs max
+      PREMIUM: null,     // Illimité
+      // Anciens plans (compatibilité)
+      STARTER: 1,
+      ESSENTIAL: 3,
+      PROFESSIONAL: 10,
+      ENTERPRISE: null,
+    };
 
-    if (currentUserCount >= maxUsers) {
+    // Compter le nombre d'utilisateurs actuels (excluant les clients)
+    const currentUserCount = await prisma.user.count({
+      where: {
+        organizationId,
+        role: { not: 'CLIENT' } // Les clients ne comptent pas dans la limite
+      }
+    });
+
+    const limit = USER_LIMITS[organization.plan];
+
+    // Vérifier si la limite est atteinte
+    if (limit !== null && currentUserCount >= limit) {
       const planNames: Record<string, string> = {
-        'SOLO': 'Solo (1 utilisateur)',
-        'DUO': 'Duo (2 utilisateurs)',
-        'TEAM': 'Team (5 utilisateurs)',
-        'PREMIUM': 'Premium (10 utilisateurs)'
+        'SOLO': 'Solo',
+        'DUO': 'Duo',
+        'TEAM': 'Team',
+        'PREMIUM': 'Premium',
+        'STARTER': 'Solo',
+        'ESSENTIAL': 'Duo',
+        'PROFESSIONAL': 'Team',
+        'ENTERPRISE': 'Premium',
       };
 
       return NextResponse.json(
         {
-          error: `Limite d'utilisateurs atteinte pour votre formule ${planNames[organization.plan] || organization.plan}. Vous avez ${currentUserCount}/${maxUsers} utilisateurs. Passez à une formule supérieure pour ajouter plus d'utilisateurs.`
+          error: `Limite d'utilisateurs atteinte pour votre formule ${planNames[organization.plan] || organization.plan} (${limit} utilisateur${limit > 1 ? 's' : ''} max). Vous avez actuellement ${currentUserCount} utilisateur${currentUserCount > 1 ? 's' : ''}. Passez à une formule supérieure pour ajouter plus d'utilisateurs.`
         },
         { status: 403 }
       );
@@ -192,7 +213,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Erreur création utilisateur:', error);
+    log.error('Erreur création utilisateur:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la création de l\'utilisateur' },
       { status: 500 }
@@ -222,8 +243,9 @@ export async function PATCH(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+      return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
     const { userId, role, name, phone, email, password } = await request.json();
@@ -292,7 +314,7 @@ export async function PATCH(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur modification utilisateur:', error);
+    log.error('Erreur modification utilisateur:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification de l\'utilisateur' },
       { status: 500 }
@@ -322,8 +344,9 @@ export async function DELETE(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
-      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+      return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -390,7 +413,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur suppression utilisateur:', error);
+    log.error('Erreur suppression utilisateur:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression de l\'utilisateur' },
       { status: 500 }

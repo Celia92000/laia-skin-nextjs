@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -168,7 +169,7 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error);
+    log.error('Erreur lors de la récupération des statistiques:', error);
     
     // Retourner des stats par défaut en cas d'erreur
     return NextResponse.json({

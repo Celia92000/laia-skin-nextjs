@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 interface CommunicationHistory {
   id: string;
@@ -55,7 +56,7 @@ export async function GET(
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
@@ -104,7 +105,7 @@ export async function GET(
         });
       }
     } catch (error) {
-      console.log('Table emailHistory non trouvée, continuons...');
+      log.info('Table emailHistory non trouvée, continuons...');
     }
 
       // 🔒 2. Récupérer les messages WhatsApp DE CETTE ORGANISATION
@@ -133,7 +134,7 @@ export async function GET(
         });
       }
     } catch (error) {
-      console.log('Table whatsAppHistory non trouvée, continuons...');
+      log.info('Table whatsAppHistory non trouvée, continuons...');
     }
 
       // 🔒 3. Récupérer les emails de réservation DE CETTE ORGANISATION
@@ -177,7 +178,7 @@ export async function GET(
         }
         });
       } catch (error) {
-        console.log('Erreur lors de la récupération des réservations:', error);
+        log.info('Erreur lors de la récupération des réservations:', error);
       }
 
       // Trier par date décroissante
@@ -193,7 +194,7 @@ export async function GET(
     }
 
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'historique:', error);
+    log.error('Erreur lors de la récupération de l\'historique:', error);
     
     // Retourner des données mockées en cas d'erreur
     const mockData: CommunicationHistory[] = [
@@ -267,7 +268,7 @@ export async function POST(
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
@@ -307,7 +308,7 @@ export async function POST(
           id: whatsappRecord?.id || Date.now().toString()
         });
       } catch (error) {
-        console.log('Table whatsAppHistory non trouvée, simulation d\'enregistrement');
+        log.info('Table whatsAppHistory non trouvée, simulation d\'enregistrement');
         return NextResponse.json({ 
           success: true, 
           id: Date.now().toString(),
@@ -335,7 +336,7 @@ export async function POST(
             id: emailRecord?.id || Date.now().toString()
           });
         } catch (error) {
-          console.log('Table emailHistory non trouvée, simulation d\'enregistrement');
+          log.info('Table emailHistory non trouvée, simulation d\'enregistrement');
           return NextResponse.json({
             success: true,
             id: Date.now().toString(),
@@ -350,7 +351,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Erreur lors de l\'enregistrement:', error);
+    log.error('Erreur lors de l\'enregistrement:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'enregistrement',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

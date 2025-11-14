@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les produits
 export async function GET(request: Request) {
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error('Erreur récupération produits:', error);
+    log.error('Erreur récupération produits:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur création produit:', error);
+    log.error('Erreur création produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -155,7 +156,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(product);
   } catch (error) {
-    console.error('Erreur mise à jour produit:', error);
+    log.error('Erreur mise à jour produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -210,7 +211,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression produit:', error);
+    log.error('Erreur suppression produit:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

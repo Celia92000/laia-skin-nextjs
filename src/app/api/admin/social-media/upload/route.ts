@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+import { log } from '@/lib/logger';
 
 // Configuration Cloudinary
 cloudinary.config({
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur upload Cloudinary:', error);
+    log.error('Erreur upload Cloudinary:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'upload du fichier' },
       { status: 500 }
@@ -122,7 +123,7 @@ export async function DELETE(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur suppression Cloudinary:', error);
+    log.error('Erreur suppression Cloudinary:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression' },
       { status: 500 }

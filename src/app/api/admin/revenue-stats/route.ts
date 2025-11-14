@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
       decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
 
       // Vérifier que c'est un admin ou employé
-      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE', 'ORG_ADMIN', 'ORG_OWNER', 'SUPER_ADMIN'].includes(decoded.role)) {
+      if (!['admin', 'ADMIN', 'EMPLOYEE', 'COMPTABLE', 'ORG_OWNER', 'SUPER_ADMIN'].includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
       }
     } catch (error) {
@@ -185,7 +186,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur dans /api/admin/revenue-stats:', error);
+    log.error('Erreur dans /api/admin/revenue-stats:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des statistiques' },
       { status: 500 }

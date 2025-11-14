@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const config = await getSiteConfig();
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Erreur status WhatsApp:', error);
+    log.error('Erreur status WhatsApp:', error);
     return NextResponse.json({ 
       connected: false,
       error: 'Erreur serveur' 

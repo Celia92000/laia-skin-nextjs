@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Lock, Mail, User, Shield,
-  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, CreditCard, Smartphone
+  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, CreditCard,
+  Building, MapPin, Phone
 } from 'lucide-react';
 import AdminConfigTab from '@/components/AdminConfigTab';
 import SubscriptionInvoices from '@/components/SubscriptionInvoices';
-import AdminSMSConfigTab from '@/components/AdminSMSConfigTab';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -18,13 +18,22 @@ export default function AdminSettings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription' | 'sms'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription'>('account');
   
   const [userInfo, setUserInfo] = useState({
     email: '',
     name: '',
     role: ''
   });
+
+  // Vérifier si l'utilisateur a accès complet (ORG_OWNER, SUPER_ADMIN)
+  const hasFullAccess = ['ORG_OWNER', 'SUPER_ADMIN'].includes(userInfo.role);
+
+  // Vérifier si l'utilisateur est comptable (peut voir abonnement mais pas modifier)
+  const isAccountant = userInfo.role === 'ACCOUNTANT';
+
+  // Vérifier si l'utilisateur est staff (accès minimal)
+  const isStaff = ['STAFF', 'RECEPTIONIST', 'LOCATION_MANAGER'].includes(userInfo.role);
   
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -32,8 +41,30 @@ export default function AdminSettings() {
     confirmPassword: ''
   });
 
+  const [orgInfo, setOrgInfo] = useState({
+    name: '',
+    legalName: '',
+    ownerFirstName: '',
+    ownerLastName: '',
+    ownerEmail: '',
+    ownerPhone: '',
+    siret: '',
+    tvaNumber: '',
+    billingEmail: '',
+    billingAddress: '',
+    billingPostalCode: '',
+    billingCity: '',
+    billingCountry: 'France',
+  });
+
+  const [editMode, setEditMode] = useState(false);
+  const [saveOrgLoading, setSaveOrgLoading] = useState(false);
+  const [saveOrgSuccess, setSaveOrgSuccess] = useState('');
+  const [saveOrgError, setSaveOrgError] = useState('');
+
   useEffect(() => {
     fetchUserInfo();
+    fetchOrgInfo();
   }, []);
 
   const fetchUserInfo = async () => {
@@ -56,6 +87,68 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error('Erreur récupération infos:', error);
+    }
+  };
+
+  const fetchOrgInfo = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/organization/info', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOrgInfo({
+          name: data.name || '',
+          legalName: data.legalName || '',
+          ownerFirstName: data.ownerFirstName || '',
+          ownerLastName: data.ownerLastName || '',
+          ownerEmail: data.ownerEmail || '',
+          ownerPhone: data.ownerPhone || '',
+          siret: data.siret || '',
+          tvaNumber: data.tvaNumber || '',
+          billingEmail: data.billingEmail || '',
+          billingAddress: data.billingAddress || '',
+          billingPostalCode: data.billingPostalCode || '',
+          billingCity: data.billingCity || '',
+          billingCountry: data.billingCountry || 'France',
+        });
+      }
+    } catch (error) {
+      console.error('Erreur récupération infos organisation:', error);
+    }
+  };
+
+  const handleSaveOrgInfo = async () => {
+    setSaveOrgLoading(true);
+    setSaveOrgError('');
+    setSaveOrgSuccess('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/organization/info', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(orgInfo)
+      });
+
+      if (response.ok) {
+        setSaveOrgSuccess('Informations mises à jour avec succès !');
+        setEditMode(false);
+        setTimeout(() => setSaveOrgSuccess(''), 5000);
+      } else {
+        const data = await response.json();
+        setSaveOrgError(data.error || 'Erreur lors de la sauvegarde');
+      }
+    } catch (error) {
+      setSaveOrgError('Erreur lors de la sauvegarde');
+    } finally {
+      setSaveOrgLoading(false);
     }
   };
 
@@ -142,48 +235,42 @@ export default function AdminSettings() {
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
             )}
           </button>
-          <button
-            onClick={() => setActiveTab('site')}
-            className={`flex items-center gap-2 pb-4 px-4 transition relative ${
-              activeTab === 'site'
-                ? 'text-[#d4b5a0] font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Globe className="w-5 h-5" />
-            Configuration du site
-            {activeTab === 'site' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('subscription')}
-            className={`flex items-center gap-2 pb-4 px-4 transition relative ${
-              activeTab === 'subscription'
-                ? 'text-[#d4b5a0] font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <CreditCard className="w-5 h-5" />
-            Abonnement
-            {activeTab === 'subscription' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('sms')}
-            className={`flex items-center gap-2 pb-4 px-4 transition relative ${
-              activeTab === 'sms'
-                ? 'text-[#d4b5a0] font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Smartphone className="w-5 h-5" />
-            SMS Marketing
-            {activeTab === 'sms' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
-            )}
-          </button>
+
+          {/* Configuration du site - Seulement pour ORG_OWNER, SUPER_ADMIN */}
+          {hasFullAccess && (
+            <button
+              onClick={() => setActiveTab('site')}
+              className={`flex items-center gap-2 pb-4 px-4 transition relative ${
+                activeTab === 'site'
+                  ? 'text-[#d4b5a0] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Globe className="w-5 h-5" />
+              Configuration du site
+              {activeTab === 'site' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+              )}
+            </button>
+          )}
+
+          {/* Abonnement - Seulement pour ORG_OWNER, SUPER_ADMIN, ACCOUNTANT */}
+          {(hasFullAccess || isAccountant) && (
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className={`flex items-center gap-2 pb-4 px-4 transition relative ${
+                activeTab === 'subscription'
+                  ? 'text-[#d4b5a0] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <CreditCard className="w-5 h-5" />
+              Abonnement
+              {activeTab === 'subscription' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -235,6 +322,339 @@ export default function AdminSettings() {
             </div>
           </div>
         </div>
+
+        {/* Informations de l'organisation - Masqué pour STAFF/RECEPTIONIST/LOCATION_MANAGER */}
+        {!isStaff && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Building className="w-5 h-5 text-purple-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">Informations de l'organisation</h2>
+              </div>
+              {/* Bouton Modifier - Seulement pour ORG_OWNER, SUPER_ADMIN */}
+              {!editMode && hasFullAccess && (
+                <button
+                  onClick={() => setEditMode(true)}
+                  className="px-4 py-2 text-sm bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a084] transition-colors"
+                >
+                  Modifier
+                </button>
+              )}
+              {/* Badge lecture seule pour ACCOUNTANT */}
+              {isAccountant && (
+                <span className="text-xs px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-medium">
+                  Lecture seule
+                </span>
+              )}
+            </div>
+
+          {saveOrgSuccess && (
+            <div className="mb-4 p-4 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-600" />
+              <p className="text-green-800">{saveOrgSuccess}</p>
+            </div>
+          )}
+
+          {saveOrgError && (
+            <div className="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3">
+              <X className="w-5 h-5 text-red-600" />
+              <p className="text-red-800">{saveOrgError}</p>
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de l'organisation
+                </label>
+                <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 font-medium">
+                  {orgInfo.name}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Raison sociale
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.legalName}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, legalName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="LAIA SKIN SARL"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.legalName || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  SIRET
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.siret}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, siret: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="123 456 789 00012"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 font-mono">
+                    {orgInfo.siret || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  N° TVA intracommunautaire
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.tvaNumber}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, tvaNumber: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono"
+                    placeholder="FR 12 123456789"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 font-mono">
+                    {orgInfo.tvaNumber || '-'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Informations du propriétaire - Masqué pour STAFF/RECEPTIONIST/LOCATION_MANAGER */}
+        {!isStaff && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <User className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Propriétaire de l'organisation</h2>
+                {isAccountant && (
+                  <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">
+                    Lecture seule
+                  </span>
+                )}
+              </div>
+            </div>
+
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.ownerFirstName}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, ownerFirstName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.ownerFirstName || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.ownerLastName}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, ownerLastName: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.ownerLastName || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="inline w-4 h-4 mr-2" />
+                  Email
+                </label>
+                {editMode ? (
+                  <input
+                    type="email"
+                    value={orgInfo.ownerEmail}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, ownerEmail: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.ownerEmail || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="inline w-4 h-4 mr-2" />
+                  Téléphone
+                </label>
+                {editMode ? (
+                  <input
+                    type="tel"
+                    value={orgInfo.ownerPhone}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, ownerPhone: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.ownerPhone || '-'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Informations de facturation - Masqué pour STAFF/RECEPTIONIST/LOCATION_MANAGER */}
+        {!isStaff && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Facturation</h2>
+                <p className="text-xs text-gray-500">
+                  Si différente de l'adresse de l'institut
+                  {isAccountant && (
+                    <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-medium">
+                      Lecture seule
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email de facturation
+                </label>
+                {editMode ? (
+                  <input
+                    type="email"
+                    value={orgInfo.billingEmail}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, billingEmail: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Laisser vide pour utiliser l'email principal"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.billingEmail || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-2" />
+                  Adresse de facturation
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.billingAddress}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, billingAddress: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                    placeholder="Laisser vide pour utiliser l'adresse de l'institut"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.billingAddress || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Code postal
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.billingPostalCode}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, billingPostalCode: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.billingPostalCode || '-'}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ville
+                </label>
+                {editMode ? (
+                  <input
+                    type="text"
+                    value={orgInfo.billingCity}
+                    onChange={(e) => setOrgInfo({ ...orgInfo, billingCity: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                  />
+                ) : (
+                  <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                    {orgInfo.billingCity || '-'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {editMode && (
+            <div className="flex gap-3 pt-6 border-t border-gray-200 mt-6">
+              <button
+                onClick={handleSaveOrgInfo}
+                disabled={saveOrgLoading}
+                className="flex-1 px-4 py-3 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c9a084] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-5 h-5" />
+                {saveOrgLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              </button>
+              <button
+                onClick={() => {
+                  setEditMode(false);
+                  fetchOrgInfo();
+                }}
+                className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+        </div>
+        )}
 
         {/* Changement de mot de passe */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -379,10 +799,6 @@ export default function AdminSettings() {
       ) : activeTab === 'subscription' ? (
         <div className="max-w-7xl mx-auto">
           <SubscriptionInvoices />
-        </div>
-      ) : activeTab === 'sms' ? (
-        <div className="max-w-7xl mx-auto">
-          <AdminSMSConfigTab />
         </div>
       ) : null}
     </div>

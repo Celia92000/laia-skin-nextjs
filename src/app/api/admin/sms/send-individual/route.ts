@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendSMS, calculateSMSCount, replaceVariables } from '@/lib/sms-service'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -19,10 +20,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
     }
 
-    const { clientId, message } = await request.json()
+    const { clientId, phone, message } = await request.json()
 
-    if (!clientId || !message) {
-      return NextResponse.json({ error: 'clientId et message requis' }, { status: 400 })
+    if ((!clientId && !phone) || !message) {
+      return NextResponse.json({ error: 'clientId ou phone + message requis' }, { status: 400 })
     }
 
     // Vérifier l'organisation et ses crédits
@@ -49,39 +50,52 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    // Récupérer le client
-    const client = await prisma.user.findFirst({
-      where: {
-        id: clientId,
-        organizationId: decoded.organizationId,
-        role: 'CLIENT'
-      },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true
-      }
-    })
+    // Récupérer le client si clientId fourni, sinon utiliser phone directement
+    let client = null
+    let recipientPhone = phone
+    let recipientName = 'Contact'
 
-    if (!client) {
-      return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
+    if (clientId) {
+      client = await prisma.user.findFirst({
+        where: {
+          id: clientId,
+          organizationId: decoded.organizationId,
+          role: 'CLIENT'
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true
+        }
+      })
+
+      if (!client) {
+        return NextResponse.json({ error: 'Client non trouvé' }, { status: 404 })
+      }
+
+      if (!client.phone) {
+        return NextResponse.json({ error: 'Le client n\'a pas de numéro de téléphone' }, { status: 400 })
+      }
+
+      recipientPhone = client.phone
+      recipientName = client.name || 'Client'
     }
 
-    if (!client.phone) {
-      return NextResponse.json({ error: 'Le client n\'a pas de numéro de téléphone' }, { status: 400 })
+    if (!recipientPhone) {
+      return NextResponse.json({ error: 'Numéro de téléphone requis' }, { status: 400 })
     }
 
     // Remplacer les variables dans le message
     const personalizedMessage = replaceVariables(message, {
-      prenom: client.name?.split(' ')[0] || '',
-      nom: client.name?.split(' ').slice(1).join(' ') || '',
+      prenom: recipientName.split(' ')[0] || '',
+      nom: recipientName.split(' ').slice(1).join(' ') || '',
       institut: organization.name
     })
 
     // Envoyer le SMS
     const result = await sendSMS({
-      phoneNumber: client.phone,
+      phoneNumber: recipientPhone,
       message: personalizedMessage,
       organizationName: organization.name
     })
@@ -106,7 +120,7 @@ export async function POST(request: Request) {
     await prisma.sMSLog.create({
       data: {
         organizationId: organization.id,
-        recipient: client.phone,
+        recipient: recipientPhone,
         message: personalizedMessage,
         status: result.status || 'sent',
         cost: result.cost || 0,
@@ -115,7 +129,7 @@ export async function POST(request: Request) {
       }
     })
 
-    console.log(`✅ SMS envoyé à ${client.name} (${client.phone}) - ${smsCount} crédit(s) déduit(s)`)
+    log.info(`✅ SMS envoyé à ${recipientName} (${recipientPhone}) - ${smsCount} crédit(s) déduit(s)`)
 
     return NextResponse.json({
       success: true,
@@ -124,7 +138,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('Erreur envoi SMS individuel:', error)
+    log.error('Erreur envoi SMS individuel:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

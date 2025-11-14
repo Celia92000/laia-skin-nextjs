@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // GET - Obtenir les récompenses de parrainage disponibles pour l'utilisateur connecté
 export async function GET(request: Request) {
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
       count: rewards.length
     });
   } catch (error) {
-    console.error('Erreur récupération récompenses:', error);
+    log.error('Erreur récupération récompenses:', error);
     return NextResponse.json({
       error: 'Erreur lors de la récupération des récompenses'
     }, { status: 500 });
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
       count: rewards.length
     });
   } catch (error) {
-    console.error('Erreur récupération récompenses:', error);
+    log.error('Erreur récupération récompenses:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la récupération des récompenses' 
     }, { status: 500 });

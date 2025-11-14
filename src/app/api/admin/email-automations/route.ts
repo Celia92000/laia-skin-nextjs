@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(automations);
   } catch (error) {
-    console.error('Erreur récupération automatisations:', error);
+    log.error('Erreur récupération automatisations:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(automation);
   } catch (error) {
-    console.error('Erreur mise à jour automatisation:', error);
+    log.error('Erreur mise à jour automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(automation);
   } catch (error) {
-    console.error('Erreur création automatisation:', error);
+    log.error('Erreur création automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

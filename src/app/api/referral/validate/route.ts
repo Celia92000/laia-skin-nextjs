@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { notifyLoyaltyMilestone } from '@/lib/notifications';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur validation parrainage:', error);
+    log.error('Erreur validation parrainage:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la validation du code' },
       { status: 500 }
@@ -221,7 +222,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération code parrainage:', error);
+    log.error('Erreur récupération code parrainage:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération du code' },
       { status: 500 }

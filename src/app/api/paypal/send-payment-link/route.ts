@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { isAdminRole } from '@/lib/admin-roles';
 import { sendEmail } from '@/lib/notifications';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -175,14 +176,14 @@ export async function POST(request: Request) {
         message: `Lien de paiement envoyé à ${customerEmail}`
       });
     } catch (emailError: any) {
-      console.error('Erreur envoi email:', emailError);
+      log.error('Erreur envoi email:', emailError);
       return NextResponse.json({
         error: 'Erreur lors de l\'envoi de l\'email: ' + emailError.message
       }, { status: 500 });
     }
 
   } catch (error: any) {
-    console.error('Erreur envoi lien de paiement:', error);
+    log.error('Erreur envoi lien de paiement:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

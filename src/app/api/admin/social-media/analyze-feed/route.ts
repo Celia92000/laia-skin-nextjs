@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getApiToken, getApiTokenWithMetadata } from '@/lib/api-token-manager';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 interface MediaInsight {
   caption?: string;
@@ -49,16 +50,16 @@ export async function POST(request: NextRequest) {
         if (tokenData) {
           accessToken = tokenData.token;
           accountId = tokenData.metadata?.accountId || tokenData.metadata?.account_id;
-          console.log('✅ [analyze-feed] Instagram token récupéré depuis la base de données');
-          console.log('📊 [analyze-feed] AccountId:', accountId);
+          log.info('✅ [analyze-feed] Instagram token récupéré depuis la base de données');
+          log.info('📊 [analyze-feed] AccountId:', accountId);
         }
       } catch (error) {
-        console.error('❌ [analyze-feed] Erreur récupération token Instagram:', error);
+        log.error('❌ [analyze-feed] Erreur récupération token Instagram:', error);
       }
 
       // Fallback vers les variables d'environnement si pas de token en base
       if (!accessToken || !accountId) {
-        console.log('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
+        log.info('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
         accessToken = (process.env.INSTAGRAM_ACCESS_TOKEN || process.env.FACEBOOK_PAGE_ACCESS_TOKEN) ?? null;
         accountId = process.env.INSTAGRAM_ACCOUNT_ID ?? null;
       }
@@ -70,16 +71,16 @@ export async function POST(request: NextRequest) {
         if (tokenData) {
           accessToken = tokenData.token;
           accountId = tokenData.metadata?.pageId || tokenData.metadata?.page_id;
-          console.log('✅ [analyze-feed] Facebook token récupéré depuis la base de données');
-          console.log('📊 [analyze-feed] PageId:', accountId);
+          log.info('✅ [analyze-feed] Facebook token récupéré depuis la base de données');
+          log.info('📊 [analyze-feed] PageId:', accountId);
         }
       } catch (error) {
-        console.error('❌ [analyze-feed] Erreur récupération token Facebook:', error);
+        log.error('❌ [analyze-feed] Erreur récupération token Facebook:', error);
       }
 
       // Fallback vers les variables d'environnement si pas de token en base
       if (!accessToken || !accountId) {
-        console.log('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
+        log.info('⚠️  [analyze-feed] Fallback vers les variables d\'environnement');
         accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN ?? null;
         accountId = process.env.FACEBOOK_PAGE_ID ?? null;
       }
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
           const error = await response.json();
-          console.error('❌ Erreur API Instagram:', error);
+          log.error('❌ Erreur API Instagram:', error);
 
           // Messages d'erreur détaillés selon le code
           let errorMessage = 'Erreur lors de la récupération des posts Instagram';
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
           const error = await response.json();
-          console.error('Erreur API Facebook:', error);
+          log.error('Erreur API Facebook:', error);
           return NextResponse.json({
             error: 'Erreur lors de la récupération des posts Facebook',
             details: error
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
         }));
       }
     } catch (error) {
-      console.error('Erreur appel API:', error);
+      log.error('Erreur appel API:', error);
       return NextResponse.json({
         error: 'Erreur lors de la récupération des données',
         details: error instanceof Error ? error.message : 'Unknown error'
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur analyse feed:', error);
+    log.error('Erreur analyse feed:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'analyse du feed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -260,7 +261,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération analyse:', error);
+    log.error('Erreur récupération analyse:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de l\'analyse' },
       { status: 500 }

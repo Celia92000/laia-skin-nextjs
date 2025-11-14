@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verificationCodes } from '@/lib/verification-codes';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur vérification code:', error);
+    log.error('Erreur vérification code:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

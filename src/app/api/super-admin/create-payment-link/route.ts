@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-09-30.clover'
@@ -100,11 +101,11 @@ export async function POST(request: NextRequest) {
       locale: 'fr'
     });
 
-    console.log(`✅ Lien de paiement créé par ${superAdmin.email}:`);
-    console.log(`   Email: ${customerEmail}`);
-    console.log(`   Montant: ${amount}€`);
-    console.log(`   Description: ${description}`);
-    console.log(`   Session ID: ${checkoutSession.id}`);
+    log.info(`✅ Lien de paiement créé par ${superAdmin.email}:`);
+    log.info(`   Email: ${customerEmail}`);
+    log.info(`   Montant: ${amount}€`);
+    log.info(`   Description: ${description}`);
+    log.info(`   Session ID: ${checkoutSession.id}`);
 
     return NextResponse.json({
       success: true,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Erreur création lien de paiement:', error);
+    log.error('❌ Erreur création lien de paiement:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur lors de la création du lien' },
       { status: 500 }

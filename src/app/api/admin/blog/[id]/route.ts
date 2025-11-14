@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer un article spécifique
 export async function GET(
@@ -47,7 +48,7 @@ export async function GET(
 
     return NextResponse.json(post);
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'article:', error);
+    log.error('Erreur lors de la récupération de l\'article:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -120,7 +121,7 @@ export async function PUT(
 
     return NextResponse.json(post);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'article:', error);
+    log.error('Erreur lors de la mise à jour de l\'article:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

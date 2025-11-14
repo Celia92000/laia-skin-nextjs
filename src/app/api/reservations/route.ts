@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
 import { isSlotAvailable } from '@/lib/availability-service';
 import { sendConfirmationEmail } from '@/lib/email-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -282,7 +283,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    console.log('Prix calculé:', calculatedPrice, 'Prix reçu:', totalPrice, 'Prix final:', finalPrice);
+    log.info('Prix calculé:', calculatedPrice, 'Prix reçu:', totalPrice, 'Prix final:', finalPrice);
     
     // Déterminer si c'est un abonnement
     let isSubscription = false;
@@ -433,12 +434,12 @@ export async function POST(request: Request) {
         });
         
         if (emailSent) {
-          console.log('✅ Email de confirmation envoyé à:', user.email);
+          log.info('✅ Email de confirmation envoyé à:', user.email);
         } else {
-          console.log('⚠️ Email non envoyé (service non configuré)');
+          log.info('⚠️ Email non envoyé (service non configuré)');
         }
       } catch (error) {
-        console.error('Erreur envoi email:', error);
+        log.error('Erreur envoi email:', error);
         // Ne pas bloquer la réservation si l'email échoue
       }
     }
@@ -466,7 +467,7 @@ export async function POST(request: Request) {
       message: 'Votre demande de réservation a été enregistrée. Elle sera validée dans les plus brefs délais.' + loyaltyMessage
     });
   } catch (error) {
-    console.error('Error creating reservation:', error);
+    log.error('Error creating reservation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -518,7 +519,7 @@ export async function GET(request: Request) {
       })(),
     })));
   } catch (error) {
-    console.error('Error fetching reservations:', error);
+    log.error('Error fetching reservations:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

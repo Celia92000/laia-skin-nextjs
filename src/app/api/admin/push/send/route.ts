@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { log } from '@/lib/logger';
 // import { getPrismaClient } from '@/lib/prisma';
 // import { verifyAuth } from '@/lib/auth';
 // import webpush from 'web-push';
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       whereClause.user = { role: 'CLIENT' };
     } else if (target === 'staff') {
       whereClause.user = {
-        role: { in: ['ORG_ADMIN', 'ORG_OWNER', 'STAFF', 'RECEPTIONIST', 'LOCATION_MANAGER'] }
+        role: { in: ['ORG_OWNER', 'STAFF', 'RECEPTIONIST', 'LOCATION_MANAGER'] }
       };
     }
 
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
           );
           sentCount++;
         } catch (error: any) {
-          console.error(`[Push Send] Erreur pour ${sub.endpoint}:`, error.message);
+          log.error(`[Push Send] Erreur pour ${sub.endpoint}:`, error.message);
 
           // Si la subscription est invalide (410 Gone), la supprimer
           if (error.statusCode === 410) {
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       failed: failedSubscriptions.length
     });
   } catch (error) {
-    console.error('[Push Send] Erreur:', error);
+    log.error('[Push Send] Erreur:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi des notifications' },
       { status: 500 }

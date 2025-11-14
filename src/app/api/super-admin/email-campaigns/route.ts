@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ export async function GET() {
     return NextResponse.json(campaigns)
 
   } catch (error) {
-    console.error('Erreur récupération campaigns:', error)
+    log.error('Erreur récupération campaigns:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     return NextResponse.json(campaign)
 
   } catch (error) {
-    console.error('Erreur création campaign:', error)
+    log.error('Erreur création campaign:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

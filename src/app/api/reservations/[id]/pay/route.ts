@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createConnectedCheckoutSession } from '@/lib/stripe-connect-helper'
+import { log } from '@/lib/logger';
 
 /**
  * Créer une session de paiement Stripe Connect pour une réservation
@@ -87,7 +88,7 @@ export async function POST(
       }
     })
 
-    console.log(`💳 Session paiement créée pour réservation ${reservationId}`)
+    log.info(`💳 Session paiement créée pour réservation ${reservationId}`)
 
     return NextResponse.json({
       sessionId: session.sessionId,
@@ -97,7 +98,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur création session paiement:', error)
+    log.error('Erreur création session paiement:', error)
     return NextResponse.json(
       { error: 'Erreur serveur', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Resend instance created lazily via getResend()
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
         });
       }
     } catch (dbError) {
-      console.error('Erreur lors de la création/mise à jour du lead:', dbError);
+      log.error('Erreur lors de la création/mise à jour du lead:', dbError);
       // On continue même si la sauvegarde en base échoue
     }
 
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
         }
       });
     } catch (historyError) {
-      console.error('Erreur enregistrement historique:', historyError);
+      log.error('Erreur enregistrement historique:', historyError);
     }
 
     // Envoyer l'email à l'administrateur (votre adresse professionnelle)
@@ -147,10 +148,10 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      console.error('Erreur Resend:', error);
+      log.error('Erreur Resend:', error);
 
       // Si Resend ne fonctionne pas, on sauvegarde au moins le message
-      console.log('Message de contact reçu:', {
+      log.info('Message de contact reçu:', {
         name,
         email,
         phone,
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
       });
     } catch (confirmError) {
       // Si l'email de confirmation échoue, ce n'est pas grave
-      console.log('Email de confirmation non envoyé:', confirmError);
+      log.info('Email de confirmation non envoyé:', confirmError);
     }
 
     return NextResponse.json({
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
       message: 'Message envoyé avec succès'
     });
   } catch (error) {
-    console.error('Erreur lors de l\'envoi du message:', error);
+    log.error('Erreur lors de l\'envoi du message:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi du message' },
       { status: 500 }

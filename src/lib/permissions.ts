@@ -66,25 +66,6 @@ const ROLE_PERMISSIONS: Record<UserRole, Record<Resource, Permission[]>> = {
     staff: ['view', 'create', 'update', 'delete'],
   },
 
-  ORG_ADMIN: {
-    // Co-gérant avec accès étendu
-    users: ['view', 'create', 'update'],
-    clients: ['view', 'create', 'update', 'delete'],
-    reservations: ['view', 'create', 'update', 'delete'],
-    services: ['view', 'create', 'update'],
-    products: ['view', 'create', 'update'],
-    blog: ['view', 'create', 'update', 'delete'],
-    reviews: ['view', 'update'],
-    settings: ['view'],
-    finance: ['view'],
-    stats: ['view'],
-    inventory: ['view', 'create', 'update', 'delete'],
-    marketing: ['view', 'create', 'update', 'delete'],
-    loyalty: ['view', 'create', 'update'],
-    locations: ['view'],
-    staff: ['view', 'create', 'update'],
-  },
-
   ACCOUNTANT: {
     // Comptable avec accès financier
     users: [],
@@ -266,11 +247,10 @@ export function hasLocationAccess(
     return false
   }
 
-  // SUPER_ADMIN, ORG_OWNER, ORG_ADMIN ont accès à tous les emplacements de l'organisation
+  // SUPER_ADMIN, ORG_OWNER ont accès à tous les emplacements de l'organisation
   if (
     userRole === 'SUPER_ADMIN' ||
-    userRole === 'ORG_OWNER' ||
-    userRole === 'ORG_ADMIN'
+    userRole === 'ORG_OWNER'
   ) {
     return true
   }
@@ -285,7 +265,6 @@ export function hasLocationAccess(
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   SUPER_ADMIN: 'Super Administrateur - Accès complet à tous les instituts',
   ORG_OWNER: 'Propriétaire - Accès complet à l\'institut',
-  ORG_ADMIN: 'Co-gérant - Gestion étendue de l\'institut',
   ACCOUNTANT: 'Comptable - Accès aux finances et statistiques',
   LOCATION_MANAGER: 'Responsable de point de vente',
   STAFF: 'Employé / Praticien',
@@ -299,7 +278,6 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
 export const ROLE_HIERARCHY: UserRole[] = [
   'SUPER_ADMIN',
   'ORG_OWNER',
-  'ORG_ADMIN',
   'LOCATION_MANAGER',
   'STAFF',
   'RECEPTIONIST',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * PATCH: Modifier un créneau
@@ -56,7 +57,7 @@ export async function PATCH(
     return NextResponse.json(slot)
 
   } catch (error) {
-    console.error('Erreur modification créneau:', error)
+    log.error('Erreur modification créneau:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -115,7 +116,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression créneau:', error)
+    log.error('Erreur suppression créneau:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -13,6 +13,7 @@ import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, gener
 import type { Client } from "@/components/UnifiedCRMTab";
 import { getActiveFeatures, type OrgFeatures } from "@/lib/features-simple";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import WelcomeBanner from "@/components/WelcomeBanner";
 
 // Lazy load des composants lourds uniquement quand nécessaire
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
@@ -112,6 +113,7 @@ export default function AdminDashboard() {
   const [isOnboarded, setIsOnboarded] = useState<boolean>(true); // Par défaut true pour éviter le flash
   const [smsCredits, setSmsCredits] = useState<number>(0);
   const [hasPurchasedSMS, setHasPurchasedSMS] = useState<boolean>(false);
+  const [configCompletion, setConfigCompletion] = useState<number>(0);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
@@ -206,7 +208,7 @@ export default function AdminDashboard() {
       }
 
       // Autoriser tous les rôles admin et staff
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(userInfo.role)) {
         router.push('/espace-client');
         return;
@@ -280,6 +282,23 @@ export default function AdminDashboard() {
       }
     }
   }, [showNewReservationModal]);
+
+  // Fetch config completion percentage
+  useEffect(() => {
+    const fetchConfigCompletion = async () => {
+      try {
+        const response = await fetch('/api/admin/config-completion');
+        if (response.ok) {
+          const data = await response.json();
+          setConfigCompletion(data.globalPercentage);
+        }
+      } catch (error) {
+        console.error('Erreur chargement taux de complétion:', error);
+      }
+    };
+
+    fetchConfigCompletion();
+  }, []);
 
   const fetchServices = async () => {
     try {
@@ -1189,7 +1208,7 @@ export default function AdminDashboard() {
               </button>
               
               {/* Boutons visibles uniquement pour les ADMINS */}
-              {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+              {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
                 <button
                   onClick={() => router.push('/admin/users')}
                   className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
@@ -1198,6 +1217,25 @@ export default function AdminDashboard() {
                   Utilisateurs & Permissions
                 </button>
               )}
+              <button
+                onClick={() => router.push('/admin/settings?tab=site')}
+                className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-semibold relative"
+              >
+                <Globe className="w-4 h-4" />
+                Configurer mon site
+                {configCompletion > 0 && configCompletion < 100 && (
+                  <span className={`ml-1 px-2 py-0.5 text-xs font-bold rounded-full ${
+                    configCompletion < 30 ? 'bg-red-500' :
+                    configCompletion < 70 ? 'bg-orange-400' :
+                    'bg-green-400'
+                  } text-white`}>
+                    {configCompletion}%
+                  </span>
+                )}
+                {configCompletion === 100 && (
+                  <CheckCircle className="w-4 h-4 text-green-300" />
+                )}
+              </button>
               <button
                 onClick={() => router.push('/admin/settings')}
                 className="px-4 py-2 text-sm bg-[#d4b5a0] text-white hover:bg-[#c9a084] rounded-lg transition-colors flex items-center gap-2"
@@ -1217,6 +1255,9 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+
+          {/* Bannière de bienvenue */}
+          <WelcomeBanner />
 
           {/* Stats - Cliquables */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -1377,7 +1418,7 @@ export default function AdminDashboard() {
             </button>
           )}
           {/* Emailing et WhatsApp après CRM */}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               {orgFeatures?.featureEmailing && (
                 <button
@@ -1422,7 +1463,7 @@ export default function AdminDashboard() {
             </>
           )}
           {/* Services et Produits - uniquement pour ADMIN */}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               <button
                 onClick={() => setActiveTab("services")}
@@ -1488,7 +1529,7 @@ export default function AdminDashboard() {
               )}
             </>
           )}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
             <>
               <button
                 onClick={() => setActiveTab("comptabilite")}
@@ -1514,7 +1555,7 @@ export default function AdminDashboard() {
             <Star className="w-4 h-4 inline mr-2" />
             Avis & Photos
           </button>
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureSocialMedia && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureSocialMedia && (
             <button
               onClick={() => setActiveTab("social-media")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -1528,7 +1569,7 @@ export default function AdminDashboard() {
             </button>
           )}
           {/* Blog - TEAM+ uniquement */}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureBlog && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureBlog && (
             <button
               onClick={() => setActiveTab("blog")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -1541,7 +1582,7 @@ export default function AdminDashboard() {
               Blog
             </button>
           )}
-          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
             <button
               onClick={() => setActiveTab("notifications")}
               className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -2258,7 +2299,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+                {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -2614,7 +2655,7 @@ export default function AdminDashboard() {
                   Gestion des Paiements & Livre de Recettes
                 </h2>
                 {/* Boutons Export - uniquement pour ADMIN */}
-                {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+                {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
                   <div className="flex gap-2">
                     <button
                       onClick={() => exportPayments('csv')}
@@ -4454,7 +4495,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Bouton export - uniquement pour ADMIN */}
-                  {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+                  {['SUPER_ADMIN', 'ORG_OWNER', 'ADMIN', 'admin'].includes(userRole) && (
                     <div className="mt-6 flex justify-end">
                       <button
                         onClick={() => exportPayments('detailed')}

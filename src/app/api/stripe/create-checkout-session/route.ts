@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 import { getSiteConfig } from '@/lib/config-service';
 import { createConnectedCheckoutSession } from '@/lib/stripe-connect-helper';
+import { log } from '@/lib/logger';
 
 // Schéma de validation
 const checkoutSchema = z.object({
@@ -187,7 +188,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur création session Stripe:', error);
+    log.error('Erreur création session Stripe:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

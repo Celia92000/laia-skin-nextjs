@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { decryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     try {
       config = decryptConfig(paypalIntegration.config as string);
     } catch (error) {
-      console.error('Erreur déchiffrement config PayPal:', error);
+      log.error('Erreur déchiffrement config PayPal:', error);
       return NextResponse.json({ error: 'Erreur de configuration' }, { status: 500 });
     }
 
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
 
     if (!authResponse.ok) {
       const error = await authResponse.json();
-      console.error('Erreur authentification PayPal:', error);
+      log.error('Erreur authentification PayPal:', error);
       return NextResponse.json({ error: 'Erreur d\'authentification PayPal' }, { status: 500 });
     }
 
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
 
     if (!orderResponse.ok) {
       const error = await orderResponse.json();
-      console.error('Erreur création commande PayPal:', error);
+      log.error('Erreur création commande PayPal:', error);
       return NextResponse.json({ error: 'Erreur de création de commande PayPal' }, { status: 500 });
     }
 
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur création commande PayPal:', error);
+    log.error('Erreur création commande PayPal:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

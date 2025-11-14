@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 // Initialiser Stripe (la clé sera dans .env)
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur Stripe:', error);
+    log.error('Erreur Stripe:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Erreur lors de la création de la session de paiement'

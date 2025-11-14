@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Download, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar } from 'lucide-react';
+import { FileText, Download, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, Zap, ArrowRight, Sparkles } from 'lucide-react';
+import { OrgPlan } from '@prisma/client';
+import { getPlanName, getPlanPrice, getPlanDescription, PLAN_FEATURES } from '@/lib/features-simple';
 
 interface InvoiceMetadata {
   plan: string;
@@ -57,10 +59,68 @@ export default function SubscriptionInvoices() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<OrgPlan | null>(null);
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [selectedNewPlan, setSelectedNewPlan] = useState<OrgPlan | null>(null);
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [planChangeSuccess, setPlanChangeSuccess] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
+    fetchCurrentPlan();
   }, []);
+
+  const fetchCurrentPlan = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/organization/info', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentPlan(data.plan);
+      }
+    } catch (err) {
+      console.error('Erreur chargement plan:', err);
+    }
+  };
+
+  const handleChangePlan = async () => {
+    if (!selectedNewPlan) return;
+
+    try {
+      setChangingPlan(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/subscription/change-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newPlan: selectedNewPlan })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erreur lors du changement de plan');
+      }
+
+      setPlanChangeSuccess(true);
+      setCurrentPlan(selectedNewPlan);
+
+      setTimeout(() => {
+        setShowChangePlanModal(false);
+        setPlanChangeSuccess(false);
+        setSelectedNewPlan(null);
+      }, 2000);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setChangingPlan(false);
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -152,8 +212,60 @@ export default function SubscriptionInvoices() {
     );
   }
 
+  const plans: OrgPlan[] = ['SOLO', 'DUO', 'TEAM', 'PREMIUM'];
+
   return (
     <div className="space-y-6">
+      {/* Carte plan actuel */}
+      {currentPlan && (
+        <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-6 text-white">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5" />
+                <span className="text-sm font-medium opacity-90">Votre formule actuelle</span>
+              </div>
+              <h2 className="text-3xl font-bold mb-2">Formule {getPlanName(currentPlan)}</h2>
+              <p className="text-purple-100 text-sm mb-4">{getPlanDescription(currentPlan)}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold mb-1">{getPlanPrice(currentPlan)}€</div>
+              <div className="text-sm opacity-90">par mois</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {Object.entries(PLAN_FEATURES[currentPlan]).map(([key, enabled]) => {
+              if (key === 'featureMultiLocation' || key === 'featureMultiUser') return null;
+              const featureNames: Record<string, string> = {
+                featureBlog: 'Blog',
+                featureCRM: 'CRM',
+                featureEmailing: 'Email Marketing',
+                featureShop: 'Boutique',
+                featureWhatsApp: 'WhatsApp',
+                featureSMS: 'SMS',
+                featureSocialMedia: 'Réseaux Sociaux',
+                featureStock: 'Stock Avancé',
+              };
+              return (
+                <div key={key} className={`flex items-center gap-2 text-sm ${enabled ? 'text-white' : 'text-purple-200 opacity-50'}`}>
+                  {enabled ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  <span>{featureNames[key]}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setShowChangePlanModal(true)}
+            className="w-full bg-white text-purple-600 px-4 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Zap className="w-5 h-5" />
+            Changer de formule
+          </button>
+        </div>
+      )}
+
       {/* Info abonnement */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
         <div className="flex items-start gap-4">
@@ -161,7 +273,7 @@ export default function SubscriptionInvoices() {
             <CreditCard className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Votre abonnement LAIA Connect</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Historique des factures</h3>
             <p className="text-sm text-gray-600 mb-4">
               Retrouvez ci-dessous l'historique de vos factures d'abonnement LAIA Connect.
               Les factures sont envoyées automatiquement par email et seront prélevées à la date d'échéance.
@@ -373,6 +485,159 @@ export default function SubscriptionInvoices() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal changement de plan */}
+      {showChangePlanModal && currentPlan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Changer de formule</h2>
+                <button
+                  onClick={() => {
+                    setShowChangePlanModal(false);
+                    setSelectedNewPlan(null);
+                    setPlanChangeSuccess(false);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-purple-100 text-sm mt-2">
+                Sélectionnez votre nouvelle formule. Le changement prendra effet au prochain cycle de facturation.
+              </p>
+            </div>
+
+            {/* Contenu */}
+            <div className="p-6">
+              {planChangeSuccess ? (
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-8 text-center">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-900 mb-2">Changement confirmé !</h3>
+                  <p className="text-green-700">
+                    Votre nouvelle formule {selectedNewPlan && getPlanName(selectedNewPlan)} sera active au prochain cycle de facturation.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Grille des plans */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {plans.map((plan) => {
+                      const isCurrentPlan = plan === currentPlan;
+                      const isSelected = plan === selectedNewPlan;
+                      const features = PLAN_FEATURES[plan];
+
+                      return (
+                        <div
+                          key={plan}
+                          onClick={() => !isCurrentPlan && setSelectedNewPlan(plan)}
+                          className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all ${
+                            isCurrentPlan
+                              ? 'bg-gray-50 border-gray-300 cursor-not-allowed opacity-60'
+                              : isSelected
+                              ? 'border-purple-500 bg-purple-50'
+                              : 'border-gray-200 hover:border-purple-300'
+                          }`}
+                        >
+                          {isCurrentPlan && (
+                            <div className="absolute top-3 right-3 bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded">
+                              Actuel
+                            </div>
+                          )}
+
+                          <div className="mb-4">
+                            <h3 className="text-xl font-bold text-gray-900 mb-1">Formule {getPlanName(plan)}</h3>
+                            <p className="text-sm text-gray-600 mb-3">{getPlanDescription(plan)}</p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-bold text-purple-600">{getPlanPrice(plan)}€</span>
+                              <span className="text-sm text-gray-500">/mois</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            {Object.entries(features).map(([key, enabled]) => {
+                              if (key === 'featureMultiLocation' || key === 'featureMultiUser') return null;
+                              const featureNames: Record<string, string> = {
+                                featureBlog: 'Blog',
+                                featureCRM: 'CRM',
+                                featureEmailing: 'Email Marketing',
+                                featureShop: 'Boutique',
+                                featureWhatsApp: 'WhatsApp',
+                                featureSMS: 'SMS',
+                                featureSocialMedia: 'Réseaux Sociaux',
+                                featureStock: 'Stock Avancé',
+                              };
+                              return (
+                                <div key={key} className={`flex items-center gap-2 text-xs ${enabled ? 'text-gray-700' : 'text-gray-400'}`}>
+                                  {enabled ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3" />}
+                                  <span>{featureNames[key]}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Info facturation */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-2">Comment fonctionne le changement de formule ?</p>
+                        <ul className="space-y-1 text-xs">
+                          <li className="flex items-center gap-2">
+                            <ArrowRight className="w-3 h-3" />
+                            <span><strong>Upgrade</strong> (formule supérieure) : Le nouveau tarif sera appliqué au prochain cycle de facturation</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <ArrowRight className="w-3 h-3" />
+                            <span><strong>Downgrade</strong> (formule inférieure) : Le nouveau tarif sera appliqué au prochain cycle de facturation</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <ArrowRight className="w-3 h-3" />
+                            <span>Les fonctionnalités s'activeront/désactiveront immédiatement selon votre nouvelle formule</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bouton de confirmation */}
+                  <button
+                    onClick={handleChangePlan}
+                    disabled={!selectedNewPlan || changingPlan}
+                    className={`w-full py-4 rounded-lg font-bold text-white transition-colors flex items-center justify-center gap-2 ${
+                      selectedNewPlan && !changingPlan
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                        : 'bg-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    {changingPlan ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Changement en cours...
+                      </>
+                    ) : selectedNewPlan ? (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        Confirmer le changement vers {getPlanName(selectedNewPlan)} ({getPlanPrice(selectedNewPlan)}€/mois)
+                      </>
+                    ) : (
+                      'Sélectionnez une nouvelle formule'
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

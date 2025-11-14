@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { encryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      console.error('Erreur échange token Google:', errorData);
+      log.error('Erreur échange token Google:', errorData);
       throw new Error('Impossible d\'obtenir le token Google');
     }
 
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error: any) {
-    console.error('Erreur callback Google Calendar:', error);
+    log.error('Erreur callback Google Calendar:', error);
     return NextResponse.redirect(
       new URL('/admin/settings?error=google_callback_failed', request.url)
     );

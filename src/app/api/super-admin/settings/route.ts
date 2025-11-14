@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditLog, getIpAddress, getUserAgent } from '@/lib/audit-logger'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ settings: settingsMap, raw: settings })
 
   } catch (error) {
-    console.error('Erreur settings:', error)
+    log.error('Erreur settings:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -121,7 +122,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json(setting)
 
   } catch (error) {
-    console.error('Erreur mise à jour settings:', error)
+    log.error('Erreur mise à jour settings:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

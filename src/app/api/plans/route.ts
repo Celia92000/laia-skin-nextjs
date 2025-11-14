@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/plans
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ plans: formattedPlans })
   } catch (error) {
-    console.error('Erreur récupération plans publics:', error)
+    log.error('Erreur récupération plans publics:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

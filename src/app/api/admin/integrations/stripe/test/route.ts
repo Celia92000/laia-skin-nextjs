@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur test connexion Stripe:', error);
+    log.error('Erreur test connexion Stripe:', error);
     return NextResponse.json({
       error: error.message || 'Erreur lors du test de connexion'
     }, { status: 500 });

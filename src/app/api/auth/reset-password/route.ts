@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur lors de la réinitialisation du mot de passe:', error)
+    log.error('Erreur lors de la réinitialisation du mot de passe:', error)
     return NextResponse.json(
       { error: 'Une erreur est survenue lors de la réinitialisation' },
       { status: 500 }

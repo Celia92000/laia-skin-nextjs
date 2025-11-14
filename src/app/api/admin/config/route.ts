@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // Fonction pour vérifier l'authentification admin
 async function verifyAdmin(request: NextRequest) {
@@ -25,13 +26,13 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return null;
     }
 
     return user;
   } catch (error) {
-    console.error('Erreur vérification admin:', error);
+    log.error('Erreur vérification admin:', error);
     return null;
   }
 }
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(config);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la configuration:', error);
+    log.error('Erreur lors de la récupération de la configuration:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de la configuration' },
       { status: 500 }
@@ -121,7 +122,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(config);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la configuration:', error);
+    log.error('Erreur lors de la mise à jour de la configuration:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -18,7 +19,7 @@ async function publishToSocialMedia(data: any) {
         await publishToTikTok(data);
       }
     } catch (error) {
-      console.error(`❌ Erreur publication ${platform}:`, error);
+      log.error(`❌ Erreur publication ${platform}:`, error);
     }
   }
 }
@@ -162,10 +163,10 @@ async function publishToFacebook(data: any) {
 
   } else if (type === 'story') {
     // Story Facebook (non supporté par l'API pour l'instant)
-    console.log('⚠️ Facebook Stories not supported via API yet');
+    log.info('⚠️ Facebook Stories not supported via API yet');
   } else if (type === 'reel') {
     // Reel Facebook
-    console.log('⚠️ Facebook Reels publication - feature limited');
+    log.info('⚠️ Facebook Reels publication - feature limited');
   }
 }
 
@@ -173,7 +174,7 @@ async function publishToFacebook(data: any) {
 async function publishToTikTok(data: any) {
   // TikTok API nécessite une authentification OAuth2 plus complexe
   // Pour l'instant, on log l'intention
-  console.log('⚠️ TikTok publication - API integration required');
+  log.info('⚠️ TikTok publication - API integration required');
 }
 
 // GET - Récupérer toutes les publications
@@ -202,13 +203,13 @@ export async function GET(request: Request) {
       where: whereClause,
       orderBy: { scheduledDate: 'asc' }
     }).catch((err) => {
-      console.log('⚠️  Table socialMediaPost non disponible:', err.message);
+      log.info('⚠️  Table socialMediaPost non disponible:', err.message);
       return [];
     });
 
     return NextResponse.json(posts);
   } catch (error) {
-    console.error('❌ Erreur lors de la récupération des publications:', error);
+    log.error('❌ Erreur lors de la récupération des publications:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -229,13 +230,13 @@ export async function POST(request: Request) {
 
     // Si publishNow = true ou status = 'publishing', publier immédiatement
     if (data.publishNow || data.status === 'publishing' || data.status === 'published') {
-      console.log('🚀 Publication immédiate sur:', data.platforms);
+      log.info('🚀 Publication immédiate sur:', data.platforms);
       try {
         // Publier sur les plateformes sélectionnées
         await publishToSocialMedia(data);
-        console.log('✅ Publication réussie sur les réseaux sociaux');
+        log.info('✅ Publication réussie sur les réseaux sociaux');
       } catch (error) {
-        console.error('❌ Erreur lors de la publication:', error);
+        log.error('❌ Erreur lors de la publication:', error);
         // Continuer quand même pour sauvegarder le post en base
       }
     }
@@ -260,7 +261,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
-    console.error('❌ Erreur lors de la création de la publication:', error);
+    log.error('❌ Erreur lors de la création de la publication:', error);
     return NextResponse.json({
       error: 'Erreur lors de la création de la publication',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -317,7 +318,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json(post);
   } catch (error) {
-    console.error('❌ Erreur lors de la mise à jour de la publication:', error);
+    log.error('❌ Erreur lors de la mise à jour de la publication:', error);
     return NextResponse.json({
       error: 'Erreur lors de la mise à jour',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -350,7 +351,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ message: 'Publication supprimée' });
   } catch (error) {
-    console.error('❌ Erreur lors de la suppression de la publication:', error);
+    log.error('❌ Erreur lors de la suppression de la publication:', error);
     return NextResponse.json({
       error: 'Erreur lors de la suppression',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { SocialMediaPublisher } from '@/lib/social-media-publisher';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
         }
 
       } catch (error: any) {
-        console.error(`Erreur publication post ${post.id}:`, error);
+        log.error(`Erreur publication post ${post.id}:`, error);
         results.push({
           id: post.id,
           platform: post.platform,
@@ -118,7 +119,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur cron publication:', error);
+    log.error('Erreur cron publication:', error);
     return NextResponse.json({
       success: false,
       error: 'Erreur serveur',

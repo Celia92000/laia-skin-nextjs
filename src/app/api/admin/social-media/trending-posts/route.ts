@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 interface TrendingPost {
   id: string;
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération posts tendances:', error);
+    log.error('Erreur récupération posts tendances:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des posts tendances' },
       { status: 500 }

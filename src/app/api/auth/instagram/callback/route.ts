@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 const META_APP_ID = process.env.META_APP_ID || '785663654385417';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Gérer les erreurs de la part de Meta
     if (error) {
-      console.error('OAuth error:', error);
+      log.error('OAuth error:', error);
       return NextResponse.redirect(
         new URL(`/admin?error=oauth_failed&message=${error}`, request.url)
       );
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error('Failed to get access token:', tokenData);
+      log.error('Failed to get access token:', tokenData);
       return NextResponse.redirect(
         new URL('/admin?error=token_failed', request.url)
       );
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('OAuth callback error:', error);
+    log.error('OAuth callback error:', error);
     return NextResponse.redirect(
       new URL(`/admin?error=unexpected&message=${error instanceof Error ? error.message : 'Unknown error'}`, request.url)
     );

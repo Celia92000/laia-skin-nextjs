@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { decryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
     const body = await request.text();
     const event = JSON.parse(body);
 
-    console.log('Webhook PayPal reçu:', event.event_type);
+    log.info('Webhook PayPal reçu:', event.event_type);
 
     // Récupérer la configuration PayPal
     const paypalIntegration = await prisma.integration.findFirst({
@@ -94,13 +95,13 @@ export async function POST(request: Request) {
         break;
 
       default:
-        console.log(`Événement PayPal non géré: ${event.event_type}`);
+        log.info(`Événement PayPal non géré: ${event.event_type}`);
     }
 
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Erreur webhook PayPal:', error);
+    log.error('Erreur webhook PayPal:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

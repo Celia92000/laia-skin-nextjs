@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-09-30.clover' })
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
+      log.error('Webhook signature verification failed:', err.message);
       return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
     }
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         const organizationId = session.metadata?.organizationId;
 
         if (!organizationId) {
-          console.error('⚠️ organizationId manquant dans les metadata Stripe');
+          log.error('⚠️ organizationId manquant dans les metadata Stripe');
           break;
         }
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (!order) {
-            console.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
+            log.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
             break;
           }
 
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          console.log(`✅ Paiement confirmé pour la commande ${orderId}`);
+          log.info(`✅ Paiement confirmé pour la commande ${orderId}`);
         }
         break;
       }
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         const organizationId = paymentIntent.metadata?.organizationId;
 
         if (!organizationId) {
-          console.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
+          log.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
           break;
         }
 
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (!order) {
-            console.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
+            log.error(`⚠️ Commande ${orderId} non trouvée pour l'organisation ${organizationId}`);
             break;
           }
 
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          console.log(`❌ Paiement échoué pour la commande ${orderId}`);
+          log.info(`❌ Paiement échoué pour la commande ${orderId}`);
         }
         break;
       }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
           const organizationId = paymentIntent.metadata?.organizationId;
 
           if (!organizationId) {
-            console.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
+            log.error('⚠️ organizationId manquant dans les metadata PaymentIntent');
             break;
           }
 
@@ -176,19 +177,19 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          console.log(`💰 Remboursement effectué pour ${orders.length} commande(s)`);
+          log.info(`💰 Remboursement effectué pour ${orders.length} commande(s)`);
         }
         break;
       }
 
       default:
-        console.log(`Événement non géré: ${event.type}`);
+        log.info(`Événement non géré: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Erreur webhook:', error);
+    log.error('Erreur webhook:', error);
     return NextResponse.json({
       error: error.message || 'Erreur webhook'
     }, { status: 500 });

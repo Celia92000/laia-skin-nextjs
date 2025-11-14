@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la désinscription:', error);
+    log.error('Erreur lors de la désinscription:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la désinscription' },
       { status: 500 }

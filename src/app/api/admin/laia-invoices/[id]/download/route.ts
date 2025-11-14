@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/admin/laia-invoices/[id]/download
@@ -88,7 +89,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Erreur téléchargement facture LAIA:', error)
+    log.error('Erreur téléchargement facture LAIA:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

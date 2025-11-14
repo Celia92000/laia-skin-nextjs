@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: Request,
@@ -29,7 +30,7 @@ export async function GET(
 
     return NextResponse.json(template);
   } catch (error) {
-    console.error('Erreur récupération template:', error);
+    log.error('Erreur récupération template:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -70,7 +71,7 @@ export async function PUT(
 
     return NextResponse.json(updatedTemplate);
   } catch (error) {
-    console.error('Erreur modification template:', error);
+    log.error('Erreur modification template:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -118,7 +119,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Modèle supprimé avec succès' });
   } catch (error) {
-    console.error('Erreur suppression template:', error);
+    log.error('Erreur suppression template:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

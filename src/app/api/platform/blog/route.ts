@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -40,7 +41,7 @@ export async function GET() {
     return NextResponse.json({ posts: postsWithAuthor })
 
   } catch (error) {
-    console.error('Erreur récupération posts publics:', error)
+    log.error('Erreur récupération posts publics:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

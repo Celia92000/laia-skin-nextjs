@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les liens stock pour un service
 export async function GET(
@@ -47,7 +48,7 @@ export async function GET(
 
     return NextResponse.json(formattedLinks);
   } catch (error) {
-    console.error('Erreur lors de la récupération des liens:', error);
+    log.error('Erreur lors de la récupération des liens:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -96,7 +97,7 @@ export async function POST(
       unit: link.stock.unit
     }, { status: 201 });
   } catch (error) {
-    console.error('Erreur lors de la création du lien:', error);
+    log.error('Erreur lors de la création du lien:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

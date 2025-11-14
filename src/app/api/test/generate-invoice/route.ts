@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateAndSaveInvoice } from '@/lib/invoice-service'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * Route de test pour générer une facture manuellement
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       'test_payment_intent_' + Date.now()
     )
 
-    console.log('✅ Facture de test générée:', invoice)
+    log.info('✅ Facture de test générée:', invoice)
 
     return NextResponse.json({
       success: true,
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Erreur génération facture test:', error)
+    log.error('Erreur génération facture test:', error)
     return NextResponse.json(
       {
         success: false,

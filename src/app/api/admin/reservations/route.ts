@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth';
 import { getReservationWithServiceNamesFromDB } from '@/lib/service-utils-server';
 import { isSlotAvailable } from '@/lib/availability-service';
 import { cache } from '@/lib/cache';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
       createdAt: reservation.createdAt.toISOString()
     });
   } catch (error) {
-    console.error('Erreur lors de la création de la réservation:', error);
+    log.error('Erreur lors de la création de la réservation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -258,10 +259,10 @@ export async function GET(request: NextRequest) {
         select: { role: true, organizationId: true }
       });
     } catch (dbError) {
-      console.warn('Erreur de connexion DB lors de la vérification utilisateur:', dbError);
+      log.warn('Erreur de connexion DB lors de la vérification utilisateur:', dbError);
       // En cas d'erreur DB, on fait confiance au token JWT qui a déjà été vérifié
       // et on utilise le rôle du token décodé
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!decoded.role || !adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
       }
@@ -269,7 +270,7 @@ export async function GET(request: NextRequest) {
       user = { role: decoded.role };
     }
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -351,7 +352,7 @@ export async function GET(request: NextRequest) {
       ]
     });
     } catch (dbError) {
-      console.error('Erreur de connexion à la DB pour les réservations:', dbError);
+      log.error('Erreur de connexion à la DB pour les réservations:', dbError);
       // Retourner un tableau vide plutôt qu'une erreur 500
       return NextResponse.json([]);
     }
@@ -426,7 +427,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedReservations);
   } catch (error) {
-    console.error('Erreur lors de la récupération des réservations admin:', error);
+    log.error('Erreur lors de la récupération des réservations admin:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

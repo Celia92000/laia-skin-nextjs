@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -46,11 +47,11 @@ export async function POST(
           return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
         }
       } catch (dbError) {
-        console.error('Erreur connexion DB:', dbError);
+        log.error('Erreur connexion DB:', dbError);
         return NextResponse.json({ error: 'Erreur de connexion à la base de données' }, { status: 503 });
       }
     } catch (tokenError: any) {
-      console.error('Erreur décodage token:', tokenError);
+      log.error('Erreur décodage token:', tokenError);
       if (tokenError.name === 'JsonWebTokenError') {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
       } else if (tokenError.name === 'TokenExpiredError') {
@@ -101,7 +102,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Erreur sauvegarde note:', error);
+    log.error('Erreur sauvegarde note:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la sauvegarde de la note' 
     }, { status: 500 });
@@ -148,11 +149,11 @@ export async function GET(
           return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
         }
       } catch (dbError) {
-        console.error('Erreur connexion DB:', dbError);
+        log.error('Erreur connexion DB:', dbError);
         return NextResponse.json({ error: 'Erreur de connexion à la base de données' }, { status: 503 });
       }
     } catch (tokenError: any) {
-      console.error('Erreur décodage token:', tokenError);
+      log.error('Erreur décodage token:', tokenError);
       if (tokenError.name === 'JsonWebTokenError') {
         return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
       } else if (tokenError.name === 'TokenExpiredError') {
@@ -189,7 +190,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Erreur récupération note:', error);
+    log.error('Erreur récupération note:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la récupération de la note' 
     }, { status: 500 });

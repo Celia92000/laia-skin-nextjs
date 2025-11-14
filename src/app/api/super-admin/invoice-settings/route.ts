@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient()
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(settings)
   } catch (error) {
-    console.error('Erreur lors de la récupération des paramètres:', error)
+    log.error('Erreur lors de la récupération des paramètres:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des paramètres' },
       { status: 500 }
@@ -120,7 +121,7 @@ export async function PUT(req: NextRequest) {
       settings: updatedSettings
     })
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des paramètres:', error)
+    log.error('Erreur lors de la mise à jour des paramètres:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour des paramètres' },
       { status: 500 }

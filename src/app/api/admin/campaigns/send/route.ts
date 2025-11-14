@@ -3,6 +3,7 @@ import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     const filteredRecipients = recipients.filter((r: { email: string }) => !unsubscribedSet.has(r.email));
 
     if (filteredRecipients.length < recipients.length) {
-      console.log(`⚠️ ${recipients.length - filteredRecipients.length} destinataire(s) filtré(s) (désinscrits)`);
+      log.info(`⚠️ ${recipients.length - filteredRecipients.length} destinataire(s) filtré(s) (désinscrits)`);
     }
 
     // Fonction pour ajouter un délai (600ms = respecte la limite de 2 emails/seconde)
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur envoi campagne:', error);
+    log.error('Erreur envoi campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

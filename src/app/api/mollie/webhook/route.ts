@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { decryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const paymentId = body.id;
 
-    console.log('Webhook Mollie reçu pour payment:', paymentId);
+    log.info('Webhook Mollie reçu pour payment:', paymentId);
 
     if (!paymentId) {
       return NextResponse.json({ error: 'ID de paiement manquant' }, { status: 400 });
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     const reservationId = payment.metadata?.reservationId;
 
     if (!reservationId) {
-      console.log('Pas de reservationId dans les metadata Mollie');
+      log.info('Pas de reservationId dans les metadata Mollie');
       return NextResponse.json({ received: true });
     }
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     });
 
     if (!reservation) {
-      console.log('Réservation non trouvée:', reservationId);
+      log.info('Réservation non trouvée:', reservationId);
       return NextResponse.json({ received: true });
     }
 
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
 
   } catch (error: any) {
-    console.error('Erreur webhook Mollie:', error);
+    log.error('Erreur webhook Mollie:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

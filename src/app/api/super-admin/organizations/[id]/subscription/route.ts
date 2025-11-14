@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 const PLAN_LIMITS = {
   SOLO: { users: 2, locations: 1, storage: 1 },
@@ -124,7 +125,7 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Erreur mise à jour abonnement:', error)
+    log.error('Erreur mise à jour abonnement:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

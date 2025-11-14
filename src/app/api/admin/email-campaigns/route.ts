@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const config = await getSiteConfig();
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(campaigns);
   } catch (error) {
-    console.error('Erreur récupération campagnes:', error);
+    log.error('Erreur récupération campagnes:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
             }
           });
         } catch (error) {
-          console.error(`Erreur envoi à ${recipient.email}:`, error);
+          log.error(`Erreur envoi à ${recipient.email}:`, error);
         }
       }
 
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur création campagne:', error);
+    log.error('Erreur création campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -239,7 +240,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur mise à jour campagne:', error);
+    log.error('Erreur mise à jour campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -295,7 +296,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression campagne:', error);
+    log.error('Erreur suppression campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

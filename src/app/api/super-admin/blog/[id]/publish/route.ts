@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function POST(
   request: Request,
@@ -45,7 +46,7 @@ export async function POST(
     return NextResponse.json(post)
 
   } catch (error) {
-    console.error('Erreur publication post:', error)
+    log.error('Erreur publication post:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

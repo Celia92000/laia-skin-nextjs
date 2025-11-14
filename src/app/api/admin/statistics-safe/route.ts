@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, subYears } from 'date-fns';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    if (!['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 });
     }
 
@@ -716,14 +717,14 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (dbError) {
-      console.warn('Base de données non accessible, utilisation des données par défaut');
+      log.warn('Base de données non accessible, utilisation des données par défaut');
       return NextResponse.json(defaultStats);
     } finally {
       await prisma.$disconnect().catch(() => {});
     }
 
   } catch (error) {
-    console.error('Erreur dans la route statistiques:', error);
+    log.error('Erreur dans la route statistiques:', error);
     return NextResponse.json({
       totalReservations: 0,
       todayReservations: 0,

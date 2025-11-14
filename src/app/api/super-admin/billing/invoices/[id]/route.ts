@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function PATCH(
   request: Request,
@@ -53,7 +54,7 @@ export async function PATCH(
     return NextResponse.json(invoice)
 
   } catch (error) {
-    console.error('Erreur mise à jour invoice:', error)
+    log.error('Erreur mise à jour invoice:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -95,7 +96,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression invoice:', error)
+    log.error('Erreur suppression invoice:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

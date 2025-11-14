@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // Configuration Meta WhatsApp
 const metaAccessToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -130,12 +131,12 @@ export async function POST(request: Request) {
         });
         successCount++;
 
-        console.log(`✅ Message WhatsApp envoyé à ${user.name} (${formattedPhone})`);
+        log.info(`✅ Message WhatsApp envoyé à ${user.name} (${formattedPhone})`);
 
         // Petit délai entre chaque envoi pour éviter le rate limit
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
-        console.error(`❌ Erreur envoi à ${user.name}:`, error);
+        log.error(`❌ Erreur envoi à ${user.name}:`, error);
         results.push({
           clientId: user.id,
           clientName: user.name,
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
       results
     });
   } catch (error) {
-    console.error('Erreur envoi groupé WhatsApp:', error);
+    log.error('Erreur envoi groupé WhatsApp:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

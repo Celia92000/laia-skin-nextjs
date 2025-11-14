@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // API pour gérer les stocks (admin)
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stocks);
   } catch (error) {
-    console.error('Erreur lors de la récupération des stocks:', error);
+    log.error('Erreur lors de la récupération des stocks:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       select: { role: true, organizationId: true }
     });
 
-    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!user || !adminRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(stock, { status: 201 });
   } catch (error) {
-    console.error('Erreur lors de la création du stock:', error);
+    log.error('Erreur lors de la création du stock:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

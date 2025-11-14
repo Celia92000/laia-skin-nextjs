@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { formatDateLocal } from '@/lib/date-utils'
 import { calculateSMSCount, calculateSMSCost } from '@/lib/sms-service'
-import { Smartphone, Users, Send, Clock, CheckCircle, AlertCircle, X, Edit2, Trash2, Calendar } from 'lucide-react'
+import { Smartphone, Users, Send, Clock, CheckCircle, AlertCircle, X, Edit2, Trash2, Calendar, RefreshCw } from 'lucide-react'
+import ClientAdvancedFilters, { ClientFilterCriteria } from '@/components/ClientAdvancedFilters'
 
 interface SMSCampaign {
   id: string
   name: string
   message: string
-  segmentId?: string
+  filters?: ClientFilterCriteria // Remplace segmentId
   recipientCount: number
   status: 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'FAILED'
   scheduledAt?: string
@@ -27,16 +28,147 @@ interface SMSCampaignsTabProps {
   onSent?: () => void
 }
 
+interface Client {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  loyaltyPoints: number
+  totalSpent: number
+  lastVisit?: string
+  skinType?: string
+  birthDate?: string
+  tier?: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM'
+  _count?: {
+    reservations: number
+  }
+}
+
 export default function SMSCampaignsTab({ organizationId, smsCredits, onSent }: SMSCampaignsTabProps) {
   const [campaigns, setCampaigns] = useState<SMSCampaign[]>([])
   const [showModal, setShowModal] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<SMSCampaign | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set())
+  const [clients, setClients] = useState<Client[]>([])
+  const [loadingClients, setLoadingClients] = useState(false)
 
   useEffect(() => {
     fetchCampaigns()
+    fetchClients()
   }, [])
+
+  const fetchClients = async () => {
+    setLoadingClients(true)
+    try {
+      const response = await fetch('/api/admin/crm/clients')
+      if (response.ok) {
+        const data = await response.json()
+        // Filtrer uniquement les clients avec numéro de téléphone
+        const clientsWithPhone = data.filter((c: Client) => c.phone && c.phone.trim() !== '')
+        setClients(clientsWithPhone)
+        console.log(`📱 ${clientsWithPhone.length} clients avec téléphone chargés pour filtrage`)
+      }
+    } catch (error) {
+      console.error('Erreur chargement clients:', error)
+    } finally {
+      setLoadingClients(false)
+    }
+  }
+
+  // Fonction pour filtrer les clients selon les critères
+  const filterClients = (filters: ClientFilterCriteria): Client[] => {
+    let filtered = [...clients]
+
+    // Recherche texte
+    if (filters.search) {
+      const search = filters.search.toLowerCase()
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(search) ||
+        c.email.toLowerCase().includes(search) ||
+        c.phone?.includes(search)
+      )
+    }
+
+    // Points de fidélité
+    if (filters.minPoints) {
+      filtered = filtered.filter(c => c.loyaltyPoints >= filters.minPoints!)
+    }
+    if (filters.maxPoints) {
+      filtered = filtered.filter(c => c.loyaltyPoints <= filters.maxPoints!)
+    }
+
+    // Tier
+    if (filters.tier) {
+      filtered = filtered.filter(c => c.tier === filters.tier)
+    }
+
+    // Dépenses
+    if (filters.minSpent) {
+      filtered = filtered.filter(c => c.totalSpent >= filters.minSpent!)
+    }
+    if (filters.maxSpent) {
+      filtered = filtered.filter(c => c.totalSpent <= filters.maxSpent!)
+    }
+
+    // Dernière visite
+    if (filters.lastVisitDays) {
+      const daysAgo = new Date()
+      daysAgo.setDate(daysAgo.getDate() - filters.lastVisitDays)
+      filtered = filtered.filter(c => {
+        if (!c.lastVisit) return true
+        return new Date(c.lastVisit) <= daysAgo
+      })
+    }
+
+    // Statut d'activité
+    if (filters.status) {
+      const now = new Date()
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+
+      filtered = filtered.filter(c => {
+        if (filters.status === 'new') {
+          // Client créé il y a moins d'1 mois
+          const createdAt = c.lastVisit ? new Date(c.lastVisit) : new Date()
+          return createdAt >= oneMonthAgo
+        } else if (filters.status === 'active') {
+          // Dernière visite dans les 3 derniers mois
+          if (!c.lastVisit) return false
+          return new Date(c.lastVisit) >= threeMonthsAgo
+        } else if (filters.status === 'inactive') {
+          // Aucune visite depuis 3+ mois
+          if (!c.lastVisit) return true
+          return new Date(c.lastVisit) < threeMonthsAgo
+        }
+        return true
+      })
+    }
+
+    // Nombre de visites
+    if (filters.minVisits) {
+      filtered = filtered.filter(c => (c._count?.reservations || 0) >= filters.minVisits!)
+    }
+    if (filters.maxVisits) {
+      filtered = filtered.filter(c => (c._count?.reservations || 0) <= filters.maxVisits!)
+    }
+
+    // Type de peau
+    if (filters.skinType) {
+      filtered = filtered.filter(c => c.skinType === filters.skinType)
+    }
+
+    // Mois d'anniversaire
+    if (filters.birthdayMonth !== undefined) {
+      filtered = filtered.filter(c => {
+        if (!c.birthDate) return false
+        const birthMonth = new Date(c.birthDate).getMonth()
+        return birthMonth === filters.birthdayMonth
+      })
+    }
+
+    return filtered
+  }
 
   const fetchCampaigns = async () => {
     try {
@@ -150,6 +282,7 @@ export default function SMSCampaignsTab({ organizationId, smsCredits, onSent }: 
       id: 'new',
       name: '',
       message: '',
+      filters: {},
       recipientCount: 0,
       status: 'DRAFT',
       sentCount: 0,
@@ -158,8 +291,17 @@ export default function SMSCampaignsTab({ organizationId, smsCredits, onSent }: 
       createdAt: new Date().toISOString()
     })
 
+    // Calculer le nombre de destinataires en temps réel selon les filtres
+    const filteredRecipients = filterClients(formData.filters || {})
+    const actualRecipientCount = filteredRecipients.length
+
     const smsCount = calculateSMSCount(formData.message)
-    const totalCost = calculateSMSCost(formData.message) * (formData.recipientCount || 0)
+    const totalCost = calculateSMSCost(formData.message) * actualRecipientCount
+
+    // Mettre à jour recipientCount quand les filtres changent
+    useEffect(() => {
+      setFormData(prev => ({ ...prev, recipientCount: actualRecipientCount }))
+    }, [actualRecipientCount])
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -215,42 +357,44 @@ export default function SMSCampaignsTab({ organizationId, smsCredits, onSent }: 
               </p>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Destinataires
-              </h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="segment"
-                    checked={!formData.segmentId}
-                    onChange={() => setFormData({ ...formData, segmentId: undefined, recipientCount: 0 })}
-                    className="text-green-600"
-                  />
-                  <span className="text-sm">Tous les clients</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="segment"
-                    checked={formData.segmentId === 'vip'}
-                    onChange={() => setFormData({ ...formData, segmentId: 'vip', recipientCount: 0 })}
-                    className="text-green-600"
-                  />
-                  <span className="text-sm">Clients VIP uniquement</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="segment"
-                    checked={formData.segmentId === 'inactive'}
-                    onChange={() => setFormData({ ...formData, segmentId: 'inactive', recipientCount: 0 })}
-                    className="text-green-600"
-                  />
-                  <span className="text-sm">Clients inactifs (dernière visite &gt; 3 mois)</span>
-                </label>
+            {/* Filtres avancés */}
+            <div>
+              <ClientAdvancedFilters
+                filters={formData.filters || {}}
+                onChange={(newFilters) => setFormData({ ...formData, filters: newFilters })}
+                onReset={() => setFormData({ ...formData, filters: {} })}
+              />
+
+              {/* Affichage du nombre de destinataires */}
+              <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-green-600" />
+                    <span className="font-semibold text-gray-900">Destinataires</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={fetchClients}
+                      disabled={loadingClients}
+                      className="p-1 text-green-600 hover:bg-green-100 rounded transition-colors"
+                      title="Actualiser la liste des clients"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loadingClients ? 'animate-spin' : ''}`} />
+                    </button>
+                    <span className="text-2xl font-bold text-green-600">
+                      {actualRecipientCount}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-green-700 mt-2">
+                  {actualRecipientCount === 0
+                    ? '⚠️ Aucun client ne correspond à vos critères'
+                    : actualRecipientCount === clients.length
+                    ? '✅ Tous les clients avec téléphone'
+                    : `✅ ${actualRecipientCount} client${actualRecipientCount > 1 ? 's' : ''} sélectionné${actualRecipientCount > 1 ? 's' : ''} sur ${clients.length}`
+                  }
+                </p>
               </div>
             </div>
 
@@ -273,10 +417,16 @@ export default function SMSCampaignsTab({ organizationId, smsCredits, onSent }: 
               </p>
             </div>
 
-            {totalCost > 0 && (
+            {actualRecipientCount > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900">
-                  <strong>Coût estimé :</strong> {totalCost.toFixed(3)}€ ({formData.recipientCount} destinataires × {smsCount} SMS)
+                  <strong>Coût estimé :</strong> {totalCost.toFixed(3)}€ ({actualRecipientCount} destinataires × {smsCount} SMS)
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  {smsCredits >= (actualRecipientCount * smsCount)
+                    ? `✅ Vous avez assez de crédits (${smsCredits} disponibles)`
+                    : `⚠️ Crédits insuffisants (${smsCredits} disponibles, ${actualRecipientCount * smsCount} requis)`
+                  }
                 </p>
               </div>
             )}

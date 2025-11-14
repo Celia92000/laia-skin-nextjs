@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isSLABreached } from '@/lib/sla-config'
 import { Resend } from 'resend'
+import { log } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    console.log('🔄 Démarrage vérification SLA des tickets...')
+    log.info('🔄 Démarrage vérification SLA des tickets...')
 
     const now = new Date()
 
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log(`📊 ${openTickets.length} tickets ouverts à vérifier`)
+    log.info(`📊 ${openTickets.length} tickets ouverts à vérifier`)
 
     const results = {
       responseBreach: [] as string[],
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
         // Vérifier la violation du SLA de réponse
         if (ticket.slaResponseDeadline && !ticket.firstResponseAt && !ticket.slaResponseBreach) {
           if (isSLABreached(ticket.slaResponseDeadline, null)) {
-            console.log(`⚠️ Violation SLA réponse - Ticket #${ticket.ticketNumber}`)
+            log.info(`⚠️ Violation SLA réponse - Ticket #${ticket.ticketNumber}`)
 
             await prisma.supportTicket.update({
               where: { id: ticket.id },
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
         // Vérifier la violation du SLA de résolution
         if (ticket.slaResolutionDeadline && !ticket.resolvedAt && !ticket.slaResolutionBreach) {
           if (isSLABreached(ticket.slaResolutionDeadline, null)) {
-            console.log(`⚠️ Violation SLA résolution - Ticket #${ticket.ticketNumber}`)
+            log.info(`⚠️ Violation SLA résolution - Ticket #${ticket.ticketNumber}`)
 
             await prisma.supportTicket.update({
               where: { id: ticket.id },
@@ -162,7 +163,7 @@ export async function GET(request: NextRequest) {
         }
 
       } catch (error) {
-        console.error(`❌ Erreur ticket #${ticket.ticketNumber}:`, error)
+        log.error(`❌ Erreur ticket #${ticket.ticketNumber}:`, error)
         results.errors.push({
           ticket: ticket.ticketNumber,
           error: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -170,11 +171,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('✅ Vérification SLA terminée')
-    console.log(`   - Violations SLA réponse: ${results.responseBreach.length}`)
-    console.log(`   - Violations SLA résolution: ${results.resolutionBreach.length}`)
-    console.log(`   - Alertes envoyées: ${results.alerts.length}`)
-    console.log(`   - Erreurs: ${results.errors.length}`)
+    log.info('✅ Vérification SLA terminée')
+    log.info(`   - Violations SLA réponse: ${results.responseBreach.length}`)
+    log.info(`   - Violations SLA résolution: ${results.resolutionBreach.length}`)
+    log.info(`   - Alertes envoyées: ${results.alerts.length}`)
+    log.info(`   - Erreurs: ${results.errors.length}`)
 
     return NextResponse.json({
       success: true,
@@ -190,7 +191,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Erreur critique vérification SLA:', error)
+    log.error('❌ Erreur critique vérification SLA:', error)
     return NextResponse.json(
       {
         success: false,

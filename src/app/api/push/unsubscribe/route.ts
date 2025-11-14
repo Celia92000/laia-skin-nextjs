@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { log } from '@/lib/logger';
 // import { getPrismaClient } from '@/lib/prisma';
 // import { verifyAuth } from '@/lib/auth';
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[Push Unsubscribe] Erreur:', error);
+    log.error('[Push Unsubscribe] Erreur:', error);
     return NextResponse.json(
       { error: 'Erreur lors du désabonnement' },
       { status: 500 }

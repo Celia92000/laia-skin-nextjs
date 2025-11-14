@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getResend } from '@/lib/resend';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Cette API doit être appelée régulièrement (toutes les heures par exemple)
 // Via Vercel Cron, GitHub Actions, ou un service externe
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
         
         // Vérifier que Resend est configuré
         if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-          console.log('Resend non configuré - emails non envoyés');
+          log.info('Resend non configuré - emails non envoyés');
           continue;
         }
         
@@ -167,7 +168,7 @@ export async function GET(request: Request) {
         if (!alreadySent) {
           // Vérifier que Resend est configuré
           if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-            console.log('Resend non configuré - rappel 2h non envoyé');
+            log.info('Resend non configuré - rappel 2h non envoyé');
             continue;
           }
           
@@ -248,7 +249,7 @@ export async function GET(request: Request) {
           if (!alreadySent) {
             // Vérifier que Resend est configuré
             if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-              console.log('Resend non configuré - email anniversaire non envoyé');
+              log.info('Resend non configuré - email anniversaire non envoyé');
               continue;
             }
             
@@ -353,7 +354,7 @@ export async function GET(request: Request) {
     });
     
   } catch (error) {
-    console.error('Erreur envoi rappels:', error);
+    log.error('Erreur envoi rappels:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -369,5 +370,5 @@ async function checkIfReminderSent(key: string): Promise<boolean> {
 
 async function markReminderAsSent(key: string): Promise<void> {
   // TODO: Implémenter avec Redis ou une table dédiée
-  console.log(`Reminder marked as sent: ${key}`);
+  log.info(`Reminder marked as sent: ${key}`);
 }

@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
+import { log } from '@/lib/logger';
 
 /**
  * Convertir un lead en organisation cliente (Trial)
@@ -159,7 +160,7 @@ export async function POST(
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Erreur conversion lead:', error)
+    log.error('Erreur conversion lead:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

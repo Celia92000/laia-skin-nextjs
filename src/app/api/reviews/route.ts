@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
       stats
     });
   } catch (error) {
-    console.error('Error fetching reviews:', error);
+    log.error('Error fetching reviews:', error);
     return NextResponse.json({ error: 'Erreur lors de la récupération des avis' }, { status: 500 });
   }
 }
@@ -200,7 +201,7 @@ export async function POST(request: Request) {
       googleUrl
     }, { status: 201 });
   } catch (error) {
-    console.error('Error creating review:', error);
+    log.error('Error creating review:', error);
     return NextResponse.json({ error: 'Erreur lors de la création de l\'avis' }, { status: 500 });
   }
 }

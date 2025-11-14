@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // Version debug qui fonctionne sans authentification stricte
 export async function POST(
@@ -8,7 +9,7 @@ export async function POST(
 ) {
   const { id } = await params;
   try {
-    console.log(`🚀 Lancement campagne (mode debug): ${id}`);
+    log.info(`🚀 Lancement campagne (mode debug): ${id}`);
 
     // Récupérer la campagne
     const campaign = await prisma.whatsAppCampaign.findUnique({
@@ -41,15 +42,15 @@ export async function POST(
     });
 
     // Simuler l'envoi des messages
-    console.log(`📱 Campagne "${campaign.name}" lancée`);
-    console.log(`📨 Template: ${template?.name || 'Non défini'}`);
-    console.log(`👥 Envoi à ${campaign.recipientCount} destinataires`);
+    log.info(`📱 Campagne "${campaign.name}" lancée`);
+    log.info(`📨 Template: ${template?.name || 'Non défini'}`);
+    log.info(`👥 Envoi à ${campaign.recipientCount} destinataires`);
 
     // Si des destinataires sont définis, simuler l'envoi
     if (campaign.recipients) {
       try {
         const recipients = JSON.parse(campaign.recipients);
-        console.log(`📤 Simulation d'envoi à ${recipients.length} numéros`);
+        log.info(`📤 Simulation d'envoi à ${recipients.length} numéros`);
         
         // Récupérer quelques clients pour la simulation
         const clients = await prisma.user.findMany({
@@ -65,10 +66,10 @@ export async function POST(
         });
 
         clients.forEach(client => {
-          console.log(`  ✉️ Message envoyé à ${client.name} (${client.phone})`);
+          log.info(`  ✉️ Message envoyé à ${client.name} (${client.phone})`);
         });
       } catch (e) {
-        console.log('📤 Mode simulation: Envoi des messages...');
+        log.info('📤 Mode simulation: Envoi des messages...');
       }
     }
 
@@ -79,9 +80,9 @@ export async function POST(
           where: { id },
           data: { status: 'sent' }
         });
-        console.log(`✅ Campagne "${campaign.name}" marquée comme envoyée`);
+        log.info(`✅ Campagne "${campaign.name}" marquée comme envoyée`);
       } catch (error) {
-        console.error('Erreur mise à jour statut:', error);
+        log.error('Erreur mise à jour statut:', error);
       }
     }, 3000);
 
@@ -95,7 +96,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Erreur lancement campagne:', error);
+    log.error('Erreur lancement campagne:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

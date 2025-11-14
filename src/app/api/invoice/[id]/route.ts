@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 // Fonction pour obtenir les paramètres de l'entreprise depuis la config
 async function getCompanySettings() {
@@ -481,7 +482,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Erreur génération facture:', error);
+    log.error('Erreur génération facture:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération de la facture' },
       { status: 500 }

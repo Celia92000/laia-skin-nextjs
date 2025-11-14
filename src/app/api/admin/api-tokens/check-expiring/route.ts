@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { checkExpiringTokens } from '@/lib/api-token-manager';
+import { log } from '@/lib/logger';
 
 // GET - Vérifie les tokens qui vont expirer bientôt
 export async function GET(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       message: `${expiringTokens.length} token(s) expirent dans les ${days} prochains jours`,
     });
   } catch (error) {
-    console.error('Erreur vérification tokens expirants:', error);
+    log.error('Erreur vérification tokens expirants:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

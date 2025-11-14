@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getApiTokenWithMetadata } from '@/lib/api-token-manager';
+import { log } from '@/lib/logger';
 
 interface ContentIdea {
   type: 'post' | 'reel' | 'story';
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
         accountId = tokenData.metadata?.accountId || tokenData.metadata?.account_id;
       }
     } catch (error) {
-      console.error('❌ Erreur récupération token:', error);
+      log.error('❌ Erreur récupération token:', error);
     }
 
     // Fallback vers env si nécessaire
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('Erreur API Instagram:', error);
+      log.error('Erreur API Instagram:', error);
       return NextResponse.json({
         error: 'Erreur lors de la récupération du feed Instagram'
       }, { status: 400 });
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur génération idées:', error);
+    log.error('Erreur génération idées:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération des idées de contenu' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function PATCH(
   request: NextRequest,
@@ -43,7 +44,7 @@ export async function PATCH(
     return NextResponse.json(template)
 
   } catch (error) {
-    console.error('Erreur mise à jour template:', error)
+    log.error('Erreur mise à jour template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -85,7 +86,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression template:', error)
+    log.error('Erreur suppression template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

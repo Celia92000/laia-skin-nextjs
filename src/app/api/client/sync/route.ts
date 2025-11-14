@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -231,7 +232,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(syncData);
   } catch (error) {
-    console.error('Erreur lors de la synchronisation client:', error);
+    log.error('Erreur lors de la synchronisation client:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation' },
       { status: 500 }
@@ -468,7 +469,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(syncData);
   } catch (error) {
-    console.error('Erreur lors de la synchronisation client:', error);
+    log.error('Erreur lors de la synchronisation client:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation' },
       { status: 500 }

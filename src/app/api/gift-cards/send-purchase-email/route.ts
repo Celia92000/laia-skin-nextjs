@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/notifications';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
       confirmationMessage
     );
 
-    console.log(`📧 Email de confirmation d'achat envoyé à ${senderName} (${senderEmail})`);
+    log.info(`📧 Email de confirmation d'achat envoyé à ${senderName} (${senderEmail})`);
 
     return NextResponse.json({
       success: true,
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur envoi email confirmation achat:', error);
+    log.error('Erreur envoi email confirmation achat:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi de l\'email' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Webhook pour recevoir les messages WhatsApp
 export async function POST(request: Request) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     
     // Log pour debug
-    console.log('WhatsApp webhook reçu:', JSON.stringify(body, null, 2));
+    log.info('WhatsApp webhook reçu:', JSON.stringify(body, null, 2));
     
     // Traiter les messages entrants
     if (body.entry && body.entry[0] && body.entry[0].changes) {
@@ -62,10 +63,10 @@ export async function POST(request: Request) {
             
             if (client) {
               // Ajouter à l'historique des messages (si vous avez une table pour ça)
-              console.log(`Message reçu de ${client.name}: ${text}`);
+              log.info(`Message reçu de ${client.name}: ${text}`);
             }
           } catch (dbError) {
-            console.error('Erreur DB:', dbError);
+            log.error('Erreur DB:', dbError);
           }
         }
       }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'received' });
     
   } catch (error) {
-    console.error('Erreur webhook WhatsApp:', error);
+    log.error('Erreur webhook WhatsApp:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -90,7 +91,7 @@ export async function GET(request: Request) {
   const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'laia_skin_webhook_2025';
   
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Webhook WhatsApp vérifié avec succès');
+    log.info('Webhook WhatsApp vérifié avec succès');
     return new Response(challenge, { status: 200 });
   } else {
     return NextResponse.json({ error: 'Token invalide' }, { status: 403 });
@@ -106,6 +107,6 @@ async function sendAutoReply(to: string, message: string) {
       message
     });
   } catch (error) {
-    console.error('Erreur envoi réponse auto:', error);
+    log.error('Erreur envoi réponse auto:', error);
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       }))
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des cartes cadeaux:', error);
+    log.error('Erreur lors de la récupération des cartes cadeaux:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

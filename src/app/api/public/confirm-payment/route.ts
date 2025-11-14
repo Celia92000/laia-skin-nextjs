@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendPaymentConfirmationEmail } from '@/lib/email-service'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia'
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
         amount: amount
       })
     } catch (emailError) {
-      console.error('Erreur envoi email confirmation:', emailError)
+      log.error('Erreur envoi email confirmation:', emailError)
       // Ne pas bloquer si l'email échoue
     }
 
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('Erreur confirmation paiement:', error)
+    log.error('Erreur confirmation paiement:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur lors de la confirmation' },
       { status: 500 }

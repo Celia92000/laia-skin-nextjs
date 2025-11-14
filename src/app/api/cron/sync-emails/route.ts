@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { EmailSyncService } from '@/lib/email-sync';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Cron job pour synchroniser automatiquement les emails
 // Appel automatique toutes les 10 minutes via Vercel Cron
@@ -25,14 +26,14 @@ export async function GET(request: Request) {
 
     // Vérifier que EMAIL_PASSWORD est configuré
     if (!process.env.EMAIL_PASSWORD) {
-      console.log('EMAIL_PASSWORD non configuré - synchronisation ignorée');
+      log.info('EMAIL_PASSWORD non configuré - synchronisation ignorée');
       return NextResponse.json({
         success: false,
         message: 'EMAIL_PASSWORD non configuré'
       });
     }
 
-    console.log('Début de la synchronisation automatique des emails...');
+    log.info('Début de la synchronisation automatique des emails...');
 
     // Créer le service de synchronisation
     const syncService = new EmailSyncService({
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log('Synchronisation automatique terminée');
+    log.info('Synchronisation automatique terminée');
 
     return NextResponse.json({
       success: true,
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Erreur synchronisation automatique:', error);
+    log.error('Erreur synchronisation automatique:', error);
 
     return NextResponse.json({
       success: false,

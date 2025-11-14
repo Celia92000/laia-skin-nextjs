@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET - Liste tous les templates d'onboarding (organisation = null = templates LAIA Connect)
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
     return NextResponse.json(templates)
 
   } catch (error) {
-    console.error('Erreur récupération templates onboarding:', error)
+    log.error('Erreur récupération templates onboarding:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
     return NextResponse.json(template)
 
   } catch (error: any) {
-    console.error('Erreur création template onboarding:', error)
+    log.error('Erreur création template onboarding:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

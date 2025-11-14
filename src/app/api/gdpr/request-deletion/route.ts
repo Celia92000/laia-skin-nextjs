@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 /**
  * API RGPD - Droit à l'oubli (Article 17)
@@ -53,9 +54,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // ⚠️ Empêcher les SUPER_ADMIN, ORG_OWNER et ORG_ADMIN de se supprimer
+    // ⚠️ Empêcher les SUPER_ADMIN et ORG_OWNER de se supprimer
     // (ils doivent d'abord transférer la propriété ou contacter le support)
-    if (['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN'].includes(user.role)) {
+    if (['SUPER_ADMIN', 'ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({
         error: 'Les administrateurs ne peuvent pas supprimer leur compte directement. Veuillez contacter le support.',
         supportEmail: 'support@laiaconnect.fr'
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur demande suppression RGPD:', error);
+    log.error('Erreur demande suppression RGPD:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'enregistrement de la demande' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erreur lors de l\'import:', error);
+    log.error('Erreur lors de l\'import:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'import des clients' },
       { status: 500 }

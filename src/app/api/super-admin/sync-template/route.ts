@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/super-admin/sync-template
@@ -472,7 +473,7 @@ export async function POST(request: NextRequest) {
 
         syncedCount++
       } catch (error) {
-        console.error(`Erreur sync pour ${org.name}:`, error)
+        log.error(`Erreur sync pour ${org.name}:`, error)
         errors.push(`${org.name}: ${error}`)
       }
     }
@@ -488,7 +489,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur sync template:', error)
+    log.error('Erreur sync template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur', details: String(error) },
       { status: 500 }

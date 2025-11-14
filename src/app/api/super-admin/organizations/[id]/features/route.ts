@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth-session'
+import { log } from '@/lib/logger';
 
 /**
  * PATCH /api/super-admin/organizations/[id]/features
@@ -55,7 +56,7 @@ export async function PATCH(
       }
     })
   } catch (error) {
-    console.error('Erreur mise à jour custom features:', error)
+    log.error('Erreur mise à jour custom features:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

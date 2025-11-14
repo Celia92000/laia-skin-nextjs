@@ -215,7 +215,7 @@ export default function SMSTemplatesTab({ organizationId }: SMSTemplatesTabProps
             <div className="flex flex-wrap gap-2">
               {['prenom', 'nom', 'dateRDV', 'heureRDV', 'service', 'institut', 'points'].map((variable, i) => (
                 <code key={i} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm font-mono">
-                  {'{{' + ' ' + variable + ' ' + '}}'}
+                  {`{{ ${variable} }}`}
                 </code>
               ))}
             </div>

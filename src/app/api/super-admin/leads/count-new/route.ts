@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/leads/count-new
@@ -46,7 +47,7 @@ export async function GET() {
     return NextResponse.json({ count })
 
   } catch (error) {
-    console.error('Erreur comptage nouveaux leads:', error)
+    log.error('Erreur comptage nouveaux leads:', error)
     return NextResponse.json(
       { error: 'Erreur serveur', count: 0 },
       { status: 500 }

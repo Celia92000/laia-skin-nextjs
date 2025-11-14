@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -52,7 +53,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Erreur récupération forfaits:', error);
+    log.error('Erreur récupération forfaits:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -74,9 +75,9 @@ export async function PUT(
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    console.log('🔐 Token décodé:', { role: decoded.role, userId: decoded.userId });
+    log.info('🔐 Token décodé:', { role: decoded.role, userId: decoded.userId });
     if (decoded.role?.toLowerCase() !== 'admin') {
-      console.log('❌ Accès refusé - rôle:', decoded.role);
+      log.info('❌ Accès refusé - rôle:', decoded.role);
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -120,7 +121,7 @@ export async function PUT(
     });
     
   } catch (error) {
-    console.error('Erreur modification forfaits:', error);
+    log.error('Erreur modification forfaits:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }

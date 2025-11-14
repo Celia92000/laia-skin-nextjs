@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -57,7 +58,7 @@ export async function GET(
 
     return NextResponse.json(subcategory);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la sous-catégorie:', error);
+    log.error('Erreur lors de la récupération de la sous-catégorie:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de la sous-catégorie' },
       { status: 500 }
@@ -170,7 +171,7 @@ export async function PATCH(
 
     return NextResponse.json(subcategory);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la sous-catégorie:', error);
+    log.error('Erreur lors de la mise à jour de la sous-catégorie:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour de la sous-catégorie' },
       { status: 500 }
@@ -235,7 +236,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Sous-catégorie supprimée avec succès' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de la sous-catégorie:', error);
+    log.error('Erreur lors de la suppression de la sous-catégorie:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression de la sous-catégorie' },
       { status: 500 }

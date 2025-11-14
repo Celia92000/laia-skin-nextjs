@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -27,7 +28,7 @@ export async function GET(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
@@ -53,7 +54,7 @@ export async function GET(
 
     return NextResponse.json(giftCard);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la carte cadeau:', error);
+    log.error('Erreur lors de la récupération de la carte cadeau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -81,7 +82,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
     }
@@ -178,7 +179,7 @@ export async function PATCH(
 
     return NextResponse.json(giftCard);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la carte cadeau:', error);
+    log.error('Erreur lors de la mise à jour de la carte cadeau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -206,7 +207,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({ error: 'Accès refusé - suppression', role: decoded.role }, { status: 403 });
     }
@@ -235,7 +236,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Carte cadeau supprimée' });
   } catch (error) {
-    console.error('Erreur lors de la suppression de la carte cadeau:', error);
+    log.error('Erreur lors de la suppression de la carte cadeau:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

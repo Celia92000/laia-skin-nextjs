@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // Vérification admin
 async function verifyAdmin(request: NextRequest) {
@@ -18,7 +19,7 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER'].includes(user.role as string)) {
       return null;
     }
 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(funnelsWithStats);
   } catch (error) {
-    console.error('Erreur lors de la récupération du funnel:', error);
+    log.error('Erreur lors de la récupération du funnel:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(funnel);
   } catch (error) {
-    console.error('Erreur lors de la création du funnel:', error);
+    log.error('Erreur lors de la création du funnel:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la création' },
       { status: 500 }
@@ -257,7 +258,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(funnel);
     }
   } catch (error) {
-    console.error('Erreur lors de la mise à jour:', error);
+    log.error('Erreur lors de la mise à jour:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour' },
       { status: 500 }
@@ -304,7 +305,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de la suppression du funnel:', error);
+    log.error('Erreur lors de la suppression du funnel:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { WhatsAppService } from '@/lib/whatsapp-service';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
         }
       });
     } catch (e) {
-      console.log('Table whatsAppHistory non disponible');
+      log.info('Table whatsAppHistory non disponible');
     }
 
     return NextResponse.json({
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur synchronisation WhatsApp:', error);
+    log.error('Erreur synchronisation WhatsApp:', error);
     
     if (error.message?.includes('non configuré')) {
       return NextResponse.json({ 
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
       });
       lastSync = lastSyncRecord?.createdAt || null;
     } catch (e) {
-      console.log('Table whatsAppHistory non disponible');
+      log.info('Table whatsAppHistory non disponible');
     }
 
     const configured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur status WhatsApp:', error);
+    log.error('Erreur status WhatsApp:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

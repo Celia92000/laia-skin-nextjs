@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 /**
  * Initier la connexion OAuth avec Planity
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'utilisateur est bien propriétaire ou admin
-    if (!['ORG_OWNER', 'ORG_ADMIN'].includes(user.role)) {
+    if (!['ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -71,14 +72,14 @@ export async function POST(request: Request) {
     authUrl.searchParams.set('scope', 'bookings.read bookings.write calendar.read calendar.write');
     authUrl.searchParams.set('state', state);
 
-    console.log(`🔗 Redirection OAuth Planity pour ${user.organization.name}`);
+    log.info(`🔗 Redirection OAuth Planity pour ${user.organization.name}`);
 
     return NextResponse.json({
       authUrl: authUrl.toString()
     });
 
   } catch (error) {
-    console.error('Erreur connexion Planity:', error);
+    log.error('Erreur connexion Planity:', error);
     return NextResponse.json(
       { error: 'Erreur serveur', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }
@@ -128,7 +129,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération statut Planity:', error);
+    log.error('Erreur récupération statut Planity:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

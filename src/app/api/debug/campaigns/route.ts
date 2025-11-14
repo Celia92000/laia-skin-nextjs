@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -7,16 +8,16 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     });
 
-    console.log(`\n📊 DEBUG Campagnes WhatsApp:`);
-    console.log(`Total: ${campaigns.length} campagnes`);
+    log.info(`\n📊 DEBUG Campagnes WhatsApp:`);
+    log.info(`Total: ${campaigns.length} campagnes`);
     
     campaigns.forEach(campaign => {
-      console.log(`\n📢 ${campaign.name}:`);
-      console.log(`  - ID: ${campaign.id}`);
-      console.log(`  - Status: ${campaign.status}`);
-      console.log(`  - Template ID: ${campaign.templateId || 'NON DÉFINI'}`);
-      console.log(`  - Destinataires: ${campaign.recipientCount}`);
-      console.log(`  - Créée: ${campaign.createdAt}`);
+      log.info(`\n📢 ${campaign.name}:`);
+      log.info(`  - ID: ${campaign.id}`);
+      log.info(`  - Status: ${campaign.status}`);
+      log.info(`  - Template ID: ${campaign.templateId || 'NON DÉFINI'}`);
+      log.info(`  - Destinataires: ${campaign.recipientCount}`);
+      log.info(`  - Créée: ${campaign.createdAt}`);
     });
 
     return NextResponse.json({
@@ -34,7 +35,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Erreur debug campagnes:', error);
+    log.error('Erreur debug campagnes:', error);
     return NextResponse.json({ 
       error: 'Erreur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

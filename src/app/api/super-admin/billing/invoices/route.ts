@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateAndSaveInvoice } from '@/lib/invoice-service'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur invoices:', error)
+    log.error('Erreur invoices:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
     return NextResponse.json(invoice)
 
   } catch (error) {
-    console.error('Erreur création invoice:', error)
+    log.error('Erreur création invoice:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // GET - Lister tous les rapports sauvegardés
 export async function GET(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(reports);
 
   } catch (error) {
-    console.error('Erreur lors du chargement des rapports:', error);
+    log.error('Erreur lors du chargement des rapports:', error);
     return NextResponse.json(
       { error: 'Erreur lors du chargement des rapports' },
       { status: 500 }
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(report);
 
   } catch (error) {
-    console.error('Erreur lors de la création du rapport:', error);
+    log.error('Erreur lors de la création du rapport:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la création du rapport' },
       { status: 500 }

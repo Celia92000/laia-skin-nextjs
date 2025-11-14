@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { encryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      console.error('Erreur échange token SumUp:', errorData);
+      log.error('Erreur échange token SumUp:', errorData);
       throw new Error('Impossible d\'obtenir le token SumUp');
     }
 
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error: any) {
-    console.error('Erreur callback SumUp:', error);
+    log.error('Erreur callback SumUp:', error);
     return NextResponse.redirect(
       new URL('/admin/settings?error=sumup_callback_failed', request.url)
     );

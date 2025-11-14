@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les paramètres de l'organisation
 export async function GET(
@@ -84,7 +85,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Erreur récupération paramètres:', error)
+    log.error('Erreur récupération paramètres:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -416,7 +417,7 @@ export async function PUT(
     })
 
   } catch (error) {
-    console.error('Erreur mise à jour paramètres:', error)
+    log.error('Erreur mise à jour paramètres:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { getResend } from '@/lib/resend';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -36,10 +37,10 @@ export async function POST(request: Request) {
           });
 
           if (error) {
-            console.error(`❌ Erreur envoi à ${recipient.email}:`, error);
+            log.error(`❌ Erreur envoi à ${recipient.email}:`, error);
             results.push({ email: recipient.email, success: false, error: error.message });
           } else {
-            console.log(`✅ Email envoyé à ${recipient.email}`);
+            log.info(`✅ Email envoyé à ${recipient.email}`);
 
             // Enregistrer dans l'historique
             await prisma.emailHistory.create({
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
             results.push({ email: recipient.email, success: true, id: emailData?.id });
           }
         } catch (err) {
-          console.error(`❌ Erreur pour ${recipient.email}:`, err);
+          log.error(`❌ Erreur pour ${recipient.email}:`, err);
           results.push({ email: recipient.email, success: false, error: 'Erreur serveur' });
         }
       }
@@ -95,15 +96,15 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      console.error('❌ Erreur Resend:', error);
+      log.error('❌ Erreur Resend:', error);
       return NextResponse.json({
         success: false,
         error: error.message || 'Erreur envoi email'
       }, { status: 500 });
     }
 
-    console.log('✅ Email de campagne envoyé à:', to);
-    console.log('   ID Resend:', emailData?.id);
+    log.info('✅ Email de campagne envoyé à:', to);
+    log.info('   ID Resend:', emailData?.id);
 
     // Enregistrer dans l'historique
     await prisma.emailHistory.create({
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur envoi email campagne:', error);
+    log.error('Erreur envoi email campagne:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

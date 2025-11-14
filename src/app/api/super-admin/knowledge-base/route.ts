@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export type ArticleCategory =
   | 'GETTING_STARTED'
@@ -534,7 +535,7 @@ Questions RGPD : dpo@laia.fr
     })
 
   } catch (error) {
-    console.error('Error fetching knowledge base:', error)
+    log.error('Error fetching knowledge base:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de la base de connaissance' },
       { status: 500 }
@@ -608,7 +609,7 @@ export async function POST(req: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Error creating article:', error)
+    log.error('Error creating article:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création de l\'article' },
       { status: 500 }

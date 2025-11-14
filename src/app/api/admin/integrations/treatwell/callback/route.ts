@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { encryptConfig } from '@/lib/encryption';
+import { log } from '@/lib/logger';
 
 /**
  * Callback OAuth Treatwell
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
 
     // Gérer les erreurs OAuth
     if (error) {
-      console.error('Erreur OAuth Treatwell:', error);
+      log.error('Erreur OAuth Treatwell:', error);
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=treatwell_${error}`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     const redirectUri = `${baseUrl}/api/admin/integrations/treatwell/callback`;
 
     if (!treatwellClientId || !treatwellClientSecret) {
-      console.error('Configuration Treatwell manquante');
+      log.error('Configuration Treatwell manquante');
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=treatwell_config_missing`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Erreur échange token Treatwell:', errorData);
+      log.error('Erreur échange token Treatwell:', errorData);
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=treatwell_token_exchange_failed`;
       return NextResponse.redirect(redirectUrl);
     }
@@ -104,14 +105,14 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`✅ Treatwell connecté pour organisation ${organizationId} (${venueName})`);
+    log.info(`✅ Treatwell connecté pour organisation ${organizationId} (${venueName})`);
 
     // Rediriger vers les paramètres avec succès
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&success=treatwell_connected`;
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
-    console.error('Erreur callback Treatwell:', error);
+    log.error('Erreur callback Treatwell:', error);
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings?tab=site&error=treatwell_callback_error`;
     return NextResponse.redirect(redirectUrl);
   }

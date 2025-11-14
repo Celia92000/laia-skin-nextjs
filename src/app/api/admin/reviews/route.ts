@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedReviews);
   } catch (error) {
-    console.error('Erreur lors de la récupération des avis:', error);
+    log.error('Erreur lors de la récupération des avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -122,7 +123,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(review);
   } catch (error) {
-    console.error('Erreur lors de la création de l\'avis:', error);
+    log.error('Erreur lors de la création de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

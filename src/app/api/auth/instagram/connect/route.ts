@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 const META_APP_ID = process.env.META_APP_ID || '785663654385417';
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl });
 
   } catch (error) {
-    console.error('Error generating auth URL:', error);
+    log.error('Error generating auth URL:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la génération de l\'URL d\'autorisation' },
       { status: 500 }

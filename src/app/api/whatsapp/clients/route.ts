@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF')) {
+    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -148,11 +149,11 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`📱 WhatsApp Clients: ${formattedClients.length} clients avec ${formattedClients.filter(c => c.phone).length} numéros de téléphone`);
+    log.info(`📱 WhatsApp Clients: ${formattedClients.length} clients avec ${formattedClients.filter(c => c.phone).length} numéros de téléphone`);
     
     // Log détaillé pour debug
     if (formattedClients.length > 0) {
-      console.log('Premier client exemple:', {
+      log.info('Premier client exemple:', {
         name: formattedClients[0].name,
         email: formattedClients[0].email,
         phone: formattedClients[0].phone,
@@ -169,7 +170,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur récupération clients WhatsApp:', error);
+    log.error('Erreur récupération clients WhatsApp:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

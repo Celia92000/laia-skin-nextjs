@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mail, Send, Search, Inbox, Users, Filter, CheckSquare, Calendar, Euro, Tag, Star, Globe, ChevronRight, Eye, X, Bold, Italic, Underline, List, ListOrdered, Link2, Image, Type, Palette, AlignLeft, AlignCenter, AlignRight, Strikethrough, AlignJustify, Paintbrush, FileText, BarChart3, History } from 'lucide-react';
 import EmailConversationTab from './EmailConversationTab';
+import ClientAdvancedFilters, { ClientFilterCriteria } from '@/components/ClientAdvancedFilters';
 
 interface Client {
   id: string;
@@ -43,21 +44,9 @@ export default function EmailCompleteInterface() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-  
-  // Filtres
-  const [filters, setFilters] = useState({
-    search: '',
-    minPoints: '',
-    maxPoints: '',
-    minSpent: '',
-    maxSpent: '',
-    lastVisitDays: '',
-    status: '', // actif, inactif, nouveau
-    tier: '', // BRONZE, SILVER, GOLD, PLATINUM
-    lastService: '',
-    minVisits: '',
-    tags: [] as string[]
-  });
+
+  // Filtres avancés
+  const [advancedFilters, setAdvancedFilters] = useState<ClientFilterCriteria>({});
 
   // Email à envoyer
   const [emailData, setEmailData] = useState({
@@ -110,7 +99,7 @@ export default function EmailCompleteInterface() {
 
   useEffect(() => {
     applyFilters();
-  }, [clients, filters]);
+  }, [clients, advancedFilters]);
 
   useEffect(() => {
     // Mettre à jour les stats
@@ -226,63 +215,78 @@ export default function EmailCompleteInterface() {
   const applyFilters = () => {
     let filtered = [...clients];
     console.log('📧 Application des filtres. Total clients:', clients.length);
-    console.log('📧 Filtres actifs:', filters);
+    console.log('📧 Filtres actifs:', advancedFilters);
 
     // Recherche (nom, prénom, email)
-    if (filters.search) {
-      const search = filters.search.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(search) || 
+    if (advancedFilters.search) {
+      const search = advancedFilters.search.toLowerCase();
+      filtered = filtered.filter(c =>
+        c.name.toLowerCase().includes(search) ||
         c.email.toLowerCase().includes(search)
       );
     }
 
     // Statut client (actif, régulier, inactif, nouveau)
-    if (filters.status) {
-      filtered = filtered.filter(c => c.status === filters.status);
+    if (advancedFilters.status) {
+      filtered = filtered.filter(c => c.status === advancedFilters.status);
     }
 
     // Tier fidélité
-    if (filters.tier) {
-      filtered = filtered.filter(c => c.tier === filters.tier);
+    if (advancedFilters.tier) {
+      filtered = filtered.filter(c => c.tier === advancedFilters.tier);
     }
 
     // Dernier service
-    if (filters.lastService) {
-      filtered = filtered.filter(c => 
-        c.lastService?.toLowerCase().includes(filters.lastService.toLowerCase())
+    if (advancedFilters.lastService) {
+      filtered = filtered.filter(c =>
+        c.lastService?.toLowerCase().includes(advancedFilters.lastService.toLowerCase())
       );
     }
 
-    // Nombre minimum de visites
-    if (filters.minVisits) {
-      filtered = filtered.filter(c => (c.visitCount || 0) >= parseInt(filters.minVisits));
+    // Nombre de visites
+    if (advancedFilters.minVisits) {
+      filtered = filtered.filter(c => (c.visitCount || 0) >= advancedFilters.minVisits);
+    }
+    if (advancedFilters.maxVisits) {
+      filtered = filtered.filter(c => (c.visitCount || 0) <= advancedFilters.maxVisits);
     }
 
     // Points de fidélité
-    if (filters.minPoints) {
-      filtered = filtered.filter(c => (c.loyaltyPoints || 0) >= parseInt(filters.minPoints));
+    if (advancedFilters.minPoints) {
+      filtered = filtered.filter(c => (c.loyaltyPoints || 0) >= advancedFilters.minPoints);
     }
-    if (filters.maxPoints) {
-      filtered = filtered.filter(c => (c.loyaltyPoints || 0) <= parseInt(filters.maxPoints));
+    if (advancedFilters.maxPoints) {
+      filtered = filtered.filter(c => (c.loyaltyPoints || 0) <= advancedFilters.maxPoints);
     }
 
     // Montant dépensé
-    if (filters.minSpent) {
-      filtered = filtered.filter(c => (c.totalSpent || 0) >= parseFloat(filters.minSpent));
+    if (advancedFilters.minSpent) {
+      filtered = filtered.filter(c => (c.totalSpent || 0) >= advancedFilters.minSpent);
     }
-    if (filters.maxSpent) {
-      filtered = filtered.filter(c => (c.totalSpent || 0) <= parseFloat(filters.maxSpent));
+    if (advancedFilters.maxSpent) {
+      filtered = filtered.filter(c => (c.totalSpent || 0) <= advancedFilters.maxSpent);
+    }
+
+    // Type de peau
+    if (advancedFilters.skinType) {
+      filtered = filtered.filter(c => c.skinType === advancedFilters.skinType);
+    }
+
+    // Anniversaire
+    if (advancedFilters.birthdayMonth !== undefined) {
+      filtered = filtered.filter(c => {
+        if (!c.birthDate) return false;
+        return new Date(c.birthDate).getMonth() === advancedFilters.birthdayMonth;
+      });
     }
 
     // Dernière visite
-    if (filters.lastVisitDays) {
-      const days = parseInt(filters.lastVisitDays);
+    if (advancedFilters.lastVisitDays) {
       const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - days);
+      cutoff.setDate(cutoff.getDate() - advancedFilters.lastVisitDays);
       filtered = filtered.filter(c => {
-        if (!c.lastVisit) return days === 999; // 999 = jamais venu
-        return new Date(c.lastVisit) >= cutoff;
+        if (!c.lastVisit) return true;
+        return new Date(c.lastVisit) <= cutoff;
       });
     }
 

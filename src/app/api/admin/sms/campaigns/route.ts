@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Liste des campagnes SMS
 export async function GET(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(campaigns);
   } catch (error) {
-    console.error('Error fetching SMS campaigns:', error);
+    log.error('Error fetching SMS campaigns:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(campaign, { status: 201 });
   } catch (error) {
-    console.error('Error creating SMS campaign:', error);
+    log.error('Error creating SMS campaign:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

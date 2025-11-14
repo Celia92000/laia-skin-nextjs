@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Fonction pour générer un code unique
 function generateGiftCardCode(): string {
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
         })
       });
     } catch (emailError) {
-      console.error('Erreur envoi email confirmation achat:', emailError);
+      log.error('Erreur envoi email confirmation achat:', emailError);
       // On continue même si l'email échoue
     }
 
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('Erreur lors de l\'achat de la carte cadeau:', error);
+    log.error('Erreur lors de l\'achat de la carte cadeau:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -271,7 +272,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la vérification de la carte cadeau:', error);
+    log.error('Erreur lors de la vérification de la carte cadeau:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

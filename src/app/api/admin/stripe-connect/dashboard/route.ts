@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-09-30.clover'
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'utilisateur est bien propriétaire ou admin
-    if (!['ORG_OWNER', 'ORG_ADMIN'].includes(user.role)) {
+    if (!['ORG_OWNER'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -63,14 +64,14 @@ export async function POST(request: Request) {
     // Générer le lien vers le dashboard Stripe Express
     const loginLink = await stripe.accounts.createLoginLink(org.stripeConnectedAccountId)
 
-    console.log(`🔗 Lien dashboard généré pour ${org.name}`)
+    log.info(`🔗 Lien dashboard généré pour ${org.name}`)
 
     return NextResponse.json({
       url: loginLink.url
     })
 
   } catch (error) {
-    console.error('Erreur génération lien dashboard:', error)
+    log.error('Erreur génération lien dashboard:', error)
     return NextResponse.json(
       { error: 'Erreur serveur', details: error instanceof Error ? error.message : 'Erreur inconnue' },
       { status: 500 }

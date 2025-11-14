@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Action inconnue' }, { status: 400 });
 
   } catch (error: any) {
-    console.error('Erreur migration:', error);
+    log.error('Erreur migration:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

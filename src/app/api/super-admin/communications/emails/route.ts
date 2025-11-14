@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(emails)
   } catch (error) {
-    console.error('Erreur récupération emails:', error)
+    log.error('Erreur récupération emails:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

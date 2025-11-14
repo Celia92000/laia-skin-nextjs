@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { log } from '@/lib/logger';
 
 /**
  * PATCH /api/super-admin/plans/[id]
@@ -83,7 +84,7 @@ export async function PATCH(
 
     return NextResponse.json({ plan: parsedPlan })
   } catch (error) {
-    console.error('Erreur mise à jour plan:', error)
+    log.error('Erreur mise à jour plan:', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -81,7 +82,7 @@ export async function GET(
     return NextResponse.json(lead)
 
   } catch (error) {
-    console.error('Erreur lead:', error)
+    log.error('Erreur lead:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -138,7 +139,7 @@ export async function PATCH(
     return NextResponse.json(lead)
 
   } catch (error) {
-    console.error('Erreur mise à jour lead:', error)
+    log.error('Erreur mise à jour lead:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -180,7 +181,7 @@ export async function DELETE(
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression lead:', error)
+    log.error('Erreur suppression lead:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

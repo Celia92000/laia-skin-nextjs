@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/workflows
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur récupération workflows:', error);
+    log.error('Erreur récupération workflows:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur création/modification workflow:', error);
+    log.error('Erreur création/modification workflow:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });
@@ -173,7 +174,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Erreur archivage workflow:', error);
+    log.error('Erreur archivage workflow:', error);
     return NextResponse.json({
       error: error.message || 'Erreur serveur'
     }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken, generateToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
     const { userId, organizationId } = await request.json()
 
-    console.log('🔍 Impersonation request:', { userId, organizationId })
+    log.info('🔍 Impersonation request:', { userId, organizationId })
 
     let targetUser
 
@@ -40,9 +41,9 @@ export async function POST(request: Request) {
         where: { id: userId },
         include: { organization: true }
       })
-      console.log('👤 Target user by userId:', targetUser?.email)
+      log.info('👤 Target user by userId:', targetUser?.email)
     } else if (organizationId) {
-      // Impersonnation du premier admin de l'organisation (ORG_OWNER ou ORG_ADMIN)
+      // Impersonnation du premier admin de l'organisation (ORG_OWNER)
       targetUser = await prisma.user.findFirst({
         where: {
           organizationId: organizationId,
@@ -51,13 +52,13 @@ export async function POST(request: Request) {
         include: { organization: true },
         orderBy: { createdAt: 'asc' } // Prendre le premier créé (= le propriétaire)
       })
-      console.log('🏢 Target user by organizationId:', targetUser?.email, 'Organization:', targetUser?.organization?.slug)
+      log.info('🏢 Target user by organizationId:', targetUser?.email, 'Organization:', targetUser?.organization?.slug)
     } else {
       return NextResponse.json({ error: 'userId ou organizationId requis' }, { status: 400 })
     }
 
     if (!targetUser) {
-      console.error('❌ No user found for organizationId:', organizationId)
+      log.error('❌ No user found for organizationId:', organizationId)
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 })
     }
 
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
 
     const redirect = baseUrl + (roleRedirects[targetUser.role] || '/admin')
 
-    console.log('✅ Impersonation successful - Redirect to:', redirect)
+    log.info('✅ Impersonation successful - Redirect to:', redirect)
 
     return NextResponse.json({
       success: true,
@@ -130,7 +131,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur impersonnation:', error)
+    log.error('Erreur impersonnation:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -182,7 +183,7 @@ export async function DELETE(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur sortie impersonnation:', error)
+    log.error('Erreur sortie impersonnation:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

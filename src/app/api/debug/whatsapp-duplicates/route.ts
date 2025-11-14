@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -62,7 +63,7 @@ export async function GET() {
       duplicates
     });
   } catch (error) {
-    console.error('Erreur debug WhatsApp:', error);
+    log.error('Erreur debug WhatsApp:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

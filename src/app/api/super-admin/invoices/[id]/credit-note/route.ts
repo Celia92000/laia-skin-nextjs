@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createSubscriptionInvoice, getOrganizationBillingInfo } from '@/lib/subscription-invoice-generator'
 import PDFDocument from 'pdfkit'
+import { log } from '@/lib/logger';
 
 /**
  * POST /api/super-admin/invoices/[id]/credit-note
@@ -188,7 +189,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Erreur création avoir:', error)
+    log.error('Erreur création avoir:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

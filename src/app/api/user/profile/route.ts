@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
   } catch (error) {
-    console.error('Erreur récupération profil:', error);
+    log.error('Erreur récupération profil:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -126,7 +127,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
   } catch (error) {
-    console.error('Erreur mise à jour profil:', error);
+    log.error('Erreur mise à jour profil:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

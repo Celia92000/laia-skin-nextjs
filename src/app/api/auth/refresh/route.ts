@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, generateToken } from '@/lib/auth';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const prisma = await getPrismaClient();
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Erreur de rafraîchissement:', error);
+    log.error('Erreur de rafraîchissement:', error);
     return NextResponse.json({ error: 'Erreur de rafraîchissement' }, { status: 500 });
   }
 }

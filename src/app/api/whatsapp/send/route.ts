@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { WhatsAppService } from '@/lib/whatsapp-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur envoi WhatsApp:', error);
+    log.error('Erreur envoi WhatsApp:', error);
     return NextResponse.json({
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

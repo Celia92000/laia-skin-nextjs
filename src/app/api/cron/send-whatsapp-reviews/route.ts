@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
 import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Cette API doit être appelée tous les jours à 10h pour envoyer les demandes d'avis
 export async function GET(request: Request) {
@@ -53,14 +54,14 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`📱 ${completedReservations.length} demandes d'avis WhatsApp à envoyer`);
+    log.info(`📱 ${completedReservations.length} demandes d'avis WhatsApp à envoyer`);
 
     let sentCount = 0;
     let errorCount = 0;
     
     for (const reservation of completedReservations) {
       if (!reservation.user?.phone) {
-        console.log(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
+        log.info(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
         continue;
       }
 
@@ -151,14 +152,14 @@ Merci infiniment ! 🙏
           }
           
           sentCount++;
-          console.log(`✅ Avis WhatsApp envoyé à ${reservation.user.name} (${reservation.user.phone})`);
+          log.info(`✅ Avis WhatsApp envoyé à ${reservation.user.name} (${reservation.user.phone})`);
         } else {
           errorCount++;
-          console.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
+          log.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
         }
       } catch (error) {
         errorCount++;
-        console.error(`❌ Erreur pour ${reservation.user.name}:`, error);
+        log.error(`❌ Erreur pour ${reservation.user.name}:`, error);
       }
       
       // Attendre un peu entre chaque envoi
@@ -174,7 +175,7 @@ Merci infiniment ! 🙏
     });
 
   } catch (error) {
-    console.error('Erreur cron WhatsApp reviews:', error);
+    log.error('Erreur cron WhatsApp reviews:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des demandes d\'avis' 
     }, { status: 500 });
@@ -270,7 +271,7 @@ Merci ! 🙏
     }
 
   } catch (error) {
-    console.error('Erreur envoi avis manuel:', error);
+    log.error('Erreur envoi avis manuel:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi' 
     }, { status: 500 });

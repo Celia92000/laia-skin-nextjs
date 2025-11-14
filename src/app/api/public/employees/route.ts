@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrismaClient } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/public/employees
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(employees)
   } catch (error) {
-    console.error('Erreur récupération employés publics:', error)
+    log.error('Erreur récupération employés publics:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des employés' },
       { status: 500 }

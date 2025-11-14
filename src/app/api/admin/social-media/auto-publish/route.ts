@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     await Promise.all(updatePromises);
 
-    console.log(`✅ ${postsToPublish.length} posts publiés automatiquement`);
+    log.info(`✅ ${postsToPublish.length} posts publiés automatiquement`);
 
     return NextResponse.json({
       success: true,
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur auto-publication:', error);
+    log.error('Erreur auto-publication:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la publication automatique' },
       { status: 500 }
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur vérification auto-publication:', error);
+    log.error('Erreur vérification auto-publication:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la vérification' },
       { status: 500 }

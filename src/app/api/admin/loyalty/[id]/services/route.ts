@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -52,7 +53,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Erreur récupération soins:', error);
+    log.error('Erreur récupération soins:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -118,7 +119,7 @@ export async function PUT(
     });
     
   } catch (error) {
-    console.error('Erreur modification soins:', error);
+    log.error('Erreur modification soins:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 /**
  * GET /api/super-admin/invoices
@@ -122,7 +123,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Erreur récupération factures:', error)
+    log.error('Erreur récupération factures:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

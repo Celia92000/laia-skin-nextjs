@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { formatDateLocal } from "@/lib/date-utils";
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -51,14 +52,14 @@ export async function GET(
     }
 
     // Vérifier que l'utilisateur a le droit de voir cette réservation
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
     return NextResponse.json(reservation);
   } catch (error) {
-    console.error('Erreur lors de la récupération de la réservation:', error);
+    log.error('Erreur lors de la récupération de la réservation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération de la réservation' },
       { status: 500 }
@@ -106,7 +107,7 @@ export async function PUT(
 
     // Vérifier que l'utilisateur a le droit de modifier
     // Les admins peuvent modifier toutes les réservations
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     const isOwner = existingReservation.userId === decoded.userId;
 
     if (!isAdmin && !isOwner) {
@@ -169,7 +170,7 @@ export async function PUT(
       reservation: updatedReservation
     });
   } catch (error) {
-    console.error('Erreur modification:', error);
+    log.error('Erreur modification:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }
@@ -217,7 +218,7 @@ export async function DELETE(
     }
 
     // Vérifier les droits
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -235,7 +236,7 @@ export async function DELETE(
       message: 'Réservation annulée avec succès'
     });
   } catch (error) {
-    console.error('Erreur annulation:', error);
+    log.error('Erreur annulation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'annulation' },
       { status: 500 }

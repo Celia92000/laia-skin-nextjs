@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Détail d'une campagne SMS
 export async function GET(
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Error fetching SMS campaign:', error);
+    log.error('Error fetching SMS campaign:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -126,7 +127,7 @@ export async function PUT(
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Error updating SMS campaign:', error);
+    log.error('Error updating SMS campaign:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -169,7 +170,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting SMS campaign:', error);
+    log.error('Error deleting SMS campaign:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -11,6 +11,7 @@ import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 import { createOnboardingContract } from '@/lib/contract-generator'
 import bcrypt from 'bcryptjs'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 /**
  * Webhook Stripe pour gérer les événements de paiement
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET non configuré')
+      log.error('STRIPE_WEBHOOK_SECRET non configuré')
       return NextResponse.json(
         { error: 'Configuration manquante' },
         { status: 500 }
@@ -51,13 +52,13 @@ export async function POST(request: NextRequest) {
 
     // Mode test : skip signature si signature = "test_signature"
     if (signature === 'test_signature' && process.env.NODE_ENV === 'development') {
-      console.log('⚠️ MODE TEST : Skip vérification signature Stripe')
+      log.info('⚠️ MODE TEST : Skip vérification signature Stripe')
       event = JSON.parse(body)
     } else {
       try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
       } catch (err) {
-        console.error('❌ Signature webhook invalide:', err)
+        log.error('❌ Signature webhook invalide:', err)
         return NextResponse.json(
           { error: 'Signature invalide' },
           { status: 400 }
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`📨 Webhook reçu: ${event.type}`)
+    log.info(`📨 Webhook reçu: ${event.type}`)
 
     // Gérer les différents événements
     switch (event.type) {
@@ -119,12 +120,12 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`⚠️ Événement non géré: ${event.type}`)
+        log.info(`⚠️ Événement non géré: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('❌ Erreur webhook Stripe:', error)
+    log.error('❌ Erreur webhook Stripe:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -140,7 +141,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const metadata = session.metadata
 
     if (!metadata) {
-      console.warn('⚠️ Pas de metadata dans la session')
+      log.warn('⚠️ Pas de metadata dans la session')
       return
     }
 
@@ -168,9 +169,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return
     }
 
-    console.log(`⚠️ Type de checkout non géré: ${metadata.type}`)
+    log.info(`⚠️ Type de checkout non géré: ${metadata.type}`)
   } catch (error) {
-    console.error('Erreur handleCheckoutCompleted:', error)
+    log.error('Erreur handleCheckoutCompleted:', error)
   }
 }
 
@@ -193,7 +194,7 @@ async function handleGiftCardPaymentSuccess(giftCardId: string, session: Stripe.
     })
 
     if (!giftCard) {
-      console.warn(`⚠️ Carte cadeau ${giftCardId} introuvable`)
+      log.warn(`⚠️ Carte cadeau ${giftCardId} introuvable`)
       return
     }
 
@@ -206,14 +207,14 @@ async function handleGiftCardPaymentSuccess(giftCardId: string, session: Stripe.
       }
     })
 
-    console.log(`✅ Paiement réussi pour la carte cadeau ${giftCard.code}`)
+    log.info(`✅ Paiement réussi pour la carte cadeau ${giftCard.code}`)
 
     // Envoyer l'email avec la carte cadeau
     if (giftCard.purchaser?.email) {
       await sendGiftCardEmail(giftCard)
     }
   } catch (error) {
-    console.error('Erreur handleGiftCardPaymentSuccess:', error)
+    log.error('Erreur handleGiftCardPaymentSuccess:', error)
   }
 }
 
@@ -228,7 +229,7 @@ async function handleReservationPaymentSuccess(reservationId: string, session: S
     })
 
     if (!reservation) {
-      console.warn(`⚠️ Réservation ${reservationId} introuvable`)
+      log.warn(`⚠️ Réservation ${reservationId} introuvable`)
       return
     }
 
@@ -240,9 +241,9 @@ async function handleReservationPaymentSuccess(reservationId: string, session: S
       }
     })
 
-    console.log(`✅ Paiement réussi pour la réservation ${reservationId}`)
+    log.info(`✅ Paiement réussi pour la réservation ${reservationId}`)
   } catch (error) {
-    console.error('Erreur handleReservationPaymentSuccess:', error)
+    log.error('Erreur handleReservationPaymentSuccess:', error)
   }
 }
 
@@ -371,14 +372,14 @@ async function sendGiftCardEmail(giftCard: any) {
     })
 
     if (error) {
-      console.error('Erreur Resend:', error)
+      log.error('Erreur Resend:', error)
       throw new Error('Erreur envoi email')
     }
 
-    console.log(`📧 Email carte cadeau envoyé à ${giftCard.purchaser.email}`)
+    log.info(`📧 Email carte cadeau envoyé à ${giftCard.purchaser.email}`)
     return data
   } catch (error) {
-    console.error('Erreur sendGiftCardEmail:', error)
+    log.error('Erreur sendGiftCardEmail:', error)
     throw error
   }
 }
@@ -390,7 +391,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   const organizationId = paymentIntent.metadata.organizationId
 
   if (!organizationId) {
-    console.warn('⚠️ organizationId manquant dans les metadata')
+    log.warn('⚠️ organizationId manquant dans les metadata')
     return
   }
 
@@ -401,7 +402,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation ${organizationId} introuvable`)
+      log.warn(`⚠️ Organisation ${organizationId} introuvable`)
       return
     }
 
@@ -414,7 +415,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
       },
     })
 
-    console.log(`✅ Paiement réussi pour l'organisation ${organizationId}`)
+    log.info(`✅ Paiement réussi pour l'organisation ${organizationId}`)
 
     // Calculer la prochaine date de facturation
     const nextBillingDate = new Date(org.nextBillingDate || new Date())
@@ -437,7 +438,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         paymentIntent.id
       )
 
-      console.log(`📄 Facture générée: ${invoice.invoiceNumber}`)
+      log.info(`📄 Facture générée: ${invoice.invoiceNumber}`)
 
       // Envoyer l'email de confirmation avec la facture
       await sendPaymentSuccessEmail({
@@ -449,12 +450,12 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         invoiceUrl: invoice.pdfUrl,
       })
 
-      console.log(`📧 Email de confirmation envoyé`)
+      log.info(`📧 Email de confirmation envoyé`)
     } catch (emailError) {
-      console.error('⚠️ Erreur envoi email/facture (non bloquant):', emailError)
+      log.error('⚠️ Erreur envoi email/facture (non bloquant):', emailError)
     }
   } catch (error) {
-    console.error('Erreur mise à jour après paiement:', error)
+    log.error('Erreur mise à jour après paiement:', error)
   }
 }
 
@@ -465,7 +466,7 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
   const organizationId = paymentIntent.metadata.organizationId
 
   if (!organizationId) {
-    console.warn('⚠️ organizationId manquant dans les metadata')
+    log.warn('⚠️ organizationId manquant dans les metadata')
     return
   }
 
@@ -476,7 +477,7 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation ${organizationId} introuvable`)
+      log.warn(`⚠️ Organisation ${organizationId} introuvable`)
       return
     }
 
@@ -488,7 +489,7 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
       },
     })
 
-    console.log(`❌ Paiement échoué pour l'organisation ${organizationId}`)
+    log.info(`❌ Paiement échoué pour l'organisation ${organizationId}`)
 
     // Calculer le montant
     const planPrices: Record<string, number> = {
@@ -509,14 +510,14 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
         reason: paymentIntent.last_payment_error?.message,
       })
 
-      console.log(`📧 Email d'échec envoyé`)
+      log.info(`📧 Email d'échec envoyé`)
     } catch (emailError) {
-      console.error('⚠️ Erreur envoi email échec (non bloquant):', emailError)
+      log.error('⚠️ Erreur envoi email échec (non bloquant):', emailError)
     }
 
     // TODO: Créer notification super admin
   } catch (error) {
-    console.error('Erreur mise à jour après échec paiement:', error)
+    log.error('Erreur mise à jour après échec paiement:', error)
   }
 }
 
@@ -532,11 +533,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
+      log.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
       return
     }
 
-    console.log(`🔄 Abonnement mis à jour pour ${org.name}`)
+    log.info(`🔄 Abonnement mis à jour pour ${org.name}`)
 
     // Synchroniser les changements d'abonnement (plan, statut, etc.)
     const planMapping: { [key: string]: string } = {
@@ -560,9 +561,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       }
     })
 
-    console.log(`✅ Organisation ${org.name} mise à jour: Plan ${newPlan}, Statut ${subscription.status}`)
+    log.info(`✅ Organisation ${org.name} mise à jour: Plan ${newPlan}, Statut ${subscription.status}`)
   } catch (error) {
-    console.error('Erreur mise à jour abonnement:', error)
+    log.error('Erreur mise à jour abonnement:', error)
   }
 }
 
@@ -578,7 +579,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
+      log.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
       return
     }
 
@@ -590,7 +591,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       },
     })
 
-    console.log(`🗑️ Abonnement annulé pour ${org.name}`)
+    log.info(`🗑️ Abonnement annulé pour ${org.name}`)
 
     // Envoyer email de confirmation d'annulation
     const resend = getResend()
@@ -602,13 +603,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
           subject: `Confirmation d'annulation de votre abonnement LAIA`,
           html: generateCancellationEmail(org.name, org.plan)
         })
-        console.log(`📧 Email d'annulation envoyé à ${org.ownerEmail}`)
+        log.info(`📧 Email d'annulation envoyé à ${org.ownerEmail}`)
       } catch (emailError) {
-        console.error('Erreur envoi email annulation:', emailError)
+        log.error('Erreur envoi email annulation:', emailError)
       }
     }
   } catch (error) {
-    console.error('Erreur suppression abonnement:', error)
+    log.error('Erreur suppression abonnement:', error)
   }
 }
 
@@ -673,11 +674,11 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
+      log.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
       return
     }
 
-    console.log(`💰 Paiement de facture réussi pour ${org.name} - ${invoice.amount_paid / 100}€`)
+    log.info(`💰 Paiement de facture réussi pour ${org.name} - ${invoice.amount_paid / 100}€`)
 
     // Créer ou mettre à jour la facture dans la base de données
     const existingInvoice = await prisma.invoice.findFirst({
@@ -704,7 +705,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
         where: { id: org.id },
         data: { status: 'ACTIVE' }
       })
-      console.log(`✅ Organisation ${org.name} réactivée`)
+      log.info(`✅ Organisation ${org.name} réactivée`)
     }
 
     // Envoyer email de confirmation de paiement
@@ -717,14 +718,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
           subject: `✅ Paiement confirmé - Facture ${invoice.number}`,
           html: generatePaymentSuccessEmail(org.name, invoice.number || 'N/A', invoice.amount_paid / 100, org.plan)
         })
-        console.log(`📧 Email de confirmation envoyé à ${org.ownerEmail}`)
+        log.info(`📧 Email de confirmation envoyé à ${org.ownerEmail}`)
       } catch (emailError) {
-        console.error('Erreur envoi email confirmation:', emailError)
+        log.error('Erreur envoi email confirmation:', emailError)
       }
     }
 
   } catch (error) {
-    console.error('Erreur handleInvoicePaymentSucceeded:', error)
+    log.error('Erreur handleInvoicePaymentSucceeded:', error)
   }
 }
 
@@ -740,11 +741,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
+      log.warn(`⚠️ Organisation introuvable pour customer ${customerId}`)
       return
     }
 
-    console.log(`❌ Échec de paiement pour ${org.name} - ${invoice.amount_due / 100}€`)
+    log.info(`❌ Échec de paiement pour ${org.name} - ${invoice.amount_due / 100}€`)
 
     // Mettre à jour ou créer la facture avec statut FAILED
     const existingInvoice = await prisma.invoice.findFirst({
@@ -773,14 +774,14 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
           subject: `❌ Échec de paiement - Facture ${invoice.number}`,
           html: generatePaymentFailedEmail(org.name, invoice.number || 'N/A', invoice.amount_due / 100, failureMessage)
         })
-        console.log(`📧 Email d'alerte envoyé à ${org.ownerEmail}`)
+        log.info(`📧 Email d'alerte envoyé à ${org.ownerEmail}`)
       } catch (emailError) {
-        console.error('Erreur envoi email échec:', emailError)
+        log.error('Erreur envoi email échec:', emailError)
       }
     }
 
   } catch (error) {
-    console.error('Erreur handleInvoicePaymentFailed:', error)
+    log.error('Erreur handleInvoicePaymentFailed:', error)
   }
 }
 
@@ -889,7 +890,7 @@ function generatePaymentFailedEmail(orgName: string, invoiceNumber: string, amou
  */
 async function handleConnectedAccountUpdated(account: Stripe.Account) {
   try {
-    console.log(`🔄 Mise à jour compte Connect: ${account.id}`)
+    log.info(`🔄 Mise à jour compte Connect: ${account.id}`)
 
     // Trouver l'organisation correspondante
     const org = await prisma.organization.findFirst({
@@ -897,7 +898,7 @@ async function handleConnectedAccountUpdated(account: Stripe.Account) {
     })
 
     if (!org) {
-      console.warn(`⚠️ Organisation introuvable pour compte Connect ${account.id}`)
+      log.warn(`⚠️ Organisation introuvable pour compte Connect ${account.id}`)
       return
     }
 
@@ -915,10 +916,10 @@ async function handleConnectedAccountUpdated(account: Stripe.Account) {
       }
     })
 
-    console.log(`✅ Statut Connect mis à jour pour ${org.name}`)
-    console.log(`   - Onboarding: ${onboardingComplete}`)
-    console.log(`   - Charges: ${chargesEnabled}`)
-    console.log(`   - Payouts: ${payoutsEnabled}`)
+    log.info(`✅ Statut Connect mis à jour pour ${org.name}`)
+    log.info(`   - Onboarding: ${onboardingComplete}`)
+    log.info(`   - Charges: ${chargesEnabled}`)
+    log.info(`   - Payouts: ${payoutsEnabled}`)
 
     // Logger l'événement
     await prisma.activityLog.create({
@@ -938,7 +939,7 @@ async function handleConnectedAccountUpdated(account: Stripe.Account) {
     })
 
   } catch (error) {
-    console.error('Erreur handleConnectedAccountUpdated:', error)
+    log.error('Erreur handleConnectedAccountUpdated:', error)
   }
 }
 
@@ -947,7 +948,7 @@ async function handleConnectedAccountUpdated(account: Stripe.Account) {
  */
 async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
-    console.log(`💳 Paiement Connect réussi: ${session.id}`)
+    log.info(`💳 Paiement Connect réussi: ${session.id}`)
 
     const metadata = session.metadata
     if (!metadata) return
@@ -967,7 +968,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
         }
       })
 
-      console.log(`✅ Réservation ${reservationId} marquée comme payée`)
+      log.info(`✅ Réservation ${reservationId} marquée comme payée`)
 
       // Logger
       await prisma.activityLog.create({
@@ -996,7 +997,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
         }
       })
 
-      console.log(`✅ Carte cadeau ${giftCardId} activée`)
+      log.info(`✅ Carte cadeau ${giftCardId} activée`)
 
       // Logger
       await prisma.activityLog.create({
@@ -1016,7 +1017,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
     }
 
   } catch (error) {
-    console.error('Erreur handleConnectedCheckoutCompleted:', error)
+    log.error('Erreur handleConnectedCheckoutCompleted:', error)
   }
 }
 
@@ -1025,7 +1026,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
  */
 async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metadata: Record<string, any>) {
   try {
-    console.log('🚀 Début création organisation depuis webhook')
+    log.info('🚀 Début création organisation depuis webhook')
 
     // Extraire les données depuis metadata (plus besoin de JSON.parse)
     const data = metadata
@@ -1084,9 +1085,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       finalPlan = subscriptionObj?.metadata?.plan
 
       if (finalPlan) {
-        console.log(`⚠️ Plan récupéré depuis subscription metadata: ${finalPlan}`)
+        log.info(`⚠️ Plan récupéré depuis subscription metadata: ${finalPlan}`)
       } else {
-        console.error('❌ ERREUR: Plan non trouvé dans metadata ni dans subscription!')
+        log.error('❌ ERREUR: Plan non trouvé dans metadata ni dans subscription!')
         throw new Error('Plan manquant dans les metadata Stripe')
       }
     }
@@ -1202,7 +1203,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       }
     })
 
-    console.log(`✅ Organisation créée: ${organization.id}`)
+    log.info(`✅ Organisation créée: ${organization.id}`)
 
     // Créer l'utilisateur admin
     const adminUser = await prisma.user.create({
@@ -1216,7 +1217,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       }
     })
 
-    console.log(`✅ Utilisateur admin créé: ${adminUser.id}`)
+    log.info(`✅ Utilisateur admin créé: ${adminUser.id}`)
 
     // Créer le premier service si fourni
     if (serviceName && servicePrice) {
@@ -1232,7 +1233,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
           isActive: true
         }
       })
-      console.log(`✅ Service créé: ${serviceName}`)
+      log.info(`✅ Service créé: ${serviceName}`)
     }
 
     // Générer le template
@@ -1252,9 +1253,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
           description: serviceDescription || ''
         } : undefined
       })
-      console.log('✅ Template LAIA généré')
+      log.info('✅ Template LAIA généré')
     } catch (error) {
-      console.error('⚠️ Erreur template:', error)
+      log.error('⚠️ Erreur template:', error)
     }
 
     // Générer facture et contrat
@@ -1276,9 +1277,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       const invoiceResult = await createSubscriptionInvoice(organization.id, true, hasMigration, true)
       invoicePdfBuffer = invoiceResult.pdfBuffer
       invoiceNumber = invoiceResult.invoiceNumber
-      console.log(`✅ Facture générée et payée: ${invoiceNumber}${hasMigration ? ' (avec migration)' : ''}`)
+      log.info(`✅ Facture générée et payée: ${invoiceNumber}${hasMigration ? ' (avec migration)' : ''}`)
     } catch (error) {
-      console.error('⚠️ Erreur facture:', error)
+      log.error('⚠️ Erreur facture:', error)
     }
 
     try {
@@ -1307,7 +1308,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       })
       contractPdfBuffer = contractResult.pdfBuffer
       contractNumber = contractResult.contractNumber
-      console.log(`✅ Contrat généré: ${contractNumber}`)
+      log.info(`✅ Contrat généré: ${contractNumber}`)
 
       // Sauvegarder les infos du contrat dans l'organisation
       await prisma.organization.update({
@@ -1318,9 +1319,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
           contractSignedAt: new Date()
         }
       })
-      console.log(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
+      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
     } catch (error) {
-      console.error('⚠️ Erreur contrat:', error)
+      log.error('⚠️ Erreur contrat:', error)
     }
 
     // Envoyer emails
@@ -1343,9 +1344,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
       }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
-      console.log('✅ Email de bienvenue envoyé')
+      log.info('✅ Email de bienvenue envoyé')
     } catch (error) {
-      console.error('⚠️ Erreur email bienvenue:', error)
+      log.error('⚠️ Erreur email bienvenue:', error)
     }
 
     try {
@@ -1366,15 +1367,15 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         trialEndsAt: organization.trialEndsAt!,
         createdAt: organization.createdAt!
       })
-      console.log('✅ Email super-admin envoyé')
+      log.info('✅ Email super-admin envoyé')
     } catch (error) {
-      console.error('⚠️ Erreur email super-admin:', error)
+      log.error('⚠️ Erreur email super-admin:', error)
     }
 
-    console.log('🎉 Onboarding terminé avec succès!')
+    log.info('🎉 Onboarding terminé avec succès!')
 
   } catch (error) {
-    console.error('❌ Erreur handleOnboardingCompleted:', error)
+    log.error('❌ Erreur handleOnboardingCompleted:', error)
     throw error
   }
 }

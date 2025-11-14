@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 export type AutomationTrigger =
   | 'ORGANIZATION_CREATED'
@@ -264,7 +265,7 @@ export async function GET(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching automations:', error)
+    log.error('Error fetching automations:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des automatisations' },
       { status: 500 }
@@ -323,7 +324,7 @@ export async function POST(req: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Error creating automation:', error)
+    log.error('Error creating automation:', error)
     return NextResponse.json(
       { error: 'Erreur lors de la création de l\'automatisation' },
       { status: 500 }

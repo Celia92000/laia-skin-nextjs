@@ -13,6 +13,7 @@ import ClientDetailModal from "@/components/ClientDetailModal";
 import ClientImportExport from "@/components/ClientImportExport";
 import ClientPhotoEvolution from "@/components/ClientPhotoEvolution";
 import ClientSegmentsTab from "@/components/ClientSegmentsTab";
+import ClientAdvancedFilters, { ClientFilterCriteria } from "@/components/ClientAdvancedFilters";
 import { formatDateLocal } from "@/lib/date-utils";
 
 export interface Client {
@@ -99,6 +100,7 @@ export default function UnifiedCRMTab({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("all");
   const [clientTypeFilter, setClientTypeFilter] = useState<"all" | "client" | "lead" | "prospect">("all");
+  const [advancedFilters, setAdvancedFilters] = useState<ClientFilterCriteria>({});
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"list" | "detail">("list");
@@ -202,26 +204,120 @@ export default function UnifiedCRMTab({
     });
   };
 
-  // Filtrage et tri des clients
+  // Filtrage et tri des clients avec filtres avancés
   const filteredClients = (() => {
-    let filtered = clients.filter(client => {
-      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            (client.phone && client.phone.includes(searchTerm));
-      
-      // Filtre par niveau
-      if (filterLevel !== "all") {
+    let filtered = [...clients];
+
+    // Filtres avancés
+    if (advancedFilters.search) {
+      const search = advancedFilters.search.toLowerCase();
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(search) ||
+        client.email.toLowerCase().includes(search) ||
+        (client.phone && client.phone.includes(search))
+      );
+    }
+
+    if (advancedFilters.minPoints) {
+      filtered = filtered.filter(c => c.loyaltyPoints >= advancedFilters.minPoints!);
+    }
+    if (advancedFilters.maxPoints) {
+      filtered = filtered.filter(c => c.loyaltyPoints <= advancedFilters.maxPoints!);
+    }
+
+    if (advancedFilters.minSpent) {
+      filtered = filtered.filter(c => c.totalSpent >= advancedFilters.minSpent!);
+    }
+    if (advancedFilters.maxSpent) {
+      filtered = filtered.filter(c => c.totalSpent <= advancedFilters.maxSpent!);
+    }
+
+    if (advancedFilters.skinType) {
+      filtered = filtered.filter(c => c.skinType === advancedFilters.skinType);
+    }
+
+    if (advancedFilters.birthdayMonth !== undefined) {
+      filtered = filtered.filter(c => {
+        if (!c.birthDate) return false;
+        return new Date(c.birthDate).getMonth() === advancedFilters.birthdayMonth;
+      });
+    }
+
+    if (advancedFilters.status) {
+      const now = new Date();
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      filtered = filtered.filter(c => {
+        const clientReservations = reservations.filter(r =>
+          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        );
+        const lastVisit = clientReservations
+          .filter(r => r.status === 'completed')
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+        if (advancedFilters.status === 'new') {
+          return clientReservations.length > 0 && new Date(c.createdAt || 0) >= oneMonthAgo;
+        } else if (advancedFilters.status === 'active') {
+          return lastVisit && new Date(lastVisit.date) >= threeMonthsAgo;
+        } else if (advancedFilters.status === 'inactive') {
+          return !lastVisit || new Date(lastVisit.date) < threeMonthsAgo;
+        }
+        return true;
+      });
+    }
+
+    if (advancedFilters.lastVisitDays) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - advancedFilters.lastVisitDays);
+      filtered = filtered.filter(c => {
+        const clientReservations = reservations.filter(r =>
+          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        );
+        const lastVisit = clientReservations
+          .filter(r => r.status === 'completed')
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+        if (!lastVisit) return true;
+        return new Date(lastVisit.date) <= daysAgo;
+      });
+    }
+
+    if (advancedFilters.minVisits || advancedFilters.maxVisits) {
+      filtered = filtered.filter(c => {
+        const clientReservations = reservations.filter(r =>
+          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        );
+        const visitCount = clientReservations.filter(r => r.status === 'completed').length;
+
+        if (advancedFilters.minVisits && visitCount < advancedFilters.minVisits) return false;
+        if (advancedFilters.maxVisits && visitCount > advancedFilters.maxVisits) return false;
+        return true;
+      });
+    }
+
+    // Filtres basiques pour compatibilité
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(search) ||
+        client.email.toLowerCase().includes(search) ||
+        (client.phone && client.phone.includes(search))
+      );
+    }
+
+    // Filtre par niveau
+    if (filterLevel !== "all") {
+      filtered = filtered.filter(client => {
         const clientReservations = reservations.filter(r => {
-          return r.userEmail === client.email || 
+          return r.userEmail === client.email ||
                  r.userId === client.id ||
                  (r.user && r.user.email === client.email);
         });
         const level = getLoyaltyLevel(clientReservations);
-        if (level.level !== parseInt(filterLevel)) return false;
-      }
-      
-      return matchesSearch;
-    });
+        return level.level === parseInt(filterLevel);
+      });
+    }
     
     // Ajouter des données pour le tri
     const clientsWithData = filtered.map(client => {
@@ -865,6 +961,13 @@ export default function UnifiedCRMTab({
           </div>
         </div>
       )}
+
+      {/* Filtres avancés */}
+      <ClientAdvancedFilters
+        filters={advancedFilters}
+        onChange={setAdvancedFilters}
+        onReset={() => setAdvancedFilters({})}
+      />
 
       {/* Liste des clients avec vue détaillée intégrée */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">

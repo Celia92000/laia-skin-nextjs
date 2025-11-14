@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { sendEmail } from '@/lib/notifications';
 import { getSiteConfig } from '@/lib/config-service';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   const config = await getSiteConfig();
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
       confirmationMessage
     );
     
-    console.log(`📧 Email de confirmation envoyé à ${reservation.user.name}`);
+    log.info(`📧 Email de confirmation envoyé à ${reservation.user.name}`);
     
     return NextResponse.json({
       success: true,
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Erreur envoi email confirmation:', error);
+    log.error('Erreur envoi email confirmation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi de l\'email' },
       { status: 500 }

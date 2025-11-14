@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-11-20.acacia'
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url })
 
   } catch (error: any) {
-    console.error('Erreur création session Stripe:', error)
+    log.error('Erreur création session Stripe:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur lors de la création de la session de paiement' },
       { status: 500 }

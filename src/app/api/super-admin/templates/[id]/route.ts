@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
 
 // PUT - Modifier un template
 export async function PUT(
@@ -62,12 +63,12 @@ export async function PUT(
       }
     })
 
-    console.log('✅ Template modifié:', template.name)
+    log.info('✅ Template modifié:', template.name)
 
     return NextResponse.json({ template })
 
   } catch (error) {
-    console.error('Erreur modification template:', error)
+    log.error('Erreur modification template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -140,12 +141,12 @@ export async function DELETE(
       where: { id }
     })
 
-    console.log('✅ Template supprimé:', existingTemplate.name)
+    log.info('✅ Template supprimé:', existingTemplate.name)
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Erreur suppression template:', error)
+    log.error('Erreur suppression template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -191,12 +192,12 @@ export async function PATCH(
       data: { isActive }
     })
 
-    console.log(`✅ Template ${isActive ? 'activé' : 'désactivé'}:`, template.name)
+    log.info(`✅ Template ${isActive ? 'activé' : 'désactivé'}:`, template.name)
 
     return NextResponse.json({ template })
 
   } catch (error) {
-    console.error('Erreur activation/désactivation template:', error)
+    log.error('Erreur activation/désactivation template:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

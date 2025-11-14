@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur report réduction:', error);
+    log.error('Erreur report réduction:', error);
     return NextResponse.json(
       { error: 'Erreur lors du report de la réduction' },
       { status: 500 }

@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getEmailTemplate } from '@/lib/email-templates'
 import { Resend } from 'resend'
+import { log } from '@/lib/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -117,14 +118,14 @@ export async function POST(request: NextRequest) {
 
         sentCount++
       } catch (error) {
-        console.error(`Erreur envoi email à ${client.email}:`, error)
+        log.error(`Erreur envoi email à ${client.email}:`, error)
         errors.push(`${client.email}: ${error instanceof Error ? error.message : 'Erreur inconnue'}`)
       }
     }
 
     // TODO: Enregistrer l'activité dans un log dédié aux campagnes email
     // Le modèle AuditLog actuel ne couvre pas les campagnes email
-    console.log(`📊 Campagne email ${templateType} envoyée à ${sentCount}/${clients.length} clients`)
+    log.info(`📊 Campagne email ${templateType} envoyée à ${sentCount}/${clients.length} clients`)
 
     return NextResponse.json({
       success: true,
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erreur envoi campagne:', error)
+    log.error('Erreur envoi campagne:', error)
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

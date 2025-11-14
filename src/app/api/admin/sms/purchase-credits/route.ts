@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getPackageById } from '@/lib/sms-packages'
 import Stripe from 'stripe'
+import { log } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia'
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
       }
     })
 
-    console.log('✅ Session Stripe créée:', session.id, 'pour', smsPackage.name)
+    log.info('✅ Session Stripe créée:', session.id, 'pour', smsPackage.name)
 
     return NextResponse.json({
       sessionId: session.id,
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('Erreur création session Stripe SMS:', error)
+    log.error('Erreur création session Stripe SMS:', error)
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
       { status: 500 }

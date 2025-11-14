@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // 🔒 Fonction pour vérifier l'authentification admin AVEC organizationId
 async function verifyAdmin(request: NextRequest) {
@@ -23,13 +24,13 @@ async function verifyAdmin(request: NextRequest) {
       }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role)) {
       return null;
     }
 
     return user;
   } catch (error) {
-    console.error('Erreur vérification admin:', error);
+    log.error('Erreur vérification admin:', error);
     return null;
   }
 }
@@ -107,7 +108,7 @@ export async function GET(
       updatedAt: reservation.updatedAt.toISOString()
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération de la réservation:', error);
+    log.error('Erreur lors de la récupération de la réservation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -199,7 +200,7 @@ export async function PATCH(
           for (const service of services) {
             if (typeof service === 'string' && service.toLowerCase().includes('forfait')) {
               isPackage = true;
-              console.log(`📦 Détecté comme forfait par le nom: ${service}`);
+              log.info(`📦 Détecté comme forfait par le nom: ${service}`);
               break;
             }
           }
@@ -249,7 +250,7 @@ export async function PATCH(
             }
           });
 
-          console.log(`🎁 Forfait compté pour fidélité: ${loyaltyProfile.packagesCount + 1}/3`);
+          log.info(`🎁 Forfait compté pour fidélité: ${loyaltyProfile.packagesCount + 1}/3`);
         } else {
           await prisma.loyaltyProfile.update({
             where: { userId: reservation.userId },
@@ -271,7 +272,7 @@ export async function PATCH(
             }
           });
 
-          console.log(`✨ Soin compté pour fidélité: ${loyaltyProfile.individualServicesCount + 1}/5`);
+          log.info(`✨ Soin compté pour fidélité: ${loyaltyProfile.individualServicesCount + 1}/5`);
         }
       }
 
@@ -298,12 +299,12 @@ export async function PATCH(
               }
             });
 
-            console.log(`💳 Carte cadeau ${giftCard.code} débitée de ${giftCardUsedAmount}€ (nouveau solde: ${newBalance}€)`);
+            log.info(`💳 Carte cadeau ${giftCard.code} débitée de ${giftCardUsedAmount}€ (nouveau solde: ${newBalance}€)`);
           } else {
-            console.error('⚠️ Carte cadeau invalide ou solde insuffisant');
+            log.error('⚠️ Carte cadeau invalide ou solde insuffisant');
           }
         } catch (giftCardError) {
-          console.error('Erreur lors du débit de la carte cadeau:', giftCardError);
+          log.error('Erreur lors du débit de la carte cadeau:', giftCardError);
           // On ne bloque pas la validation si le débit échoue
         }
       }
@@ -367,15 +368,15 @@ export async function PATCH(
                   }
                 });
 
-                console.log(`📦 Stock déduit: ${link.stock.name} -${link.quantityPerUse} ${link.stock.unit || 'unités'} (Service: ${serviceName})`);
+                log.info(`📦 Stock déduit: ${link.stock.name} -${link.quantityPerUse} ${link.stock.unit || 'unités'} (Service: ${serviceName})`);
               } else {
-                console.warn(`⚠️ Stock insuffisant pour ${link.stock.name}: ${link.stock.quantity} < ${link.quantityPerUse}`);
+                log.warn(`⚠️ Stock insuffisant pour ${link.stock.name}: ${link.stock.quantity} < ${link.quantityPerUse}`);
               }
             }
           }
         }
       } catch (stockError) {
-        console.error('Erreur lors de la déduction du stock:', stockError);
+        log.error('Erreur lors de la déduction du stock:', stockError);
         // On ne bloque pas la mise à jour de la réservation si la déduction échoue
       }
     }
@@ -411,7 +412,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedReservation);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la réservation:', error);
+    log.error('Erreur lors de la mise à jour de la réservation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la mise à jour' },
       { status: 500 }
@@ -520,7 +521,7 @@ export async function PUT(
       createdAt: updatedReservation.createdAt.toISOString()
     });
   } catch (error) {
-    console.error('Erreur lors de la modification de la réservation:', error);
+    log.error('Erreur lors de la modification de la réservation:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la modification' },
       { status: 500 }
@@ -566,7 +567,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de la suppression:', error);
+    log.error('Erreur lors de la suppression:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la suppression' },
       { status: 500 }

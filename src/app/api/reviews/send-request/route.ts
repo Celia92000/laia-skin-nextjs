@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // Fonction pour envoyer automatiquement une demande d'avis après un soin
 export async function POST(request: Request) {
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de la demande d\'avis:', error);
+    log.error('Erreur lors de l\'envoi de la demande d\'avis:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi de la demande d\'avis' },
       { status: 500 }
@@ -149,7 +150,7 @@ export async function GET() {
           const result = await response.json();
           results.push({ reservationId: reservation.id, ...result });
         } catch (error) {
-          console.error(`[${organization.name}] Erreur pour la réservation ${reservation.id}:`, error);
+          log.error(`[${organization.name}] Erreur pour la réservation ${reservation.id}:`, error);
           results.push({ reservationId: reservation.id, error: true });
         }
       }
@@ -163,7 +164,7 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Erreur lors de l\'envoi automatique des avis:', error);
+    log.error('Erreur lors de l\'envoi automatique des avis:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi automatique' },
       { status: 500 }

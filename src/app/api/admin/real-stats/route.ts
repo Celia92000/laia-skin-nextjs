@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminStatistics } from '@/lib/statistics';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 const defaultStats = {
   totalReservations: 0,
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
 
       // Vérifier que c'est un admin ou employé
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE', 'COMPTABLE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE', 'COMPTABLE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ ...defaultStats, error: 'Accès refusé' }, { status: 200 });
       }
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     return NextResponse.json(stats);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-    console.error('Erreur lors de la récupération des stats:', errorMessage);
+    log.error('Erreur lors de la récupération des stats:', errorMessage);
 
     // Toujours retourner 200 avec des valeurs par défaut
     return NextResponse.json({
