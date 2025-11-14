@@ -37,6 +37,8 @@ export async function GET(request: Request) {
             addons: true,
             status: true,
             isOnboarded: true,
+            smsCredits: true,
+            smsTotalPurchased: true,
           }
         }
       }

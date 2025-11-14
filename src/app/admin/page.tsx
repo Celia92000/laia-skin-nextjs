@@ -19,7 +19,7 @@ const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEn
 const AdminServicesTab = dynamic(() => import("@/components/AdminServicesTab"), { ssr: false });
 const AdminStockTab = dynamic(() => import("@/components/AdminStockTab"), { ssr: false });
 const AdminBlogTab = dynamic(() => import("@/components/AdminBlogTab"), { ssr: false });
-const AdminSMSTab = dynamic(() => import("@/components/AdminSMSTab"), { ssr: false });
+const AdminSMSTabNew = dynamic(() => import("@/components/AdminSMSTabNew"), { ssr: false });
 const AdminConfigTab = dynamic(() => import("@/components/AdminConfigTab"), { ssr: false });
 const AdminDashboardOptimized = dynamic(() => import("@/components/AdminDashboardOptimized"), { ssr: false });
 const UnifiedCRMTab = dynamic(() => import("@/components/UnifiedCRMTab"), { ssr: false });
@@ -110,6 +110,8 @@ export default function AdminDashboard() {
   const [orgFeatures, setOrgFeatures] = useState<OrgFeatures | null>(null);
   const [orgPlan, setOrgPlan] = useState<string | null>(null);
   const [isOnboarded, setIsOnboarded] = useState<boolean>(true); // Par défaut true pour éviter le flash
+  const [smsCredits, setSmsCredits] = useState<number>(0);
+  const [hasPurchasedSMS, setHasPurchasedSMS] = useState<boolean>(false);
   const [showNewReservationModal, setShowNewReservationModal] = useState(false);
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [quickActionDate, setQuickActionDate] = useState<Date | null>(null);
@@ -361,6 +363,9 @@ export default function AdminDashboard() {
         setOrgFeatures(features);
         setOrgPlan(org.plan);
         setIsOnboarded(org.isOnboarded !== false); // true par défaut si non défini
+        // Crédits SMS
+        setSmsCredits(org.smsCredits || 0);
+        setHasPurchasedSMS((org.smsTotalPurchased || 0) > 0);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'organisation:', error);
@@ -1400,8 +1405,8 @@ export default function AdminDashboard() {
                   WhatsApp
                 </button>
               )}
-              {/* SMS Marketing - TEAM+ uniquement */}
-              {orgFeatures?.featureSMS && (
+              {/* SMS Marketing - Actif après achat de crédits */}
+              {hasPurchasedSMS && (
                 <button
                   onClick={() => setActiveTab("sms")}
                   className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
@@ -3586,8 +3591,8 @@ export default function AdminDashboard() {
 
           {activeTab === "whatsapp" && orgFeatures?.featureWhatsApp && <WhatsAppHub />}
 
-          {/* SMS Marketing - TEAM+ uniquement */}
-          {activeTab === "sms" && orgFeatures?.featureSMS && <AdminSMSTab />}
+          {/* SMS Marketing - Actif après achat de crédits */}
+          {activeTab === "sms" && hasPurchasedSMS && <AdminSMSTabNew />}
 
           {activeTab === "reviews" && <AdminReviewsManager />}
 
