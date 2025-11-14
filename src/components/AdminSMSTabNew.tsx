@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import SMSCreditsWidget from './SMS/SMSCreditsWidget'
 import SMSIndividualTab from './SMS/SMSIndividualTab'
+import SMSCampaignsTab from './SMS/SMSCampaignsTab'
 import SMSAutomationsTab from './SMS/SMSAutomationsTab'
+import SMSTemplatesTab from './SMS/SMSTemplatesTab'
 
 interface Organization {
   id: string
@@ -105,12 +107,11 @@ export default function AdminSMSTabNew() {
           )}
 
           {activeSubTab === 'campaigns' && (
-            <div className="text-center p-12 text-gray-500">
-              <div className="text-6xl mb-4">📢</div>
-              <h3 className="text-xl font-semibold mb-2">Campagnes SMS</h3>
-              <p>Envoyez des SMS à plusieurs clients en même temps</p>
-              <p className="text-sm mt-2">Fonctionnalité en cours de développement</p>
-            </div>
+            <SMSCampaignsTab
+              organizationId={organization.id}
+              smsCredits={organization.smsCredits}
+              onSent={refreshCredits}
+            />
           )}
 
           {activeSubTab === 'automations' && (
@@ -118,12 +119,7 @@ export default function AdminSMSTabNew() {
           )}
 
           {activeSubTab === 'templates' && (
-            <div className="text-center p-12 text-gray-500">
-              <div className="text-6xl mb-4">📝</div>
-              <h3 className="text-xl font-semibold mb-2">Templates SMS</h3>
-              <p>Créez et gérez vos modèles de messages réutilisables</p>
-              <p className="text-sm mt-2">Fonctionnalité en cours de développement</p>
-            </div>
+            <SMSTemplatesTab organizationId={organization.id} />
           )}
         </div>
       </div>
