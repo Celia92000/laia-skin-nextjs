@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Users, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon, Star, MessageCircle, Send, X, Target, BarChart3, Package, Search, Ban, GraduationCap, ShoppingBag } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Users, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe, Grid3x3, List, Cake, CreditCard as CardIcon, Star, MessageCircle, Send, X, Target, BarChart3, Package, Search, Ban, GraduationCap, ShoppingBag, Smartphone, Archive } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import { formatDateLocal } from "@/lib/date-utils";
 import { checkAndCleanAuth, getAuthToken, clearAuthData } from '@/lib/auth-utils';
@@ -1398,6 +1398,20 @@ export default function AdminDashboard() {
                   WhatsApp
                 </button>
               )}
+              {/* SMS Marketing - TEAM+ uniquement */}
+              {orgFeatures?.featureSMS && (
+                <button
+                  onClick={() => setActiveTab("sms")}
+                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                    activeTab === "sms"
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg"
+                      : "bg-white text-[#2c3e50] hover:shadow-md"
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 inline mr-2" />
+                  SMS Marketing
+                </button>
+              )}
             </>
           )}
           {/* Services et Produits - uniquement pour ADMIN */}
@@ -1451,6 +1465,20 @@ export default function AdminDashboard() {
                   </button>
                 </>
               )}
+              {/* Stock Avancé - PREMIUM uniquement */}
+              {orgFeatures?.featureStock && (
+                <button
+                  onClick={() => setActiveTab("stock-advanced")}
+                  className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                    activeTab === "stock-advanced"
+                      ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                      : "bg-white text-[#2c3e50] hover:shadow-md"
+                  }`}
+                >
+                  <Archive className="w-4 h-4 inline mr-2" />
+                  Stock Avancé
+                </button>
+              )}
             </>
           )}
           {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
@@ -1490,6 +1518,20 @@ export default function AdminDashboard() {
             >
               <Calendar className="w-4 h-4 inline mr-2" />
               Réseaux Sociaux
+            </button>
+          )}
+          {/* Blog - TEAM+ uniquement */}
+          {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && orgFeatures?.featureBlog && (
+            <button
+              onClick={() => setActiveTab("blog")}
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                activeTab === "blog"
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
+                  : "bg-white text-[#2c3e50] hover:shadow-md"
+              }`}
+            >
+              <FileText className="w-4 h-4 inline mr-2" />
+              Blog
             </button>
           )}
           {['SUPER_ADMIN', 'ORG_OWNER', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (
@@ -3537,12 +3579,63 @@ export default function AdminDashboard() {
           {activeTab === "products" && orgFeatures?.featureShop && <AdminStockTab />}
           {activeTab === "pending" && orgFeatures?.featureShop && <AdminOrdersTab />}
 
+          {/* Stock Avancé - PREMIUM uniquement */}
+          {activeTab === "stock-advanced" && orgFeatures?.featureStock && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <Archive className="w-8 h-8 text-amber-600" />
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">Stock Avancé</h2>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
+                <Archive className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">Module Stock Avancé en développement</p>
+                <p className="text-sm text-gray-600">
+                  Inventaire multi-emplacements • Alertes de stock • Gestion fournisseurs • Valorisation • Codes-barres
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeTab === "whatsapp" && orgFeatures?.featureWhatsApp && <WhatsAppHub />}
+
+          {/* SMS Marketing - TEAM+ uniquement */}
+          {activeTab === "sms" && orgFeatures?.featureSMS && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-8 h-8 text-green-600" />
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">SMS Marketing</h2>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
+                <Smartphone className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">Module SMS Marketing en développement</p>
+                <p className="text-sm text-gray-600">
+                  Campagnes SMS • Templates • Automations • Statistiques • Historique
+                </p>
+              </div>
+            </div>
+          )}
 
           {activeTab === "reviews" && <AdminReviewsManager />}
 
           {activeTab === "social-media" && orgFeatures?.featureSocialMedia && (
             <SocialMediaHub />
+          )}
+
+          {/* Blog - TEAM+ uniquement */}
+          {activeTab === "blog" && orgFeatures?.featureBlog && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <FileText className="w-8 h-8 text-blue-600" />
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">Blog Professionnel</h2>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
+                <FileText className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">Module Blog en développement</p>
+                <p className="text-sm text-gray-600">
+                  Articles • Catégories • SEO • Images • Planning de publication
+                </p>
+              </div>
+            </div>
           )}
 
           {activeTab === "notifications" && (orgPlan === 'TEAM' || orgPlan === 'PREMIUM') && (

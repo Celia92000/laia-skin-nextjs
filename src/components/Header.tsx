@@ -149,14 +149,14 @@ export default function Header({ organizationData }: HeaderProps = {}) {
 
     switch (feature) {
       case 'blog':
-        // Blog disponible à partir de DUO
-        return ['DUO', 'TEAM', 'PREMIUM', 'ESSENTIAL', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureBlog;
+        // Blog disponible à partir de TEAM
+        return ['TEAM', 'PREMIUM', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureBlog;
       case 'products':
         // Produits disponibles à partir de TEAM
         return ['TEAM', 'PREMIUM', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureProducts;
       case 'formations':
-        // Formations disponibles uniquement en PREMIUM
-        return ['PREMIUM', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureFormations;
+        // Formations disponibles à partir de TEAM (via boutique)
+        return ['TEAM', 'PREMIUM', 'PROFESSIONAL', 'ENTERPRISE'].includes(orgData.plan) && orgData.featureFormations;
       default:
         return true;
     }
