@@ -19,6 +19,7 @@ const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEn
 const AdminServicesTab = dynamic(() => import("@/components/AdminServicesTab"), { ssr: false });
 const AdminStockTab = dynamic(() => import("@/components/AdminStockTab"), { ssr: false });
 const AdminBlogTab = dynamic(() => import("@/components/AdminBlogTab"), { ssr: false });
+const AdminSMSTab = dynamic(() => import("@/components/AdminSMSTab"), { ssr: false });
 const AdminConfigTab = dynamic(() => import("@/components/AdminConfigTab"), { ssr: false });
 const AdminDashboardOptimized = dynamic(() => import("@/components/AdminDashboardOptimized"), { ssr: false });
 const UnifiedCRMTab = dynamic(() => import("@/components/UnifiedCRMTab"), { ssr: false });
@@ -3586,21 +3587,7 @@ export default function AdminDashboard() {
           {activeTab === "whatsapp" && orgFeatures?.featureWhatsApp && <WhatsAppHub />}
 
           {/* SMS Marketing - TEAM+ uniquement */}
-          {activeTab === "sms" && orgFeatures?.featureSMS && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <Smartphone className="w-8 h-8 text-green-600" />
-                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">SMS Marketing</h2>
-              </div>
-              <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
-                <Smartphone className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-700 mb-2">Module SMS Marketing en développement</p>
-                <p className="text-sm text-gray-600">
-                  Campagnes SMS • Templates • Automations • Statistiques • Historique
-                </p>
-              </div>
-            </div>
-          )}
+          {activeTab === "sms" && orgFeatures?.featureSMS && <AdminSMSTab />}
 
           {activeTab === "reviews" && <AdminReviewsManager />}
 

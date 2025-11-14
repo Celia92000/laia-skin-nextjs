@@ -4,15 +4,23 @@
  */
 
 /**
- * Convertit une date UTC de la base de données en format YYYY-MM-DD local
+ * Convertit une date UTC de la base de données en format YYYY-MM-DD ou YYYY-MM-DDTHH:MM local
  * @param utcDateString Date en format ISO string (ex: "2025-10-14T22:00:00.000Z")
- * @returns Date au format YYYY-MM-DD en heure locale (ex: "2025-10-15")
+ * @param includeTime Si true, retourne YYYY-MM-DDTHH:MM, sinon YYYY-MM-DD
+ * @returns Date au format local (ex: "2025-10-15" ou "2025-10-15T14:30")
  */
-export function formatDateLocal(utcDateString: string | Date): string {
+export function formatDateLocal(utcDateString: string | Date, includeTime: boolean = false): string {
   const dateObj = new Date(utcDateString);
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const day = String(dateObj.getDate()).padStart(2, '0');
+
+  if (includeTime) {
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
   return `${year}-${month}-${day}`;
 }
 

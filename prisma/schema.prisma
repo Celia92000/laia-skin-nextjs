@@ -234,11 +234,16 @@ model Organization {
   lastTemplateUpdate DateTime? // Dernière mise à jour du template
 
   // Features activées selon le forfait (LAIA Connect)
-  featureBlog       Boolean @default(false) // Blog (DUO+)
+  featureBlog       Boolean @default(false) // Blog (TEAM+)
   featureProducts   Boolean @default(false) // Boutique produits (TEAM+)
-  featureCRM        Boolean @default(false) // CRM & Leads (TEAM+)
-  featureStock      Boolean @default(false) // Gestion de stock (PREMIUM)
-  featureFormations Boolean @default(false) // Vente de formations (PREMIUM)
+  featureCRM        Boolean @default(false) // CRM & Leads (DUO+)
+  featureEmailing   Boolean @default(false) // Email Marketing (DUO+)
+  featureWhatsApp   Boolean @default(false) // WhatsApp Marketing (TEAM+)
+  featureSMS        Boolean @default(false) // SMS Marketing (TEAM+)
+  featureSocialMedia Boolean @default(false) // Réseaux sociaux (TEAM+)
+  featureStock      Boolean @default(false) // Gestion de stock avancé (PREMIUM)
+  featureFormations Boolean @default(false) // Vente de formations (TEAM+)
+  featureShop       Boolean @default(false) // E-commerce complet (TEAM+)
 
   // Options supplémentaires payantes (add-ons)
   addons String? @default("{}") @db.Text // JSON stockant les addons actifs et historique
@@ -276,6 +281,11 @@ model Organization {
 
   // Templates email
   emailTemplates EmailTemplate[] // Templates email de l'organisation
+
+  // SMS Marketing (TEAM + PREMIUM)
+  smsCampaigns SMSCampaign[] // Campagnes SMS
+  smsTemplates SMSTemplate[] // Templates SMS
+  smsLogs      SMSLog[]      // Historique SMS
 
   // Template de site web
   websiteTemplateId String?
@@ -3038,5 +3048,129 @@ model CancellationFeedback {
   
   @@index([organizationId])
   @@index([reason])
+}
+
+// ============================================
+// SMS MARKETING MODULE (TEAM + PREMIUM)
+// ============================================
+
+enum SMSStatus {
+  DRAFT       // Brouillon
+  SCHEDULED   // Programmé
+  SENDING     // En cours d'envoi
+  SENT        // Envoyé
+  FAILED      // Échec
+}
+
+enum SMSTemplateType {
+  BIRTHDAY         // Anniversaire
+  APPOINTMENT      // Rappel RDV
+  CONFIRMATION     // Confirmation RDV
+  PROMOTION        // Promotion
+  LOYALTY          // Fidélité
+  FOLLOW_UP        // Suivi après soin
+  CUSTOM           // Personnalisé
+}
+
+// Campagnes SMS
+model SMSCampaign {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Informations de la campagne
+  name           String
+  message        String    @db.Text
+
+  // Destinataires
+  segmentId      String?   // null = tous les clients
+  recipientCount Int       @default(0)
+
+  // Statut
+  status         SMSStatus @default(DRAFT)
+
+  // Planification
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+
+  // Statistiques
+  sentCount      Int       @default(0)
+  deliveredCount Int       @default(0)
+  failedCount    Int       @default(0)
+  clickedCount   Int       @default(0) // Si lien dans le SMS
+
+  // Coût
+  totalCost      Float?    // Coût total de la campagne
+
+  // Métadonnées
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([createdAt])
+}
+
+// Templates SMS pré-configurés
+model SMSTemplate {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Informations du template
+  name           String
+  type           SMSTemplateType
+  message        String          @db.Text
+
+  // Variables disponibles
+  // {{prenom}}, {{nom}}, {{dateRDV}}, {{heureRDV}}, {{service}}, {{institut}}
+
+  // État
+  active         Boolean         @default(true)
+
+  // Métadonnées
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([active])
+}
+
+// Historique des SMS envoyés (pour tracking individuel)
+model SMSLog {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Campagne associée (optionnel)
+  campaignId     String?
+
+  // Destinataire
+  clientId       String?
+  clientName     String
+  phoneNumber    String
+
+  // Contenu
+  message        String    @db.Text
+
+  // Statut
+  status         String    // sent, delivered, failed, clicked
+  errorMessage   String?   @db.Text
+
+  // Coût
+  cost           Float?
+
+  // Métadonnées
+  sentAt         DateTime  @default(now())
+  deliveredAt    DateTime?
+
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([clientId])
+  @@index([status])
+  @@index([sentAt])
 }
 
