@@ -283,6 +283,9 @@ model Organization {
   emailTemplates EmailTemplate[] // Templates email de l'organisation
 
   // SMS Marketing (TEAM + PREMIUM)
+  smsCredits           Int       @default(0) // Crédits SMS restants (1 crédit = 1 SMS)
+  smsTotalPurchased    Int       @default(0) // Total de SMS achetés (historique)
+  smsLastPurchaseDate  DateTime? // Date du dernier achat de crédits SMS
   smsCampaigns SMSCampaign[] // Campagnes SMS
   smsTemplates SMSTemplate[] // Templates SMS
   smsLogs      SMSLog[]      // Historique SMS
