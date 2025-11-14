@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Save, Lock, Mail, User, Shield,
-  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, CreditCard
+  Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, CreditCard, Smartphone
 } from 'lucide-react';
 import AdminConfigTab from '@/components/AdminConfigTab';
 import SubscriptionInvoices from '@/components/SubscriptionInvoices';
+import AdminSMSConfigTab from '@/components/AdminSMSConfigTab';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function AdminSettings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription' | 'sms'>('account');
   
   const [userInfo, setUserInfo] = useState({
     email: '',
@@ -166,6 +167,20 @@ export default function AdminSettings() {
             <CreditCard className="w-5 h-5" />
             Abonnement
             {activeTab === 'subscription' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('sms')}
+            className={`flex items-center gap-2 pb-4 px-4 transition relative ${
+              activeTab === 'sms'
+                ? 'text-[#d4b5a0] font-medium'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Smartphone className="w-5 h-5" />
+            SMS Marketing
+            {activeTab === 'sms' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
             )}
           </button>
@@ -364,6 +379,10 @@ export default function AdminSettings() {
       ) : activeTab === 'subscription' ? (
         <div className="max-w-7xl mx-auto">
           <SubscriptionInvoices />
+        </div>
+      ) : activeTab === 'sms' ? (
+        <div className="max-w-7xl mx-auto">
+          <AdminSMSConfigTab />
         </div>
       ) : null}
     </div>
