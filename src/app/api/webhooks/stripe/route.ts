@@ -1353,6 +1353,8 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
           clientEmail: ownerEmail,
           subject: `🎉 Votre compte ${institutName} est activé !`,
           generatedPassword: tempPassword,
+          needsDataMigration: needsDataMigration === 'true',
+          currentSoftware: currentSoftware || undefined,
           attachments: [
             {
               name: `Facture-${invoiceNumber}.pdf`,

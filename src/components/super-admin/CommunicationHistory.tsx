@@ -222,10 +222,37 @@ export default function CommunicationHistory({ organizationId, ownerEmail }: Com
 
               {/* Badge email de bienvenue avec identifiants */}
               {comm.metadata?.hasCredentials && (
-                <div className="mb-3">
+                <div className="mb-3 flex gap-2 flex-wrap">
                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                     🔑 Contient les identifiants de connexion
                   </span>
+                  {comm.metadata?.needsDataMigration && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                      📦 Migration demandée
+                      {comm.metadata?.currentSoftware && ` depuis ${comm.metadata.currentSoftware}`}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Détails migration si demandée */}
+              {comm.metadata?.needsDataMigration && (
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <div className="text-lg">📦</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-blue-900">Migration de données demandée</p>
+                      {comm.metadata?.currentSoftware && (
+                        <p className="text-sm text-blue-700 mt-1">
+                          Logiciel actuel : <span className="font-medium">{comm.metadata.currentSoftware}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-blue-600 mt-2">
+                        💰 Prestation facturée : 300€ (paiement unique)<br/>
+                        📧 Le client doit envoyer son fichier de données à : <a href="mailto:contact@laiaconnect.fr" className="underline font-medium">contact@laiaconnect.fr</a>
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 

@@ -87,6 +87,8 @@ export async function logWelcomeEmailWithCredentials(data: {
   subject: string
   generatedPassword: string
   attachments: Array<{name: string, url?: string, size?: number}>
+  needsDataMigration?: boolean
+  currentSoftware?: string
 }) {
   return logCommunication({
     organizationId: data.organizationId,
@@ -101,6 +103,8 @@ export async function logWelcomeEmailWithCredentials(data: {
       emailType: 'welcome',
       hasCredentials: true,
       generatedPassword: data.generatedPassword, // Stocké pour référence admin (chiffrer en prod)
+      needsDataMigration: data.needsDataMigration || false,
+      currentSoftware: data.currentSoftware || null,
       timestamp: new Date().toISOString()
     },
     status: 'sent'

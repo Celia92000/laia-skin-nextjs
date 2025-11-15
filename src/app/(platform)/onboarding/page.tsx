@@ -816,6 +816,73 @@ function OnboardingForm() {
                   ))}
                 </div>
               </div>
+
+              {/* Question 4 : Migration de données */}
+              <div className="p-6 border-2 border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-white">
+                <label className="block text-lg font-bold text-gray-900 mb-4">
+                  4. Avez-vous des données à migrer depuis un autre logiciel ?
+                </label>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="needsDataMigration"
+                      checked={questionnaireAnswers.needsDataMigration}
+                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsDataMigration: e.target.checked })}
+                      className="mt-1 h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <label htmlFor="needsDataMigration" className="flex-1 cursor-pointer">
+                      <div className="font-semibold text-gray-900">
+                        Oui, j'aimerais migrer mes données
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Nous vous aiderons à importer vos clients, rendez-vous et historique de façon sécurisée
+                      </div>
+                    </label>
+                  </div>
+
+                  {questionnaireAnswers.needsDataMigration && (
+                    <div className="ml-8 space-y-4 animate-fadeIn">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Quel logiciel utilisez-vous actuellement ?
+                        </label>
+                        <input
+                          type="text"
+                          value={questionnaireAnswers.currentSoftware}
+                          onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, currentSoftware: e.target.value })}
+                          placeholder="Ex: Planity, Treatwell, Timify, Excel..."
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl">💰</div>
+                          <div>
+                            <div className="font-semibold text-blue-900">
+                              Prestation de migration : 300€ (paiement unique)
+                            </div>
+                            <div className="text-sm text-blue-700 mt-2">
+                              📋 Notre équipe s'occupe de tout :<br/>
+                              • Import de vos clients et leur historique<br/>
+                              • Transfert de vos rendez-vous<br/>
+                              • Migration de vos prestations et tarifs<br/>
+                              • Vérification et validation des données
+                            </div>
+                            <div className="text-sm text-blue-800 mt-3 font-medium">
+                              📧 Après validation du paiement, envoyez votre fichier de données à :<br/>
+                              <a href="mailto:contact@laiaconnect.fr" className="underline hover:text-blue-600">
+                                contact@laiaconnect.fr
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-4 mt-8">

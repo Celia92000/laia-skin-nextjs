@@ -138,26 +138,44 @@ export async function POST(req: NextRequest) {
       ? ['sepa_debit', 'card'] // Migration = SEPA + Carte pour le paiement unique
       : ['sepa_debit']         // Pas de migration = SEPA uniquement
 
+    // Préparer les items de facturation
+    const lineItems: any[] = [
+      {
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `LAIA Connect - Plan ${selectedPlan}`,
+            description: `Abonnement mensuel avec 30 jours d'essai gratuit`,
+          },
+          recurring: {
+            interval: 'month'
+          },
+          unit_amount: amount * 100 // Montant en centimes
+        },
+        quantity: 1
+      }
+    ]
+
+    // Ajouter la migration si demandée (paiement unique de 300€)
+    if (needsDataMigration) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Migration de données',
+            description: `Import sécurisé de vos données depuis ${currentSoftware || 'votre logiciel actuel'}`,
+          },
+          unit_amount: 30000 // 300€ en centimes
+        },
+        quantity: 1
+      })
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customer.id,
       payment_method_types: paymentMethods,
-      line_items: [
-        {
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: `LAIA Connect - Plan ${selectedPlan}`,
-              description: `Abonnement mensuel avec 30 jours d'essai gratuit`,
-            },
-            recurring: {
-              interval: 'month'
-            },
-            unit_amount: amount * 100 // Montant en centimes
-          },
-          quantity: 1
-        }
-      ],
+      line_items: lineItems,
       subscription_data: {
         trial_period_days: 30, // 30 jours gratuits
         metadata: {
