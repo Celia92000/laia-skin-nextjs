@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       targetUser = await prisma.user.findFirst({
         where: {
           organizationId: organizationId,
-          role: { in: ['ORG_OWNER', 'ORG_ADMIN'] }
+          role: { in: ['ORG_ADMIN'] }
         },
         include: { organization: true },
         orderBy: { createdAt: 'asc' } // Prendre le premier créé (= le propriétaire)
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 
     // Déterminer la redirection selon le rôle
     const roleRedirects: { [key: string]: string } = {
-      'ORG_OWNER': '/admin',
+      'ORG_ADMIN': '/admin',
       'ORG_ADMIN': '/admin',
       'LOCATION_MANAGER': '/admin',
       'STAFF': '/admin',

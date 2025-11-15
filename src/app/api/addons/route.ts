@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Seuls les admins peuvent voir/gérer les add-ons
-    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Seuls les admins peuvent activer des add-ons
-    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
@@ -180,7 +180,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Seuls les admins peuvent désactiver des add-ons
-    if (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN') {
+    if (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 

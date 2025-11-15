@@ -20,7 +20,7 @@ export async function POST(request: Request) {
           where: { id: decoded.userId }
         });
         
-        const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+        const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
         if (!adminUser || !adminRoles.includes(adminUser.role)) {
           return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
         }

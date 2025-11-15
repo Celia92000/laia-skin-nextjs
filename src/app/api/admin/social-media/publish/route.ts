@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN'];
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     const decoded = await verifyToken(token);
 
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN'];
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }

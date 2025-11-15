@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { signIn, useSession } from 'next-auth/react'
 import { validateSIRET, validateSIRENorSIRET, validateEmail, validatePhoneNumber, formatSIRET } from '@/lib/validation'
 import { getPlanPrice, getPlanName } from '@/lib/features-simple'
 import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
@@ -20,7 +21,9 @@ import TemplateSpaLuxe from '@/components/templates/TemplateSpaLuxe'
 import TemplateLaserTech from '@/components/templates/TemplateLaserTech'
 
 // Étapes du tunnel (paiement géré par Stripe Checkout)
-type Step = 'questionnaire' | 'welcome' | 'personal-info' | 'business-info' | 'website-template' | 'billing' | 'complete'
+// AVANT paiement : compte + questionnaire + plan + infos + template + PERSONNALISATION AVEC PREVIEW LIVE (vendeur!)
+// APRÈS paiement : success → redirect admin
+type Step = 'personal-info' | 'questionnaire' | 'welcome' | 'business-info' | 'website-template' | 'website-content' | 'billing' | 'payment-success' | 'complete'
 
 interface OnboardingData {
   // Étape 1 - Informations personnelles
@@ -71,14 +74,8 @@ interface OnboardingData {
   facebook?: string
   instagram?: string
   whatsapp?: string
-  businessHoursText: string
 
-  // Étape 4 - Horaires
-  businessHours: {
-    [key: string]: { isOpen: boolean; start: string; end: string }
-  }
-
-  // Étape 5 - Informations légales et facturation
+  // Étape 4 - Informations légales et facturation
   legalName: string
   siret: string
   tvaNumber?: string
@@ -99,6 +96,10 @@ function OnboardingForm() {
   const skipQuestionnaire = searchParams.get('skip') === 'true'
   const shouldReset = searchParams.get('reset') === 'true'
   const stepFromUrl = searchParams.get('step') as Step | null
+  const fromGoogle = searchParams.get('google') === 'true'
+
+  // Récupérer la session Google si connecté
+  const { data: session, status } = useSession()
 
   // ✅ Détecter le montage côté client pour éviter l'hydration mismatch
   useEffect(() => {
@@ -116,6 +117,31 @@ function OnboardingForm() {
     }
   }, [shouldReset, router])
 
+  // ✅ Gérer le retour de Google OAuth
+  useEffect(() => {
+    if (fromGoogle && session?.user && status === 'authenticated') {
+      console.log('✅ Connexion Google détectée:', session.user)
+
+      // Pré-remplir les données avec les infos Google
+      const nameParts = session.user.name?.split(' ') || []
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || ''
+
+      setData(prevData => ({
+        ...prevData,
+        ownerEmail: session.user.email || prevData.ownerEmail,
+        ownerFirstName: firstName,
+        ownerLastName: lastName
+      }))
+
+      // Passer directement au questionnaire (skip personal-info)
+      setCurrentStep('questionnaire')
+
+      // Nettoyer le query param google=true
+      router.replace('/onboarding')
+    }
+  }, [fromGoogle, session, status, router])
+
   // ✅ Initialiser currentStep avec localStorage ou valeur par défaut
   const [currentStep, setCurrentStep] = useState<Step>(() => {
     // Si un step est fourni dans l'URL, l'utiliser
@@ -128,7 +154,7 @@ function OnboardingForm() {
         return savedStep as Step
       }
     }
-    return skipQuestionnaire ? 'personal-info' : 'questionnaire'
+    return 'personal-info' // Toujours commencer par créer le compte
   })
 
   // ✅ Initialiser questionnaireAnswers avec localStorage ou valeur par défaut
@@ -147,7 +173,7 @@ function OnboardingForm() {
     // Q1-Q3 : Basiques
     teamSize: '',
     locations: '',
-    servicesCount: '',
+    neededFeatures: '',
 
     // Q4 : Fonctionnalités essentielles
     needsLoyalty: false,
@@ -232,16 +258,6 @@ function OnboardingForm() {
         facebook: '',
         instagram: '',
         whatsapp: '',
-        businessHoursText: 'Lun-Sam 9h-19h',
-        businessHours: {
-          lundi: { isOpen: true, start: '09:00', end: '18:00' },
-          mardi: { isOpen: true, start: '09:00', end: '18:00' },
-          mercredi: { isOpen: true, start: '09:00', end: '18:00' },
-          jeudi: { isOpen: true, start: '09:00', end: '18:00' },
-          vendredi: { isOpen: true, start: '09:00', end: '18:00' },
-          samedi: { isOpen: false, start: '09:00', end: '18:00' },
-          dimanche: { isOpen: false, start: '09:00', end: '18:00' }
-        },
         legalName: 'Institut Test SARL',
         siret: '12345678901234',
         tvaNumber: 'FR12345678901',
@@ -302,16 +318,6 @@ function OnboardingForm() {
     facebook: '',
     instagram: '',
     whatsapp: '',
-    businessHoursText: 'Lun-Sam 9h-19h',
-    businessHours: {
-      lundi: { isOpen: true, start: '09:00', end: '18:00' },
-      mardi: { isOpen: true, start: '09:00', end: '18:00' },
-      mercredi: { isOpen: true, start: '09:00', end: '18:00' },
-      jeudi: { isOpen: true, start: '09:00', end: '18:00' },
-      vendredi: { isOpen: true, start: '09:00', end: '18:00' },
-      samedi: { isOpen: false, start: '09:00', end: '18:00' },
-      dimanche: { isOpen: false, start: '09:00', end: '18:00' }
-    },
     legalName: '',
     siret: '',
     tvaNumber: '',
@@ -373,110 +379,73 @@ function OnboardingForm() {
   }, [currentStep])
 
   const steps: { id: Step; title: string; description: string; icon: string }[] = [
-    { id: 'questionnaire', title: 'Vos Besoins', description: 'Trouvons l\'offre idéale', icon: '📋' },
-    { id: 'welcome', title: 'Bienvenue', description: 'Commençons votre aventure', icon: '👋' },
-    { id: 'personal-info', title: 'Vos Informations', description: 'Qui êtes-vous ?', icon: '👤' },
-    { id: 'business-info', title: 'Votre Institut', description: 'Informations de base', icon: '🏢' },
-    { id: 'website-template', title: 'Design & Couleurs', description: 'Personnalisez votre site', icon: '🎨' },
-    { id: 'billing', title: 'Facturation', description: 'Informations légales', icon: '📋' },
-    { id: 'complete', title: 'Terminé', description: 'Tout est prêt !', icon: '🎉' }
+    // AVANT PAIEMENT - Avec prévisualisation en temps réel (vendeur!)
+    { id: 'personal-info', title: 'Créer mon compte', description: 'Inscription rapide', icon: '👤' },
+    { id: 'questionnaire', title: 'Vos Besoins', description: '3 questions rapides', icon: '📋' },
+    { id: 'welcome', title: 'Votre Plan', description: 'Recommandation personnalisée', icon: '✨' },
+    { id: 'business-info', title: 'Votre Institut', description: 'Nom et adresse', icon: '🏢' },
+    { id: 'website-template', title: 'Template', description: 'Choisissez votre design', icon: '🎨' },
+    { id: 'website-content', title: 'Personnaliser', description: 'Preview en temps réel', icon: '✨' },
+    { id: 'billing', title: 'Paiement', description: 'Infos légales + paiement', icon: '💳' },
+    // APRÈS PAIEMENT
+    { id: 'payment-success', title: 'Bienvenue !', description: 'Paiement validé', icon: '🎉' },
+    { id: 'complete', title: 'Terminé', description: 'Accédez à votre dashboard', icon: '🚀' }
   ]
 
   // Fonction pour calculer le plan recommandé (selon nouvelle structure 2025)
   const getRecommendedPlan = (): OnboardingData['selectedPlan'] => {
-    // Récupérer les valeurs textuelles du questionnaire
-    const teamSize = questionnaireAnswers.teamSize
-    const locations = questionnaireAnswers.locations
-    const servicesCount = questionnaireAnswers.servicesCount
+    const { teamSize, locations, neededFeatures } = questionnaireAnswers
 
-    // ===== PREMIUM (179€/mois) : Stock avancé + API + Scale =====
-    // API & intégrations = PREMIUM
-    if (questionnaireAnswers.needsAPI) {
-      return 'PREMIUM'
-    }
-    // Gestion de stock avancée = PREMIUM
-    if (questionnaireAnswers.needsStock) {
-      return 'PREMIUM'
-    }
-    // Beaucoup d'emplacements = PREMIUM (4+)
-    if (locations === '4+' || questionnaireAnswers.needsMultiLocation) {
-      return 'PREMIUM'
-    }
-    // Très grande équipe = PREMIUM (10+)
-    if (teamSize === '10+') {
-      return 'PREMIUM'
-    }
-    // Multi-sites (2-3) avec automatisation = PREMIUM
-    if ((locations === '2' || locations === '3') && questionnaireAnswers.needsAutomation) {
-      return 'PREMIUM'
+    // RÈGLES BASÉES SUR LES VRAIES LIMITES DES FORMULES
+    // SOLO: 1 utilisateur, 1 emplacement, fonctionnalités essentielles
+    // DUO: 3 utilisateurs, 1 emplacement, + CRM + Email + Blog
+    // TEAM: 10 utilisateurs, 3 emplacements, + Boutique + WhatsApp + Réseaux sociaux
+    // PREMIUM: illimité, illimité, toutes fonctionnalités avancées
+
+    // 1. EMPLACEMENTS (critère bloquant prioritaire)
+    if (locations === '4+') {
+      return 'PREMIUM' // Seul plan avec emplacements illimités
     }
 
-    // ===== TEAM (119€/mois) : E-commerce + Communication multicanal ⭐ LE PLUS RENTABLE =====
-    // Blog professionnel = TEAM
-    if (questionnaireAnswers.needsBlog) {
-      return 'TEAM'
-    }
-    // Boutique en ligne = TEAM
-    if (questionnaireAnswers.needsShop) {
-      return 'TEAM'
-    }
-    // WhatsApp Business = TEAM
-    if (questionnaireAnswers.needsWhatsApp) {
-      return 'TEAM'
-    }
-    // SMS Marketing = TEAM
-    if (questionnaireAnswers.needsSMS) {
-      return 'TEAM'
-    }
-    // Réseaux sociaux = TEAM
-    if (questionnaireAnswers.needsSocial) {
-      return 'TEAM'
-    }
-    // Formations en ligne = TEAM (via boutique)
-    if (questionnaireAnswers.needsFormations) {
-      return 'TEAM'
-    }
-    // Multi-emplacements (2-3) = TEAM
-    if (locations === '2' || locations === '3') {
-      return 'TEAM'
-    }
-    // Grande équipe (4-10 utilisateurs) = TEAM
-    if (teamSize === '4-10') {
-      return 'TEAM'
-    }
-    // Beaucoup de prestations (institut établi) = TEAM (16-30 ou 30+)
-    if (servicesCount === '16-30' || servicesCount === '30+') {
-      return 'TEAM'
-    }
-    // Vente produits physiques en ligne = TEAM (via boutique)
-    if (questionnaireAnswers.needsInStoreProducts && questionnaireAnswers.needsShop) {
+    if (locations === '2-3') {
+      // TEAM minimum (seul plan avec 3 emplacements)
+      if (teamSize === '11+' || neededFeatures === 'advanced') {
+        return 'PREMIUM'
+      }
       return 'TEAM'
     }
 
-    // ===== DUO (69€/mois) : CRM Commercial + Email Marketing =====
-    // CRM Commercial = DUO
-    if (questionnaireAnswers.needsCRM) {
-      return 'DUO'
-    }
-    // Email Marketing = DUO
-    if (questionnaireAnswers.needsEmailMarketing) {
-      return 'DUO'
-    }
-    // Automation marketing de base = DUO
-    if (questionnaireAnswers.needsAutomation) {
-      return 'DUO'
-    }
-    // Petite équipe (2-3 utilisateurs) = DUO
-    if (teamSize === '2-3') {
-      return 'DUO'
-    }
-    // Plusieurs prestations mais pas énormément = DUO (6-15)
-    if (servicesCount === '6-15') {
-      return 'DUO'
+    // 2. UN SEUL EMPLACEMENT : combiner utilisateurs + fonctionnalités
+    if (locations === '1') {
+      // Si 11+ utilisateurs ou fonctionnalités avancées → PREMIUM
+      if (teamSize === '11+' || neededFeatures === 'advanced') {
+        return 'PREMIUM'
+      }
+
+      // Si besoin boutique/WhatsApp/réseaux ou 4-10 utilisateurs → TEAM
+      if (teamSize === '4-10' || neededFeatures === 'shop') {
+        return 'TEAM'
+      }
+
+      // Si besoin CRM/Email/Blog ou 2-3 utilisateurs → DUO
+      if (teamSize === '2-3' || neededFeatures === 'crm') {
+        return 'DUO'
+      }
+
+      // 1 seul utilisateur + fonctionnalités essentielles → SOLO
+      if (teamSize === '1' && neededFeatures === 'basic') {
+        return 'SOLO'
+      }
+
+      // Si juste 1 utilisateur mais veut des fonctionnalités → adapter
+      if (teamSize === '1') {
+        if (neededFeatures === 'crm') return 'DUO'
+        if (neededFeatures === 'shop') return 'TEAM'
+        return 'SOLO' // Par défaut
+      }
     }
 
-    // ===== SOLO (49€/mois) : Base uniquement =====
-    // Par défaut pour praticiens solo avec besoins basiques
+    // ===== SOLO (49€/mois) : Base par défaut =====
     // Tous les essentiels sont DÉJÀ inclus dans SOLO :
     // - Site web + Réservations 24/7
     // - Gestion clients + Planning
@@ -570,6 +539,28 @@ function OnboardingForm() {
     if (!data.billingPostalCode) missing.push('Code postal')
 
     return missing
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setError('')
+      setLoading(true)
+
+      // Sauvegarder les données du formulaire dans localStorage avant de rediriger
+      localStorage.setItem('onboarding_data', JSON.stringify(data))
+      localStorage.setItem('onboarding_step', currentStep)
+      localStorage.setItem('onboarding_answers', JSON.stringify(questionnaireAnswers))
+
+      // Rediriger vers Google OAuth avec NextAuth
+      await signIn('google', {
+        callbackUrl: '/onboarding?google=true',
+        redirect: true
+      })
+    } catch (err) {
+      console.error('Erreur Google Sign-In:', err)
+      setError('Erreur lors de la connexion avec Google. Veuillez réessayer.')
+      setLoading(false)
+    }
   }
 
   const handleNext = () => {
@@ -733,24 +724,30 @@ function OnboardingForm() {
             </div>
 
             <div className="space-y-6">
-              {/* Question 1 : Taille de l'équipe */}
+              {/* Question 1 : Nombre de collaborateurs */}
               <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
                 <label className="block text-lg font-bold text-gray-900 mb-4">
-                  1. Combien de personnes travaillent dans votre institut ? *
+                  1. Combien de collaborateurs travailleront sur le logiciel ? *
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['1', '2-3', '4-10', '10+'].map((option) => (
+                  {[
+                    { value: '1', label: 'Juste moi', icon: '👤' },
+                    { value: '2-3', label: '2-3 personnes', icon: '👥' },
+                    { value: '4-10', label: '4-10 personnes', icon: '👨‍👩‍👧' },
+                    { value: '11+', label: '11 ou plus', icon: '👨‍👩‍👧‍👦' }
+                  ].map((option) => (
                     <button
-                      key={option}
+                      key={option.value}
                       type="button"
-                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, teamSize: option })}
-                      className={`p-4 border-2 rounded-lg transition font-semibold ${
-                        questionnaireAnswers.teamSize === option
-                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400'
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, teamSize: option.value })}
+                      className={`p-5 border-2 rounded-xl font-semibold transition-all ${
+                        questionnaireAnswers.teamSize === option.value
+                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg scale-105'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400 hover:scale-102'
                       }`}
                     >
-                      {option === '1' ? 'Solo' : option === '2-3' ? '2-3 personnes' : option === '4-10' ? '4-10 personnes' : 'Plus de 10'}
+                      <div className="text-3xl mb-2">{option.icon}</div>
+                      <div className="text-sm">{option.label}</div>
                     </button>
                   ))}
                 </div>
@@ -759,426 +756,82 @@ function OnboardingForm() {
               {/* Question 2 : Nombre d'emplacements */}
               <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
                 <label className="block text-lg font-bold text-gray-900 mb-4">
-                  2. Combien d'emplacements / salons avez-vous ? *
+                  2. Combien de points de vente / emplacements avez-vous ? *
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['1', '2', '3', '4+'].map((option) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { value: '1', label: '1 seul', icon: '🏪' },
+                    { value: '2-3', label: '2-3 emplacements', icon: '🏬' },
+                    { value: '4+', label: '4 ou plus', icon: '🏢' }
+                  ].map((option) => (
                     <button
-                      key={option}
+                      key={option.value}
                       type="button"
-                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, locations: option })}
-                      className={`p-4 border-2 rounded-lg transition font-semibold ${
-                        questionnaireAnswers.locations === option
-                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400'
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, locations: option.value })}
+                      className={`p-5 border-2 rounded-xl font-semibold transition-all ${
+                        questionnaireAnswers.locations === option.value
+                          ? 'border-purple-600 bg-purple-600 text-white shadow-lg scale-105'
+                          : 'border-gray-300 bg-white text-gray-700 hover:border-purple-400 hover:scale-102'
                       }`}
                     >
-                      {option === '1' ? 'Un seul' : option === '4+' ? '4 ou plus' : option + ' salons'}
+                      <div className="text-3xl mb-2">{option.icon}</div>
+                      <div className="text-sm">{option.label}</div>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Question 2.5 : Nombre de prestations */}
-              <div className="p-6 border-2 border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-white">
+
+              {/* Question 3 : Fonctionnalités souhaitées */}
+              <div className="p-6 border-2 border-purple-100 rounded-xl bg-gradient-to-br from-purple-50 to-white">
                 <label className="block text-lg font-bold text-gray-900 mb-4">
-                  💆‍♀️ Combien de prestations proposez-vous (ou souhaitez proposer) ? *
+                  3. Quelles fonctionnalités vous intéressent le plus ? *
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['1-5', '6-15', '16-30', '30+'].map((option) => (
+                <div className="grid grid-cols-1 gap-3">
+                  {[
+                    { value: "basic", label: "Essentielles uniquement", subtitle: "Planning • Réservations • Site vitrine", icon: "✨" },
+                    { value: "crm", label: "Essentielles + Marketing", subtitle: "Tout ci-dessus + CRM • Email Marketing • Blog", icon: "📧" },
+                    { value: "shop", label: "Essentielles + Marketing + Vente", subtitle: "Tout ci-dessus + Boutique • WhatsApp • Réseaux sociaux", icon: "🛒" },
+                    { value: "advanced", label: "Toutes les fonctionnalités avancées", subtitle: "Pack complet avec toutes les options", icon: "🚀" }
+                  ].map((option) => (
                     <button
-                      key={option}
+                      key={option.value}
                       type="button"
-                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, servicesCount: option })}
-                      className={`p-4 border-2 rounded-lg transition font-semibold ${
-                        questionnaireAnswers.servicesCount === option
-                          ? 'border-blue-600 bg-blue-600 text-white shadow-lg'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400'
+                      onClick={() => setQuestionnaireAnswers({ ...questionnaireAnswers, neededFeatures: option.value })}
+                      className={`p-4 border-2 rounded-xl font-semibold transition-all text-left ${
+                        questionnaireAnswers.neededFeatures === option.value
+                          ? "border-purple-600 bg-purple-600 text-white shadow-lg scale-105"
+                          : "border-gray-300 bg-white text-gray-700 hover:border-purple-400 hover:scale-102"
                       }`}
                     >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 mt-3">
-                  💡 Soins du visage, épilation, massages, manucure, pédicure...
-                </p>
-              </div>
-
-              {/* Question 4 : Fonctionnalités ESSENTIELLES */}
-              <div className="p-6 border-2 border-emerald-100 rounded-xl bg-gradient-to-br from-emerald-50 to-white">
-                <label className="block text-lg font-bold text-gray-900 mb-2">
-                  4. Fonctionnalités Essentielles ✨
-                </label>
-                <p className="text-sm text-gray-600 mb-1">Les fonctions de base incluses dans tous les plans :</p>
-                <div className="bg-gradient-to-r from-emerald-50 to-white p-4 rounded-lg mb-4 border border-emerald-200">
-                  <div className="grid grid-cols-2 gap-2 text-sm text-emerald-800">
-                    <div>✅ Réservations en ligne</div>
-                    <div>✅ Gestion clients & fiches</div>
-                    <div>✅ Paiement en ligne</div>
-                    <div>✅ Site vitrine personnalisable</div>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-4 font-medium">Fonctions optionnelles qui vous intéressent :</p>
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-4 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsLoyalty}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsLoyalty: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-yellow-600 rounded focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">🎁 Programme de fidélité</div>
-                      <div className="text-sm text-gray-600">Points, récompenses, parrainage automatique</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsReminders}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsReminders: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📧 Rappels automatiques</div>
-                      <div className="text-sm text-gray-600">Email/SMS 24h avant le rendez-vous</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsPaymentTerminal}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsPaymentTerminal: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">💳 Paiement sur place</div>
-                      <div className="text-sm text-gray-600">Terminal de paiement intégré</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsAdvancedStats}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsAdvancedStats: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📊 Statistiques & Analytics</div>
-                      <div className="text-sm text-gray-600">Tableau de bord avancé avec insights</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Question 5 : Marketing & Communication */}
-              <div className="p-6 border-2 border-pink-100 rounded-xl bg-gradient-to-br from-pink-50 to-white">
-                <label className="block text-lg font-bold text-gray-900 mb-2">
-                  5. Marketing & Communication 🚀
-                </label>
-                <p className="text-sm text-gray-600 mb-4">Attirez et fidélisez vos clients</p>
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-4 border-2 border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition bg-gradient-to-r from-white to-pink-50">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsEmailMarketing}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsEmailMarketing: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-pink-600 rounded focus:ring-2 focus:ring-pink-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 flex items-center gap-2">
-                        📧 Email Marketing
-                        <span className="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded-full font-bold">Recommandé</span>
-                      </div>
-                      <div className="text-sm text-gray-600">Campagnes et newsletters personnalisées</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 transition bg-gradient-to-r from-white to-green-50">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsWhatsApp}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsWhatsApp: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900 flex items-center gap-2">
-                        📱 WhatsApp Business
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">Populaire</span>
-                      </div>
-                      <div className="text-sm text-gray-600">Confirmations et rappels WhatsApp</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsSMS}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsSMS: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">💬 SMS Marketing</div>
-                      <div className="text-sm text-gray-600">Campagnes SMS promotionnelles</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsSocial}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsSocial: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📱 Publications réseaux sociaux</div>
-                      <div className="text-sm text-gray-600">Planification Instagram, Facebook auto</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-teal-200 rounded-lg cursor-pointer hover:bg-teal-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsBlog}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsBlog: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-2 focus:ring-teal-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📝 Blog professionnel</div>
-                      <div className="text-sm text-gray-600">Attirez des clients via le SEO</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsAutomation}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsAutomation: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">⚡ Automation marketing</div>
-                      <div className="text-sm text-gray-600">Scénarios automatisés (anniversaires, inactifs...)</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Question 6 : Vente & E-commerce */}
-              <div className="p-6 border-2 border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-white">
-                <label className="block text-lg font-bold text-gray-900 mb-2">
-                  6. Vente & E-commerce 🛍️
-                </label>
-                <p className="text-sm text-gray-600 mb-4">Développez votre chiffre d'affaires</p>
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-4 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsShop}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsShop: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">🛍️ Boutique en ligne</div>
-                      <div className="text-sm text-gray-600">Vendez produits et formations en ligne</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsInStoreProducts}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsInStoreProducts: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">💼 Vente de produits sur place</div>
-                      <div className="text-sm text-gray-600">Caisse intégrée pour ventes physiques</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-teal-200 rounded-lg cursor-pointer hover:bg-teal-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsStock}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsStock: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-teal-600 rounded focus:ring-2 focus:ring-teal-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📦 Gestion de stock</div>
-                      <div className="text-sm text-gray-600">Suivi inventaire avec alertes rupture</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsFormations}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsFormations: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">🎓 Vente de formations</div>
-                      <div className="text-sm text-gray-600">Cours et ateliers payants en ligne</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-rose-200 rounded-lg cursor-pointer hover:bg-rose-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsGiftCards}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsGiftCards: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-rose-600 rounded focus:ring-2 focus:ring-rose-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">🎫 Bons cadeaux</div>
-                      <div className="text-sm text-gray-600">Vente et gestion des bons cadeaux</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Question 7 : Outils Pro & Intégrations */}
-              <div className="p-6 border-2 border-gray-200 rounded-xl bg-gradient-to-br from-gray-50 to-white">
-                <label className="block text-lg font-bold text-gray-900 mb-2">
-                  7. Outils Pro & Intégrations ⚙️
-                </label>
-                <p className="text-sm text-gray-600 mb-4">Pour les instituts avancés</p>
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-4 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsCRM}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsCRM: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📊 CRM Commercial</div>
-                      <div className="text-sm text-gray-600">Pipeline et suivi des prospects</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsAPI}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsAPI: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">🔌 API & Export comptable</div>
-                      <div className="text-sm text-gray-600">Connexion logiciel comptable</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsMultiUser}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsMultiUser: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">👥 Multi-utilisateurs avancé</div>
-                      <div className="text-sm text-gray-600">Rôles et permissions personnalisés</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsMultiLocation}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsMultiLocation: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📍 Multi-emplacements</div>
-                      <div className="text-sm text-gray-600">Gestion de plusieurs salons</div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-4 border-2 border-pink-200 rounded-lg cursor-pointer hover:bg-pink-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsMobileApp}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsMobileApp: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-pink-600 rounded focus:ring-2 focus:ring-pink-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">📱 Application mobile</div>
-                      <div className="text-sm text-gray-600">App iOS/Android personnalisée</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Q8 : Migration des données */}
-              <div className="bg-white rounded-2xl p-8 border-2 border-blue-200">
-                <div className="mb-6">
-                  <div className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-2">Question 8</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">🔄 Migration de vos données existantes</h3>
-                  <p className="text-gray-600">Utilisez-vous actuellement un autre logiciel de gestion ?</p>
-                </div>
-
-                <div className="space-y-4">
-                  <label className="flex items-start gap-3 p-4 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 transition">
-                    <input
-                      type="checkbox"
-                      checked={questionnaireAnswers.needsDataMigration}
-                      onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, needsDataMigration: e.target.checked })}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">💾 Oui, j'ai besoin de migrer mes données</div>
-                      <div className="text-sm text-gray-600">Clients, rendez-vous, services, historique...</div>
-                    </div>
-                  </label>
-
-                  {questionnaireAnswers.needsDataMigration && (
-                    <div className="ml-8 mt-4">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Quel logiciel utilisez-vous actuellement ?
-                      </label>
-                      <input
-                        type="text"
-                        value={questionnaireAnswers.currentSoftware}
-                        onChange={(e) => setQuestionnaireAnswers({ ...questionnaireAnswers, currentSoftware: e.target.value })}
-                        placeholder="ex: Planity, Treatwell, Planning.io, Excel..."
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition"
-                      />
-                      <div className="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="flex items-start gap-2">
-                          <span className="text-blue-600 text-lg">ℹ️</span>
-                          <div className="text-sm text-blue-800">
-                            <div className="font-semibold mb-1">Notre équipe vous accompagne</div>
-                            <div>Nous vous aiderons à importer vos données de façon sécurisée et structurée. <strong>Prestation de migration : 300€ (paiement unique)</strong></div>
-                          </div>
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl mt-1">{option.icon}</div>
+                        <div>
+                          <div className="text-sm font-bold">{option.label}</div>
+                          <div className="text-xs mt-1 opacity-80">{option.subtitle}</div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-4 mt-8">
-              <Link
-                href="/platform"
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all text-center"
+              <button
+                onClick={handleBack}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all"
               >
                 ← Retour
-              </Link>
+              </button>
               <button
                 onClick={() => {
                   const recommendedPlan = getRecommendedPlan()
                   setData({ ...data, selectedPlan: recommendedPlan })
                   handleNext()
                 }}
-                disabled={!questionnaireAnswers.teamSize || !questionnaireAnswers.locations || !questionnaireAnswers.servicesCount}
+                disabled={!questionnaireAnswers.teamSize || !questionnaireAnswers.locations || !questionnaireAnswers.neededFeatures}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Voir ma recommandation →
@@ -1419,12 +1072,12 @@ function OnboardingForm() {
         {currentStep === 'personal-info' && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
-              <div className="text-5xl mb-4">👤</div>
+              <div className="text-5xl mb-4">🎯</div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Vos informations personnelles
+                Créez votre compte en 30 secondes
               </h2>
               <p className="text-gray-600">
-                Pour créer votre compte administrateur
+                Commencez votre essai gratuit de 30 jours dès maintenant
               </p>
             </div>
 
@@ -1433,6 +1086,34 @@ function OnboardingForm() {
                 {error}
               </div>
             )}
+
+            {/* Google OAuth - EN PREMIER */}
+            <div className="mb-8">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continuer avec Google
+              </button>
+
+              {/* Séparateur */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">ou</span>
+                </div>
+              </div>
+            </div>
 
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
@@ -1497,12 +1178,12 @@ function OnboardingForm() {
             </div>
 
             <div className="flex gap-4 mt-8">
-              <button
-                onClick={handleBack}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all"
+              <Link
+                href="/platform"
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all text-center"
               >
                 ← Retour
-              </button>
+              </Link>
               <button
                 onClick={handleNext}
                 disabled={!data.ownerFirstName || !data.ownerLastName || !data.ownerEmail || !data.ownerPhone}
@@ -1775,106 +1456,6 @@ function OnboardingForm() {
           </div>
         )}
 
-        {/* Étape 2 - Premier service */}
-        {currentStep === 'service' && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">💆</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Créez votre premier service
-              </h2>
-              <p className="text-gray-600">
-                Vous pourrez en ajouter d'autres plus tard
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom du service *
-                </label>
-                <input
-                  type="text"
-                  value={data.serviceName}
-                  onChange={(e) => setData({ ...data, serviceName: e.target.value })}
-                  placeholder="Ex: Soin du visage hydratant"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prix (€) *
-                  </label>
-                  <input
-                    type="number"
-                    value={data.servicePrice || ''}
-                    onChange={(e) => setData({ ...data, servicePrice: parseFloat(e.target.value) || 0 })}
-                    placeholder="Ex: 75"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Durée (minutes) *
-                  </label>
-                  <select
-                    value={data.serviceDuration}
-                    onChange={(e) => setData({ ...data, serviceDuration: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value={30}>30 min</option>
-                    <option value={45}>45 min</option>
-                    <option value={60}>60 min</option>
-                    <option value={90}>1h30</option>
-                    <option value={120}>2h</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={data.serviceDescription}
-                  onChange={(e) => setData({ ...data, serviceDescription: e.target.value })}
-                  placeholder="Décrivez les bienfaits de ce soin..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <p className="text-sm text-purple-800">
-                  💡 <strong>Conseil :</strong> Une bonne description aide vos clients à comprendre les bénéfices du soin et augmente vos réservations.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <button
-                onClick={handleBack}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all"
-              >
-                ← Retour
-              </button>
-              <button
-                onClick={handleNext}
-                disabled={!data.serviceName || !data.servicePrice}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continuer →
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Étape 3.5 - Choix du template de site web */}
         {currentStep === 'website-template' && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -2028,20 +1609,6 @@ function OnboardingForm() {
                     value={data.servicesDescription}
                     onChange={(e) => setData({ ...data, servicesDescription: e.target.value })}
                     placeholder="Prestations sur mesure"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-
-                {/* Horaires */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Horaires
-                  </label>
-                  <input
-                    type="text"
-                    value={data.businessHoursText}
-                    onChange={(e) => setData({ ...data, businessHoursText: e.target.value })}
-                    placeholder="Lun-Sam 9h-19h"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   />
                 </div>
@@ -2472,7 +2039,6 @@ function OnboardingForm() {
                               email: data.email || '',
                               address: data.address && data.city ? `${data.address}, ${data.postalCode} ${data.city}` : (data.city || 'Paris')
                             },
-                            hours: data.businessHoursText || 'Lun-Sam 9h-19h',
                             social: {
                               facebook: data.facebook || '',
                               instagram: data.instagram || '',
@@ -2526,508 +2092,246 @@ function OnboardingForm() {
           </div>
         )}
 
-        {/* Étape 3.6 - Choix des couleurs du site */}
-        {currentStep === 'website-colors' && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">🎨</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Personnalisez vos couleurs
-              </h2>
-              <p className="text-gray-600">
-                Choisissez les couleurs qui représentent votre institut
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              {/* Sélection des couleurs */}
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Couleur Principale
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="color"
-                      value={data.primaryColor}
-                      onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
-                      className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
-                    />
-                    <div>
-                      <input
-                        type="text"
-                        value={data.primaryColor}
-                        onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg font-mono text-sm"
-                        placeholder="#000000"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Couleur des éléments principaux</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Couleur Secondaire
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="color"
-                      value={data.secondaryColor}
-                      onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
-                      className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
-                    />
-                    <div>
-                      <input
-                        type="text"
-                        value={data.secondaryColor}
-                        onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg font-mono text-sm"
-                        placeholder="#000000"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Couleur des accents et dégradés</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Palettes prédéfinies */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Palettes suggérées
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#E91E8C', secondaryColor: '#F8BBD0' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #E91E8C, #F8BBD0)' }} />
-                      <span className="text-sm font-medium">Rose</span>
-                    </button>
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#9C27B0', secondaryColor: '#E91E8C' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #9C27B0, #E91E8C)' }} />
-                      <span className="text-sm font-medium">Violet</span>
-                    </button>
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#2C3E50', secondaryColor: '#95A5A6' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #2C3E50, #95A5A6)' }} />
-                      <span className="text-sm font-medium">Élégant</span>
-                    </button>
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#C9B037', secondaryColor: '#F5E6D3' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #C9B037, #F5E6D3)' }} />
-                      <span className="text-sm font-medium">Or</span>
-                    </button>
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#0288D1', secondaryColor: '#4FC3F7' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #0288D1, #4FC3F7)' }} />
-                      <span className="text-sm font-medium">Bleu</span>
-                    </button>
-                    <button
-                      onClick={() => setData({ ...data, primaryColor: '#4CAF50', secondaryColor: '#8BC34A' })}
-                      className="flex items-center gap-2 p-3 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-all"
-                    >
-                      <div className="w-8 h-8 rounded" style={{ background: 'linear-gradient(135deg, #4CAF50, #8BC34A)' }} />
-                      <span className="text-sm font-medium">Vert</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Aperçu en temps réel */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Aperçu
-                </label>
-                <div className="border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
-                  {/* Hero miniature */}
-                  <div
-                    className="h-32 p-6 flex items-center justify-center"
-                    style={{
-                      background: `linear-gradient(135deg, ${data.primaryColor}20, ${data.secondaryColor}20)`
-                    }}
-                  >
-                    <div className="text-center">
-                      <h3
-                        className="text-2xl font-bold mb-2"
-                        style={{ color: data.primaryColor }}
-                      >
-                        {data.institutName || 'Votre Institut'}
-                      </h3>
-                    </div>
-                  </div>
-
-                  {/* Éléments de l'interface */}
-                  <div className="p-6 space-y-4">
-                    <button
-                      className="w-full py-3 px-6 rounded-lg text-white font-bold"
-                      style={{ backgroundColor: data.primaryColor }}
-                    >
-                      Bouton Principal
-                    </button>
-                    <div className="flex gap-2">
-                      <div
-                        className="flex-1 h-12 rounded-lg"
-                        style={{ backgroundColor: data.primaryColor + '20' }}
-                      />
-                      <div
-                        className="flex-1 h-12 rounded-lg"
-                        style={{ backgroundColor: data.secondaryColor + '20' }}
-                      />
-                    </div>
-                    <div
-                      className="p-4 rounded-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${data.primaryColor}, ${data.secondaryColor})`
-                      }}
-                    >
-                      <p className="text-white text-sm font-semibold">Dégradé des couleurs</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Boutons navigation */}
-            <div className="flex gap-4">
-              <button
-                onClick={handleBack}
-                className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                ← Retour
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
-              >
-                Continuer →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Étape - Contenu du Site */}
-        {currentStep === 'site-content' && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">📝</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Contenu de votre site web
-              </h2>
-              <p className="text-gray-600">
-                Personnalisez les textes et ajoutez vos réseaux sociaux
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {/* Baseline/Tagline */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Baseline de votre institut
-                </label>
-                <input
-                  type="text"
-                  value={data.siteTagline}
-                  onChange={(e) => setData({ ...data, siteTagline: e.target.value })}
-                  placeholder="Ex: Institut de Beauté & Bien-être"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Phrase courte qui décrit votre activité
-                </p>
-              </div>
-
-              {/* Contact du site */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email du site *
-                  </label>
-                  <input
-                    type="email"
-                    value={data.email}
-                    onChange={(e) => setData({ ...data, email: e.target.value })}
-                    placeholder="contact@votre-institut.fr"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone du site *
-                  </label>
-                  <input
-                    type="tel"
-                    value={data.phone}
-                    onChange={(e) => setData({ ...data, phone: e.target.value })}
-                    placeholder="+33 1 XX XX XX XX"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Hero Section */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Section Héro (page d'accueil)</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Titre principal *
-                    </label>
-                    <input
-                      type="text"
-                      value={data.heroTitle}
-                      onChange={(e) => setData({ ...data, heroTitle: e.target.value })}
-                      placeholder="Ex: Une peau respectée,"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sous-titre *
-                    </label>
-                    <input
-                      type="text"
-                      value={data.heroSubtitle}
-                      onChange={(e) => setData({ ...data, heroSubtitle: e.target.value })}
-                      placeholder="Ex: une beauté révélée"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* À Propos */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">À propos de vous</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Texte de présentation
-                    </label>
-                    <textarea
-                      value={data.aboutText}
-                      onChange={(e) => setData({ ...data, aboutText: e.target.value })}
-                      placeholder="Présentez votre institut, votre expertise, vos valeurs..."
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Votre nom (fondateur/fondatrice)
-                    </label>
-                    <input
-                      type="text"
-                      value={data.founderName}
-                      onChange={(e) => setData({ ...data, founderName: e.target.value })}
-                      placeholder="Ex: Marie Dupont"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Votre titre/fonction
-                    </label>
-                    <input
-                      type="text"
-                      value={data.founderTitle}
-                      onChange={(e) => setData({ ...data, founderTitle: e.target.value })}
-                      placeholder="Ex: Fondatrice & Experte en soins esthétiques"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Votre citation/philosophie
-                    </label>
-                    <textarea
-                      value={data.founderQuote}
-                      onChange={(e) => setData({ ...data, founderQuote: e.target.value })}
-                      placeholder="Ex: La vraie beauté réside dans l'harmonie parfaite..."
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Réseaux Sociaux */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Réseaux sociaux</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Facebook (URL complète)
-                    </label>
-                    <input
-                      type="url"
-                      value={data.facebook}
-                      onChange={(e) => setData({ ...data, facebook: e.target.value })}
-                      placeholder="https://facebook.com/votre-page"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Instagram (URL complète)
-                    </label>
-                    <input
-                      type="url"
-                      value={data.instagram}
-                      onChange={(e) => setData({ ...data, instagram: e.target.value })}
-                      placeholder="https://instagram.com/votre-compte"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      WhatsApp (numéro avec indicatif)
-                    </label>
-                    <input
-                      type="tel"
-                      value={data.whatsapp}
-                      onChange={(e) => setData({ ...data, whatsapp: e.target.value })}
-                      placeholder="+33612345678"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Format international sans espaces (ex: +33612345678)
+        {/* Étape 6 - Personnalisation avec Preview Live (comme Shopify) */}
+        {currentStep === 'website-content' && (
+          <div className="fixed inset-0 bg-gray-50 z-50 overflow-hidden">
+            {/* Layout Split Screen */}
+            <div className="h-full grid grid-cols-2">
+              {/* GAUCHE - Formulaire de personnalisation */}
+              <div className="bg-white border-r border-gray-200 overflow-y-auto">
+                <div className="p-8">
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      Personnalisez votre site
+                    </h2>
+                    <p className="text-gray-600">
+                      Modifiez les couleurs et textes. La preview se met à jour en temps réel →
                     </p>
                   </div>
+
+                  {/* Couleurs */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span>🎨</span> Couleurs de votre marque
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Couleur principale
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={data.primaryColor}
+                            onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
+                            className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={data.primaryColor}
+                            onChange={(e) => setData({ ...data, primaryColor: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Couleur secondaire
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={data.secondaryColor}
+                            onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
+                            className="w-16 h-16 rounded-lg border-2 border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={data.secondaryColor}
+                            onChange={(e) => setData({ ...data, secondaryColor: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Textes */}
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <span>✏️</span> Contenu de votre site
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Titre principal
+                        </label>
+                        <input
+                          type="text"
+                          value={data.heroTitle}
+                          onChange={(e) => setData({ ...data, heroTitle: e.target.value })}
+                          placeholder="Institut de Beauté"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Slogan
+                        </label>
+                        <input
+                          type="text"
+                          value={data.heroDescription}
+                          onChange={(e) => setData({ ...data, heroDescription: e.target.value })}
+                          placeholder="L'art du bien-être"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Texte bouton principal
+                        </label>
+                        <input
+                          type="text"
+                          value={data.ctaPrimary}
+                          onChange={(e) => setData({ ...data, ctaPrimary: e.target.value })}
+                          placeholder="Réserver"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Titre section services
+                        </label>
+                        <input
+                          type="text"
+                          value={data.servicesTitle}
+                          onChange={(e) => setData({ ...data, servicesTitle: e.target.value })}
+                          placeholder="Nos Soins"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Boutons Navigation */}
+                  <div className="flex gap-4 sticky bottom-0 bg-white pt-4 pb-2 border-t">
+                    <button
+                      onClick={handleBack}
+                      className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition"
+                    >
+                      ← Retour
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition"
+                    >
+                      Continuer →
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* DROITE - Preview Live */}
+              <div className="bg-gray-100 overflow-hidden relative">
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+                  <div className="bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200">
+                    <span className="text-sm font-medium text-gray-600">Prévisualisation en temps réel</span>
+                  </div>
+                </div>
+                <div className="h-full overflow-y-auto pt-16">
+                  <div className="bg-white rounded-t-2xl shadow-2xl mx-4 mb-4" style={{ minHeight: '100vh' }}>
+                    {/* Rendu du template sélectionné avec les données live */}
+                    {(() => {
+                      const userServices = [{
+                        id: '1',
+                        name: data.serviceName || 'Soin du visage',
+                        description: data.serviceDescription || 'Un soin relaxant',
+                        price: data.servicePrice || 89,
+                        duration: data.serviceDuration || 60,
+                        category: 'Visage'
+                      }]
+
+                      const teamMembers = [{
+                        id: '1',
+                        name: `${data.ownerFirstName} ${data.ownerLastName}`,
+                        role: 'Fondateur',
+                        bio: '',
+                        imageUrl: data.logoUrl || '',
+                        specialties: []
+                      }]
+
+                      const templateProps = {
+                        organization: {
+                          name: data.institutName || 'Mon Institut',
+                          tagline: data.siteTagline || data.heroDescription || 'Institut de beauté',
+                          description: data.heroDescription || data.siteTagline || 'L\'art du bien-être',
+                          primaryColor: data.primaryColor,
+                          secondaryColor: data.secondaryColor
+                        },
+                        services: userServices,
+                        team: teamMembers,
+                        content: {
+                          hero: {
+                            title: data.heroTitle || data.institutName || 'Institut de Beauté',
+                            subtitle: data.heroSubtitle || '',
+                            description: data.heroDescription || data.siteTagline || 'L\'art du bien-être',
+                            ctaPrimary: data.ctaPrimary || 'Réserver',
+                            ctaSecondary: data.ctaSecondary || 'Contact'
+                          },
+                          services: {
+                            title: data.servicesTitle || 'Nos Soins',
+                            description: data.servicesDescription || 'Prestations sur mesure'
+                          },
+                          pricing: {
+                            title: data.servicesTitle || 'Tarifs',
+                            note: data.servicesDescription || 'Protocoles personnalisés'
+                          },
+                          cta: {
+                            title: data.ctaFinalTitle || 'Prendre Rendez-vous',
+                            description: data.ctaFinalDescription || 'Réservez votre consultation',
+                            button: data.ctaPrimary || 'Réserver'
+                          },
+                          footer: {
+                            tagline: data.siteTagline || '',
+                            contact: {
+                              phone: data.phone || '01 23 45 67 89',
+                              email: data.email || data.ownerEmail || '',
+                              address: data.address && data.city ? `${data.address}, ${data.postalCode} ${data.city}` : (data.city || 'Paris')
+                            },
+                            social: {
+                              facebook: data.facebook || '',
+                              instagram: data.instagram || '',
+                              whatsapp: data.whatsapp || ''
+                            }
+                          }
+                        }
+                      }
+
+                      // Render le template choisi
+                      switch(data.websiteTemplateId) {
+                        case 'classic': return <TemplateClassic {...templateProps} />
+                        case 'modern': return <TemplateModern {...templateProps} />
+                        case 'minimal': return <TemplateMinimal {...templateProps} />
+                        case 'professional': return <TemplateProfessional {...templateProps} />
+                        case 'boutique': return <TemplateBoutique {...templateProps} />
+                        case 'fresh': return <TemplateFresh {...templateProps} />
+                        case 'luxe': return <TemplateLuxe {...templateProps} />
+                        case 'elegance': return <TemplateElegance {...templateProps} />
+                        case 'zen': return <TemplateZen {...templateProps} />
+                        case 'medical': return <TemplateMedical {...templateProps} content={templateProps.content} />
+                        case 'spa-luxe': return <TemplateSpaLuxe {...templateProps} content={templateProps.content} />
+                        case 'laser-tech': return <TemplateLaserTech {...templateProps} content={templateProps.content} />
+                        default: return <TemplateModern {...templateProps} />
+                      }
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Boutons navigation */}
-            <div className="flex gap-4 mt-8">
-              <button
-                onClick={handleBack}
-                className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                ← Retour
-              </button>
-              <button
-                onClick={handleNext}
-                disabled={!data.email || !data.phone || !data.heroTitle || !data.heroSubtitle}
-                className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all ${
-                  !data.email || !data.phone || !data.heroTitle || !data.heroSubtitle
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-xl'
-                }`}
-              >
-                Continuer →
-              </button>
-            </div>
           </div>
         )}
 
-        {/* Étape 3 - Horaires */}
-        {currentStep === 'hours' && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="text-5xl mb-4">🕐</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Vos horaires d'ouverture
-              </h2>
-              <p className="text-gray-600">
-                Définissez vos heures de travail
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {Object.entries(data.businessHours).map(([day, hours]) => (
-                <div key={day} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center gap-3 w-40">
-                    <input
-                      type="checkbox"
-                      checked={hours.isOpen}
-                      onChange={(e) => setData({
-                        ...data,
-                        businessHours: {
-                          ...data.businessHours,
-                          [day]: { ...hours, isOpen: e.target.checked }
-                        }
-                      })}
-                      className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                    />
-                    <label className="font-medium text-gray-700 capitalize">
-                      {day}
-                    </label>
-                  </div>
-
-                  {hours.isOpen ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input
-                        type="time"
-                        value={hours.start}
-                        onChange={(e) => setData({
-                          ...data,
-                          businessHours: {
-                            ...data.businessHours,
-                            [day]: { ...hours, start: e.target.value }
-                          }
-                        })}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                      />
-                      <span className="text-gray-500">à</span>
-                      <input
-                        type="time"
-                        value={hours.end}
-                        onChange={(e) => setData({
-                          ...data,
-                          businessHours: {
-                            ...data.businessHours,
-                            [day]: { ...hours, end: e.target.value }
-                          }
-                        })}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-1 text-gray-400 italic">
-                      Fermé
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-6">
-              <p className="text-sm text-purple-800">
-                💡 <strong>Astuce :</strong> Vous pourrez ajuster ces horaires et ajouter des pauses depuis votre tableau de bord.
-              </p>
-            </div>
-
-            <div className="flex gap-4 mt-8">
-              <button
-                onClick={handleBack}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-all"
-              >
-                ← Retour
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-              >
-                Continuer →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Étape 5 - Facturation */}
+        {/* Étape 7 - Facturation */}
         {currentStep === 'billing' && (
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center mb-8">
@@ -3281,7 +2585,77 @@ function OnboardingForm() {
           </div>
         )}
 
-        {/* Étape 5 - Terminé */}
+        {/* Étape - Paiement validé (après retour Stripe) */}
+        {currentStep === 'payment-success' && (
+          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div className="text-8xl mb-6 animate-bounce">🎉</div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Paiement validé !
+            </h1>
+            <p className="text-xl text-gray-600 mb-2">
+              Bienvenue dans l'aventure LAIA, <strong>{data.ownerFirstName}</strong> !
+            </p>
+            <p className="text-lg text-gray-500 mb-8">
+              Votre abonnement <strong>{data.selectedPlan}</strong> est actif. Terminons ensemble la configuration de votre institut.
+            </p>
+
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 mb-8 max-w-md mx-auto">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-lg font-semibold text-green-900">30 jours d'essai gratuit commencés</span>
+              </div>
+              <p className="text-sm text-green-700">
+                Vous ne serez débité qu'après 30 jours. Annulez à tout moment.
+              </p>
+            </div>
+
+            <div className="mb-8">
+              <p className="text-gray-600 mb-4">Votre site est prêt ! Découvrez votre nouveau dashboard :</p>
+              <div className="bg-white rounded-xl p-6 border-2 border-gray-200 max-w-lg mx-auto">
+                <div className="space-y-3 text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-900">Site web personnalisé activé</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-900">Réservations en ligne 24/7</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-900">Gestion clients + Planning</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleNext}
+              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl text-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all inline-flex items-center gap-2"
+            >
+              Accéder à mon dashboard
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Étape 7 - Terminé */}
         {currentStep === 'complete' && (
           <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
             <div className="text-6xl mb-6">🎉</div>

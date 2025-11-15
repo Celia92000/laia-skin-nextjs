@@ -32,7 +32,7 @@ export async function GET() {
       select: { role: true, organizationId: true }
     })
 
-    if (!user || !['ORG_OWNER', 'ACCOUNTANT'].includes(user.role)) {
+    if (!user || !['ORG_ADMIN', 'ACCOUNTANT'].includes(user.role)) {
       log.info('[laia-invoices] Accès refusé - rôle:', user?.role)
       return NextResponse.json({ error: 'Accès refusé', invoices: [] }, { status: 403 })
     }

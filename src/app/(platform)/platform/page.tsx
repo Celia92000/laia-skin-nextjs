@@ -98,7 +98,7 @@ export default function PlatformHomePage() {
       id: 'PREMIUM',
       name: 'Premium',
       price: 179,
-      description: 'Pour les instituts établis',
+      description: 'L\'expérience complète',
       features: [
         '✨ Tout Team +',
         '📦 Gestion stock avancée multi-sites',
@@ -230,7 +230,7 @@ export default function PlatformHomePage() {
                 🎯 Réserver une démo
               </button>
               <Link
-                href="/onboarding?plan=DUO"
+                href="/onboarding-v2?plan=DUO"
                 className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all text-base whitespace-nowrap"
               >
                 Essayer gratuitement
@@ -337,7 +337,7 @@ export default function PlatformHomePage() {
                 </button>
 
                 <Link
-                  href="/onboarding?plan=DUO"
+                  href="/onboarding-v2?plan=DUO"
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-bold hover:shadow-xl hover:shadow-purple-500/50 transition-all"
                 >
@@ -391,7 +391,7 @@ export default function PlatformHomePage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/onboarding?plan=DUO"
+                href="/onboarding-v2?plan=DUO"
                 className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-lg font-semibold hover:shadow-xl hover:shadow-purple-500/50 transition-all flex items-center gap-2"
               >
                 Essayer gratuitement 30 jours
@@ -407,7 +407,7 @@ export default function PlatformHomePage() {
               </a>
             </div>
             <p className="text-sm text-gray-600 mt-6 font-medium">
-              ✅ 1er mois offert • 💳 Aucun paiement pendant 30 jours • 📌 Engagement 1 an ensuite
+              ✅ 1er mois offert • 💳 CB requise, 1er prélèvement après 30 jours • 📌 Sans engagement
             </p>
           </div>
 
@@ -648,7 +648,7 @@ export default function PlatformHomePage() {
 
           <div className="text-center mt-12">
             <Link
-              href="/onboarding"
+              href="/onboarding-v2"
               className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl text-lg font-semibold hover:shadow-xl hover:shadow-purple-500/50 transition-all"
             >
               Essayer gratuitement 30 jours →
@@ -834,6 +834,181 @@ export default function PlatformHomePage() {
         </div>
       </section>
 
+      {/* Section Réassurance - Trust & Garanties */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-purple-600 font-bold text-sm uppercase tracking-widest">100% SÉCURISÉ</span>
+            <h3 className="text-4xl md:text-5xl font-black text-gray-900 mt-4 mb-6">
+              Commencez en toute
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-500">
+                sérénité
+              </span>
+            </h3>
+          </div>
+
+          {/* Badges de confiance */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <h4 className="font-bold text-gray-900 mb-2">SSL Gratuit</h4>
+              <p className="text-sm text-gray-600">Vos données sont chiffrées</p>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-6 text-center">
+              <div className="text-4xl mb-3">🇪🇺</div>
+              <h4 className="font-bold text-gray-900 mb-2">RGPD</h4>
+              <p className="text-sm text-gray-600">100% conforme</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 text-center">
+              <div className="text-4xl mb-3">💳</div>
+              <h4 className="font-bold text-gray-900 mb-2">Paiement Stripe</h4>
+              <p className="text-sm text-gray-600">Sécurisé et certifié</p>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-2xl p-6 text-center">
+              <div className="text-4xl mb-3">🇫🇷</div>
+              <h4 className="font-bold text-gray-900 mb-2">Hébergé en France</h4>
+              <p className="text-sm text-gray-600">Données en Europe</p>
+            </div>
+          </div>
+
+          {/* Garanties */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-100 border-l-4 border-green-500 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-green-500 text-white rounded-full p-3 flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-2 text-lg">30 jours gratuits</h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Testez toutes les fonctionnalités sans engagement. Coordonnées bancaires requises, 1er prélèvement après 30 jours.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-100 border-l-4 border-blue-500 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-blue-500 text-white rounded-full p-3 flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-2 text-lg">Support réactif</h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Notre équipe vous répond en moins de 24h par email, chat ou téléphone.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-pink-100 border-l-4 border-purple-500 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-purple-500 text-white rounded-full p-3 flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 mb-2 text-lg">Vos données protégées</h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Sauvegardes quotidiennes automatiques. Vous gardez le contrôle de vos données.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Témoignages */}
+          <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-3xl p-8 md:p-12">
+            <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
+              Ils nous font confiance
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4 italic">
+                  "LAIA Connect a transformé mon institut. Je gagne 20h par semaine et mes clientes adorent pouvoir réserver en ligne 24/7 !"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
+                    SM
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">Sophie Martin</p>
+                    <p className="text-sm text-gray-600">Institut Belle & Zen, Paris</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4 italic">
+                  "La boutique en ligne m'a permis de doubler mon CA. Les clients commandent même après les horaires d'ouverture !"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold">
+                    CL
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">Camille Lefèvre</p>
+                    <p className="text-sm text-gray-600">Spa Harmonie, Lyon</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-1 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4 italic">
+                  "Configuration en 10 minutes, site en ligne le jour même. Le support est ultra-réactif. Je recommande à 100% !"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-400 rounded-full flex items-center justify-center text-white font-bold">
+                    JD
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">Julien Dubois</p>
+                    <p className="text-sm text-gray-600">Barber Shop Premium, Marseille</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Logos partenaires */}
+            <div className="mt-16 pt-12 border-t border-purple-200">
+              <p className="text-center text-gray-600 font-semibold mb-8">Nos partenaires de confiance</p>
+              <div className="flex flex-wrap items-center justify-center gap-12 opacity-60">
+                <div className="text-4xl font-bold text-gray-700">Stripe</div>
+                <div className="text-4xl font-bold text-gray-700">Brevo</div>
+                <div className="text-4xl font-bold text-gray-700">OVH</div>
+                <div className="text-4xl font-bold text-gray-700">Supabase</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Section Contact */}
       <section id="contact" className="py-20 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
@@ -868,7 +1043,7 @@ export default function PlatformHomePage() {
             Rejoignez des centaines de professionnels qui ont choisi l'excellence
           </p>
           <Link
-            href="/onboarding?plan=DUO"
+            href="/onboarding-v2?plan=DUO"
             className="inline-flex items-center gap-3 px-12 py-6 bg-white text-purple-600 rounded-full text-2xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all transform hover:scale-105"
           >
             <span>🚀 Commencer mon essai gratuit</span>
@@ -901,7 +1076,7 @@ export default function PlatformHomePage() {
               <h4 className="text-gray-900 font-semibold mb-4">Produit</h4>
               <ul className="space-y-2 text-sm">
                 <li><a href="#pricing" className="text-gray-600 hover:text-purple-600 transition">Tarifs</a></li>
-                <li><Link href="/onboarding?plan=DUO" className="text-gray-600 hover:text-purple-600 transition">Essai gratuit</Link></li>
+                <li><Link href="/onboarding-v2?plan=DUO" className="text-gray-600 hover:text-purple-600 transition">Essai gratuit</Link></li>
               </ul>
             </div>
             <div>

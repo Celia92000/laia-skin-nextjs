@@ -173,7 +173,7 @@ export async function PUT(request: Request) {
     if (type === 'social') {
       // Vérifier que le compte appartient à l'utilisateur
       const existing = await prisma.socialMediaConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -195,7 +195,7 @@ export async function PUT(request: Request) {
       });
     } else if (type === 'whatsapp') {
       const existing = await prisma.whatsAppConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -217,7 +217,7 @@ export async function PUT(request: Request) {
       });
     } else if (type === 'email') {
       const existing = await prisma.emailConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
@@ -271,21 +271,21 @@ export async function DELETE(request: Request) {
 
     if (type === 'social') {
       const existing = await prisma.socialMediaConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
       await prisma.socialMediaConfig.delete({ where: { id } });
     } else if (type === 'whatsapp') {
       const existing = await prisma.whatsAppConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 
       await prisma.whatsAppConfig.delete({ where: { id } });
     } else if (type === 'email') {
       const existing = await prisma.emailConfig.findUnique({ where: { id } });
-      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
+      if (!existing || (existing.userId !== decoded.userId && existing.userId !== null && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(decoded.role))) {
         return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
       }
 

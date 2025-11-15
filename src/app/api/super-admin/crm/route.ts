@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
         convertedAt: true,
         sepaMandateRef: true,
         users: {
-          where: { role: 'ORG_OWNER' },
+          where: { role: 'ORG_ADMIN' },
           take: 1,
           select: {
             email: true
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
         convertedAt: true,
         trialEndsAt: true,
         users: {
-          where: { role: 'ORG_OWNER' },
+          where: { role: 'ORG_ADMIN' },
           take: 1,
           select: {
             email: true,

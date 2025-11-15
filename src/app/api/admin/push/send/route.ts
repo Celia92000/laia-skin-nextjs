@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       whereClause.user = { role: 'CLIENT' };
     } else if (target === 'staff') {
       whereClause.user = {
-        role: { in: ['ORG_OWNER', 'STAFF', 'RECEPTIONIST', 'LOCATION_MANAGER'] }
+        role: { in: ['ORG_ADMIN', 'STAFF', 'RECEPTIONIST', 'LOCATION_MANAGER'] }
       };
     }
 

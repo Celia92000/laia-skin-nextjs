@@ -44,7 +44,7 @@ export async function POST(
     }
 
     // Vérifier les permissions
-    if (!['ORG_OWNER'].includes(user.role)) {
+    if (!['ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 

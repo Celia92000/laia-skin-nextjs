@@ -19,7 +19,7 @@ async function verifyAdmin(request: NextRequest) {
       where: { id: decoded.userId }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER'].includes(user.role as string)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER'].includes(user.role as string)) {
       return null;
     }
 

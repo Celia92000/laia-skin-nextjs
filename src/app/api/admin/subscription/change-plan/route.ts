@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur a les droits pour changer le plan (ORG_OWNER, SUPER_ADMIN uniquement)
-    const allowedRoles = ['ORG_OWNER', 'SUPER_ADMIN']
+    const allowedRoles = ['ORG_ADMIN', 'SUPER_ADMIN']
     if (!session.user.role || !allowedRoles.includes(session.user.role)) {
       return NextResponse.json({
         error: 'Vous n\'avez pas les droits pour changer l\'abonnement. Seuls les propriétaires peuvent effectuer cette action.'

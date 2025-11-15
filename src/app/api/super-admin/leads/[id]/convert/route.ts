@@ -120,7 +120,7 @@ export async function POST(
         email: lead.contactEmail,
         name: lead.contactName,
         password: hashedPassword,
-        role: 'ORG_OWNER',
+        role: 'ORG_ADMIN',
         organizationId: organization.id,
         isActive: true
       }

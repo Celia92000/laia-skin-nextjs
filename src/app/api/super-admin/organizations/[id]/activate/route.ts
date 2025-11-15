@@ -25,7 +25,7 @@ export async function POST(
       where: { id: organizationId },
       include: {
         users: {
-          where: { role: 'ORG_OWNER' },
+          where: { role: 'ORG_ADMIN' },
           take: 1
         }
       }

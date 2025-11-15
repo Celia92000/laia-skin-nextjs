@@ -52,7 +52,7 @@ export async function GET(
     }
 
     // Vérifier que l'utilisateur a le droit de voir cette réservation
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
@@ -107,7 +107,7 @@ export async function PUT(
 
     // Vérifier que l'utilisateur a le droit de modifier
     // Les admins peuvent modifier toutes les réservations
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     const isOwner = existingReservation.userId === decoded.userId;
 
     if (!isAdmin && !isOwner) {
@@ -218,7 +218,7 @@ export async function DELETE(
     }
 
     // Vérifier les droits
-    const isAdmin = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
+    const isAdmin = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'].includes(user.role);
     if (reservation.userId !== decoded.userId && !isAdmin) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }

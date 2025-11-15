@@ -79,6 +79,7 @@ export async function POST(request: Request) {
         break
 
       case 'ORG_ADMIN':
+      case 'ORG_ADMIN':
         redirect = '/admin'
         break
 

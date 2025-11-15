@@ -9,7 +9,9 @@ import { generateOrganizationTemplate } from '@/lib/template-generator'
 import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 import { createOnboardingContract } from '@/lib/contract-generator'
+import { logWelcomeEmailWithCredentials, logEmail } from '@/lib/communication-logger'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import Stripe from 'stripe'
 import { log } from '@/lib/logger';
 
@@ -1062,7 +1064,6 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       facebook,
       instagram,
       whatsapp,
-      businessHours,
       legalName,
       siret,
       tvaNumber,
@@ -1093,7 +1094,8 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
     }
 
     const adminEmail = ownerEmail
-    const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!'
+    // Génération sécurisée du mot de passe avec crypto.randomBytes()
+    const tempPassword = crypto.randomBytes(8).toString('hex') // 16 caractères hexadécimaux
     const hashedPassword = await bcrypt.hash(tempPassword, 10)
 
     const sepaMandateRef = `LAIA-${slug.toUpperCase()}-${Date.now()}`
@@ -1175,7 +1177,6 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
             city: city || '',
             postalCode: postalCode || '',
             country: 'France',
-            businessHours: JSON.stringify(businessHours),
             siret,
             tvaNumber: tvaNumber || null,
             legalRepName: `${ownerFirstName} ${ownerLastName}`,
@@ -1192,8 +1193,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
             postalCode: postalCode || '',
             country: 'France',
             phone: ownerPhone || '',
-            email: ownerEmail,
-            businessHours: JSON.stringify(businessHours)
+            email: ownerEmail
           }
         }
       },
@@ -1212,7 +1212,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         name: `${ownerFirstName} ${ownerLastName}`,
         phone: ownerPhone || null,
         password: hashedPassword,
-        role: 'ORG_OWNER',
+        role: 'ORG_ADMIN',
         organizationId: organization.id
       }
     })
@@ -1345,6 +1345,29 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         sepaMandateRef
       }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
       log.info('✅ Email de bienvenue envoyé')
+
+      // Logger l'email dans l'historique du CRM
+      try {
+        await logWelcomeEmailWithCredentials({
+          organizationId: organization.id,
+          clientEmail: ownerEmail,
+          subject: `🎉 Votre compte ${institutName} est activé !`,
+          generatedPassword: tempPassword,
+          attachments: [
+            {
+              name: `Facture-${invoiceNumber}.pdf`,
+              size: invoicePdfBuffer?.length
+            },
+            {
+              name: `Contrat-${contractNumber}.pdf`,
+              size: contractPdfBuffer?.length
+            }
+          ]
+        })
+        log.info('✅ Email de bienvenue loggé dans le CRM')
+      } catch (logError) {
+        log.error('⚠️ Erreur logging email:', logError)
+      }
     } catch (error) {
       log.error('⚠️ Erreur email bienvenue:', error)
     }

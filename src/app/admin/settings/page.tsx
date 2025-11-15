@@ -27,7 +27,7 @@ export default function AdminSettings() {
   });
 
   // Vérifier si l'utilisateur a accès complet (ORG_OWNER, SUPER_ADMIN)
-  const hasFullAccess = ['ORG_OWNER', 'SUPER_ADMIN'].includes(userInfo.role);
+  const hasFullAccess = ['ORG_ADMIN', 'SUPER_ADMIN'].includes(userInfo.role);
 
   // Vérifier si l'utilisateur est comptable (peut voir abonnement mais pas modifier)
   const isAccountant = userInfo.role === 'ACCOUNTANT';

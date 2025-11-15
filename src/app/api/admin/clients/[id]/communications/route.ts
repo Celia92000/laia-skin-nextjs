@@ -56,7 +56,7 @@ export async function GET(
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }
@@ -268,7 +268,7 @@ export async function POST(
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }
 
-      const adminRoles = ['SUPER_ADMIN', 'ORG_OWNER', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+      const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
       if (!adminRoles.includes(decoded.role)) {
         return NextResponse.json({ error: 'Accès interdit' }, { status: 403 });
       }

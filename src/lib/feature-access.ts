@@ -18,7 +18,7 @@ export type FeatureKey = keyof OrgFeatures
  */
 const FULL_ACCESS_ROLES: UserRole[] = [
   'SUPER_ADMIN',
-  'ORG_OWNER'
+  'ORG_ADMIN'
 ]
 
 /**

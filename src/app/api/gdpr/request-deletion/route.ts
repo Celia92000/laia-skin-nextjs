@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // ⚠️ Empêcher les SUPER_ADMIN et ORG_OWNER de se supprimer
     // (ils doivent d'abord transférer la propriété ou contacter le support)
-    if (['SUPER_ADMIN', 'ORG_OWNER'].includes(user.role)) {
+    if (['SUPER_ADMIN', 'ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({
         error: 'Les administrateurs ne peuvent pas supprimer leur compte directement. Veuillez contacter le support.',
         supportEmail: 'support@laiaconnect.fr'

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
@@ -244,7 +244,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 
@@ -345,7 +345,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Seuls SUPER_ADMIN et ORG_OWNER peuvent gérer les utilisateurs
-    if (admin?.role && !['SUPER_ADMIN', 'ORG_OWNER'].includes(admin.role)) {
+    if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé - Seuls les administrateurs peuvent gérer les utilisateurs' }, { status: 403 });
     }
 

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF')) {
+    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'STAFF')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

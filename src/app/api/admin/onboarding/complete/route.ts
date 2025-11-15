@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       select: { role: true, organizationId: true }
     })
 
-    if (!user || !['ORG_OWNER'].includes(user.role)) {
+    if (!user || !['ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 

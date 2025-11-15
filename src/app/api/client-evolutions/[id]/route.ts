@@ -26,7 +26,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (!user || !['SUPER_ADMIN', 'ORG_OWNER', 'STAFF'].includes(user.role)) {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'STAFF'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier les permissions (seulement SUPER_ADMIN ou ORG_OWNER)
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN'];
     if (!allowedRoles.includes(decoded.role as string)) {
       return NextResponse.json({
         error: 'Accès refusé. Seuls les SUPER_ADMIN et ORG_OWNER peuvent effectuer cette opération.'

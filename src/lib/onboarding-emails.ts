@@ -603,6 +603,7 @@ export async function sendOnboardingGuide(data: WelcomeEmailData) {
               <ul style="color: #374151; font-size: 15px; line-height: 1.8; margin: 0 0 30px 0; padding-left: 20px;">
                 <li><a href="https://help.laia-connect.fr" style="color: #3b82f6; text-decoration: none;">Centre d'aide complet</a></li>
                 <li><a href="https://help.laia-connect.fr/videos" style="color: #3b82f6; text-decoration: none;">Vidéos tutoriels</a></li>
+                <li><a href="https://docs.laia-connect.fr/domaine-personnalise" style="color: #3b82f6; text-decoration: none;">🌐 Guide : Configurer votre domaine personnalisé</a></li>
                 <li><a href="https://help.laia-connect.fr/faq" style="color: #3b82f6; text-decoration: none;">FAQ</a></li>
                 <li><a href="mailto:support@laia-connect.fr" style="color: #3b82f6; text-decoration: none;">Support par email</a></li>
               </ul>
@@ -929,6 +930,16 @@ export async function sendAccountActivationEmail(data: WelcomeEmailData) {
                   </td>
                 </tr>
               </table>
+
+              <!-- Guides utiles -->
+              <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 6px; margin: 30px 0;">
+                <h3 style="color: #1e40af; font-size: 18px; margin: 0 0 15px 0;">📚 Guides et Documentation</h3>
+                <ul style="color: #1e40af; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                  <li><a href="https://docs.laia-connect.fr" style="color: #3b82f6; text-decoration: none;">Documentation complète</a></li>
+                  <li><a href="https://docs.laia-connect.fr/domaine-personnalise" style="color: #3b82f6; text-decoration: none;">🌐 Configurer votre domaine personnalisé (DNS)</a></li>
+                  <li><a href="https://help.laia-connect.fr/videos" style="color: #3b82f6; text-decoration: none;">Vidéos tutoriels</a></li>
+                </ul>
+              </div>
 
               <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                 Besoin d'aide ? Consultez notre <a href="https://docs.laia-connect.fr" style="color: #9333ea;">documentation</a> ou contactez-nous à <a href="mailto:support@laia-connect.fr" style="color: #9333ea;">support@laia-connect.fr</a>

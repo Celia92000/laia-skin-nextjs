@@ -487,7 +487,7 @@ export default function OrganizationsPage() {
   const inactiveUsers = users?.filter(u => !u.isActive).length || 0
   const roleStats = {
     SUPER_ADMIN: users?.filter(u => u.role === 'SUPER_ADMIN').length || 0,
-    ORG_OWNER: users?.filter(u => u.role === 'ORG_OWNER').length || 0,
+    ORG_OWNER: users?.filter(u => u.role === 'ORG_ADMIN').length || 0,
     ORG_ADMIN: users?.filter(u => u.role === 'ORG_ADMIN').length || 0,
     LOCATION_MANAGER: users?.filter(u => u.role === 'LOCATION_MANAGER').length || 0,
     STAFF: users?.filter(u => u.role === 'STAFF').length || 0,

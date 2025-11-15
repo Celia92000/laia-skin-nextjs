@@ -127,15 +127,21 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Créer une Stripe Checkout Session avec SEPA + Carte bancaire
+    // Créer une Stripe Checkout Session
     // IMPORTANT : Toutes les données d'onboarding sont stockées dans metadata
-    // 💳 SEPA : Abonnements mensuels automatiques
-    // 💳 Carte : Paiements uniques (migrations de données, services ponctuels)
+    // 💳 SEPA : Abonnements mensuels automatiques (toujours disponible)
+    // 💳 Carte : Paiements uniques UNIQUEMENT si migration de données
     // 🔒 3D Secure automatique pour les cartes (DSP2/SCA)
+
+    // Modes de paiement selon migration
+    const paymentMethods = needsDataMigration
+      ? ['sepa_debit', 'card'] // Migration = SEPA + Carte pour le paiement unique
+      : ['sepa_debit']         // Pas de migration = SEPA uniquement
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customer.id,
-      payment_method_types: ['sepa_debit', 'card'], // SEPA + Carte bancaire avec 3DS
+      payment_method_types: paymentMethods,
       line_items: [
         {
           price_data: {

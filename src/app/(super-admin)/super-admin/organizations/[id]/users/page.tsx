@@ -292,7 +292,7 @@ export default function OrganizationUsersPage({ params }: { params: Promise<{ id
                     >
                       Modifier
                     </button>
-                    {user.role !== 'ORG_OWNER' && (
+                    {user.role !== 'ORG_ADMIN' && (
                       <button
                         onClick={() => handleDelete(user.id)}
                         className="text-red-600 hover:text-red-900"

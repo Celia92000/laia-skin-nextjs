@@ -87,7 +87,7 @@ export async function GET() {
 
         // Mapper les rôles vers des labels français pour l'équipe
         const roleLabels: Record<string, string> = {
-          'ORG_OWNER': 'Propriétaire',
+          'ORG_ADMIN': 'Propriétaire',
           'ORG_ADMIN': 'Administrateur',
           'LOCATION_MANAGER': 'Responsable d\'établissement',
           'STAFF': 'Praticien(ne)',
@@ -456,7 +456,7 @@ export async function POST(request: Request) {
         email: data.ownerEmail,
         password: hashedPassword,
         name: data.ownerEmail.split('@')[0],
-        role: 'ORG_OWNER',
+        role: 'ORG_ADMIN',
         phone: data.ownerPhone
       }
     })

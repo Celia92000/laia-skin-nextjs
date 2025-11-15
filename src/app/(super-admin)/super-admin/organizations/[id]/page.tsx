@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, CreditCard, FileText, Download, Eye, Building2, Globe, User, Key } from 'lucide-react'
+import CommunicationHistory from '@/components/super-admin/CommunicationHistory'
 
 interface Organization {
   id: string
@@ -70,6 +71,8 @@ export default function OrganizationDetailPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     fetchOrganization()
@@ -84,6 +87,11 @@ export default function OrganizationDetailPage() {
         setOrganization(data.organization)
         setInvoices(data.invoices || [])
         setUsers(data.users || [])
+
+        // Récupérer le mot de passe généré depuis l'historique des communications
+        if (data.organization?.ownerEmail) {
+          fetchGeneratedPassword(data.organization.ownerEmail)
+        }
       } else {
         alert('Organisation introuvable')
         router.push('/super-admin/organizations')
@@ -93,6 +101,25 @@ export default function OrganizationDetailPage() {
       alert('Erreur lors du chargement')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchGeneratedPassword(email: string) {
+    try {
+      const params = new URLSearchParams({ clientEmail: email })
+      const res = await fetch(`/api/crm/communications?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        // Chercher l'email de bienvenue avec les identifiants
+        const welcomeEmail = data.history?.find((comm: any) =>
+          comm.metadata?.hasCredentials && comm.metadata?.generatedPassword
+        )
+        if (welcomeEmail?.metadata?.generatedPassword) {
+          setGeneratedPassword(welcomeEmail.metadata.generatedPassword)
+        }
+      }
+    } catch (error) {
+      console.error('Erreur récupération mot de passe:', error)
     }
   }
 
@@ -235,6 +262,24 @@ export default function OrganizationDetailPage() {
                     <p className="text-sm text-gray-600">Propriétaire</p>
                     <p className="font-medium">{owner?.name || 'Non renseigné'}</p>
                   </div>
+                  {generatedPassword && (
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">Mot de passe généré</p>
+                      <div className="flex items-center gap-3">
+                        {showPassword ? (
+                          <p className="font-mono text-lg font-bold text-blue-900">{generatedPassword}</p>
+                        ) : (
+                          <p className="font-mono text-lg text-gray-500">••••••••••••</p>
+                        )}
+                        <button
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                        >
+                          {showPassword ? '🙈 Masquer' : '👁️ Afficher'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="pt-2">
                     <p className="text-xs text-blue-600">
                       💡 Le mot de passe a été envoyé par email lors de la création du compte
@@ -352,6 +397,12 @@ export default function OrganizationDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Historique des communications */}
+            <CommunicationHistory
+              organizationId={organization.id}
+              ownerEmail={organization.ownerEmail}
+            />
           </div>
 
           {/* Colonne latérale */}

@@ -223,7 +223,7 @@ export default function GlobalUsersPage() {
   const inactiveUsers = users.filter(u => !u.isActive).length
   const roleStats = {
     SUPER_ADMIN: users.filter(u => u.role === 'SUPER_ADMIN').length,
-    ORG_OWNER: users.filter(u => u.role === 'ORG_OWNER').length,
+    ORG_OWNER: users.filter(u => u.role === 'ORG_ADMIN').length,
     ORG_ADMIN: users.filter(u => u.role === 'ORG_ADMIN').length,
     LOCATION_MANAGER: users.filter(u => u.role === 'LOCATION_MANAGER').length,
     STAFF: users.filter(u => u.role === 'STAFF').length,

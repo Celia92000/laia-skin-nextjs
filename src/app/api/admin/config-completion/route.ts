@@ -31,8 +31,72 @@ export async function GET(request: NextRequest) {
       where: { organizationId }
     })
 
-    // Calculer le taux de complétion pour chaque section
-    // ⚠️ Ne montrer QUE ce qui n'est PAS dans l'onboarding !
+    // Compter les packages
+    const packagesCount = await prisma.service.count({
+      where: {
+        organizationId,
+        isPackage: true
+      }
+    })
+
+    // Compter les réservations
+    const bookingsCount = await prisma.reservation.count({
+      where: { organizationId }
+    })
+
+    // Compter les membres de l'équipe
+    const teamMembersCount = await prisma.user.count({
+      where: { organizationId }
+    })
+
+    // Compter les produits boutique
+    const productsCount = await prisma.stockItem.count({
+      where: { organizationId }
+    })
+
+    // Compter les articles de blog
+    const blogPostsCount = await prisma.blogPost.count({
+      where: { organizationId }
+    })
+
+    // Compter les emplacements
+    const locationsCount = await prisma.location.count({
+      where: { organizationId }
+    })
+
+    // Calculer les stats pour le wizard
+    const wizardStats = {
+      // PHASE 1
+      hasTemplate: !!config?.websiteTemplateId,
+      hasCustomColors: !!(config?.primaryColor && config?.secondaryColor),
+      hasLogo: !!config?.logoUrl,
+      hasServices: servicesCount > 0,
+      hasBusinessHours: !!(config?.businessHours && config?.businessHours !== '{}'),
+
+      // PHASE 2
+      hasMultipleServices: servicesCount >= 3,
+      hasPhotos: !!(config?.galleryImages && config?.galleryImages !== '[]'),
+      hasDescription: !!(config?.aboutText && config?.aboutText.length > 50),
+      hasSocialMedia: !!(config?.instagramUrl || config?.facebookUrl || config?.tiktokUrl),
+      hasPackages: packagesCount > 0,
+      hasStripeConfigured: !!org.stripeAccountId,
+      hasLoyaltyProgram: !!config?.loyaltyProgramEnabled,
+
+      // PHASE 3
+      hasTeamMembers: teamMembersCount > 1,
+      hasBookings: bookingsCount > 0,
+      hasCRMConfigured: true, // CRM est toujours disponible
+      hasEmailConfigured: !!config?.smtpConfigured,
+      hasBlogPost: blogPostsCount > 0,
+      hasShopProducts: productsCount > 0,
+      hasWhatsAppConfigured: !!config?.whatsappNumber,
+      hasSocialMediaConfigured: !!config?.instagramAccessToken,
+      hasMultipleLocations: locationsCount > 1,
+      hasNotificationsConfigured: !!config?.webPushEnabled,
+      hasSMSCredits: (org.smsCredits || 0) > 0
+    }
+
+    // Calculer le taux de complétion pour chaque section (ancien système)
     const sections = {
       services: {
         label: 'Services additionnels',
@@ -94,7 +158,18 @@ export async function GET(request: NextRequest) {
       globalPercentage,
       totalFields,
       completedFields,
-      sections: completionData
+      sections: completionData,
+      wizardStats, // Nouveau: stats pour le wizard intelligent
+      plan: org.plan, // Plan de l'organisation
+      features: {
+        featureCRM: org.featureCRM,
+        featureEmailing: org.featureEmailing,
+        featureBlog: org.featureBlog,
+        featureShop: org.featureShop,
+        featureWhatsApp: org.featureWhatsApp,
+        featureSocialMedia: org.featureSocialMedia,
+        featureSMS: org.featureSMS
+      }
     })
 
   } catch (error) {

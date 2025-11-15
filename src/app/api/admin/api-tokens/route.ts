@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     // Vérifier l'authentification admin
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);
-    const allowedRoles = ['SUPER_ADMIN', 'ORG_OWNER'];
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN'];
     if (!auth.isValid || !auth.user || !allowedRoles.includes(auth.user.role)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }

@@ -15,8 +15,7 @@ datasource db {
 
 enum UserRole {
   SUPER_ADMIN // Propriétaire de la plateforme (accès complet à tous les instituts)
-  ORG_OWNER // Propriétaire d'un institut (accès complet à son organisation)
-  ORG_ADMIN // Co-gérant d'un institut (accès complet à l'organisation)
+  ORG_ADMIN // Propriétaire/Co-gérant d'un institut (accès complet à l'organisation)
   ACCOUNTANT // Comptable (accès aux factures, paiements, stats financières)
   LOCATION_MANAGER // Responsable d'un point de vente (accès limité à son emplacement)
   STAFF // Employé (accès opérationnel limité)
@@ -619,10 +618,12 @@ model User {
   id             String   @id @default(cuid())
   organizationId String? // null pour SUPER_ADMIN
   email          String
-  password       String
+  password       String? // Nullable pour les connexions OAuth (Google, etc.)
   name           String
   phone          String?
   role           UserRole @default(CLIENT)
+  emailVerified  DateTime? // NextAuth - Date de vérification de l'email
+  image          String? // NextAuth - Photo de profil (Google, etc.)
 
   // Permissions personnalisées (JSON)
   customPermissions String? // {"canViewRevenue": false, "canDeleteReservations": true}
@@ -665,6 +666,10 @@ model User {
   referredBy        Referral?         @relation("ReferralReferred")
   discounts         Discount[]
 
+  // NextAuth Relations
+  accounts          Account[] // Connexions OAuth (Google, etc.)
+  sessions          Session[] // Sessions NextAuth
+
   // CRM Relations
   assignedLeads    Lead[]
   leadInteractions LeadInteraction[]
@@ -684,7 +689,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([organizationId, email])
+  @@unique([organizationId, email]) // Multi-tenant: email unique par organization
   @@index([email])
   @@index([organizationId])
   @@index([role])
@@ -3175,5 +3180,47 @@ model SMSLog {
   @@index([clientId])
   @@index([status])
   @@index([sentAt])
+}
+
+// ============================================
+// NEXTAUTH MODELS (OAuth Google, etc.)
+// ============================================
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 

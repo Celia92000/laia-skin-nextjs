@@ -156,7 +156,7 @@ export async function DELETE(
     }
 
     // Empêcher la suppression du propriétaire
-    if (user.role === 'ORG_OWNER') {
+    if (user.role === 'ORG_ADMIN') {
       return NextResponse.json(
         { error: 'Impossible de supprimer le propriétaire de l\'organisation' },
         { status: 400 }

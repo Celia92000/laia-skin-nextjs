@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
-import { QueryProvider } from "@/providers/QueryProvider";
+import Providers from "@/components/providers/Providers";
 import { getSiteConfig } from "@/lib/config-service";
 import "./globals.css";
 
@@ -199,9 +199,9 @@ export default async function RootLayout({
         className={`${inter.className} antialiased`}
       >
         <JsonLd />
-        <QueryProvider>
+        <Providers>
           {children}
-        </QueryProvider>
+        </Providers>
         <Analytics />
       </body>
     </html>

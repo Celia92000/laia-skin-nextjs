@@ -176,7 +176,7 @@ export default function SecureLoginPage() {
           // Redirection basée sur le rôle
           const roleRedirects = {
             'SUPER_ADMIN': '/super-admin',
-            'ORG_OWNER': '/admin',
+            'ORG_ADMIN': '/admin',
             'ORG_ADMIN': '/admin',
             'LOCATION_MANAGER': '/admin/planning',
             'STAFF': '/admin/planning',
@@ -307,7 +307,7 @@ export default function SecureLoginPage() {
   const goToSpace = () => {
     const roleRedirects: {[key: string]: string} = {
       'SUPER_ADMIN': '/super-admin',
-      'ORG_OWNER': '/admin',
+      'ORG_ADMIN': '/admin',
       'ORG_ADMIN': '/admin',
       'LOCATION_MANAGER': '/admin/planning',
       'STAFF': '/admin/planning',

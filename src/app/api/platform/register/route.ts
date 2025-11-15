@@ -114,7 +114,7 @@ export async function POST(request: Request) {
         email: ownerEmail,
         password: hashedPassword,
         phone: ownerPhone,
-        role: 'ORG_OWNER',
+        role: 'ORG_ADMIN',
         organizationId: organization.id
       }
     })

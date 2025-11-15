@@ -250,7 +250,7 @@ export function hasLocationAccess(
   // SUPER_ADMIN, ORG_OWNER ont accès à tous les emplacements de l'organisation
   if (
     userRole === 'SUPER_ADMIN' ||
-    userRole === 'ORG_OWNER'
+    userRole === 'ORG_ADMIN'
   ) {
     return true
   }
@@ -277,7 +277,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
  */
 export const ROLE_HIERARCHY: UserRole[] = [
   'SUPER_ADMIN',
-  'ORG_OWNER',
+  'ORG_ADMIN',
   'LOCATION_MANAGER',
   'STAFF',
   'RECEPTIONIST',

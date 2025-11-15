@@ -41,19 +41,18 @@ function OldLogin() {
           const data = await response.json();
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          
+
           // Redirection basée sur le rôle
-          if (data.user.role === 'ADMIN' || data.user.role === 'admin') {
-            // Les admins vont directement au dashboard admin
+          const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+
+          if (adminRoles.includes(data.user.role)) {
+            // Tous les rôles admin/staff vont au dashboard admin
             window.location.href = '/admin';
-          } else if (data.user.role === 'COMPTABLE') {
-            // Les comptables vont vers leur espace dédié
-            window.location.href = '/comptable';
-          } else if (data.user.role === 'EMPLOYEE') {
-            // Les employés vont sur le site normal (avec bouton admin dans le header)
-            window.location.href = '/';
+          } else if (data.user.role === 'CLIENT') {
+            // Les clients vont vers l'espace client
+            window.location.href = '/espace-client';
           } else {
-            // Les clients vont vers la réservation
+            // Par défaut, redirection vers la réservation
             window.location.href = '/reservation';
           }
         } else {

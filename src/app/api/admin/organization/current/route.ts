@@ -40,6 +40,15 @@ export async function GET(request: Request) {
             isOnboarded: true,
             smsCredits: true,
             smsTotalPurchased: true,
+            // Features activées
+            featureCRM: true,
+            featureEmailing: true,
+            featureWhatsApp: true,
+            featureSMS: true,
+            featureShop: true,
+            featureStock: true,
+            featureSocialMedia: true,
+            featureBlog: true,
           }
         }
       }

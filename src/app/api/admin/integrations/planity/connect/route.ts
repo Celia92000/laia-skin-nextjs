@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'utilisateur est bien propriétaire ou admin
-    if (!['ORG_OWNER'].includes(user.role)) {
+    if (!['ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 

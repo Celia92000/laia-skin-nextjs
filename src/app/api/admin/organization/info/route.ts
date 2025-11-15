@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur a les droits de modification (ORG_OWNER, SUPER_ADMIN uniquement)
-    const allowedRoles = ['ORG_OWNER', 'SUPER_ADMIN']
+    const allowedRoles = ['ORG_ADMIN', 'SUPER_ADMIN']
     if (!session.user.role || !allowedRoles.includes(session.user.role)) {
       return NextResponse.json({
         error: 'Vous n\'avez pas les droits pour modifier ces informations. Seuls les propriétaires et administrateurs peuvent effectuer cette action.'

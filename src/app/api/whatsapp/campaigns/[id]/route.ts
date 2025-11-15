@@ -55,7 +55,7 @@ export async function PUT(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
+    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -130,7 +130,7 @@ export async function DELETE(
       select: { role: true }
     });
 
-    if (!user || (user.role !== 'ORG_OWNER' && user.role !== 'SUPER_ADMIN')) {
+    if (!user || (user.role !== 'ORG_ADMIN' && user.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
