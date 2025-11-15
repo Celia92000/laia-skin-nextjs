@@ -10,6 +10,24 @@ export default function CGVPage() {
           <p className="text-sm text-gray-600 mt-2">Plateforme SaaS de gestion pour instituts de beauté</p>
         </div>
 
+        {/* Bannière Sans Engagement */}
+        <div className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-500 rounded-xl p-6 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="text-5xl">✅</div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-green-900 mb-2">
+                SANS ENGAGEMENT • SANS PRÉAVIS
+              </h2>
+              <p className="text-lg text-green-800">
+                <strong>Résiliez quand vous voulez, sans frais, sans préavis.</strong>
+              </p>
+              <p className="text-sm text-green-700 mt-2">
+                Comme Planity, nous croyons en la liberté totale. Votre abonnement prend fin à la date que vous choisissez, sans condition.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-6 text-gray-700 leading-relaxed">
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Article 1 - Définitions</h2>
@@ -160,13 +178,17 @@ export default function CGVPage() {
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">7.2 - Résiliation par le Client</h3>
             <p>
-              Le Client peut résilier son abonnement à tout moment depuis son Espace Client ou par email à contact@laiaconnect.fr.
+              Le Client peut résilier son abonnement <strong>à tout moment, sans préavis et sans frais</strong>, depuis son Espace Client ou par email à contact@laiaconnect.fr.
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li><strong>Préavis :</strong> 30 jours calendaires</li>
-              <li><strong>Effet :</strong> Fin de la période d'abonnement en cours</li>
-              <li><strong>Remboursement :</strong> Aucun (prorata non applicable)</li>
+              <li><strong>Préavis :</strong> Aucun</li>
+              <li><strong>Effet :</strong> La résiliation prend effet à la fin de la période de facturation en cours (pas de remboursement au prorata)</li>
+              <li><strong>Accès :</strong> Le Client conserve l'accès au Service jusqu'à la fin de la période déjà payée</li>
+              <li><strong>Remboursement :</strong> Aucun remboursement de la période en cours</li>
             </ul>
+            <p className="mt-3 text-sm text-gray-700 bg-blue-50 p-3 rounded-lg border border-blue-200">
+              💡 <strong>Exemple :</strong> Si vous résiliez le 15 janvier et que votre facturation mensuelle court du 1er au 31 janvier, vous conservez l'accès jusqu'au 31 janvier. Le prélèvement du 1er février n'aura pas lieu.
+            </p>
 
             <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">7.3 - Résiliation par LAIA Connect</h3>
             <p>
