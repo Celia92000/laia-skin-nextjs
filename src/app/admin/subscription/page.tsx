@@ -21,6 +21,8 @@ export default function SubscriptionPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [organization, setOrganization] = useState<Organization | null>(null)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     fetchOrganization()
@@ -60,6 +62,33 @@ export default function SubscriptionPage() {
     const diffTime = endDate.getTime() - now.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
+  }
+
+  async function handleCancelSubscription() {
+    if (!organization?.stripeSubscriptionId) return
+
+    setCancelling(true)
+    try {
+      const response = await fetch('/api/admin/subscription/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        alert('✅ Votre abonnement sera résilié à la fin de la période en cours.')
+        setShowCancelModal(false)
+        fetchOrganization() // Recharger les données
+      } else {
+        const data = await response.json()
+        alert('❌ Erreur : ' + (data.error || 'Impossible de résilier'))
+      }
+    } catch (error) {
+      console.error('Erreur résiliation:', error)
+      alert('❌ Erreur lors de la résiliation')
+    } finally {
+      setCancelling(false)
+    }
   }
 
   if (loading) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Download, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, Zap, ArrowRight, Sparkles } from 'lucide-react';
 import { OrgPlan } from '@prisma/client';
 import { getPlanName, getPlanPrice, getPlanDescription, PLAN_FEATURES } from '@/lib/features-simple';
+import CancelSubscriptionSection from './CancelSubscriptionSection';
 
 interface InvoiceMetadata {
   plan: string;
@@ -64,6 +65,7 @@ export default function SubscriptionInvoices() {
   const [selectedNewPlan, setSelectedNewPlan] = useState<OrgPlan | null>(null);
   const [changingPlan, setChangingPlan] = useState(false);
   const [planChangeSuccess, setPlanChangeSuccess] = useState(false);
+  const [orgInfo, setOrgInfo] = useState<any>(null);
 
   useEffect(() => {
     fetchInvoices();
@@ -81,6 +83,7 @@ export default function SubscriptionInvoices() {
       if (response.ok) {
         const data = await response.json();
         setCurrentPlan(data.plan);
+        setOrgInfo(data); // Stocker toutes les infos (status, currentPeriodEnd, etc.)
       }
     } catch (err) {
       console.error('Erreur chargement plan:', err);
@@ -265,6 +268,12 @@ export default function SubscriptionInvoices() {
           </button>
         </div>
       )}
+
+      {/* Section de résiliation */}
+      <CancelSubscriptionSection
+        currentPeriodEnd={orgInfo?.currentPeriodEnd}
+        status={orgInfo?.status}
+      />
 
       {/* Info abonnement */}
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
