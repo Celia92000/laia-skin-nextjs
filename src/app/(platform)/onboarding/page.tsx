@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { signIn, useSession } from 'next-auth/react'
 import { validateSIRET, validateSIRENorSIRET, validateEmail, validatePhoneNumber, formatSIRET } from '@/lib/validation'
 import { getPlanPrice, getPlanName } from '@/lib/features-simple'
@@ -673,8 +674,14 @@ function OnboardingForm() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <Link href="/platform" className="flex items-center gap-2">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
-                <span className="text-xl">🌸</span>
+              <div className="relative w-12 h-12">
+                <Image
+                  src="/logo-laia-connect.png?v=3"
+                  alt="LAIA Connect Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                />
               </div>
               <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 LAIA Connect
@@ -2778,8 +2785,13 @@ export default function OnboardingPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 rounded-2xl inline-block mb-4">
-            <span className="text-4xl">🌸</span>
+          <div className="relative w-24 h-24 mx-auto mb-4">
+            <Image
+              src="/logo-laia-connect.png?v=3"
+              alt="LAIA Connect Logo"
+              fill
+              className="object-contain"
+            />
           </div>
           <p className="text-gray-600 text-lg">Chargement...</p>
         </div>

@@ -3,6 +3,7 @@ import { getInvoiceSettings } from './subscription-invoice-generator'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { PrismaClient } from '@prisma/client'
+import { existsSync } from 'fs'
 
 const prisma = new PrismaClient()
 
@@ -146,6 +147,16 @@ export async function generateSubscriptionContract(
         organizationName: data.organizationName,
         ownerName: `${data.ownerFirstName} ${data.ownerLastName}`,
         contractNumber: data.contractNumber
+      }
+
+      // Logo LAIA Connect
+      const logoPath = join(process.cwd(), 'public', 'logo-laia-connect.png')
+      if (existsSync(logoPath)) {
+        const pageWidth = doc.page.width
+        const logoWidth = 80
+        const logoX = (pageWidth - logoWidth) / 2
+        doc.image(logoPath, logoX, 40, { width: logoWidth })
+        doc.moveDown(4)
       }
 
       // En-tête

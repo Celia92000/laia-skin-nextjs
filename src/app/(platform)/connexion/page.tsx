@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function UniversalLoginPage() {
   const router = useRouter()
@@ -112,8 +113,17 @@ export default function UniversalLoginPage() {
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <Link href="/platform" className="inline-block">
-            <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-8 rounded-2xl shadow-xl mb-4 inline-block">
-              <h1 className="text-5xl font-bold text-white">
+            <div className="bg-white p-8 rounded-2xl shadow-xl mb-4 inline-block">
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                <Image
+                  src="/logo-laia-connect.png?v=3"
+                  alt="LAIA Connect Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 LAIA Connect
               </h1>
             </div>

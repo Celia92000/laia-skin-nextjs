@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import ContactForm from '@/components/platform/ContactForm'
 import DemoBooking from '@/components/platform/DemoBooking'
@@ -195,15 +196,21 @@ export default function PlatformHomePage() {
       >
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/platform" className="flex items-center gap-3 group">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-2.5 rounded-xl shadow-lg">
-                <span className="text-xl">🌸</span>
+            <Link href="/platform" className="flex items-center gap-4 group">
+              <div className="relative w-32 h-32 md:w-40 md:h-40 flex-shrink-0">
+                <Image
+                  src="/logo-laia-connect.png?v=3"
+                  alt="LAIA Connect Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   LAIA Connect
                 </h1>
-                <p className="text-xs text-purple-600 font-medium">Logiciel de gestion</p>
+                <p className="text-base md:text-lg text-purple-600 font-medium">Logiciel de gestion</p>
               </div>
             </Link>
             {/* Navigation Desktop */}
@@ -264,8 +271,13 @@ export default function PlatformHomePage() {
               <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="bg-white p-2 rounded-lg">
-                      <span className="text-xl">🌸</span>
+                    <div className="relative w-20 h-20 bg-white p-1 rounded-lg">
+                      <Image
+                        src="/logo-laia-connect.png?v=3"
+                        alt="LAIA Connect Logo"
+                        fill
+                        className="object-contain"
+                      />
                     </div>
                     <div>
                       <h3 className="text-white font-bold text-lg">LAIA Connect</h3>
@@ -1063,8 +1075,13 @@ export default function PlatformHomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
-                  <span className="text-xl">🌸</span>
+                <div className="relative w-20 h-20">
+                  <Image
+                    src="/logo-laia-connect.png?v=3"
+                    alt="LAIA Connect Logo"
+                    fill
+                    className="object-contain"
+                  />
                 </div>
                 <h4 className="text-gray-900 font-bold text-lg">LAIA Connect</h4>
               </div>

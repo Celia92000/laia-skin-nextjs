@@ -185,6 +185,7 @@ export async function sendWelcomeEmail(
           <!-- En-tête -->
           <tr>
             <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+              <img src="https://laiaconnect.fr/logo-laia-connect.png" alt="LAIA Connect" style="width: 120px; height: 120px; margin-bottom: 20px;" />
               <h1 style="color: white; font-size: 32px; margin: 0 0 10px 0; font-weight: 700;">🎉 Bienvenue sur LAIA Connect !</h1>
               <p style="color: rgba(255, 255, 255, 0.95); font-size: 16px; margin: 0;">Votre site est prêt, ${ownerFirstName} !</p>
             </td>
@@ -464,6 +465,7 @@ export async function sendOnboardingGuide(data: WelcomeEmailData) {
 
           <tr>
             <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+              <img src="https://laiaconnect.fr/logo-laia-connect.png" alt="LAIA Connect" style="width: 120px; height: 120px; margin-bottom: 20px;" />
               <h1 style="color: white; font-size: 28px; margin: 0 0 10px 0; font-weight: 700;">📚 Guide de Démarrage Rapide</h1>
               <p style="color: rgba(255, 255, 255, 0.95); font-size: 16px; margin: 0;">En 10 minutes, votre site sera opérationnel !</p>
             </td>
@@ -1050,6 +1052,7 @@ export async function sendSuperAdminNotification(data: {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+              <img src="https://laiaconnect.fr/logo-laia-connect.png" alt="LAIA Connect" style="width: 120px; height: 120px; margin-bottom: 20px;" />
               <h1 style="color: white; font-size: 32px; margin: 0 0 10px 0; font-weight: 700;">🎉 Nouvelle Inscription !</h1>
               <p style="color: rgba(255, 255, 255, 0.95); font-size: 16px; margin: 0;">Une nouvelle organisation vient de s'inscrire</p>
             </td>

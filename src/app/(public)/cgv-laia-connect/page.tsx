@@ -1,8 +1,19 @@
+import Image from 'next/image'
+
 export default function CGVPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8 pb-6 border-b-2 border-purple-600">
+          <div className="relative w-24 h-24 mx-auto mb-4">
+            <Image
+              src="/logo-laia-connect.png"
+              alt="LAIA Connect Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Conditions Générales de Vente
           </h1>

@@ -1,5 +1,7 @@
 import PDFDocument from 'pdfkit'
 import { prisma } from './prisma'
+import { join } from 'path'
+import { existsSync } from 'fs'
 
 interface SubscriptionInvoiceData {
   organizationId: string
@@ -167,32 +169,40 @@ export async function generateSubscriptionInvoicePDF(
       const grayDark = '#374151'
       const grayLight = '#9ca3af'
 
+      // Logo LAIA Connect
+      const logoPath = join(process.cwd(), 'public', 'logo-laia-connect.png')
+      let startY = 50
+      if (existsSync(logoPath)) {
+        doc.image(logoPath, 50, 40, { width: 60 })
+        startY = 115
+      }
+
       // ======================
       // EN-TÊTE
       // ======================
       doc.fontSize(24)
          .fillColor(primaryColor)
-         .text(settings.companyName, 50, 50)
+         .text(settings.companyName, 50, startY)
 
       doc.fontSize(10)
          .fillColor(grayLight)
-         .text('Plateforme SaaS pour Instituts de Beauté', 50, 80)
+         .text('Plateforme SaaS pour Instituts de Beauté', 50, startY + 30)
 
       // Informations LAIA (émetteur)
       doc.fontSize(9)
          .fillColor(grayDark)
-         .text(settings.companyName, 50, 110)
-         .text(settings.legalStatus, 50, 125)
-         .text(settings.address, 50, 140)
-         .text(`${settings.postalCode} ${settings.city}, ${settings.country}`, 50, 155)
-         .text('', 50, 170)
+         .text(settings.companyName, 50, startY + 60)
+         .text(settings.legalStatus, 50, startY + 75)
+         .text(settings.address, 50, startY + 90)
+         .text(`${settings.postalCode} ${settings.city}, ${settings.country}`, 50, startY + 105)
+         .text('', 50, startY + 120)
 
       doc.fontSize(8)
          .fillColor(grayLight)
-         .text(`SIRET : ${settings.siret}`, 50, 185)
-         .text(`Code APE : ${settings.apeCode} (Programmation informatique)`, 50, 197)
+         .text(`SIRET : ${settings.siret}`, 50, startY + 135)
+         .text(`Code APE : ${settings.apeCode} (Programmation informatique)`, 50, startY + 147)
 
-      let currentInfoY = 209
+      let currentInfoY = startY + 159
       if (settings.isCompany && settings.tvaNumber) {
         doc.text(`TVA : ${settings.tvaNumber}`, 50, currentInfoY)
         currentInfoY += 12
