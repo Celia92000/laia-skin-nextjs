@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       orderBy: { publishedAt: 'desc' }
     });
 
-    log.info('📚 Articles trouvés dans la DB:', posts.length);
+    log.info('📚 Articles trouvés dans la DB:', { count: posts.length });
     return NextResponse.json(posts);
   } catch (error) {
     log.error('❌ Erreur lors de la récupération des articles:', error);
