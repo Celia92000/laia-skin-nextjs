@@ -6,8 +6,9 @@ import { log } from '@/lib/logger';
 // GET - Détail d'une campagne SMS
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -23,7 +24,7 @@ export async function GET(
 
     const campaign = await prisma.sMSCampaign.findUnique({
       where: {
-        id: params.id,
+        id: id,
         organizationId: decoded.organizationId
       }
     });
@@ -42,8 +43,9 @@ export async function GET(
 // PUT - Modifier une campagne SMS
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -60,7 +62,7 @@ export async function PUT(
     // Vérifier que la campagne existe et appartient à l'organisation
     const existingCampaign = await prisma.sMSCampaign.findUnique({
       where: {
-        id: params.id,
+        id: id,
         organizationId: decoded.organizationId
       }
     });
@@ -113,7 +115,7 @@ export async function PUT(
 
     const campaign = await prisma.sMSCampaign.update({
       where: {
-        id: params.id
+        id: id
       },
       data: {
         name,
@@ -135,8 +137,9 @@ export async function PUT(
 // DELETE - Supprimer une campagne SMS
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -153,7 +156,7 @@ export async function DELETE(
     // Vérifier que la campagne existe et appartient à l'organisation
     const existingCampaign = await prisma.sMSCampaign.findUnique({
       where: {
-        id: params.id,
+        id: id,
         organizationId: decoded.organizationId
       }
     });
@@ -164,7 +167,7 @@ export async function DELETE(
 
     await prisma.sMSCampaign.delete({
       where: {
-        id: params.id
+        id: id
       }
     });
 

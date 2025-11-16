@@ -10,8 +10,9 @@ import { log } from '@/lib/logger';
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Vérifier l'authentification
     const cookieStore = await cookies()

@@ -6,8 +6,9 @@ import { log } from '@/lib/logger';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Vérifier que l'utilisateur est super admin
     const auth = await verifyAuth(req)
@@ -18,7 +19,7 @@ export async function POST(
       )
     }
 
-    const organizationId = params.id
+    const organizationId = id
 
     // Récupérer l'organisation
     const organization = await prisma.organization.findUnique({

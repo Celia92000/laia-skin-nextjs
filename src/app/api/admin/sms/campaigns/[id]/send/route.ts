@@ -7,8 +7,9 @@ import { log } from '@/lib/logger';
 // POST - Envoyer une campagne SMS
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -25,7 +26,7 @@ export async function POST(
     // Récupérer la campagne
     const campaign = await prisma.sMSCampaign.findUnique({
       where: {
-        id: params.id,
+        id: id,
         organizationId: decoded.organizationId
       }
     });
@@ -158,7 +159,7 @@ export async function POST(
     // Mettre à jour la campagne avec les résultats réels
     const updatedCampaign = await prisma.sMSCampaign.update({
       where: {
-        id: params.id
+        id: id
       },
       data: {
         status: 'SENT',

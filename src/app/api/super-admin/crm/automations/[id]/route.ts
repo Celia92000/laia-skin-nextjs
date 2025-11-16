@@ -10,8 +10,9 @@ import { log } from '@/lib/logger';
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions)
 
@@ -28,7 +29,7 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const automationId = params.id
+    const automationId = id
 
     // Dans une vraie implémentation, on mettrait à jour en base
     return NextResponse.json({
@@ -53,8 +54,9 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions)
 
@@ -70,7 +72,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const automationId = params.id
+    const automationId = id
 
     // Dans une vraie implémentation, on supprimerait de la base
     return NextResponse.json({
