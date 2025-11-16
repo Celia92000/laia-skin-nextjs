@@ -29,11 +29,10 @@ export async function GET(
 
     const { id } = await params;
 
-    // 🔒 Récupérer la catégorie DANS CETTE ORGANISATION
+    // 🔒 Récupérer la catégorie (les catégories sont globales)
     const category = await prisma.serviceCategory.findFirst({
       where: {
-        id,
-        organizationId: user.organizationId
+        id
       },
       include: {
         subcategories: {
@@ -92,11 +91,10 @@ export async function PATCH(
 
     const { id } = await params;
 
-    // 🔒 Vérifier que la catégorie appartient à cette organisation
+    // 🔒 Vérifier que la catégorie existe (les catégories sont globales)
     const existingCat = await prisma.serviceCategory.findFirst({
       where: {
-        id,
-        organizationId: user.organizationId
+        id
       }
     });
 
@@ -117,11 +115,10 @@ export async function PATCH(
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // 🔒 Vérifier si le slug existe déjà DANS CETTE ORGANISATION (sauf pour cette catégorie)
+      // 🔒 Vérifier si le slug existe déjà (sauf pour cette catégorie)
       const existingCategory = await prisma.serviceCategory.findFirst({
         where: {
           slug,
-          organizationId: user.organizationId,
           id: { not: id }
         }
       });
@@ -192,11 +189,10 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // 🔒 Vérifier si la catégorie a des services associés DANS CETTE ORGANISATION
+    // 🔒 Vérifier si la catégorie a des services associés
     const category = await prisma.serviceCategory.findFirst({
       where: {
-        id,
-        organizationId: user.organizationId
+        id
       },
       include: {
         _count: {
