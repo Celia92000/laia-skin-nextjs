@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    // Vérifier que l'utilisateur a un mot de passe (pas OAuth)
+    if (!user.password) {
+      return NextResponse.json({ error: 'Impossible de changer le mot de passe pour un compte OAuth' }, { status: 400 });
+    }
+
     // Vérifier le mot de passe actuel
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {

@@ -48,6 +48,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
 
+    // Vérifier que l'utilisateur a un mot de passe (pas OAuth)
+    if (!user.password) {
+      return NextResponse.json({ error: 'Impossible de changer le mot de passe pour un compte OAuth' }, { status: 400 });
+    }
+
     // Vérifier le mot de passe actuel
     const isValidPassword = await bcrypt.compare(currentPassword, user.password);
     
