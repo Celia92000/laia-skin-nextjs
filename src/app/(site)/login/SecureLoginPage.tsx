@@ -307,7 +307,6 @@ export default function SecureLoginPage() {
     const roleRedirects: {[key: string]: string} = {
       'SUPER_ADMIN': '/super-admin',
       'ORG_ADMIN': '/admin',
-      'ORG_ADMIN': '/admin',
       'LOCATION_MANAGER': '/admin/planning',
       'STAFF': '/admin/planning',
       'RECEPTIONIST': '/admin/planning',
