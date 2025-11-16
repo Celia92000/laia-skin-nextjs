@@ -27,7 +27,7 @@ interface Lead {
   score: number
   probability: number
   estimatedValue: number | null
-  qualification?: LeadQualification
+  qualification?: LeadQualification | null
   assignedTo: {
     id: string
     name: string
