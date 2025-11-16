@@ -259,7 +259,22 @@ export default function NewOrganizationPage() {
                       // Auto-générés
                       slug: '',
                       subdomain: '',
-                      domain: ''
+                      domain: '',
+                      // Design et template
+                      websiteTemplateId: 'modern',
+                      primaryColor: '#d4b5a0',
+                      secondaryColor: '#c9a084',
+                      accentColor: '#2c3e50',
+                      // Déblocages spéciaux
+                      customFeatureCRM: false,
+                      customFeatureEmailing: false,
+                      customFeatureBlog: false,
+                      customFeatureShop: false,
+                      customFeatureWhatsApp: false,
+                      customFeatureSMS: false,
+                      customFeatureSocialMedia: false,
+                      customFeatureStock: false,
+                      customAddonPrice: 0
                     })
                   }}
                   className="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition font-semibold"
