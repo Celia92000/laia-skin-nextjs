@@ -133,7 +133,21 @@ export function getTemplateById(id: string): WebsiteTemplate | undefined {
 /**
  * Récupère les templates disponibles pour un plan donné
  */
-export function getTemplatesForPlan(plan: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'): WebsiteTemplate[] {
+export function getTemplatesForPlan(plan: string): WebsiteTemplate[] {
+  // Mapping des anciens plans vers les nouveaux
+  const planMapping: Record<string, 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'> = {
+    SOLO: 'SOLO',
+    DUO: 'DUO',
+    TEAM: 'TEAM',
+    PREMIUM: 'PREMIUM',
+    STARTER: 'SOLO',
+    ESSENTIAL: 'DUO',
+    PROFESSIONAL: 'TEAM',
+    ENTERPRISE: 'PREMIUM'
+  }
+
+  const normalizedPlan = planMapping[plan] || 'SOLO'
+
   const tierHierarchy = {
     SOLO: ['SOLO'],
     DUO: ['SOLO', 'DUO'],
@@ -141,7 +155,7 @@ export function getTemplatesForPlan(plan: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'): 
     PREMIUM: ['SOLO', 'DUO', 'TEAM', 'PREMIUM']
   }
 
-  const allowedTiers = tierHierarchy[plan] || ['SOLO']
+  const allowedTiers = tierHierarchy[normalizedPlan] || ['SOLO']
 
   return websiteTemplates.filter(template =>
     allowedTiers.includes(template.minTier)
