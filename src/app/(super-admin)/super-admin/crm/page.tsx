@@ -43,6 +43,7 @@ interface Lead {
   lastContactDate: string | null
   nextFollowUpDate: string | null
   convertedAt?: string | null
+  lostReason?: string | null
 }
 
 const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; emoji: string }> = {
