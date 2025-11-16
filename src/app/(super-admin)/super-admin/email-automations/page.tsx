@@ -42,6 +42,7 @@ interface OnboardingTemplate {
   createdAt: Date
   updatedAt: Date
   currentlyUsed?: boolean
+  usage?: string
 }
 
 export default function EmailAutomationsPage() {

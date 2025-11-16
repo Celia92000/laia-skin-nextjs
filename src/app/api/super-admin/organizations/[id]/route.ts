@@ -37,9 +37,6 @@ export async function GET(
     // Récupérer l'organisation
     const organization = await prisma.organization.findUnique({
       where: { id },
-      include: {
-        config: true
-      },
       select: {
         id: true,
         name: true,
