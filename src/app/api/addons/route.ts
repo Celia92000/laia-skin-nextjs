@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger'
 import {
-import { log } from '@/lib/logger';
   getAvailableAddonsForPlan,
   activateAddons,
   deactivateAddons,
