@@ -61,13 +61,13 @@ const logger = winston.createLogger({
 // Wrapper pour faciliter l'utilisation
 export const log = {
   // Informations générales
-  info: (message: string, meta?: Record<string, any>) => {
-    logger.info(message, meta);
+  info: (message: string, meta?: any) => {
+    logger.info(message, typeof meta === 'object' && meta !== null ? meta : { value: meta });
   },
 
   // Avertissements
-  warn: (message: string, meta?: Record<string, any>) => {
-    logger.warn(message, meta);
+  warn: (message: string, meta?: any) => {
+    logger.warn(message, typeof meta === 'object' && meta !== null ? meta : { value: meta });
   },
 
   // Erreurs
