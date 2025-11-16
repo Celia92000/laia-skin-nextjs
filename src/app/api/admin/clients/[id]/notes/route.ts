@@ -125,18 +125,20 @@ export async function GET(
     }
 
     const token = authHeader.split(' ')[1];
-    
+
+    let adminUser: { role: string; organizationId: string | null } | null = null;
+
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      
+
       // Vérifier que le token contient un userId
       if (!decoded.userId) {
         return NextResponse.json({ error: 'Token invalide - userId manquant' }, { status: 401 });
       }
-      
+
       try {
         // 🔒 Récupérer l'admin avec son organizationId
-        const adminUser = await prisma.user.findFirst({
+        adminUser = await prisma.user.findFirst({
           where: { id: decoded.userId },
           select: { role: true, organizationId: true }
         });
