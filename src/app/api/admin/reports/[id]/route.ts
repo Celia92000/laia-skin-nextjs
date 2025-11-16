@@ -5,8 +5,9 @@ import { log } from '@/lib/logger';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const prisma = await getPrismaClient();
 
   try {
@@ -34,7 +35,7 @@ export async function DELETE(
     // Vérifier que le rapport appartient à l'organisation
     const report = await prisma.savedReport.findFirst({
       where: {
-        id: params.id,
+        id: id,
         organizationId: user.organizationId
       }
     });
@@ -45,7 +46,7 @@ export async function DELETE(
 
     // Supprimer le rapport
     await prisma.savedReport.delete({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     return NextResponse.json({ success: true, message: 'Rapport supprimé avec succès' });
@@ -62,8 +63,9 @@ export async function DELETE(
 // GET - Récupérer un rapport spécifique
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const prisma = await getPrismaClient();
 
   try {
@@ -90,7 +92,7 @@ export async function GET(
 
     const report = await prisma.savedReport.findFirst({
       where: {
-        id: params.id,
+        id: id,
         organizationId: user.organizationId
       }
     });
