@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CookieConsent from "@/components/platform/CookieConsent";
 
 export const metadata: Metadata = {
   title: "LAIA Connect - Logiciel de Gestion pour Instituts de Beauté | SaaS",
@@ -48,5 +49,10 @@ export default function PlatformLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <CookieConsent />
+    </>
+  );
 }
