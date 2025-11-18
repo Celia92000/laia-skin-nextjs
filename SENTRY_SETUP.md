@@ -1,261 +1,546 @@
-# 🔍 Configuration Sentry (Monitoring d'Erreurs - Gratuit)
+# 🔍 Sentry - Monitoring des Erreurs et Performance
 
-## C'est quoi Sentry ?
-
-Un service **gratuit** qui détecte et te signale toutes les erreurs qui surviennent sur ton site en production.
-
-**Plan gratuit** : 5 000 erreurs par mois (largement suffisant !)
+**Configuration et activation de Sentry pour LAIA Connect**
 
 ---
 
-## 📝 Étapes de configuration (5 minutes)
+## 📋 Vue d'ensemble
 
-### 1. Créer un compte Sentry
+Sentry est **déjà entièrement configuré** dans le code de LAIA Connect. Il ne reste plus qu'à l'activer en production en ajoutant la clé DSN.
 
-1. Va sur https://sentry.io
-2. Clique sur **"Get Started"** (gratuit)
-3. Connecte-toi avec GitHub ou Google
+**Fichiers de configuration existants** :
+- ✅ `sentry.client.config.ts` - Monitoring côté navigateur
+- ✅ `sentry.server.config.ts` - Monitoring côté serveur
+- ✅ `sentry.edge.config.ts` - Monitoring edge functions
 
-### 2. Créer un projet
+**Ce qui est surveillé** :
+- ❌ Erreurs JavaScript/TypeScript (client + serveur)
+- 📊 Performance des pages et API routes
+- 🎥 Replay de sessions (10% normal, 100% sur erreur)
+- 👤 Contexte utilisateur (email, rôle, tenant)
+- 🌐 Environnement (production uniquement)
 
-1. Dans le dashboard, clique sur **"Create Project"**
-2. Choisis :
-   - **Platform** : **Next.js**
-   - **Project name** : `laia-skin-institut`
-   - **Team** : Default
-3. Clique sur **"Create Project"**
+---
 
-### 3. Récupérer le DSN
+## 🚀 Activation en 3 Étapes
 
-Après la création, Sentry te donnera un **DSN** (Data Source Name) qui ressemble à :
+### Étape 1 : Créer un compte Sentry
 
+1. Aller sur **https://sentry.io/signup/**
+2. Créer un compte gratuit (quota : 5 000 erreurs/mois)
+3. Créer un nouveau projet :
+   - **Platform** : Next.js
+   - **Project name** : laia-connect
+   - **Alert frequency** : Every event
+
+### Étape 2 : Récupérer le DSN
+
+Une fois le projet créé, Sentry affiche votre **DSN** (Data Source Name).
+
+**Format du DSN** :
 ```
-https://abc123def456@o123456.ingest.sentry.io/789012
+https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx@o0000000.ingest.us.sentry.io/0000000
 ```
 
-**Copie ce DSN**, tu en auras besoin !
+**Où le trouver** :
+- Settings → Projects → laia-connect → Client Keys (DSN)
 
-### 4. Ajouter le DSN dans `.env.local`
+### Étape 3 : Ajouter le DSN à Vercel
 
-Ouvre ton fichier `.env.local` et ajoute :
+#### Via le Dashboard Vercel
 
-```env
-# Sentry Error Tracking (gratuit jusqu'à 5000 erreurs/mois)
-NEXT_PUBLIC_SENTRY_DSN="https://abc123def456@o123456.ingest.sentry.io/789012"
-```
+1. Aller sur **https://vercel.com/dashboard**
+2. Sélectionner le projet **laia-skin-institut-as92**
+3. Aller dans **Settings → Environment Variables**
+4. Ajouter une nouvelle variable :
+   - **Name** : `NEXT_PUBLIC_SENTRY_DSN`
+   - **Value** : `https://xxxxx@xxxxx.ingest.sentry.io/xxxxx`
+   - **Environment** : Production, Preview, Development
+5. Cliquer sur **Save**
+6. **Redéployer** l'application
 
-**⚠️ Important** : Remplace par ton vrai DSN copié depuis Sentry !
-
-### 5. Configurer Sentry dans le projet
-
-#### a) Créer `sentry.client.config.ts`
+#### Via la CLI Vercel
 
 ```bash
-# Dans le terminal
-touch sentry.client.config.ts
-```
+# Se placer dans le projet
+cd /home/celia/laia-connect
 
-Contenu du fichier :
+# Ajouter la variable d'environnement
+vercel env add NEXT_PUBLIC_SENTRY_DSN
 
-```typescript
-import * as Sentry from "@sentry/nextjs";
+# Sélectionner tous les environnements (production, preview, development)
+# Coller votre DSN
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-
-  // Taux d'échantillonnage des traces de performance (100% = tout tracker)
-  tracesSampleRate: 1.0,
-
-  // Désactiver en développement
-  enabled: process.env.NODE_ENV === "production",
-
-  // Configuration des erreurs
-  beforeSend(event, hint) {
-    // Ignorer les erreurs de navigation annulées (Next.js)
-    if (event.exception?.values?.[0]?.value?.includes('NEXT_REDIRECT')) {
-      return null;
-    }
-    return event;
-  },
-});
-```
-
-#### b) Créer `sentry.server.config.ts`
-
-```bash
-# Dans le terminal
-touch sentry.server.config.ts
-```
-
-Contenu du fichier :
-
-```typescript
-import * as Sentry from "@sentry/nextjs";
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1.0,
-  enabled: process.env.NODE_ENV === "production",
-});
-```
-
-#### c) Créer `sentry.edge.config.ts`
-
-```bash
-# Dans le terminal
-touch sentry.edge.config.ts
-```
-
-Contenu du fichier :
-
-```typescript
-import * as Sentry from "@sentry/nextjs";
-
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1.0,
-  enabled: process.env.NODE_ENV === "production",
-});
-```
-
-### 6. Redémarrer le serveur
-
-```bash
-# Arrête le serveur (Ctrl+C)
-# Puis relance :
-npm run dev
+# Redéployer
+vercel --prod
 ```
 
 ---
 
-## ✅ Vérification
+## 🧪 Tester l'Intégration
 
-Si tout fonctionne, Sentry va :
-- ✅ Tracker toutes les erreurs en production
-- ✅ T'envoyer un email quand une erreur survient
-- ✅ Te montrer la stack trace complète
-- ✅ Te dire quel navigateur, quel OS, quelle page
+### 1. Vérifier que Sentry est actif
 
----
+Après le déploiement, vérifier dans les logs Vercel :
 
-## 🎯 Ce que Sentry va tracker
-
-### Erreurs automatiques :
-- Erreurs JavaScript non gérées
-- Promesses rejetées
-- Erreurs de réseau
-- Erreurs d'API
-- Erreurs de composants React
-
-### Exemple d'erreur trackée :
-
-```
-❌ TypeError: Cannot read property 'name' of undefined
-   at ReservationCard (app/admin/page.tsx:145:23)
-   Browser: Chrome 120.0
-   OS: Windows 11
-   User: admin@laiaskin.com
-   Page: /admin
-   Date: 14 oct 2025 15:32
+```bash
+vercel logs --filter="Sentry"
 ```
 
----
+Vous devriez voir :
+```
+✓ Sentry initialized (client)
+✓ Sentry initialized (server)
+✓ Sentry initialized (edge)
+```
 
-## 🚀 Utilisation avancée (optionnel)
+### 2. Déclencher une erreur de test
 
-### Tracker manuellement une erreur :
+Créer une route API de test :
 
 ```typescript
-import * as Sentry from "@sentry/nextjs";
-
-try {
-  // Code qui peut échouer
-  await deleteReservation(id);
-} catch (error) {
-  // Envoyer l'erreur à Sentry avec contexte
-  Sentry.captureException(error, {
-    tags: {
-      section: "reservations",
-      action: "delete"
-    },
-    extra: {
-      reservationId: id,
-      userId: currentUser.id
-    }
-  });
-
-  // Afficher le message d'erreur à l'utilisateur
-  toast.error("Impossible de supprimer la réservation");
+// src/app/api/test-sentry/route.ts
+export async function GET() {
+  throw new Error('🧪 Test Sentry - Cette erreur devrait apparaître dans Sentry');
 }
 ```
 
-### Suivre un utilisateur :
-
-```typescript
-Sentry.setUser({
-  id: user.id,
-  email: user.email,
-  username: user.name
-});
+Puis appeler :
+```bash
+curl https://laia-skin-institut-as92.vercel.app/api/test-sentry
 ```
 
----
+### 3. Vérifier dans Sentry Dashboard
 
-## 💰 Coûts
-
-- **Gratuit** : 5 000 erreurs/mois
-- Si tu dépasses : **29$ pour 50 000 erreurs/mois** (mais très improbable)
-
-Pour un site comme le tien, **tu resteras largement dans le plan gratuit** !
-
----
-
-## ⚠️ Si tu ne configures pas Sentry
-
-Pas de panique ! Le site fonctionne quand même :
-- Sentry sera **désactivé** en développement (normal)
-- **Le site continue de fonctionner normalement**
-
-Mais c'est **fortement recommandé** de l'activer pour détecter les bugs en production.
+1. Aller sur **https://sentry.io/organizations/[votre-org]/issues/**
+2. L'erreur devrait apparaître en quelques secondes
+3. Cliquer dessus pour voir :
+   - Stack trace complète
+   - Contexte utilisateur (si connecté)
+   - Breadcrumbs (actions avant l'erreur)
+   - Session replay (si disponible)
 
 ---
 
 ## 📊 Dashboard Sentry
 
-Une fois configuré, tu pourras voir :
-- **Issues** : Liste des erreurs groupées par type
-- **Performance** : Temps de chargement des pages
-- **Releases** : Tracking des déploiements
-- **Alerts** : Notifications par email/Slack
+### Sections Importantes
 
-**URL** : https://sentry.io/organizations/ton-org/issues/
+**Issues** (Problèmes)
+- Liste de toutes les erreurs détectées
+- Groupées par similarité
+- Tri par fréquence ou gravité
+
+**Performance**
+- Temps de chargement des pages
+- Durée des API routes
+- Web Vitals (LCP, FID, CLS)
+
+**Replays**
+- Enregistrements vidéo des sessions
+- Replay automatique sur erreur
+- 10% des sessions normales
+
+**Releases**
+- Suivi des versions déployées
+- Comparaison avant/après déploiement
+- Détection de régressions
+
+### Alertes Recommandées
+
+1. **Nouvelle erreur critique**
+   - Type : Issue Alert
+   - Condition : `level:error` AND `is:unresolved` AND `is:new`
+   - Action : Email immédiat
+
+2. **Performance dégradée**
+   - Type : Metric Alert
+   - Condition : `avg(transaction.duration) > 3000ms`
+   - Action : Email quotidien
+
+3. **Taux d'erreur élevé**
+   - Type : Metric Alert
+   - Condition : `percentage(users_experiencing_errors) > 5%`
+   - Action : Email immédiat
 
 ---
 
-## 🔧 Troubleshooting
+## ⚙️ Configuration Actuelle
 
-### Sentry ne capture pas d'erreurs ?
-
-1. Vérifie que `NEXT_PUBLIC_SENTRY_DSN` est bien dans `.env.local`
-2. Vérifie que tu es en **production** (`process.env.NODE_ENV === "production"`)
-3. Force une erreur pour tester :
+### Performance Sampling (10%)
 
 ```typescript
-// Dans n'importe quel composant client
-'use client';
+// sentry.server.config.ts
+tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+```
 
-export default function TestError() {
-  return (
-    <button onClick={() => {
-      throw new Error("Test Sentry");
-    }}>
-      Déclencher une erreur de test
-    </button>
-  );
+**Pourquoi 10% ?**
+- Économise le quota Sentry (gratuit = 5k événements/mois)
+- 10% suffit pour détecter les problèmes
+- En dev : 100% pour debug complet
+
+### Session Replay
+
+```typescript
+// sentry.client.config.ts
+replaysSessionSampleRate: 0.1,  // 10% des sessions normales
+replaysOnErrorSampleRate: 1.0,  // 100% des sessions avec erreur
+```
+
+**Comment ça marche ?**
+- 1 session sur 10 est enregistrée automatiquement
+- Toutes les sessions avec erreur sont enregistrées
+- Vidéo de 60 secondes avant + après l'erreur
+
+### Filtrage Intelligent
+
+```typescript
+// sentry.server.config.ts
+beforeSend(event, hint) {
+  // Ignorer les erreurs 404
+  if (event.request?.url?.includes('/api/') && hint.originalException?.statusCode === 404) {
+    return null;
+  }
+
+  // Ignorer les redirections
+  if (hint.originalException?.digest?.startsWith('NEXT_REDIRECT')) {
+    return null;
+  }
+
+  // Ignorer les bots
+  const userAgent = event.request?.headers?.['user-agent'];
+  if (userAgent && /bot|crawler|spider/i.test(userAgent)) {
+    return null;
+  }
+
+  return event;
+}
+```
+
+**Erreurs ignorées** :
+- ❌ 404 Not Found (normale)
+- ❌ Redirections Next.js (normale)
+- ❌ Requêtes de bots/crawlers
+
+### Enrichissement du Contexte
+
+```typescript
+// sentry.server.config.ts
+beforeSend(event) {
+  // Ajouter des tags personnalisés
+  event.tags = {
+    ...event.tags,
+    environment: process.env.NODE_ENV,
+    version: process.env.NEXT_PUBLIC_APP_VERSION,
+  };
+
+  return event;
 }
 ```
 
 ---
 
-**Créé le** : 14 octobre 2025
-**Pour** : LAIA SKIN Institut
+## 💰 Gestion du Quota
+
+### Plan Gratuit Sentry
+
+- **5 000 erreurs** / mois
+- **50 replays** / mois
+- **10 000 transactions** / mois
+- **1 projet**
+- **Rétention** : 30 jours
+
+### Optimiser le Quota
+
+**1. Augmenter le sampling si nécessaire**
+
+Si vous ne dépassez pas le quota :
+```typescript
+// Passer de 10% à 50%
+tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.5 : 1.0,
+```
+
+**2. Grouper les erreurs similaires**
+
+Sentry groupe automatiquement, mais vous pouvez améliorer :
+```typescript
+beforeSend(event) {
+  // Grouper par type d'erreur, pas par message
+  if (event.exception?.values?.[0]) {
+    event.fingerprint = [
+      event.exception.values[0].type,
+      event.exception.values[0].value?.split(':')[0],
+    ];
+  }
+  return event;
+}
+```
+
+**3. Limiter les replays**
+
+Si trop de replays :
+```typescript
+// Réduire à 5% au lieu de 10%
+replaysSessionSampleRate: 0.05,
+```
+
+**4. Filtrer plus strictement**
+
+Ignorer les erreurs non-critiques :
+```typescript
+beforeSend(event, hint) {
+  // Ignorer les erreurs réseau temporaires
+  if (hint.originalException?.message?.includes('NetworkError')) {
+    return null;
+  }
+  return event;
+}
+```
+
+---
+
+## 🔐 RGPD et Confidentialité
+
+### Données Collectées
+
+Sentry collecte automatiquement :
+- ✅ Erreurs et stack traces
+- ✅ URL et headers HTTP
+- ✅ User agent
+- ✅ IP (anonymisée par défaut)
+- ⚠️ Données utilisateur (si configuré)
+
+### Protection des Données Sensibles
+
+**Suppression automatique des données sensibles** :
+
+```typescript
+// sentry.client.config.ts
+beforeSend(event) {
+  // Supprimer les mots de passe des breadcrumbs
+  if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs.map(breadcrumb => {
+      if (breadcrumb.data) {
+        delete breadcrumb.data.password;
+        delete breadcrumb.data.token;
+        delete breadcrumb.data.apiKey;
+      }
+      return breadcrumb;
+    });
+  }
+
+  // Anonymiser les emails
+  if (event.user?.email) {
+    event.user.email = event.user.email.replace(/^(.{2}).*@/, '$1***@');
+  }
+
+  return event;
+}
+```
+
+**Localisation des données** :
+- **Serveurs Sentry** : US ou EU (configurable)
+- **RGPD** : Sentry est conforme RGPD
+- **DPA** : Accord de traitement de données disponible
+
+**Configurer l'hébergement EU** :
+
+Dans le DSN, remplacer `ingest.us.sentry.io` par `ingest.eu.sentry.io` :
+```
+https://xxxxx@xxxxx.ingest.eu.sentry.io/xxxxx
+```
+
+### Informer les Utilisateurs
+
+Ajouter à la **Politique de Confidentialité** :
+
+> Nous utilisons Sentry (sentry.io) pour surveiller les erreurs techniques et améliorer la stabilité de notre plateforme. Sentry collecte des informations techniques (type d'erreur, navigateur, URL) mais aucune donnée personnelle identifiable n'est transmise. Les données sont hébergées dans l'Union Européenne et conservées 30 jours.
+
+---
+
+## 🚨 Alertes et Notifications
+
+### Configuration des Alertes
+
+1. **Aller dans Settings → Alerts**
+2. **Create Alert Rule**
+3. Choisir le type :
+
+**Alerte Immédiate (Critical Errors)**
+```yaml
+When: An event is captured
+If: level equals error OR fatal
+Then: Send a notification to #tech-alerts (Slack)
+```
+
+**Alerte Quotidienne (New Issues)**
+```yaml
+When: An event is captured
+If: is new AND level not equals info
+Then: Send email digest once per day
+```
+
+**Alerte Performance (Slow APIs)**
+```yaml
+When: avg(transaction.duration) for /api/*
+If: is greater than 3000ms over 5 minutes
+Then: Send notification to admin@laiaconnect.fr
+```
+
+### Intégrations Disponibles
+
+- **Email** (inclus)
+- **Slack** (recommandé)
+- **Discord**
+- **PagerDuty** (payant)
+- **Webhooks** (personnalisé)
+
+---
+
+## 📈 Métriques Importantes
+
+### Erreurs à Surveiller
+
+1. **Taux d'erreur global**
+   - Objectif : < 0.1%
+   - Alerte si > 1%
+
+2. **Erreurs critiques**
+   - Objectif : 0
+   - Alerte immédiate
+
+3. **Temps de résolution**
+   - Objectif : < 24h
+   - Mesure : Temps entre détection et résolution
+
+### Performance à Surveiller
+
+1. **LCP (Largest Contentful Paint)**
+   - Objectif : < 2.5s
+   - Mesure : Temps de chargement du contenu principal
+
+2. **FID (First Input Delay)**
+   - Objectif : < 100ms
+   - Mesure : Temps de réponse à la première interaction
+
+3. **CLS (Cumulative Layout Shift)**
+   - Objectif : < 0.1
+   - Mesure : Stabilité visuelle de la page
+
+---
+
+## 🔧 Dépannage
+
+### Sentry ne détecte pas les erreurs
+
+**1. Vérifier que le DSN est bien configuré**
+```bash
+# Dans Vercel
+vercel env ls
+
+# Le DSN doit apparaître
+```
+
+**2. Vérifier que l'environnement est "production"**
+```typescript
+// Sentry n'est actif qu'en production
+if (process.env.NODE_ENV === 'production') {
+  Sentry.init({ ... });
+}
+```
+
+**3. Vérifier les logs de build**
+```bash
+vercel logs --filter="sentry"
+```
+
+### Trop d'erreurs remontées
+
+**1. Augmenter le filtrage**
+```typescript
+beforeSend(event, hint) {
+  // Ignorer les erreurs mineures
+  if (event.level === 'warning' || event.level === 'info') {
+    return null;
+  }
+  return event;
+}
+```
+
+**2. Grouper les erreurs similaires**
+
+Dans Sentry Dashboard :
+- **Merge Issues** → Grouper les doublons
+- **Ignore** → Ignorer les erreurs connues/normales
+
+### Replays ne fonctionnent pas
+
+**1. Vérifier que le package est installé**
+```bash
+npm list @sentry/nextjs
+```
+
+**2. Vérifier la configuration client**
+```typescript
+// sentry.client.config.ts
+integrations: [
+  Sentry.replayIntegration({
+    maskAllText: true,
+    blockAllMedia: true,
+  }),
+],
+```
+
+---
+
+## 📚 Ressources
+
+**Documentation** :
+- Sentry Docs : https://docs.sentry.io/platforms/javascript/guides/nextjs/
+- Next.js Integration : https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+**Dashboard** :
+- Sentry Dashboard : https://sentry.io/
+- Issues : https://sentry.io/organizations/[org]/issues/
+- Performance : https://sentry.io/organizations/[org]/performance/
+
+**Support** :
+- Sentry Support : https://sentry.io/support/
+- Community Forum : https://forum.sentry.io/
+
+---
+
+## ✅ Checklist de Déploiement
+
+Avant de déployer en production :
+
+- [ ] Compte Sentry créé
+- [ ] Projet "laia-connect" créé dans Sentry
+- [ ] DSN récupéré
+- [ ] Variable `NEXT_PUBLIC_SENTRY_DSN` ajoutée à Vercel
+- [ ] Application redéployée
+- [ ] Erreur de test déclenchée
+- [ ] Erreur visible dans Sentry Dashboard
+- [ ] Alertes email configurées
+- [ ] Politique de confidentialité mise à jour (mention Sentry)
+- [ ] Équipe informée du nouveau monitoring
+
+---
+
+## 🎯 Prochaines Étapes
+
+Après activation de Sentry :
+
+1. **Configurer les alertes Slack** (si applicable)
+2. **Créer un tableau de bord personnalisé**
+3. **Définir des SLOs (Service Level Objectives)** :
+   - 99.9% uptime
+   - < 0.1% taux d'erreur
+   - < 2.5s temps de chargement
+4. **Mettre en place une routine de revue hebdomadaire** des erreurs
+
+---
+
+**Dernière mise à jour** : 18 novembre 2025
+**Version** : 1.0
+**Auteur** : LAIA Connect - Équipe DevOps
