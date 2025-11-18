@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       });
 
       const topServices = await Promise.all(
-        services.slice(0, 5).map(async (s) => {
+        services.slice(0, 5).map(async (s: any) => {
           const service = await prisma.service.findUnique({
             where: { id: s.serviceId! }
           });
