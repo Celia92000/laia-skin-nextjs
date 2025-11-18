@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rappel de votre rendez-vous - LAIA SKIN Institut</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #d4b5a0 0%, #c4a590 100%); padding: 40px 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 2px;">LAIA SKIN</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 14px; letter-spacing: 1px;">INSTITUT DE BEAUTÉ</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <div style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #d4b5a0 0%, #c4a590 100%); border-radius: 50%; line-height: 60px; text-align: center;">
+                    <span style="color: white; font-size: 30px;">⏰</span>
+                </div>
+            </div>
+
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 20px; text-align: center;">
+                Rappel : Votre rendez-vous approche !
+            </h2>
+
+            <p style="color: #2c3e50; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
+                Bonjour {{client_name}},
+            </p>
+
+            <p style="color: #2c3e50; font-size: 16px; line-height: 1.8; margin-bottom: 30px;">
+                Je vous rappelle votre rendez-vous <strong>après-demain</strong> pour votre soin. J'ai hâte de vous retrouver et de prendre soin de vous !
+            </p>
+
+            <!-- Reservation Details -->
+            <div style="background: linear-gradient(135deg, #fef9f5 0%, #fdf6f2 100%); border-radius: 15px; padding: 25px; margin-bottom: 30px; border: 2px solid #d4b5a0;">
+                <h3 style="color: #d4b5a0; font-size: 20px; margin: 0 0 20px 0; text-align: center;">
+                    📅 Votre rendez-vous
+                </h3>
+                
+                <div style="background-color: white; border-radius: 10px; padding: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 10px 0; color: #666; font-size: 14px; vertical-align: top; width: 30%;">
+                                <strong>📆 Date :</strong>
+                            </td>
+                            <td style="padding: 10px 0 10px 20px; color: #2c3e50; font-size: 16px; font-weight: bold;">
+                                {{date}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #666; font-size: 14px; vertical-align: top;">
+                                <strong>🕐 Heure :</strong>
+                            </td>
+                            <td style="padding: 10px 0 10px 20px; color: #2c3e50; font-size: 16px; font-weight: bold;">
+                                {{time}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #666; font-size: 14px; vertical-align: top;">
+                                <strong>💆 Soin(s) :</strong>
+                            </td>
+                            <td style="padding: 10px 0 10px 20px; color: #2c3e50; font-size: 16px;">
+                                {{services}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #666; font-size: 14px; vertical-align: top;">
+                                <strong>⏱️ Durée :</strong>
+                            </td>
+                            <td style="padding: 10px 0 10px 20px; color: #2c3e50; font-size: 16px;">
+                                {{duration}}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Preparation Tips -->
+            <div style="background-color: #e8f4fd; border-left: 4px solid #4a90e2; padding: 20px; margin-bottom: 30px;">
+                <p style="color: #2c3e50; font-size: 15px; margin: 0 0 10px 0;">
+                    <strong>💡 Pour profiter pleinement de votre soin :</strong>
+                </p>
+                <ul style="color: #2c3e50; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li>Venez avec une peau propre et démaquillée</li>
+                    <li>Évitez les gommages 48h avant le soin</li>
+                    <li>Hydratez-vous bien la veille</li>
+                    <li>Arrivez 5 minutes en avance pour vous détendre</li>
+                </ul>
+            </div>
+
+            <!-- Address Reminder -->
+            <div style="background-color: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 30px; text-align: center;">
+                <p style="color: #2c3e50; font-size: 14px; margin: 0 0 10px 0;">
+                    <strong>📍 Adresse :</strong>
+                </p>
+                <p style="color: #2c3e50; font-size: 14px; line-height: 1.6; margin: 0;">
+                    LAIA SKIN Institut<br>
+                    Keur Massar, Dakar<br>
+                    <a href="https://maps.google.com/?q=LAIA+SKIN+Institut+Keur+Massar+Dakar" style="color: #d4b5a0; text-decoration: none; font-weight: bold;">
+                        📍 Voir sur Google Maps
+                    </a>
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="text-align: center; margin: 35px 0;">
+                <table style="margin: 0 auto;">
+                    <tr>
+                        <td style="padding: 0 10px;">
+                            <a href="https://laiaskin.fr/espace-client" style="display: inline-block; background: linear-gradient(135deg, #d4b5a0 0%, #c4a590 100%); color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-size: 14px;">
+                                ✅ Confirmer ma présence
+                            </a>
+                        </td>
+                        <td style="padding: 0 10px;">
+                            <a href="https://wa.me/33683717050?text=Bonjour,%20je%20souhaite%20modifier%20mon%20rendez-vous%20du%20{{date}}" style="display: inline-block; background: #e74c3c; color: white; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-size: 14px;">
+                                📅 Reporter/Annuler
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Important Notice -->
+            <div style="background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 30px; text-align: center;">
+                <p style="color: #856404; font-size: 13px; margin: 0;">
+                    ⚠️ En cas d'empêchement, merci de me prévenir au moins 24h à l'avance
+                </p>
+            </div>
+
+            <p style="color: #2c3e50; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
+                J'ai hâte de vous retrouver après-demain ! 
+            </p>
+
+            <p style="color: #2c3e50; font-size: 16px; margin-bottom: 5px; text-align: center;">
+                À très bientôt,
+            </p>
+            <p style="color: #d4b5a0; font-size: 18px; margin: 0; font-style: italic; text-align: center;">
+                Laïa
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #2c3e50; padding: 30px; text-align: center;">
+            <p style="color: #ffffff; font-size: 14px; margin: 0 0 10px 0;">
+                LAIA SKIN Institut
+            </p>
+            <div style="margin-bottom: 15px;">
+                <a href="tel:+33683717050" style="color: #ffffff; text-decoration: none; font-size: 13px; margin: 0 10px;">
+                    📱 +33 6 83 71 70 50
+                </a>
+                <a href="mailto:contact@laiaskin.fr" style="color: #ffffff; text-decoration: none; font-size: 13px; margin: 0 10px;">
+                    ✉️ contact@laiaskin.fr
+                </a>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                <p style="color: #ffffff; font-size: 11px; margin: 0; opacity: 0.7;">
+                    Cet email est un rappel automatique pour votre rendez-vous
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

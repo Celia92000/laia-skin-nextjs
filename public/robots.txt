@@ -1,0 +1,29 @@
+User-agent: *
+Allow: /
+
+# Sitemaps (les 2 domaines utilisent le même sitemap.xml mais avec contenu différent)
+Sitemap: https://laiaskininstitut.fr/sitemap.xml
+Sitemap: https://laiaconnect.fr/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /super-admin/
+Disallow: /api/
+Disallow: /onboarding/
+Disallow: /espace-client/
+
+# Allow SaaS pages (important pour laiaconnect.fr)
+Allow: /platform
+Allow: /pour-qui
+Allow: /register
+Allow: /connexion
+
+# Allow search engines to index images
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /

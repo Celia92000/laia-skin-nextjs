@@ -1,0 +1,6 @@
+name,email,phone,address,city,postalCode,birthDate,notes
+Marie Dupont,marie.dupont@example.com,0612345678,12 rue de la Paix,Paris,75001,1985-03-15,Cliente VIP - Préfère les soins anti-âge
+Sophie Martin,sophie.martin@example.com,0623456789,45 avenue des Champs,Lyon,69001,1990-07-22,Allergique aux parfums forts
+Julie Bernard,julie.bernard@example.com,0634567890,8 boulevard Victor Hugo,Marseille,13001,1988-11-30,Préfère les RDV le matin
+Claire Petit,claire.petit@example.com,0645678901,23 rue du Commerce,Toulouse,31000,1992-05-18,Peau sensible
+Isabelle Dubois,isabelle.dubois@example.com,0656789012,67 place de la République,Nice,06000,1987-09-25,Cliente fidèle depuis 2020

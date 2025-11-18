@@ -1,0 +1,151 @@
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { verifyToken } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { log } from '@/lib/logger';
+
+/**
+ * GET - Liste tous les templates d'onboarding (organisation = null = templates LAIA Connect)
+ */
+export async function GET(request: Request) {
+  try {
+    const cookieStore = await cookies()
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.split(' ')[1] || cookieStore.get('auth-token')?.value || cookieStore.get('token')?.value
+
+    if (!token) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true }
+    })
+
+    if (!user || user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
+    // Récupérer uniquement les templates LAIA Connect (organizationId = null)
+    const templates = await prisma.emailTemplate.findMany({
+      where: {
+        organizationId: null // Templates globaux LAIA Connect
+      },
+      orderBy: [
+        { category: 'asc' },
+        { slug: 'asc' }
+      ]
+    })
+
+    return NextResponse.json(templates)
+
+  } catch (error) {
+    log.error('Erreur récupération templates onboarding:', error)
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * POST - Créer un nouveau template d'onboarding
+ */
+export async function POST(request: Request) {
+  try {
+    const cookieStore = await cookies()
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.split(' ')[1] || cookieStore.get('auth-token')?.value || cookieStore.get('token')?.value
+
+    if (!token) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { role: true }
+    })
+
+    if (!user || user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+    }
+
+    const data = await request.json()
+    const {
+      slug,
+      name,
+      description,
+      subject,
+      content,
+      textContent,
+      availableVariables,
+      category,
+      isActive,
+      isSystem,
+      fromName,
+      fromEmail,
+      language
+    } = data
+
+    // Validation
+    if (!slug || !name || !subject || !content) {
+      return NextResponse.json(
+        { error: 'Champs requis manquants: slug, name, subject, content' },
+        { status: 400 }
+      )
+    }
+
+    // Vérifier que le slug n'existe pas déjà
+    const existing = await prisma.emailTemplate.findFirst({
+      where: {
+        slug,
+        organizationId: null
+      }
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'Un template avec ce slug existe déjà' },
+        { status: 400 }
+      )
+    }
+
+    const template = await prisma.emailTemplate.create({
+      data: {
+        slug,
+        name,
+        description: description || null,
+        subject,
+        content,
+        textContent: textContent || null,
+        availableVariables: availableVariables || null,
+        category: category || 'general',
+        isActive: isActive !== undefined ? isActive : true,
+        isSystem: isSystem !== undefined ? isSystem : false,
+        fromName: fromName || null,
+        fromEmail: fromEmail || null,
+        language: language || 'fr',
+        organizationId: null // Template global LAIA Connect
+      }
+    })
+
+    return NextResponse.json(template)
+
+  } catch (error: any) {
+    log.error('Erreur création template onboarding:', error)
+    return NextResponse.json(
+      { error: error.message || 'Erreur serveur' },
+      { status: 500 }
+    )
+  }
+}

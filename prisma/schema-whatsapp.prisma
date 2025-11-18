@@ -1,0 +1,38 @@
+// Ajoutez ces modèles à votre schema.prisma existant
+
+model WhatsAppMessage {
+  id            String   @id @default(cuid())
+  messageId     String?  @unique // ID WhatsApp du message
+  from          String   // Numéro de l'expéditeur
+  to            String   // Numéro du destinataire
+  message       String   @db.Text
+  messageType   String   @default("text") // text, image, document, etc.
+  direction     String   // inbound ou outbound
+  status        String?  // sent, delivered, read, failed
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  conversation  WhatsAppConversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  
+  @@index([from])
+  @@index([conversationId])
+}
+
+model WhatsAppConversation {
+  id            String   @id @default(cuid())
+  phoneNumber   String   @unique // Numéro du client
+  clientName    String?
+  lastMessage   String?
+  lastMessageAt DateTime?
+  unreadCount   Int      @default(0)
+  status        String   @default("active") // active, archived
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  messages      WhatsAppMessage[]
+  
+  @@index([status])
+  @@index([lastMessageAt])
+}

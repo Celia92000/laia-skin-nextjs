@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String            @id @default(cuid())
+  email          String            @unique
+  password       String
+  name           String
+  phone          String?
+  role           String            @default("client")
+  loyaltyPoints  Int               @default(0)
+  totalSpent     Float             @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  adminNotes     String?           @db.Text
+  allergies      String?           @db.Text
+  birthDate      DateTime?
+  lastVisit      DateTime?
+  medicalNotes   String?           @db.Text
+  preferences    String?           @db.Text
+  skinType       String?
+  evolutions     ClientEvolution[]
+  loyaltyHistory LoyaltyHistory[]
+  loyaltyProfile LoyaltyProfile?
+  reservations   Reservation[]
+  reviews        Review[]
+  notifications  Notification[]
+}
+
+model Reservation {
+  id            String    @id @default(cuid())
+  userId        String
+  serviceId     String?
+  date          DateTime
+  time          String
+  totalPrice    Float
+  status        String    @default("pending")
+  source        String    @default("site")
+  notes         String?   @db.Text
+  paymentStatus String    @default("unpaid")
+  paymentDate   DateTime?
+  paymentAmount Float?
+  paymentMethod String?
+  invoiceNumber String?
+  paymentNotes  String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+  service       Service?  @relation(fields: [serviceId], references: [id])
+}
+
+model Service {
+  id                String        @id @default(cuid())
+  slug              String        @unique @default("")
+  name              String
+  shortDescription  String        @default("")
+  description       String        @db.Text
+  metaTitle         String?
+  metaDescription   String?       @db.Text
+  keywords          String?       @db.Text
+  price             Float
+  launchPrice       Float?
+  promoPrice        Float?
+  forfaitPrice      Float?
+  forfaitPromo      Float?
+  duration          Int
+  benefits          String?       @db.Text // JSON
+  process           String?       @db.Text // JSON
+  recommendations   String?       @db.Text
+  contraindications String?       @db.Text
+  mainImage         String?
+  gallery           String?       @db.Text // JSON
+  videoUrl          String?
+  canBeOption       Boolean       @default(false)
+  category          String?
+  order             Int           @default(0)
+  active            Boolean       @default(true)
+  featured          Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  reservations      Reservation[]
+}
+
+model LoyaltyProfile {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  points                  Int       @default(0)
+  tier                    String    @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
+  individualServicesCount Int       @default(0)
+  packagesCount           Int       @default(0)
+  totalSpent              Float     @default(0)
+  availableDiscounts      String    @default("[]") @db.Text // JSON
+  lastVisit               DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id])
+  history                 LoyaltyHistory[]
+}
+
+model LoyaltyHistory {
+  id            String         @id @default(cuid())
+  userId        String
+  profileId     String?
+  action        String
+  points        Int            @default(0)
+  description   String
+  reservationId String?
+  createdAt     DateTime       @default(now())
+  user          User           @relation(fields: [userId], references: [id])
+  profile       LoyaltyProfile? @relation(fields: [profileId], references: [id])
+}
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String   @db.Text
+  content         String   @db.Text
+  category        String
+  author          String   @default("LAIA SKIN Institut")
+  readTime        String   @default("5 min")
+  featured        Boolean  @default(false)
+  published       Boolean  @default(true)
+  mainImage       String?
+  gallery         String?  @db.Text // JSON
+  tags            String?  @db.Text // JSON
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  publishedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ClientEvolution {
+  id             String   @id @default(cuid())
+  userId         String
+  sessionNumber  Int
+  serviceName    String
+  sessionDate    DateTime
+  beforePhoto    String?
+  afterPhoto     String?
+  videoUrl       String?
+  improvements   String?  @db.Text // JSON
+  clientFeedback String?  @db.Text
+  adminNotes     String?  @db.Text
+  skinAnalysis   String?  @db.Text // JSON
+  treatedAreas   String?  @db.Text // JSON
+  productsUsed   String?  @db.Text // JSON
+  hydrationLevel Int?
+  elasticity     Int?
+  pigmentation   Int?
+  wrinkleDepth   Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  userId        String
+  reservationId String?
+  serviceName   String?
+  rating        Int
+  comment       String   @db.Text
+  response      String?  @db.Text
+  approved      Boolean  @default(true)
+  featured      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // reminder, promotion, loyalty, birthday, etc.
+  title     String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  actionUrl String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlockedSlot {
+  id        String   @id @default(cuid())
+  date      DateTime
+  time      String
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  services    String   @db.Text // JSON array of service IDs
+  price       Float
+  validDays   Int      @default(90)
+  maxUses     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,1024 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, Clock, CheckCircle, XCircle, Gift, User, Award, TrendingUp, UserCheck, Settings, Euro, Edit2, Save, FileText, Heart, AlertCircle, CreditCard, Download, Receipt, LogOut, MapPin, Phone, Mail, Instagram, Globe } from "lucide-react";
+import AuthGuard from "@/components/AuthGuard";
+import AdminCalendar from "@/components/AdminCalendar";
+import { logout } from "@/lib/auth-client";
+
+interface Reservation {
+  id: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  services: string[];
+  packages: {[key: string]: string};
+  date: string;
+  time: string;
+  totalPrice: number;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  paymentStatus?: string;
+  paymentDate?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
+  invoiceNumber?: string;
+  paymentNotes?: string;
+  source?: string;
+  modifiedAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  loyaltyPoints: number;
+  totalSpent: number;
+  reservations: number;
+  lastVisit?: string;
+}
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("planning");
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(true);
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [paymentDateFilter, setPaymentDateFilter] = useState("");
+
+  const services = {
+    "hydro-naissance": "Hydro'Naissance",
+    "hydro": "Hydro'Cleaning",
+    "renaissance": "Renaissance",
+    "bbglow": "BB Glow",
+    "led": "LED Thérapie"
+  };
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (!token || !user) {
+        router.push('/login');
+        return;
+      }
+
+      const userInfo = JSON.parse(user);
+      if (userInfo.role !== 'admin') {
+        router.push('/espace-client');
+        return;
+      }
+
+      fetchReservations();
+      fetchClients();
+    };
+
+    checkAuth();
+  }, [router]);
+
+  const fetchReservations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/reservations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReservations(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des réservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/clients', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setClients(data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des clients:', error);
+    }
+  };
+
+  const updateReservationStatus = async (reservationId: string, status: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        // Mettre à jour la liste localement
+        setReservations(prev => prev.map(r => 
+          r.id === reservationId ? { ...r, status } : r
+        ));
+        
+        // Si le soin est validé, les points sont automatiquement ajoutés
+        if (status === 'completed') {
+          fetchClients(); // Rafraîchir les données clients
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+    }
+  };
+
+  const addBonusPoints = async (clientId: string, points: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/clients/${clientId}/bonus`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ points })
+      });
+
+      if (response.ok) {
+        // Rafraîchir les données
+        fetchClients();
+        alert(`${points} points bonus ajoutés avec succès !`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout des points:', error);
+    }
+  };
+
+  const recordPayment = async (reservationId: string) => {
+    const amountInput = document.getElementById(`amount-${reservationId}`) as HTMLInputElement;
+    const methodSelect = document.getElementById(`method-${reservationId}`) as HTMLSelectElement;
+    const invoiceInput = document.getElementById(`invoice-${reservationId}`) as HTMLInputElement;
+    const notesInput = document.getElementById(`notes-${reservationId}`) as HTMLInputElement;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/reservations/${reservationId}/payment`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: parseFloat(amountInput.value),
+          method: methodSelect.value,
+          invoiceNumber: invoiceInput.value,
+          notes: notesInput.value
+        })
+      });
+
+      if (response.ok) {
+        fetchReservations();
+        alert('Paiement enregistré avec succès !');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement du paiement:', error);
+    }
+  };
+
+  const exportPayments = () => {
+    const headers = ['Date', 'Client', 'Services', 'Montant', 'Méthode', 'Facture', 'Notes'];
+    const rows = reservations
+      .filter(r => r.paymentStatus === 'paid')
+      .map(r => [
+        new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
+        r.userName || '',
+        JSON.parse(r.services).map((s: string) => services[s as keyof typeof services]).join(', '),
+        `${r.paymentAmount}€`,
+        r.paymentMethod === 'cash' ? 'Espèces' : r.paymentMethod === 'card' ? 'Carte' : 'Virement',
+        r.invoiceNumber || '',
+        r.paymentNotes || ''
+      ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `paiements_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const getLoyaltyLevel = (points: number, totalSpent: number) => {
+    if (points >= 400 || totalSpent >= 1200) {
+      return { name: "VIP Diamond 💎", color: "text-purple-600" };
+    }
+    if (points >= 250 || totalSpent >= 750) {
+      return { name: "Gold ⭐", color: "text-yellow-600" };
+    }
+    if (points >= 100 || totalSpent >= 300) {
+      return { name: "Silver 🌟", color: "text-gray-600" };
+    }
+    return { name: "Découverte", color: "text-[#d4b5a0]" };
+  };
+
+  // Filtrer les réservations par date pour le planning
+  const todayReservations = reservations.filter(r => 
+    r.date.split('T')[0] === selectedDate
+  ).sort((a, b) => a.time.localeCompare(b.time));
+
+  // Statistiques pour le dashboard
+  const stats = {
+    totalReservations: reservations.length,
+    pendingReservations: reservations.filter(r => r.status === 'pending').length,
+    completedToday: reservations.filter(r => 
+      r.status === 'completed' && r.date.split('T')[0] === new Date().toISOString().split('T')[0]
+    ).length,
+    totalRevenue: reservations.filter(r => r.status === 'completed')
+      .reduce((sum, r) => sum + r.totalPrice, 0)
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0]"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pt-24 pb-20">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-serif font-bold text-[#2c3e50] mb-2">
+                Tableau de Bord Admin
+              </h1>
+              <p className="text-[#2c3e50]/70">Gérez vos réservations et vos clients</p>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.clear();
+                router.push('/');
+              }}
+              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Réservations totales</p>
+              <p className="text-2xl font-bold text-[#2c3e50]">{stats.totalReservations}</p>
+            </div>
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">En attente</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pendingReservations}</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Terminés aujourd'hui</p>
+              <p className="text-2xl font-bold text-green-600">{stats.completedToday}</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
+              <p className="text-sm text-[#2c3e50]/60 mb-1">Revenus totaux</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.totalRevenue}€</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab("planning")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "planning"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Planning du jour
+          </button>
+          <button
+            onClick={() => setActiveTab("validation")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "validation"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Validation Soins
+          </button>
+          <button
+            onClick={() => setActiveTab("paiements")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "paiements"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Paiements
+          </button>
+          <button
+            onClick={() => setActiveTab("fidelite")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "fidelite"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Gestion Fidélité
+          </button>
+          <button
+            onClick={() => setActiveTab("clients")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "clients"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            Tous les Clients
+          </button>
+          <button
+            onClick={() => setActiveTab("crm")}
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              activeTab === "crm"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            CRM Clients
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          {activeTab === "planning" && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
+                  Planning du {new Date(selectedDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h2>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              {todayReservations.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-[#d4b5a0]/30 mx-auto mb-4" />
+                  <p className="text-[#2c3e50]/70">Aucune réservation pour cette date</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {todayReservations.map((reservation) => (
+                    <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <Clock className="w-5 h-5 text-[#d4b5a0]" />
+                            <span className="font-semibold text-xl text-[#2c3e50]">{reservation.time}</span>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              reservation.status === 'completed' 
+                                ? 'bg-green-100 text-green-600'
+                                : reservation.status === 'confirmed'
+                                ? 'bg-blue-100 text-blue-600'
+                                : 'bg-yellow-100 text-yellow-600'
+                            }`}>
+                              {reservation.status === 'completed' ? 'Terminé' :
+                               reservation.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="w-4 h-4 text-[#2c3e50]/60" />
+                            <span className="text-[#2c3e50] font-medium">{reservation.userName || 'Client'}</span>
+                            <span className="text-[#2c3e50]/60">• {reservation.userEmail}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {reservation.services.map((serviceId: string) => (
+                              <span key={serviceId} className="px-3 py-1 bg-[#d4b5a0]/10 rounded-full text-sm">
+                                {services[serviceId as keyof typeof services]}
+                                {reservation.packages[serviceId] === 'forfait' && ' (Forfait)'}
+                              </span>
+                            ))}
+                          </div>
+                          {reservation.notes && (
+                            <p className="mt-2 text-sm text-[#2c3e50]/60 italic">Note: {reservation.notes}</p>
+                          )}
+                        </div>
+                        <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "validation" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Validation des Soins
+              </h2>
+              <p className="text-[#2c3e50]/70 mb-6">
+                Validez les soins une fois effectués pour que les clients reçoivent leurs points de fidélité
+              </p>
+
+              <div className="space-y-4">
+                {reservations.filter(r => r.status !== 'cancelled').map((reservation) => (
+                  <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Calendar className="w-5 h-5 text-[#d4b5a0]" />
+                          <span className="font-semibold text-[#2c3e50]">
+                            {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                          </span>
+                          <span className="text-[#2c3e50]/60">à {reservation.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4 text-[#2c3e50]/60" />
+                          <span className="text-[#2c3e50] font-medium">{reservation.userName || 'Client'}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {reservation.services.map((serviceId: string) => (
+                            <span key={serviceId} className="px-3 py-1 bg-[#d4b5a0]/10 rounded-full text-sm">
+                              {services[serviceId as keyof typeof services]}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xl font-bold text-[#d4b5a0] block mb-2">{reservation.totalPrice}€</span>
+                        <span className="text-sm text-green-600">
+                          +{Math.floor(reservation.totalPrice / 10)} points
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      {reservation.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'confirmed')}
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                          >
+                            Confirmer
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'completed')}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            Valider (Client venu)
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            Annuler
+                          </button>
+                        </>
+                      )}
+                      {reservation.status === 'confirmed' && (
+                        <>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'completed')}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            Valider (Client venu)
+                          </button>
+                          <button
+                            onClick={() => updateReservationStatus(reservation.id, 'cancelled')}
+                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            Client absent
+                          </button>
+                        </>
+                      )}
+                      {reservation.status === 'completed' && (
+                        <div className="flex-1 text-center py-2 bg-green-100 text-green-600 rounded-lg font-medium">
+                          ✓ Soin effectué - Points attribués
+                        </div>
+                      )}
+                      {reservation.status === 'cancelled' && (
+                        <div className="flex-1 text-center py-2 bg-red-100 text-red-600 rounded-lg font-medium">
+                          ✗ Annulé
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "paiements" && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-serif font-bold text-[#2c3e50]">
+                  Gestion des Paiements
+                </h2>
+                <button
+                  onClick={() => exportPayments()}
+                  className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Exporter CSV
+                </button>
+              </div>
+
+              {/* Filtres */}
+              <div className="mb-6 flex gap-4">
+                <select
+                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                >
+                  <option value="all">Tous les paiements</option>
+                  <option value="unpaid">Non payés</option>
+                  <option value="paid">Payés</option>
+                  <option value="today">Aujourd'hui</option>
+                  <option value="week">Cette semaine</option>
+                  <option value="month">Ce mois</option>
+                </select>
+                
+                <input
+                  type="date"
+                  className="px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                  onChange={(e) => setPaymentDateFilter(e.target.value)}
+                />
+              </div>
+
+              {/* Statistiques */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">CA du jour</span>
+                    <Euro className="w-4 h-4 text-green-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">
+                    {reservations
+                      .filter(r => r.paymentStatus === 'paid' && new Date(r.paymentDate || '').toDateString() === new Date().toDateString())
+                      .reduce((sum, r) => sum + (r.paymentAmount || 0), 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">CA du mois</span>
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {reservations
+                      .filter(r => r.paymentStatus === 'paid' && new Date(r.paymentDate || '').getMonth() === new Date().getMonth())
+                      .reduce((sum, r) => sum + (r.paymentAmount || 0), 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">En attente</span>
+                    <Clock className="w-4 h-4 text-yellow-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {reservations
+                      .filter(r => r.status === 'completed' && r.paymentStatus !== 'paid')
+                      .reduce((sum, r) => sum + r.totalPrice, 0)}€
+                  </p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-[#2c3e50]/60">Factures du mois</span>
+                    <Receipt className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {reservations
+                      .filter(r => r.invoiceNumber && new Date(r.paymentDate || '').getMonth() === new Date().getMonth())
+                      .length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Liste des réservations à facturer */}
+              <div className="space-y-4">
+                {reservations
+                  .filter(r => r.status === 'completed')
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((reservation) => (
+                  <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <User className="w-5 h-5 text-[#d4b5a0]" />
+                          <span className="font-semibold text-[#2c3e50]">{reservation.userName}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            reservation.paymentStatus === 'paid' 
+                              ? 'bg-green-100 text-green-600'
+                              : reservation.paymentStatus === 'partial'
+                              ? 'bg-yellow-100 text-yellow-600'
+                              : 'bg-red-100 text-red-600'
+                          }`}>
+                            {reservation.paymentStatus === 'paid' ? '✓ Payé' : 
+                             reservation.paymentStatus === 'partial' ? 'Partiel' : 'Non payé'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#2c3e50]/60 mb-1">
+                          {new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}
+                        </p>
+                        <p className="text-sm text-[#2c3e50]/70">
+                          Services: {JSON.parse(reservation.services).map((s: string) => services[s as keyof typeof services]).join(', ')}
+                        </p>
+                        {reservation.invoiceNumber && (
+                          <p className="text-sm text-[#2c3e50]/60 mt-1">
+                            Facture: #{reservation.invoiceNumber}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
+                        {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                          <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {reservation.paymentStatus !== 'paid' && (
+                      <div className="border-t border-[#d4b5a0]/10 pt-4">
+                        <h4 className="font-medium text-[#2c3e50] mb-3">Enregistrer le paiement</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                          <input
+                            type="number"
+                            placeholder="Montant payé"
+                            defaultValue={reservation.totalPrice}
+                            id={`amount-${reservation.id}`}
+                            className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                          />
+                          <select
+                            id={`method-${reservation.id}`}
+                            className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                          >
+                            <option value="cash">Espèces</option>
+                            <option value="card">Carte bancaire</option>
+                            <option value="transfer">Virement</option>
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="N° Facture (ex: 2024-001)"
+                            id={`invoice-${reservation.id}`}
+                            className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Notes (optionnel)"
+                            id={`notes-${reservation.id}`}
+                            className="px-3 py-2 border border-[#d4b5a0]/20 rounded-lg focus:border-[#d4b5a0] focus:outline-none"
+                          />
+                          <button
+                            onClick={() => recordPayment(reservation.id)}
+                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                          >
+                            <CreditCard className="w-4 h-4" />
+                            Valider le paiement
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {reservation.paymentStatus === 'paid' && (
+                      <div className="border-t border-[#d4b5a0]/10 pt-4">
+                        <div className="flex justify-between items-center">
+                          <div className="text-sm text-[#2c3e50]/60">
+                            <p>Payé le: {new Date(reservation.paymentDate || '').toLocaleDateString('fr-FR')}</p>
+                            <p>Méthode: {reservation.paymentMethod === 'cash' ? 'Espèces' : reservation.paymentMethod === 'card' ? 'Carte' : 'Virement'}</p>
+                            {reservation.paymentNotes && <p>Notes: {reservation.paymentNotes}</p>}
+                          </div>
+                          <button
+                            className="px-4 py-2 border border-[#d4b5a0] text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0] hover:text-white transition-all flex items-center gap-2"
+                          >
+                            <Receipt className="w-4 h-4" />
+                            Imprimer facture
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "fidelite" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Gestion de la Fidélité
+              </h2>
+
+              <div className="mb-8 p-6 bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 rounded-xl">
+                <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Système de Points</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium text-[#2c3e50] mb-2">Points automatiques :</h4>
+                    <ul className="space-y-1 text-sm text-[#2c3e50]/70">
+                      <li>• 1 point pour 10€ dépensé (soin individuel)</li>
+                      <li>• 1.5 points pour 10€ dépensé (forfait)</li>
+                      <li>• Double points sur le 5ème soin</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-[#2c3e50] mb-2">Niveaux :</h4>
+                    <ul className="space-y-1 text-sm text-[#2c3e50]/70">
+                      <li>• Découverte : 0-99 pts (5% de réduction)</li>
+                      <li>• Silver : 100-249 pts (10% de réduction)</li>
+                      <li>• Gold : 250-399 pts (15% de réduction)</li>
+                      <li>• VIP Diamond : 400+ pts (20% de réduction)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {clients.map((client) => {
+                  const level = getLoyaltyLevel(client.loyaltyPoints, client.totalSpent);
+                  return (
+                    <div key={client.id} className="border border-[#d4b5a0]/20 rounded-xl p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <User className="w-5 h-5 text-[#d4b5a0]" />
+                            <span className="font-semibold text-lg text-[#2c3e50]">{client.name}</span>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${level.color} bg-opacity-10`}>
+                              {level.name}
+                            </span>
+                          </div>
+                          <p className="text-[#2c3e50]/60 mb-2">{client.email}</p>
+                          <div className="flex gap-6 text-sm">
+                            <span className="text-[#2c3e50]/70">
+                              <strong>{client.loyaltyPoints}</strong> points
+                            </span>
+                            <span className="text-[#2c3e50]/70">
+                              <strong>{client.totalSpent}€</strong> dépensés
+                            </span>
+                            <span className="text-[#2c3e50]/70">
+                              <strong>{client.reservations}</strong> visites
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              const points = prompt('Nombre de points bonus à ajouter :');
+                              if (points && !isNaN(Number(points))) {
+                                addBonusPoints(client.id, Number(points));
+                              }
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+                          >
+                            <Gift className="w-4 h-4 inline mr-2" />
+                            Offrir des points
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "clients" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                Base Clients ({clients.length})
+              </h2>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Client</th>
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-[#2c3e50]">Téléphone</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Niveau</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Points</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Total</th>
+                      <th className="text-center py-3 px-4 font-medium text-[#2c3e50]">Visites</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client) => {
+                      const level = getLoyaltyLevel(client.loyaltyPoints, client.totalSpent);
+                      return (
+                        <tr key={client.id} className="border-b border-gray-100 hover:bg-[#fdfbf7]">
+                          <td className="py-3 px-4 font-medium text-[#2c3e50]">{client.name}</td>
+                          <td className="py-3 px-4 text-[#2c3e50]/70">{client.email}</td>
+                          <td className="py-3 px-4 text-[#2c3e50]/70">{client.phone || '-'}</td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${level.color}`}>
+                              {level.name}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center font-medium text-[#2c3e50]">{client.loyaltyPoints}</td>
+                          <td className="py-3 px-4 text-center font-medium text-[#d4b5a0]">{client.totalSpent}€</td>
+                          <td className="py-3 px-4 text-center text-[#2c3e50]">{client.reservations}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "crm" && (
+            <div>
+              <h2 className="text-2xl font-serif font-bold text-[#2c3e50] mb-6">
+                CRM - Gestion Clients Détaillée
+              </h2>
+
+              <div className="space-y-6">
+                {clients.map((client) => {
+                  const [editingClient, setEditingClient] = useState<string | null>(null);
+                  const [clientNotes, setClientNotes] = useState<{[key: string]: any}>({});
+                  
+                  return (
+                    <div key={client.id} className="border border-[#d4b5a0]/20 rounded-xl overflow-hidden">
+                      {/* Header Client */}
+                      <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 p-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-xl font-semibold text-[#2c3e50] mb-2">{client.name}</h3>
+                            <div className="flex gap-4 text-sm text-[#2c3e50]/70">
+                              <span>📧 {client.email}</span>
+                              <span>📱 {client.phone || 'Non renseigné'}</span>
+                              <span>🎂 {client.birthDate || 'Non renseigné'}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setEditingClient(editingClient === client.id ? null : client.id)}
+                            className="px-4 py-2 bg-white rounded-lg hover:shadow-md transition-all"
+                          >
+                            {editingClient === client.id ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Informations détaillées */}
+                      <div className="p-6 grid md:grid-cols-2 gap-6">
+                        {/* Informations médicales */}
+                        <div>
+                          <h4 className="font-medium text-[#2c3e50] mb-3 flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-red-500" />
+                            Informations Médicales
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Type de peau</label>
+                              <select 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                disabled={editingClient !== client.id}
+                                value={clientNotes[client.id]?.skinType || 'normal'}
+                              >
+                                <option value="normal">Normale</option>
+                                <option value="dry">Sèche</option>
+                                <option value="oily">Grasse</option>
+                                <option value="combination">Mixte</option>
+                                <option value="sensitive">Sensible</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Allergies connues</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={2}
+                                disabled={editingClient !== client.id}
+                                placeholder="Aucune allergie connue"
+                                value={clientNotes[client.id]?.allergies || ''}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Notes médicales</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={3}
+                                disabled={editingClient !== client.id}
+                                placeholder="Antécédents, traitements en cours..."
+                                value={clientNotes[client.id]?.medicalNotes || ''}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Préférences et Notes */}
+                        <div>
+                          <h4 className="font-medium text-[#2c3e50] mb-3 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            Préférences & Notes
+                          </h4>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Préférences soins</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg"
+                                rows={3}
+                                disabled={editingClient !== client.id}
+                                placeholder="Préfère les soins doux, n'aime pas les odeurs fortes..."
+                                value={clientNotes[client.id]?.preferences || ''}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm text-[#2c3e50]/60 block mb-1">Notes privées (visibles uniquement par vous)</label>
+                              <textarea 
+                                className="w-full p-2 border border-gray-200 rounded-lg bg-yellow-50"
+                                rows={4}
+                                disabled={editingClient !== client.id}
+                                placeholder="Notes personnelles sur le client..."
+                                value={clientNotes[client.id]?.adminNotes || ''}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Historique des soins */}
+                      <div className="border-t border-gray-200 p-6">
+                        <h4 className="font-medium text-[#2c3e50] mb-3">Historique des soins</h4>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {reservations
+                            .filter(r => r.userId === client.id && r.status === 'completed')
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .slice(0, 5)
+                            .map((reservation) => (
+                              <div key={reservation.id} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <span className="text-sm font-medium text-[#2c3e50]">
+                                    {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                                  </span>
+                                  <span className="text-sm text-[#2c3e50]/60 ml-3">
+                                    {reservation.services.map(s => services[s as keyof typeof services]).join(', ')}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Actions rapides */}
+                      {editingClient === client.id && (
+                        <div className="bg-gray-50 p-4 flex justify-end gap-2">
+                          <button
+                            onClick={() => setEditingClient(null)}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Sauvegarder les données
+                              alert('Données sauvegardées !');
+                              setEditingClient(null);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+                          >
+                            Sauvegarder
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

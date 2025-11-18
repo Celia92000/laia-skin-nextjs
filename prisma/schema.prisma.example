@@ -1,0 +1,126 @@
+// Copie du schema.prisma pour référence
+// Le vrai schema.prisma doit être créé à partir de celui-ci
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  password          String
+  name              String?
+  phone             String?
+  role              String     @default("client")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  lastLogin         DateTime?
+  isActive          Boolean    @default(true)
+  emailVerified     Boolean    @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  dateOfBirth       DateTime?
+  address           String?
+  postalCode        String?
+  city              String?
+  preferences       Json?
+  notes             String?
+  marketingConsent  Boolean    @default(false)
+  source            String?
+  
+  reservations      Reservation[]
+  loyaltyProfile    LoyaltyProfile?
+  loyaltyHistory    LoyaltyHistory[]
+}
+
+model Service {
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  description      String?
+  longDescription  String?
+  image            String?
+  duration         Int
+  price            Float
+  priceRange       String?
+  categoryId       String?
+  active           Boolean   @default(true)
+  featured         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  benefits         Json?
+  indications      Json?
+  contraindications Json?
+  steps            Json?
+  beforeCare       Json?
+  afterCare        Json?
+  order            Int?
+  maxBookingsPerDay Int?
+  requiresConsultation Boolean @default(false)
+  
+  reservations     Reservation[]
+}
+
+model Reservation {
+  id                String    @id @default(cuid())
+  userId            String
+  serviceId         String
+  date              DateTime
+  time              String
+  status            String    @default("pending")
+  notes             String?
+  totalPrice        Float
+  depositAmount     Float?
+  paymentStatus     String    @default("pending")
+  paymentMethod     String?
+  paymentDate       DateTime?
+  paymentAmount     Float?
+  invoiceNumber     String?
+  paymentNotes      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  reminderSent      Boolean   @default(false)
+  confirmedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  noShowReason      String?
+  
+  user              User      @relation(fields: [userId], references: [id])
+  service           Service   @relation(fields: [serviceId], references: [id])
+  loyaltyHistory    LoyaltyHistory[]
+}
+
+model LoyaltyProfile {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  points                  Int       @default(0)
+  totalSpent              Float     @default(0)
+  visitsCount             Int       @default(0)
+  lastVisit               DateTime?
+  tier                    String    @default("bronze")
+  individualServicesCount Int       @default(0)
+  packagesCount           Int       @default(0)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  user                    User      @relation(fields: [userId], references: [id])
+}
+
+model LoyaltyHistory {
+  id            String       @id @default(cuid())
+  userId        String
+  action        String
+  points        Int
+  description   String?
+  reservationId String?
+  createdAt     DateTime     @default(now())
+  
+  user          User         @relation(fields: [userId], references: [id])
+  reservation   Reservation? @relation(fields: [reservationId], references: [id])
+}
