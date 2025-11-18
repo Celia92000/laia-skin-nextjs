@@ -1,7 +1,51 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { checkRateLimit, checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  // 🔒 RATE LIMITING sur toutes les routes API
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    const ip = getClientIp(request);
+
+    // Routes sensibles avec rate limiting strict (5 req/min)
+    const strictRoutes = [
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/forgot-password',
+      '/api/stripe/',
+      '/api/payment/',
+      '/api/admin/api-tokens',
+    ];
+
+    const isStrictRoute = strictRoutes.some(route =>
+      request.nextUrl.pathname.startsWith(route)
+    );
+
+    // Appliquer le rate limiting
+    const rateLimitResult = isStrictRoute
+      ? await checkStrictRateLimit(ip)
+      : await checkRateLimit(ip);
+
+    if (!rateLimitResult.success) {
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Trop de requêtes. Veuillez réessayer dans quelques instants.',
+          retryAfter: Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000),
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toISOString(),
+            'Retry-After': Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+  }
+
   // Protection par mot de passe pour tout le site en production
   if (process.env.NODE_ENV === 'production' && process.env.SITE_PASSWORD) {
     const authCookie = request.cookies.get('site-auth');
