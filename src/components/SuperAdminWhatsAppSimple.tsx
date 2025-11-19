@@ -110,7 +110,7 @@ const mockTemplates: Template[] = [
     category: 'Support',
     title: 'Message support',
     emoji: '💬',
-    message: 'Bonjour {{nom}} ! 💬\n\nNotre équipe LAIA Connect est à votre écoute.\n\nBesoin d\'aide ?\n📧 support@laia-beauty.com\n💬 Chat en ligne 7j/7\n\nNous sommes là pour vous ! 🌟',
+    message: 'Bonjour {{nom}} ! 💬\n\nNotre équipe LAIA Connect est à votre écoute.\n\nBesoin d\'aide ?\n📧 contact@laiaconnect.fr\n💬 Chat en ligne 7j/7\n\nNous sommes là pour vous ! 🌟',
     variables: ['nom']
   },
   {

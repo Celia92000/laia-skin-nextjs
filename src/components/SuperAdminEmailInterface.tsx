@@ -151,7 +151,7 @@ L'équipe LAIA Connect`
 Notre équipe support LAIA Connect est à votre écoute ! 💬
 
 Vous avez une question ? Besoin d'aide ?
-📧 Email : support@laia-beauty.com
+📧 Email : contact@laiaconnect.fr
 💬 Chat en ligne disponible 7j/7
 📞 Ligne directe : disponible sur demande
 
@@ -222,7 +222,7 @@ Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenan
 
 💬 Besoin d'aide ?
 Notre équipe est là pour vous accompagner.
-support@laia-connect.fr
+contact@laiaconnect.fr
 
 Bienvenue dans la famille LAIA Connect ! 💜
 L'équipe LAIA Connect`

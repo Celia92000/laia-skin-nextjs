@@ -693,7 +693,7 @@ export async function sendInvoiceEmail({
                                         Site web
                                     </a>
                                     <span style="color: rgba(255,255,255,0.3);">|</span>
-                                    <a href="mailto:support@laia-connect.com" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
+                                    <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
                                         Support
                                     </a>
                                     <span style="color: rgba(255,255,255,0.3);">|</span>
@@ -791,7 +791,7 @@ export async function sendPaymentConfirmationEmail({
                                     <strong>LAIA Connect</strong>
                                 </p>
                                 <p style="color: #aaa; font-size: 12px; margin: 0;">
-                                    support@laia-connect.fr
+                                    contact@laiaconnect.fr
                                 </p>
                             </td>
                         </tr>
@@ -879,7 +879,7 @@ export async function sendOnboardingInvitationEmail({
                                     <strong>LAIA Connect</strong>
                                 </p>
                                 <p style="color: #aaa; font-size: 12px; margin: 0;">
-                                    Des questions ? support@laia-connect.fr
+                                    Des questions ? contact@laiaconnect.fr
                                 </p>
                             </td>
                         </tr>

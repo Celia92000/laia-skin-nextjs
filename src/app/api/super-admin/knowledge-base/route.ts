@@ -352,7 +352,7 @@ La commission de 2% est prélevée automatiquement sur chaque transaction.
 
 ## Support
 En cas de problème persistant :
-- 📧 support@laia.fr
+- 📧 contact@laiaconnect.fr
 - 💬 Chat en direct (en bas à droite)
         `,
         tags: ['paiement', 'problème', 'support'],

@@ -81,7 +81,7 @@ export default function CheckoutCancelPage() {
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>
             Des questions avant de vous lancer ?{' '}
-            <a href="mailto:support@laia-connect.fr" className="text-purple-600 hover:underline">
+            <a href="mailto:contact@laiaconnect.fr" className="text-purple-600 hover:underline">
               Contactez-nous
             </a>
           </p>

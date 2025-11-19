@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       '{plan}': organization.plan,
       '{subdomain}': organization.subdomain,
       '{demoLink}': process.env.NEXT_PUBLIC_DEMO_LINK || 'https://calendly.com/laia-connect/demo',
-      '{supportEmail}': process.env.SUPER_ADMIN_EMAIL || 'support@laiaconnect.fr',
+      '{supportEmail}': process.env.SUPER_ADMIN_EMAIL || 'contact@laiaconnect.fr',
       '{dashboardUrl}': `https://${organization.subdomain}.laiaconnect.fr/admin`
     };
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     // Envoyer l'email
     try {
       await resend.emails.send({
-        from: 'LAIA Connect <support@laiaconnect.fr>',
+        from: 'LAIA Connect <contact@laiaconnect.fr>',
         to: organization.ownerEmail,
         subject: emailSubject,
         html: emailContent

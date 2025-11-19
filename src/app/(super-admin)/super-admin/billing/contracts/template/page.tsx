@@ -83,7 +83,7 @@ const DEFAULT_CLAUSES: Omit<ContractClause, 'id'>[] = [
   {
     key: 'article_9',
     title: 'ARTICLE 9 - DISPONIBILITÉ ET SUPPORT',
-    content: '**9.1 Engagement de disponibilité**\nLe Prestataire s\'engage à maintenir une disponibilité du service de 99,5% (hors maintenance programmée).\n\n**9.2 Support technique**\nLe support est accessible :\n• Par email : support@laia-connect.fr (réponse sous 24h)\n• Par téléphone : du lundi au vendredi, 9h-18h\n• Chat en ligne : Depuis l\'espace client\n\n**9.3 Formation et documentation**\nAccès à la base de connaissances, tutoriels vidéo, webinaires mensuels et FAQ.',
+    content: '**9.1 Engagement de disponibilité**\nLe Prestataire s\'engage à maintenir une disponibilité du service de 99,5% (hors maintenance programmée).\n\n**9.2 Support technique**\nLe support est accessible :\n• Par email : contact@laiaconnect.fr (réponse sous 24h)\n• Par téléphone : du lundi au vendredi, 9h-18h\n• Chat en ligne : Depuis l\'espace client\n\n**9.3 Formation et documentation**\nAccès à la base de connaissances, tutoriels vidéo, webinaires mensuels et FAQ.',
     order: 9,
     isDefault: true,
     isActive: true

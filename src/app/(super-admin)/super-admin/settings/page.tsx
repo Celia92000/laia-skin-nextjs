@@ -49,7 +49,7 @@ export default function SettingsPage() {
         // Mapper les settings du serveur
         setSettings({
           platformName: data.settings.platformName?.value || 'Laia Skin Multi-Tenant',
-          supportEmail: data.settings.supportEmail?.value || 'support@laiaskin.com',
+          supportEmail: data.settings.supportEmail?.value || 'contact@laiaconnect.fr',
           supportUrl: data.settings.supportUrl?.value || 'https://support.laiaskin.com',
           maintenanceMode: data.settings.maintenanceMode?.value || false,
           maxOrganizations: data.settings.maxOrganizations?.value || 1000,
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                 value={settings.supportEmail}
                 onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="support@laiaskin.com"
+                placeholder="contact@laiaconnect.fr"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Email affiché pour le support technique

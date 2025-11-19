@@ -62,7 +62,7 @@ Nous avons créé votre espace personnel sur LAIA Connect. Vous pouvez maintenan
 
 💬 Besoin d'aide ?
 Notre équipe est là pour vous accompagner.
-support@laia-connect.fr
+contact@laiaconnect.fr
 
 Bienvenue dans la famille LAIA Connect ! 💜
 L'équipe LAIA Connect`,

@@ -417,7 +417,7 @@ export const emailTemplates = {
         <h4 style="color: #2563eb; margin-top: 0;">💬 Besoin d'aide ?</h4>
         <p style="color: #666; font-size: 15px; margin: 0;">
           Notre équipe est là pour vous accompagner. N'hésitez pas à nous contacter à
-          <a href="mailto:support@laia-connect.fr" style="color: #9333ea;">support@laia-connect.fr</a>
+          <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea;">contact@laiaconnect.fr</a>
         </p>
       </div>
 

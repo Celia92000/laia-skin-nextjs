@@ -167,7 +167,7 @@ export default function WorkflowsPage() {
         '{plan}': 'DUO',
         '{subdomain}': 'belle-peau',
         '{demoLink}': 'https://calendly.com/laia-connect/demo',
-        '{supportEmail}': 'support@laiaconnect.fr',
+        '{supportEmail}': 'contact@laiaconnect.fr',
         '{dashboardUrl}': 'https://belle-peau.laiaconnect.fr/admin'
       };
 

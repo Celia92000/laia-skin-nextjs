@@ -675,7 +675,7 @@ function generateCancellationEmail(orgName: string, plan: string): string {
 
         <p style="font-size: 14px; color: #718096; margin-top: 30px;">
           Nous sommes désolés de vous voir partir. Si vous avez des questions ou souhaitez nous faire part de vos retours,
-          n'hésitez pas à nous contacter à <a href="mailto:support@laiaskin.com" style="color: #667eea;">support@laiaskin.com</a>
+          n'hésitez pas à nous contacter à <a href="mailto:contact@laiaconnect.fr" style="color: #667eea;">contact@laiaconnect.fr</a>
         </p>
 
         <p style="font-size: 14px; color: #718096; margin-top: 20px;">

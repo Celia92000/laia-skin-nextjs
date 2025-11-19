@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (['SUPER_ADMIN', 'ORG_ADMIN'].includes(user.role)) {
       return NextResponse.json({
         error: 'Les administrateurs ne peuvent pas supprimer leur compte directement. Veuillez contacter le support.',
-        supportEmail: 'support@laiaconnect.fr'
+        supportEmail: 'contact@laiaconnect.fr'
       }, { status: 403 });
     }
 

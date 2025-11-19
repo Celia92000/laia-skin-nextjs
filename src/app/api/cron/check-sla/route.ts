@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
             // Envoyer alerte email au super admin assigné
             if (ticket.assignedTo && resend) {
               await resend.emails.send({
-                from: 'LAIA Support <support@laiaskin.com>',
+                from: 'LAIA Support <contact@laiaconnect.fr>',
                 to: ticket.assignedTo.email,
                 subject: `⚠️ Violation SLA - Ticket #${ticket.ticketNumber}`,
                 html: generateSLABreachEmail(
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
             // Envoyer alerte email au super admin assigné
             if (ticket.assignedTo && resend) {
               await resend.emails.send({
-                from: 'LAIA Support <support@laiaskin.com>',
+                from: 'LAIA Support <contact@laiaconnect.fr>',
                 to: ticket.assignedTo.email,
                 subject: `🚨 URGENT - Violation SLA résolution - Ticket #${ticket.ticketNumber}`,
                 html: generateSLABreachEmail(

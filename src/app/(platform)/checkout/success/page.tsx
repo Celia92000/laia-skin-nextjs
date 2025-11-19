@@ -145,8 +145,8 @@ function SuccessContent() {
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>
             Une question ? Contactez-nous à{' '}
-            <a href="mailto:support@laia-connect.fr" className="text-purple-600 hover:underline">
-              support@laia-connect.fr
+            <a href="mailto:contact@laiaconnect.fr" className="text-purple-600 hover:underline">
+              contact@laiaconnect.fr
             </a>
           </p>
         </div>

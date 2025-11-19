@@ -406,7 +406,7 @@ export async function POST(request: NextRequest) {
                                   </div>
 
                                   <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 0;">
-                                      Pour toute question concernant ce rapport, n'hésitez pas à nous contacter à <a href="mailto:support@laia-connect.com" style="color: #9333ea;">support@laia-connect.com</a>
+                                      Pour toute question concernant ce rapport, n'hésitez pas à nous contacter à <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea;">contact@laiaconnect.fr</a>
                                   </p>
                               </td>
                           </tr>
@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
                                           Site web
                                       </a>
                                       <span style="color: rgba(255,255,255,0.3);">|</span>
-                                      <a href="mailto:support@laia-connect.com" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
+                                      <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea; text-decoration: none; margin: 0 10px;">
                                           Support
                                       </a>
                                   </div>

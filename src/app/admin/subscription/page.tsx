@@ -218,7 +218,7 @@ export default function SubscriptionPage() {
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
                 <strong>💡 Besoin d'aide ?</strong> Pour toute question concernant votre abonnement,
-                contactez notre support à <a href="mailto:support@laia.fr" className="underline">support@laia.fr</a>
+                contactez notre support à <a href="mailto:contact@laiaconnect.fr" className="underline">contact@laiaconnect.fr</a>
               </p>
             </div>
           </div>
