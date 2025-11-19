@@ -53,7 +53,15 @@ export async function getInvoiceSettings() {
         tvaRate: 0.0,
         paymentTerms: 'Prélèvement SEPA automatique',
         latePenalty: 'En cas de retard de paiement, indemnité forfaitaire de 40€',
-        footerText: 'Dispensé d\'immatriculation au RCS et au RM'
+        footerText: 'Dispensé d\'immatriculation au RCS et au RM',
+        // Nouvelles mentions légales configurables
+        legalDiscountPolicy: 'Aucun escompte accordé pour paiement anticipé (art. L441-9 du Code de commerce)',
+        legalLatePaymentPenalty: 'Taux de pénalités de retard : 3 fois le taux d\'intérêt légal en vigueur (art. L441-10 du Code de commerce).\nLe taux d\'intérêt légal est consultable sur www.banque-france.fr',
+        legalRecoveryFee: 'Indemnité forfaitaire pour frais de recouvrement due au créancier : 40,00 € (décret n°2012-1115 du 2 octobre 2012).\nCette indemnité est due de plein droit en cas de retard de paiement.',
+        legalCancellationPolicy: 'Résiliation possible à tout moment sans frais, avec effet au terme de la période en cours.\nPréavis de résiliation : 30 jours avant la date anniversaire.',
+        legalDataOwnership: 'Vos données restent votre propriété exclusive.\nExport de vos données possible à tout moment au format CSV/Excel.\nHébergement sécurisé en France (RGPD).',
+        legalMediation: 'Médiation de la consommation (loi n°2014-344 du 17/03/2014) : CMAP (www.cmap.fr)',
+        legalJurisdiction: 'Défaut de paiement : compétence exclusive des tribunaux de Paris'
       }
     })
   }
@@ -445,33 +453,95 @@ export async function generateSubscriptionInvoicePDF(
       currentY += 30
 
       // ======================
-      // MENTIONS LÉGALES OBLIGATOIRES
+      // MENTIONS LÉGALES OBLIGATOIRES (Art. L441-9 du Code de commerce)
       // ======================
       doc.fontSize(9)
          .fillColor(primaryColor)
-         .text('MENTIONS LÉGALES OBLIGATOIRES', 50, currentY)
+         .text('CONDITIONS GÉNÉRALES DE VENTE ET MENTIONS LÉGALES OBLIGATOIRES', 50, currentY)
 
       currentY += 15
 
       doc.fontSize(7)
-         .fillColor(grayLight)
-         .text('• Abonnement mensuel renouvelable automatiquement selon l\'article L215-1 du Code de la consommation', 50, currentY, { width: 495 })
+         .fillColor(grayDark)
+
+      // 1. Conditions de paiement (OBLIGATOIRE art. L441-9)
+      doc.text('1. CONDITIONS DE PAIEMENT', 50, currentY, { width: 495 })
+      currentY += 12
+      doc.fillColor(grayLight)
+         .text('• Date limite de paiement : indiquée ci-dessus (date d\'échéance)', 50, currentY, { width: 495 })
+      currentY += 10
+
+      // Escompte (configurable)
+      const discountLines = settings.legalDiscountPolicy.split('\n')
+      discountLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      // Pénalités de retard (configurable)
+      const penaltyLines = settings.legalLatePaymentPenalty.split('\n')
+      penaltyLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      // Indemnité de recouvrement (configurable)
+      const recoveryLines = settings.legalRecoveryFee.split('\n')
+      recoveryLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      currentY += 5
+
+      // 2. Abonnement et résiliation (configurable)
+      doc.fillColor(grayDark)
+         .text('2. ABONNEMENT ET RÉSILIATION', 50, currentY, { width: 495 })
+      currentY += 12
+      doc.fillColor(grayLight)
+         .text('• Abonnement mensuel renouvelable automatiquement (art. L215-1 du Code de la consommation)', 50, currentY, { width: 495 })
+      currentY += 10
+
+      const cancellationLines = settings.legalCancellationPolicy.split('\n')
+      cancellationLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      doc.text('• Période d\'essai gratuite de 30 jours offerte sur le premier mois (si applicable)', 50, currentY, { width: 495 })
       currentY += 15
-      doc.text('• Résiliation possible à tout moment sans frais, avec effet au terme de la période en cours (30 jours de préavis)', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Période d\'essai de 30 jours offerte sur le premier mois (aucun prélèvement pendant cette période)', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Pénalités de retard en cas de non-paiement : 3 fois le taux d\'intérêt légal (art. L441-10 du Code de commerce)', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Indemnité forfaitaire pour frais de recouvrement : 40€ (D. 441-5 du Code de commerce)', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Facture payable à réception, date limite de paiement indiquée ci-dessus', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Aucun escompte ne sera accordé en cas de paiement anticipé', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• Conformément à la loi n°2014-344 du 17/03/2014, le client peut demander la médiation du CMAP (cmap.fr)', 50, currentY, { width: 495 })
-      currentY += 15
-      doc.text('• En cas de litige, compétence exclusive des tribunaux de Paris', 50, currentY, { width: 495 })
+
+      // 3. Données et propriété (configurable)
+      doc.fillColor(grayDark)
+         .text('3. DONNÉES ET PROPRIÉTÉ INTELLECTUELLE', 50, currentY, { width: 495 })
+      currentY += 12
+      doc.fillColor(grayLight)
+
+      const dataOwnershipLines = settings.legalDataOwnership.split('\n')
+      dataOwnershipLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      currentY += 5
+
+      // 4. Médiation et litiges (configurable)
+      doc.fillColor(grayDark)
+         .text('4. MÉDIATION ET LITIGES', 50, currentY, { width: 495 })
+      currentY += 12
+      doc.fillColor(grayLight)
+
+      const mediationLines = settings.legalMediation.split('\n')
+      mediationLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
+
+      const jurisdictionLines = settings.legalJurisdiction.split('\n')
+      jurisdictionLines.forEach(line => {
+        doc.text(`• ${line}`, 50, currentY, { width: 495 })
+        currentY += 10
+      })
 
       // ======================
       // PIED DE PAGE

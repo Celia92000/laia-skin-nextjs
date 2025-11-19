@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
@@ -9,9 +10,8 @@ import { getSiteConfig } from '@/lib/config-service';
 import { HoverButton } from '@/components/HoverButton';
 import { TemplateRenderer } from '@/components/TemplateRenderer';
 
-// Force dynamic rendering to avoid build-time database queries
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Enable ISR with 60 seconds revalidation
+export const revalidate = 60;
 
 export default async function Home() {
   // Routing par domaine : laiaconnect.fr → /platform
@@ -29,55 +29,38 @@ export default async function Home() {
 
   let organization = null;
 
-  // 1️⃣ D'abord, essayer de trouver par domaine personnalisé (custom domain)
-  // Ex: beaute-eternelle.fr → chercher dans organization.domain
-  if (!cleanHost.includes('localhost')) {
-    organization = await prisma.organization.findUnique({
-      where: { domain: cleanHost },
-      include: { config: true }
-    });
+  // Optimisation: recherche parallèle par domaine, subdomain et fallback
+  const parts = cleanHost.split('.');
+  const subdomain = parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www'
+    ? parts[0]
+    : 'laia-skin-institut';
 
-    if (organization) {
-      console.log(`✅ Organisation trouvée par domaine personnalisé: ${organization.name}`);
-    }
-  }
-
-  // 2️⃣ Si pas trouvé, extraire le subdomain (première partie avant le premier point)
-  // Ex: belle-peau-institut.localhost → belle-peau-institut
-  if (!organization) {
-    const parts = cleanHost.split('.');
-    let subdomain = 'laia-skin-institut'; // Par défaut
-
-    if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== 'www') {
-      subdomain = parts[0];
-    }
-
-    console.log(`🔍 Recherche par subdomain: ${subdomain}`);
-
-    organization = await prisma.organization.findUnique({
+  // Paralléliser toutes les recherches possibles
+  const [orgByDomain, orgBySubdomain, orgBySlug] = await Promise.all([
+    !cleanHost.includes('localhost')
+      ? prisma.organization.findUnique({
+          where: { domain: cleanHost },
+          include: { config: true }
+        })
+      : Promise.resolve(null),
+    prisma.organization.findUnique({
       where: { subdomain: subdomain },
       include: { config: true }
-    });
-
-    if (organization) {
-      console.log(`✅ Organisation trouvée par subdomain: ${organization.name}`);
-    }
-  }
-
-  // 3️⃣ Fallback vers l'organisation par défaut (LAIA SKIN INSTITUT)
-  if (!organization) {
-    console.log(`⚠️ Aucune organisation trouvée, utilisation de laia-skin-institut par défaut`);
-    organization = await prisma.organization.findFirst({
+    }),
+    prisma.organization.findFirst({
       where: { slug: 'laia-skin-institut' },
       include: { config: true }
-    });
+    })
+  ]);
 
-    if (!organization) {
-      return <div>Organisation non trouvée</div>;
-    }
+  // Prioriser les résultats
+  organization = orgByDomain || orgBySubdomain || orgBySlug;
+
+  if (!organization) {
+    return <div>Organisation non trouvée</div>;
   }
 
-  const config = organization?.config || await getSiteConfig();
+  const config = organization.config || await getSiteConfig();
 
   // Couleurs de l'organisation
   const primaryColor = organization?.config?.primaryColor || '#d4b5a0';
@@ -141,10 +124,13 @@ export default async function Home() {
         {/* Background Image (if configured) */}
         {config.heroImage && (
           <div className="absolute inset-0">
-            <img
+            <Image
               src={config.heroImage}
               alt="Hero background"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              priority
+              quality={85}
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/20"></div>
           </div>
@@ -219,11 +205,13 @@ export default async function Home() {
                       </div>
                     )}
                     {service.mainImage ? (
-                      <img
+                      <Image
                         src={service.mainImage}
                         alt={service.name}
-                        className="w-full h-full object-cover object-center"
-                        style={{ objectPosition: '50% 50%' }}
+                        fill
+                        className="object-cover object-center"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={80}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

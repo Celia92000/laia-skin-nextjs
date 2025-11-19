@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { loginSchema, validateRequest } from '@/lib/validation-schemas';
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +27,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password, rememberMe } = await request.json();
+    // 🛡️ Validation des données d'entrée avec Zod
+    const body = await request.json();
+    const validation = validateRequest(loginSchema, body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    const { email, password } = validation.data;
+    const { rememberMe } = body; // rememberMe est optionnel
 
     // Utiliser getPrismaClient pour s'assurer que la connexion est active
     const prisma = await getPrismaClient();

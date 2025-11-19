@@ -2,27 +2,43 @@ import { NextResponse } from 'next/server';
 import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { log } from '@/lib/logger';
+import { contactSchema, validateRequest } from '@/lib/validation-schemas';
 
 // Resend instance created lazily via getResend()
 
 export async function POST(request: Request) {
   try {
+    // 🔒 Rate limiting : 10 messages max par heure par IP (anti-spam)
+    const ip = getClientIp(request);
+    const { success, limit, remaining } = await checkRateLimit(`contact:${ip}`, 10, '60 m');
+
+    if (!success) {
+      return NextResponse.json(
+        { error: `Trop de messages envoyés. Veuillez réessayer dans 1 heure. (${remaining}/${limit} restants)` },
+        { status: 429 }
+      );
+    }
+
+    // 🛡️ Validation des données d'entrée avec Zod
+    const body = await request.json();
+    const validation = validateRequest(contactSchema, body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    const { name, email, phone, subject, message } = validation.data;
+
     const prisma = await getPrismaClient();
     const config = await getSiteConfig();
     const siteName = config.siteName || 'Mon Institut';
     const contactEmail = config.email || 'contact@institut.fr';
     const primaryColor = config.primaryColor || '#d4b5a0';
-
-    const { name, email, phone, subject, message } = await request.json();
-
-    // Validation des données
-    if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: 'Nom, email et message sont requis' },
-        { status: 400 }
-      );
-    }
 
     // Créer ou mettre à jour le lead dans la base de données
     try {

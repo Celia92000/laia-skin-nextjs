@@ -10,7 +10,7 @@ import {
   Package, Users, Briefcase, ChevronDown, ChevronUp,
   Printer, Mail, Search, X
 } from 'lucide-react';
-import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
+import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile, OrganizationInvoiceConfig } from '@/lib/invoice-generator';
 import { formatDateLocal } from '@/lib/date-utils';
 
 interface Reservation {
@@ -40,6 +40,7 @@ export default function ComptableDashboard() {
   const [currentInvoice, setCurrentInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'pending'>('all');
+  const [organizationConfig, setOrganizationConfig] = useState<OrganizationInvoiceConfig | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     stats: true,
     reservations: true,
@@ -77,6 +78,22 @@ export default function ComptableDashboard() {
     setUser(parsedUser);
     fetchFinancialData();
   }, [router]);
+
+  // Charger la configuration de l'organisation pour les factures
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/admin/organization/config');
+        if (response.ok) {
+          const data = await response.json();
+          setOrganizationConfig(data.config);
+        }
+      } catch (error) {
+        console.error('Erreur chargement config organisation:', error);
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const fetchFinancialData = async () => {
     try {
@@ -286,15 +303,15 @@ export default function ComptableDashboard() {
 
   const downloadInvoice = () => {
     if (!currentInvoice) return;
-    
-    const html = formatInvoiceHTML(currentInvoice);
+
+    const html = formatInvoiceHTML(currentInvoice, organizationConfig || undefined);
     downloadFile(html, `facture_${currentInvoice.invoiceNumber}.html`, 'text/html');
   };
 
   const printInvoice = () => {
     if (!currentInvoice) return;
-    
-    const html = formatInvoiceHTML(currentInvoice);
+
+    const html = formatInvoiceHTML(currentInvoice, organizationConfig || undefined);
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(html);
@@ -801,7 +818,7 @@ export default function ComptableDashboard() {
             </div>
             
             <div className="p-6">
-              <div dangerouslySetInnerHTML={{ __html: formatInvoiceHTML(currentInvoice) }} />
+              <div dangerouslySetInnerHTML={{ __html: formatInvoiceHTML(currentInvoice, organizationConfig || undefined) }} />
             </div>
             
             <div className="p-6 border-t flex gap-3 justify-end">

@@ -53,7 +53,7 @@ import SuperAdminAccountingExports from '@/components/SuperAdminAccountingExport
 
 export default function BillingPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'invoices' | 'settings' | 'accounting'>('invoices')
+  const [activeTab, setActiveTab] = useState<'invoices' | 'settings' | 'accounting' | 'refunds'>('invoices')
 
   // Invoices state
   const [loading, setLoading] = useState(true)
@@ -82,6 +82,18 @@ export default function BillingPage() {
     reason: '',
     partialAmount: ''
   })
+
+  // Refunds state
+  const [refunds, setRefunds] = useState<any[]>([])
+  const [refundStats, setRefundStats] = useState<any>({
+    total: 0,
+    totalAmount: 0,
+    byStatus: {},
+    byOrganization: [],
+  })
+  const [refundStatusFilter, setRefundStatusFilter] = useState('all')
+  const [refundSearchTerm, setRefundSearchTerm] = useState('')
+  const [selectedOrgForRefunds, setSelectedOrgForRefunds] = useState('')
 
   // Settings state
   const [settingsLoading, setSettingsLoading] = useState(false)
@@ -112,10 +124,12 @@ export default function BillingPage() {
   useEffect(() => {
     if (activeTab === 'invoices') {
       fetchInvoices()
-    } else {
+    } else if (activeTab === 'refunds') {
+      fetchRefunds()
+    } else if (activeTab === 'settings') {
       fetchSettings()
     }
-  }, [activeTab, pagination.page, statusFilter])
+  }, [activeTab, pagination.page, statusFilter, refundStatusFilter, refundSearchTerm, selectedOrgForRefunds])
 
   async function fetchInvoices() {
     setLoading(true)
@@ -200,6 +214,29 @@ export default function BillingPage() {
     } catch (error) {
       console.error('Error generating invoices:', error)
       alert('❌ Erreur lors de la génération')
+    }
+  }
+
+  async function fetchRefunds() {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (refundStatusFilter !== 'all') params.set('status', refundStatusFilter)
+      if (refundSearchTerm) params.set('search', refundSearchTerm)
+      if (selectedOrgForRefunds) params.set('organizationId', selectedOrgForRefunds)
+
+      const response = await fetch(`/api/super-admin/refunds?${params}`)
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des remboursements')
+      }
+
+      const data = await response.json()
+      setRefunds(data.refunds)
+      setRefundStats(data.stats)
+    } catch (error) {
+      console.error('❌ Erreur:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -481,6 +518,17 @@ export default function BillingPage() {
           style={activeTab === 'invoices' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
         >
           📄 Factures
+        </button>
+        <button
+          onClick={() => setActiveTab('refunds')}
+          className={`px-6 py-3 rounded-lg font-medium transition-all border-2 ${
+            activeTab === 'refunds'
+              ? 'bg-white shadow-md border-2'
+              : 'bg-white/50 text-gray-600 hover:bg-white hover:shadow-sm border-gray-300'
+          }`}
+          style={activeTab === 'refunds' ? { color: '#7c3aed', borderColor: '#7c3aed' } : {}}
+        >
+          💸 Remboursements
         </button>
         <Link
           href="/super-admin/billing/contracts"
@@ -1062,6 +1110,301 @@ export default function BillingPage() {
               </div>
             </form>
           )}
+        </div>
+      )}
+
+      {/* Refunds Tab Content */}
+      {activeTab === 'refunds' && (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Statistiques globales */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-sm text-gray-600">Total remboursements</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">
+                {refundStats.total}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-sm text-gray-600">Montant total</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">
+                {formatCurrency(refundStats.totalAmount)}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-sm text-gray-600">En attente</div>
+              <div className="text-2xl font-bold text-yellow-600 mt-1">
+                {refundStats.byStatus?.pending?.count || 0}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                {formatCurrency(refundStats.byStatus?.pending?.amount || 0)}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="text-sm text-gray-600">Complétés</div>
+              <div className="text-2xl font-bold text-green-600 mt-1">
+                {refundStats.byStatus?.completed?.count || 0}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                {formatCurrency(refundStats.byStatus?.completed?.amount || 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* Statistiques par organisation */}
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Statistiques par organisation
+              </h2>
+            </div>
+            <div className="p-6">
+              {refundStats.byOrganization && refundStats.byOrganization.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {refundStats.byOrganization.map((org: any) => (
+                    <div
+                      key={org.organizationId}
+                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setSelectedOrgForRefunds(org.organizationId)}
+                    >
+                      <div className="font-medium text-gray-900">
+                        {org.organizationName}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {org.totalRefunds} remboursement(s)
+                      </div>
+                      <div className="text-lg font-semibold text-gray-900 mt-2">
+                        {formatCurrency(org.totalAmount)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">Aucune organisation avec des remboursements</p>
+              )}
+            </div>
+          </div>
+
+          {/* Filtres et recherche */}
+          <div className="bg-white rounded-lg shadow mb-8">
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Recherche
+                  </label>
+                  <input
+                    type="text"
+                    value={refundSearchTerm}
+                    onChange={(e) => setRefundSearchTerm(e.target.value)}
+                    placeholder="Rechercher..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Statut
+                  </label>
+                  <select
+                    value={refundStatusFilter}
+                    onChange={(e) => setRefundStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="all">Tous les statuts</option>
+                    <option value="pending">En attente</option>
+                    <option value="approved">Approuvé</option>
+                    <option value="completed">Complété</option>
+                    <option value="failed">Échoué</option>
+                    <option value="cancelled">Annulé</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Organisation
+                  </label>
+                  <select
+                    value={selectedOrgForRefunds}
+                    onChange={(e) => setSelectedOrgForRefunds(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">Toutes les organisations</option>
+                    {refundStats.byOrganization && refundStats.byOrganization.map((org: any) => (
+                      <option key={org.organizationId} value={org.organizationId}>
+                        {org.organizationName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {selectedOrgForRefunds && (
+                <button
+                  onClick={() => setSelectedOrgForRefunds('')}
+                  className="mt-4 text-sm hover:text-purple-700"
+                  style={{ color: '#7c3aed' }}
+                >
+                  ✕ Réinitialiser le filtre organisation
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Liste des remboursements */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Liste des remboursements
+              </h2>
+            </div>
+
+            {loading ? (
+              <div className="p-12 text-center text-gray-500">
+                Chargement...
+              </div>
+            ) : refunds.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                Aucun remboursement trouvé
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Organisation
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Montant
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Raison
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date demande
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {refunds.map((refund: any) => (
+                      <tr key={refund.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {refund.organizationName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {refund.organizationSlug}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {refund.type === 'invoice' ? '📄 Facture' : '📅 Réservation'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {refund.client.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {refund.client.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(refund.amount)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {refund.reason}
+                          </div>
+                          {refund.notes && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {refund.notes}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(refund.status)}`}
+                          >
+                            {refund.status === 'PENDING' && '⏳ En attente'}
+                            {refund.status === 'APPROVED' && '✅ Approuvé'}
+                            {refund.status === 'COMPLETED' && '✅ Complété'}
+                            {refund.status === 'FAILED' && '❌ Échoué'}
+                            {refund.status === 'CANCELLED' && '🚫 Annulé'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(refund.requestedAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {refund.stripeRefundId && (
+                            <a
+                              href={`https://dashboard.stripe.com/refunds/${refund.stripeRefundId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-purple-700 hover:underline"
+                              style={{ color: '#7c3aed' }}
+                            >
+                              Voir dans Stripe
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-blue-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Vue Super-Admin LAIA Connect
+                </h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>
+                    • Vous voyez ici TOUS les remboursements de toutes les organisations<br />
+                    • Les instituts individuels ne voient que leurs propres remboursements dans leur espace /admin/remboursements<br />
+                    • Les remboursements de type "Facture" concernent les abonnements LAIA Connect<br />
+                    • Les remboursements de type "Réservation" concernent les réservations des clients des instituts
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

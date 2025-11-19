@@ -308,6 +308,9 @@ model Organization {
   churnRiskProfile     ChurnRiskProfile?
   cancellationFeedback CancellationFeedback[]
 
+  // Remboursements
+  refunds Refund[]
+
   @@index([slug])
   @@index([subdomain])
   @@index([status])
@@ -396,6 +399,14 @@ model OrganizationConfig {
   rcs       String?
   capital   String?
   legalForm String?
+
+  // Mentions légales factures (Art. L441-9 du Code de commerce)
+  invoicePrefix             String @default("FACT")
+  invoiceLegalDiscount      String @db.Text @default("Aucun escompte accordé pour paiement anticipé")
+  invoiceLegalPenalty       String @db.Text @default("En cas de retard de paiement : pénalités au taux de 3 fois le taux d'intérêt légal")
+  invoiceLegalRecoveryFee   String @db.Text @default("Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard")
+  invoiceLegalPaymentTerms  String @db.Text @default("Paiement à réception")
+  invoiceLegalFooter        String @db.Text @default("Facture à conserver 10 ans")
 
   // Assurance
   insuranceCompany  String?
@@ -764,6 +775,7 @@ model Reservation {
   giftCard           GiftCard?       @relation("GiftCardReservations", fields: [giftCardId], references: [id])
   review             Review?
   stockMovements     StockMovement[]
+  refunds            Refund[]
 
   @@index([organizationId])
   @@index([locationId])
@@ -2009,6 +2021,15 @@ enum PaymentMethod {
   PAYPAL
 }
 
+enum RefundStatus {
+  PENDING      // Demande créée, en attente traitement
+  APPROVED     // Approuvée, prête à être exécutée
+  PROCESSING   // En cours de traitement Stripe
+  COMPLETED    // Remboursement effectué
+  REJECTED     // Demande refusée
+  FAILED       // Échec technique
+}
+
 model Invoice {
   id                    String        @id @default(cuid())
   organizationId        String
@@ -2030,6 +2051,7 @@ model Invoice {
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   payments     BillingPayment[]
+  refunds      Refund[]
 
   @@index([organizationId])
   @@index([invoiceNumber])
@@ -2051,6 +2073,43 @@ model BillingPayment {
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Remboursements (LAIA Connect & Instituts)
+model Refund {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Peut être lié soit à une facture (LAIA Connect) soit à une réservation (Institut)
+  invoiceId     String?
+  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  reservationId String?
+  reservation   Reservation?  @relation(fields: [reservationId], references: [id])
+
+  // Détails du remboursement
+  amount         Float
+  reason         String        @db.Text
+  status         RefundStatus  @default(PENDING)
+  stripeRefundId String?       @unique // ID du refund Stripe (re_xxx)
+
+  // Suivi et approbation
+  requestedBy String // userId qui a demandé le remboursement
+  requestedAt DateTime @default(now())
+  processedAt DateTime? // Date de traitement effectif
+  approvedBy  String? // userId qui a approuvé (si différent)
+
+  // Métadonnées
+  notes     String? @db.Text
+  metadata  Json? // Détails additionnels
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([invoiceId])
+  @@index([reservationId])
   @@index([status])
   @@index([createdAt])
 }
@@ -2089,10 +2148,19 @@ model InvoiceSettings {
   invoicePrefix String @default("LAIA") // LAIA-2025-001234
   tvaRate       Float  @default(0.0) // 0 pour auto-entrepreneur, 20 pour société
 
-  // Mentions légales
+  // Mentions légales (configurables pour conformité française)
   paymentTerms String  @default("Prélèvement SEPA automatique")
   latePenalty  String  @default("En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.")
   footerText   String? @default("Dispensé d'immatriculation au RCS et au RM")
+
+  // Mentions légales détaillées (Art. L441-9 du Code de commerce)
+  legalDiscountPolicy       String @db.Text @default("Aucun escompte accordé pour paiement anticipé (art. L441-9 du Code de commerce)")
+  legalLatePaymentPenalty   String @db.Text @default("Taux de pénalités de retard : 3 fois le taux d'intérêt légal en vigueur (art. L441-10 du Code de commerce). Le taux d'intérêt légal est consultable sur www.banque-france.fr")
+  legalRecoveryFee          String @db.Text @default("Indemnité forfaitaire pour frais de recouvrement due au créancier : 40,00 € (décret n°2012-1115 du 2 octobre 2012). Cette indemnité est due de plein droit en cas de retard de paiement.")
+  legalCancellationPolicy   String @db.Text @default("Résiliation possible à tout moment sans frais, avec effet au terme de la période en cours. Préavis de résiliation : 30 jours avant la date anniversaire.")
+  legalDataOwnership        String @db.Text @default("Vos données restent votre propriété exclusive. Export de vos données possible à tout moment au format CSV/Excel. Hébergement sécurisé en France (RGPD).")
+  legalMediation            String @db.Text @default("Médiation de la consommation (loi n°2014-344 du 17/03/2014) : CMAP (www.cmap.fr)")
+  legalJurisdiction         String @db.Text @default("Défaut de paiement : compétence exclusive des tribunaux de Paris")
 
   // Templates de contrat (articles modifiables)
   contractArticle1 String @db.Text @default("Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.")

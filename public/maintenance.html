@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance en cours - LAIA SKIN Institut</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #fdfbf7, #f8f6f0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+      padding: 60px 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #d4b5a0;
+      margin-bottom: 30px;
+      letter-spacing: 2px;
+    }
+
+    .icon {
+      font-size: 80px;
+      margin-bottom: 30px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 28px;
+      margin-bottom: 20px;
+      font-weight: normal;
+    }
+
+    p {
+      color: #666;
+      line-height: 1.8;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #d4b5a0, #c9a084);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      margin: 30px 0;
+      font-weight: bold;
+    }
+
+    .contact {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .contact p {
+      font-size: 14px;
+      color: #999;
+    }
+
+    .contact a {
+      color: #d4b5a0;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    .contact a:hover {
+      color: #c9a084;
+    }
+
+    .social {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .social a {
+      color: #d4b5a0;
+      font-size: 24px;
+      transition: transform 0.3s;
+      text-decoration: none;
+    }
+
+    .social a:hover {
+      transform: scale(1.2);
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 40px 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .icon {
+        font-size: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">LAIA SKIN INSTITUT</div>
+    <div class="icon">🔧</div>
+    <h1>Maintenance en cours</h1>
+
+    <p>
+      Nous effectuons actuellement une maintenance technique pour améliorer votre expérience.
+    </p>
+
+    <p>
+      Notre équipe travaille activement pour rétablir le service dans les plus brefs délais.
+    </p>
+
+    <div class="highlight">
+      Le site sera de nouveau disponible très prochainement
+    </div>
+
+    <p style="font-size: 14px; color: #999;">
+      Merci de votre patience et de votre compréhension.
+    </p>
+
+    <div class="contact">
+      <p>En cas d'urgence, contactez-nous :</p>
+      <p>
+        <a href="mailto:contact@laiaskininstitut.fr">contact@laiaskininstitut.fr</a>
+      </p>
+      <p style="margin-top: 10px;">
+        <a href="tel:+33631107531">06 31 10 75 31</a>
+      </p>
+
+      <div class="social">
+        <a href="https://www.instagram.com/laia.skin/" target="_blank" aria-label="Instagram">📷</a>
+        <a href="https://www.facebook.com/laiaskin" target="_blank" aria-label="Facebook">📘</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Auto-refresh toutes les 2 minutes pour vérifier si le site est revenu
+    setTimeout(function() {
+      window.location.reload();
+    }, 120000); // 2 minutes
+  </script>
+</body>
+</html>

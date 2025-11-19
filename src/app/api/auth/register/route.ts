@@ -3,12 +3,25 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
 import { log } from '@/lib/logger';
+import { registerSchema, validateRequest } from '@/lib/validation-schemas';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 Rate limiting : 3 inscriptions max par heure par IP (anti-spam)
+    const ip = getClientIp(request);
+    const { success, limit, remaining } = await checkStrictRateLimit(`register:${ip}`);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: `Trop d'inscriptions. Veuillez réessayer plus tard. (${remaining}/${limit} restantes)` },
+        { status: 429 }
+      );
+    }
+
     // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation du site
     const organizationId = await getCurrentOrganizationId();
     if (!organizationId) {
@@ -18,7 +31,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, name, phone, referralCode } = await request.json();
+    // 🛡️ Validation des données d'entrée avec Zod
+    const body = await request.json();
+    const validation = validateRequest(registerSchema, body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    const { email, password, name, phone, referralCode } = validation.data;
 
     // 🔒 Vérifier si l'utilisateur existe déjà DANS CETTE ORGANISATION
     const existingUser = await prisma.user.findFirst({

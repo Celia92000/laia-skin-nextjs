@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe-service'
 import { prisma } from '@/lib/prisma'
 import { generateAndSaveInvoice } from '@/lib/invoice-service'
-import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '@/lib/payment-emails'
+import { sendPaymentSuccessEmail, sendPaymentFailedEmail, sendRefundConfirmationEmail } from '@/lib/payment-emails'
 import { getResend } from '@/lib/resend'
 import { getSiteConfig } from '@/lib/config-service'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+    const webhookSecretConnect = process.env.STRIPE_WEBHOOK_SECRET_CONNECT
 
     if (!webhookSecret) {
       log.error('STRIPE_WEBHOOK_SECRET non configuré')
@@ -57,14 +58,30 @@ export async function POST(request: NextRequest) {
       log.info('⚠️ MODE TEST : Skip vérification signature Stripe')
       event = JSON.parse(body)
     } else {
+      // Essayer avec le secret principal (Webhook 1 - Abonnements)
       try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+        log.info('✅ Signature vérifiée avec secret principal (Abonnements)')
       } catch (err) {
-        log.error('❌ Signature webhook invalide:', err)
-        return NextResponse.json(
-          { error: 'Signature invalide' },
-          { status: 400 }
-        )
+        // Si échec et qu'on a un secret Connect, essayer avec celui-ci
+        if (webhookSecretConnect) {
+          try {
+            event = stripe.webhooks.constructEvent(body, signature, webhookSecretConnect)
+            log.info('✅ Signature vérifiée avec secret Connect (Stripe Connect)')
+          } catch (err2) {
+            log.error('❌ Signature webhook invalide avec les deux secrets:', err2)
+            return NextResponse.json(
+              { error: 'Signature invalide' },
+              { status: 400 }
+            )
+          }
+        } else {
+          log.error('❌ Signature webhook invalide:', err)
+          return NextResponse.json(
+            { error: 'Signature invalide' },
+            { status: 400 }
+          )
+        }
       }
     }
 
@@ -118,6 +135,13 @@ export async function POST(request: NextRequest) {
       case 'account.updated': {
         const account = event.data.object as Stripe.Account
         await handleConnectedAccountUpdated(account)
+        break
+      }
+
+      // Remboursements
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge
+        await handleChargeRefunded(charge)
         break
       }
 
@@ -942,6 +966,171 @@ async function handleConnectedAccountUpdated(account: Stripe.Account) {
 
   } catch (error) {
     log.error('Erreur handleConnectedAccountUpdated:', error)
+  }
+}
+
+/**
+ * Gérer un remboursement Stripe
+ */
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  try {
+    log.info(`💸 Remboursement détecté: ${charge.id}`)
+
+    // Récupérer le payment intent associé
+    const paymentIntentId = typeof charge.payment_intent === 'string'
+      ? charge.payment_intent
+      : charge.payment_intent?.id
+
+    if (!paymentIntentId) {
+      log.warn('⚠️ Pas de payment intent associé au charge')
+      return
+    }
+
+    // Chercher la facture ou réservation associée
+    const invoice = await prisma.invoice.findFirst({
+      where: { stripePaymentIntentId: paymentIntentId },
+      include: { organization: true }
+    })
+
+    const reservation = await prisma.reservation.findFirst({
+      where: { stripePaymentId: paymentIntentId },
+      include: { organization: true }
+    })
+
+    if (!invoice && !reservation) {
+      log.warn(`⚠️ Aucune facture ou réservation trouvée pour payment intent ${paymentIntentId}`)
+      return
+    }
+
+    const organizationId = invoice?.organizationId || reservation?.organizationId
+    if (!organizationId) {
+      log.warn('⚠️ Organization ID introuvable')
+      return
+    }
+
+    // Vérifier si un remboursement existe déjà pour ce charge
+    const existingRefund = await prisma.refund.findFirst({
+      where: { stripeRefundId: charge.refunds?.data[0]?.id }
+    })
+
+    if (existingRefund) {
+      log.info(`✅ Remboursement déjà enregistré: ${existingRefund.id}`)
+      return
+    }
+
+    // Créer l'enregistrement de remboursement
+    const refundAmount = charge.amount_refunded / 100 // Convertir de centimes en euros
+    const stripeRefundId = charge.refunds?.data[0]?.id
+
+    const refund = await prisma.refund.create({
+      data: {
+        organizationId,
+        invoiceId: invoice?.id || null,
+        reservationId: reservation?.id || null,
+        amount: refundAmount,
+        reason: 'Remboursement Stripe automatique',
+        status: 'COMPLETED',
+        stripeRefundId: stripeRefundId || null,
+        requestedBy: 'system',
+        approvedBy: 'system',
+        processedAt: new Date(),
+        notes: `Remboursement automatique détecté via webhook Stripe (charge: ${charge.id})`
+      }
+    })
+
+    // Mettre à jour le statut de la facture ou réservation
+    if (invoice) {
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: { status: 'REFUNDED' }
+      })
+      log.info(`✅ Facture ${invoice.invoiceNumber} marquée comme remboursée`)
+    }
+
+    if (reservation) {
+      await prisma.reservation.update({
+        where: { id: reservation.id },
+        data: {
+          status: 'refunded',
+          paymentStatus: 'refunded'
+        }
+      })
+      log.info(`✅ Réservation ${reservation.id} marquée comme remboursée`)
+    }
+
+    // Logger l'événement
+    await prisma.activityLog.create({
+      data: {
+        userId: 'system',
+        action: 'REFUND_COMPLETED',
+        entityType: invoice ? 'INVOICE' : 'RESERVATION',
+        entityId: invoice?.id || reservation?.id || '',
+        description: `Remboursement de ${refundAmount}€ traité`,
+        metadata: {
+          refundId: refund.id,
+          stripeRefundId,
+          chargeId: charge.id,
+          amount: refundAmount
+        }
+      }
+    })
+
+    log.info(`✅ Remboursement enregistré: ${refund.id} - ${refundAmount}€`)
+
+    // Envoyer l'email de confirmation
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { name: true, ownerEmail: true }
+      })
+
+      let customerEmail: string | null = null
+      let customerName: string | undefined
+      const refundType = invoice ? 'invoice' : 'reservation'
+
+      if (invoice) {
+        // Pour les factures LAIA Connect, envoyer à l'owner de l'organisation
+        customerEmail = org?.ownerEmail || null
+      } else if (reservation) {
+        // Pour les réservations, envoyer au client
+        const reservationWithUser = await prisma.reservation.findUnique({
+          where: { id: reservation.id },
+          include: {
+            user: {
+              select: {
+                email: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        })
+        customerEmail = reservationWithUser?.user?.email || null
+        customerName = reservationWithUser?.user?.firstName
+          ? `${reservationWithUser.user.firstName} ${reservationWithUser.user.lastName || ''}`
+          : undefined
+      }
+
+      if (customerEmail) {
+        await sendRefundConfirmationEmail({
+          to: customerEmail,
+          organizationName: org?.name,
+          customerName: customerName,
+          amount: refundAmount,
+          refundType: refundType as 'invoice' | 'reservation',
+          invoiceNumber: invoice?.invoiceNumber,
+          reservationDate: reservation?.date,
+          reason: 'Remboursement Stripe automatique'
+        })
+        log.info(`📧 Email de remboursement envoyé à ${customerEmail}`)
+      }
+    } catch (emailError) {
+      log.error('⚠️ Erreur envoi email remboursement:', emailError)
+      // Ne pas bloquer le webhook si l'email échoue
+    }
+
+  } catch (error) {
+    log.error('Erreur handleChargeRefunded:', error)
   }
 }
 

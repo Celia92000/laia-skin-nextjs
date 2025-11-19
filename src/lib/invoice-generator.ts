@@ -1,3 +1,7 @@
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
 export interface InvoiceData {
   invoiceNumber: string;
   date: Date;
@@ -19,6 +23,107 @@ export interface InvoiceData {
   paymentMethod?: string;
   paymentStatus: 'paid' | 'pending';
   notes?: string;
+}
+
+export interface OrganizationInvoiceConfig {
+  siteName: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  phone: string;
+  email: string;
+  siret?: string;
+  tvaNumber?: string | null;
+  invoicePrefix?: string;
+  invoiceLegalDiscount?: string;
+  invoiceLegalPenalty?: string;
+  invoiceLegalRecoveryFee?: string;
+  invoiceLegalPaymentTerms?: string;
+  invoiceLegalFooter?: string;
+}
+
+/**
+ * Récupère la configuration de facturation d'une organisation depuis la base de données
+ */
+export async function getOrganizationConfig(organizationId: string): Promise<OrganizationInvoiceConfig> {
+  try {
+    const config = await prisma.organizationConfig.findUnique({
+      where: { organizationId },
+      select: {
+        siteName: true,
+        address: true,
+        postalCode: true,
+        city: true,
+        phone: true,
+        email: true,
+        siret: true,
+        tvaNumber: true,
+        invoicePrefix: true,
+        invoiceLegalDiscount: true,
+        invoiceLegalPenalty: true,
+        invoiceLegalRecoveryFee: true,
+        invoiceLegalPaymentTerms: true,
+        invoiceLegalFooter: true,
+      }
+    })
+
+    if (!config) {
+      // Si pas de config, créer une config par défaut
+      const newConfig = await prisma.organizationConfig.create({
+        data: {
+          organizationId,
+          siteName: 'Institut de Beauté',
+          address: 'Adresse à configurer',
+          postalCode: '00000',
+          city: 'Ville',
+          phone: '00 00 00 00 00',
+          email: 'contact@institut.fr',
+          invoicePrefix: 'FACT',
+          invoiceLegalDiscount: 'Aucun escompte accordé pour paiement anticipé',
+          invoiceLegalPenalty: 'En cas de retard de paiement : pénalités au taux de 3 fois le taux d\'intérêt légal',
+          invoiceLegalRecoveryFee: 'Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard',
+          invoiceLegalPaymentTerms: 'Paiement à réception',
+          invoiceLegalFooter: 'Facture à conserver 10 ans',
+        },
+        select: {
+          siteName: true,
+          address: true,
+          postalCode: true,
+          city: true,
+          phone: true,
+          email: true,
+          siret: true,
+          tvaNumber: true,
+          invoicePrefix: true,
+          invoiceLegalDiscount: true,
+          invoiceLegalPenalty: true,
+          invoiceLegalRecoveryFee: true,
+          invoiceLegalPaymentTerms: true,
+          invoiceLegalFooter: true,
+        }
+      })
+      return newConfig as OrganizationInvoiceConfig
+    }
+
+    return config as OrganizationInvoiceConfig
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la config organisation:', error)
+    // Retourner une config par défaut en cas d'erreur
+    return {
+      siteName: 'Institut de Beauté',
+      address: 'Adresse à configurer',
+      postalCode: '00000',
+      city: 'Ville',
+      phone: '00 00 00 00 00',
+      email: 'contact@institut.fr',
+      invoicePrefix: 'FACT',
+      invoiceLegalDiscount: 'Aucun escompte accordé pour paiement anticipé',
+      invoiceLegalPenalty: 'En cas de retard de paiement : pénalités au taux de 3 fois le taux d\'intérêt légal',
+      invoiceLegalRecoveryFee: 'Indemnité forfaitaire de 40€ pour frais de recouvrement en cas de retard',
+      invoiceLegalPaymentTerms: 'Paiement à réception',
+      invoiceLegalFooter: 'Facture à conserver 10 ans',
+    }
+  }
 }
 
 export function generateInvoiceNumber(date: Date = new Date(), reservationId?: string): string {
@@ -56,9 +161,26 @@ export function calculateInvoiceTotals(services: InvoiceData['services']) {
   };
 }
 
-export function formatInvoiceHTML(invoice: InvoiceData): string {
+export function formatInvoiceHTML(invoice: InvoiceData, config?: OrganizationInvoiceConfig): string {
   const formattedDate = new Intl.DateTimeFormat('fr-FR').format(invoice.date);
-  
+
+  // Valeurs par défaut si config n'est pas fournie
+  const orgName = config?.siteName || 'LAIA SKIN INSTITUT';
+  const orgAddress = config?.address || '123 Rue de la Beauté';
+  const orgPostalCode = config?.postalCode || '75000';
+  const orgCity = config?.city || 'Paris';
+  const orgPhone = config?.phone || '01 23 45 67 89';
+  const orgEmail = config?.email || 'contact@laiaskin.com';
+  const orgSiret = config?.siret || '123 456 789 00000';
+  const orgVatNumber = config?.tvaNumber || 'FR12 345678900';
+
+  // Mentions légales configurables
+  const legalPaymentTerms = config?.invoiceLegalPaymentTerms || 'Paiement à réception de facture';
+  const legalPenalty = config?.invoiceLegalPenalty || '3 fois le taux d\'intérêt légal';
+  const legalRecoveryFee = config?.invoiceLegalRecoveryFee || '40€';
+  const legalDiscount = config?.invoiceLegalDiscount || 'Aucun escompte accordé pour paiement anticipé';
+  const legalFooter = config?.invoiceLegalFooter || 'TVA sur les encaissements - Auto-entrepreneur dispensé d\'immatriculation au RCS';
+
   return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -83,12 +205,12 @@ export function formatInvoiceHTML(invoice: InvoiceData): string {
 <body>
   <div class="header">
     <div class="company-info">
-      <h2>LAIA SKIN INSTITUT</h2>
-      <p>123 Rue de la Beauté<br>75000 Paris<br>
-      Tél: 01 23 45 67 89<br>
-      Email: contact@laiaskin.com<br>
-      SIRET: 123 456 789 00000<br>
-      TVA: FR12 345678900</p>
+      <h2>${orgName}</h2>
+      <p>${orgAddress}<br>${orgPostalCode} ${orgCity}<br>
+      Tél: ${orgPhone}<br>
+      Email: ${orgEmail}<br>
+      ${orgSiret ? `SIRET: ${orgSiret}<br>` : ''}
+      ${orgVatNumber ? `TVA: ${orgVatNumber}` : ''}</p>
     </div>
     <div class="invoice-info">
       <p><strong>Facture N°:</strong> ${invoice.invoiceNumber}<br>
@@ -160,10 +282,23 @@ export function formatInvoiceHTML(invoice: InvoiceData): string {
   ` : ''}
 
   <div class="footer">
-    <p><strong>Conditions de paiement:</strong> Paiement à réception de facture<br>
-    <strong>Pénalités de retard:</strong> 3 fois le taux d'intérêt légal<br>
-    <strong>Indemnité forfaitaire pour frais de recouvrement:</strong> 40€<br>
-    <small>TVA sur les encaissements - Auto-entrepreneur dispensé d'immatriculation au RCS</small></p>
+    <h3 style="margin-bottom: 10px; font-size: 14px; color: #333;">Mentions légales (Art. L441-9 du Code de commerce)</h3>
+    <div style="font-size: 11px; line-height: 1.6; color: #555;">
+      <p style="margin: 5px 0;"><strong>Conditions de paiement :</strong><br>
+      ${legalPaymentTerms.split('\n').map(line => `${line}`).join('<br>')}</p>
+
+      <p style="margin: 10px 0 5px 0;"><strong>Escompte pour paiement anticipé :</strong><br>
+      ${legalDiscount.split('\n').map(line => `${line}`).join('<br>')}</p>
+
+      <p style="margin: 10px 0 5px 0;"><strong>Pénalités de retard :</strong><br>
+      ${legalPenalty.split('\n').map(line => `${line}`).join('<br>')}</p>
+
+      <p style="margin: 10px 0 5px 0;"><strong>Indemnité forfaitaire pour frais de recouvrement :</strong><br>
+      ${legalRecoveryFee.split('\n').map(line => `${line}`).join('<br>')}</p>
+
+      <p style="margin: 15px 0 5px 0; font-size: 10px; color: #666;">
+      ${legalFooter.split('\n').map(line => `${line}`).join('<br>')}</p>
+    </div>
   </div>
 </body>
 </html>

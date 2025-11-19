@@ -329,3 +329,127 @@ export async function sendTrialEndingEmail({
     throw error
   }
 }
+
+interface RefundConfirmationEmailParams {
+  to: string
+  organizationName?: string
+  customerName?: string
+  amount: number
+  refundType: 'invoice' | 'reservation'
+  invoiceNumber?: string
+  reservationDate?: Date
+  reason?: string
+}
+
+/**
+ * Envoie un email de confirmation de remboursement
+ */
+export async function sendRefundConfirmationEmail({
+  to,
+  organizationName,
+  customerName,
+  amount,
+  refundType,
+  invoiceNumber,
+  reservationDate,
+  reason,
+}: RefundConfirmationEmailParams) {
+  try {
+    const subject = `💸 Remboursement effectué - ${amount.toFixed(2)}€`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .amount { font-size: 36px; font-weight: bold; color: #22c55e; margin: 20px 0; text-align: center; }
+            .success-box { background: #d1fae5; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+            .detail-label { font-weight: bold; color: #666; }
+            .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
+            .info-box { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🌸 LAIA ${refundType === 'invoice' ? 'Connect' : 'Skin Institut'}</h1>
+              <h2>Remboursement effectué</h2>
+            </div>
+            <div class="content">
+              <p>Bonjour ${customerName || ''},</p>
+
+              <div class="success-box">
+                <strong>✅ Confirmation</strong><br>
+                Votre remboursement a été traité avec succès.
+              </div>
+
+              <div class="amount">€${amount.toFixed(2)}</div>
+
+              <div class="details">
+                ${refundType === 'invoice' && invoiceNumber ? `
+                <div class="detail-row">
+                  <span class="detail-label">Facture</span>
+                  <span>${invoiceNumber}</span>
+                </div>
+                ` : ''}
+                ${refundType === 'reservation' && reservationDate ? `
+                <div class="detail-row">
+                  <span class="detail-label">Réservation</span>
+                  <span>${reservationDate.toLocaleDateString('fr-FR')}</span>
+                </div>
+                ` : ''}
+                ${organizationName ? `
+                <div class="detail-row">
+                  <span class="detail-label">${refundType === 'invoice' ? 'Organisation' : 'Institut'}</span>
+                  <span>${organizationName}</span>
+                </div>
+                ` : ''}
+                <div class="detail-row">
+                  <span class="detail-label">Montant remboursé</span>
+                  <span><strong>€${amount.toFixed(2)}</strong></span>
+                </div>
+                ${reason ? `
+                <div class="detail-row">
+                  <span class="detail-label">Motif</span>
+                  <span>${reason}</span>
+                </div>
+                ` : ''}
+              </div>
+
+              <div class="info-box">
+                <strong>ℹ️ Délai de traitement</strong><br>
+                Le remboursement apparaîtra sur votre compte bancaire sous <strong>5 à 10 jours ouvrés</strong>, selon votre banque.
+              </div>
+
+              <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+              <p>L'équipe LAIA 💜</p>
+            </div>
+            <div class="footer">
+              <p>LAIA ${refundType === 'invoice' ? 'Connect - Logiciel de gestion pour instituts de beauté' : 'Skin Institut - Institut de beauté'}</p>
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject,
+      html,
+    })
+
+    console.log(`💸 Email de confirmation de remboursement envoyé à ${to}`)
+  } catch (error) {
+    console.error('Erreur envoi email remboursement:', error)
+    throw error
+  }
+}

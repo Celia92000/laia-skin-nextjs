@@ -9,7 +9,7 @@ import {
   Package, Users, Briefcase, ChevronDown, ChevronUp,
   Printer, Mail, Search, X, RefreshCw, Eye
 } from 'lucide-react';
-import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
+import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile, OrganizationInvoiceConfig } from '@/lib/invoice-generator';
 import { formatDateLocal } from '@/lib/date-utils';
 import LaiaInvoicesSection from './LaiaInvoicesSection';
 
@@ -27,6 +27,7 @@ export default function AdminComptabiliteTab({ reservations, fetchReservations, 
   const [currentInvoice, setCurrentInvoice] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'paid' | 'pending'>('paid');
+  const [organizationConfig, setOrganizationConfig] = useState<OrganizationInvoiceConfig | null>(null);
   const [expandedSections, setExpandedSections] = useState({
     stats: true,
     factures: true,
@@ -86,6 +87,22 @@ export default function AdminComptabiliteTab({ reservations, fetchReservations, 
       }
     };
     fetchGiftCards();
+  }, []);
+
+  // Charger la configuration de l'organisation pour les factures
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/admin/organization/config');
+        if (response.ok) {
+          const data = await response.json();
+          setOrganizationConfig(data.config);
+        }
+      } catch (error) {
+        console.error('Erreur chargement config organisation:', error);
+      }
+    };
+    fetchConfig();
   }, []);
 
   // Charger les commandes localement si pas fournies
@@ -1077,13 +1094,13 @@ Pour toute question: contact@laia-skin-institut.com`;
 
   const downloadInvoice = () => {
     if (!currentInvoice) return;
-    const html = formatInvoiceHTML(currentInvoice);
+    const html = formatInvoiceHTML(currentInvoice, organizationConfig || undefined);
     downloadFile(html, `facture_${currentInvoice.invoiceNumber}.html`, 'text/html');
   };
 
   const printInvoice = () => {
     if (!currentInvoice) return;
-    const html = formatInvoiceHTML(currentInvoice);
+    const html = formatInvoiceHTML(currentInvoice, organizationConfig || undefined);
 
     // Ajouter des boutons d'action dans la facture
     const htmlWithActions = html.replace(
@@ -2132,7 +2149,7 @@ Pour toute question: contact@laia-skin-institut.com`;
             </div>
 
             <div className="p-6">
-              <div dangerouslySetInnerHTML={{ __html: formatInvoiceHTML(currentInvoice) }} />
+              <div dangerouslySetInnerHTML={{ __html: formatInvoiceHTML(currentInvoice, organizationConfig || undefined) }} />
             </div>
 
             <div className="p-6 border-t flex gap-3 justify-end">

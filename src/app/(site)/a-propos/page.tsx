@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSiteConfigFull } from '@/lib/config-service';
 
+export const revalidate = 60;
+
 export default async function APropos() {
   const config = await getSiteConfigFull();
 

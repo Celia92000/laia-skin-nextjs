@@ -2,10 +2,20 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { useState, useEffect } from 'react'
-import ContactForm from '@/components/platform/ContactForm'
-import DemoBooking from '@/components/platform/DemoBooking'
-import VideoDemo from '@/components/platform/VideoDemo'
+
+// Lazy load heavy components
+const ContactForm = dynamic(() => import('@/components/platform/ContactForm'), {
+  loading: () => <div className="h-96 bg-gradient-to-br from-purple-50 to-pink-50 animate-pulse rounded-2xl" />
+})
+const DemoBooking = dynamic(() => import('@/components/platform/DemoBooking'), {
+  loading: () => <div className="h-96 bg-white animate-pulse rounded-2xl" />
+})
+const VideoDemo = dynamic(() => import('@/components/platform/VideoDemo'), {
+  ssr: false,
+  loading: () => <div className="h-96 bg-gradient-to-br from-purple-50 to-pink-50 animate-pulse" />
+})
 
 export default function PlatformHomePage() {
   const [scrollY, setScrollY] = useState(0)
@@ -686,6 +696,7 @@ export default function PlatformHomePage() {
                   loop
                   muted
                   playsInline
+                  loading="lazy"
                   className="w-full h-full object-cover scale-75"
                 />
                 <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-purple-900/90 to-transparent">

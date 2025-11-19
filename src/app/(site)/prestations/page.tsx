@@ -1,10 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
 
-// Force dynamic rendering to avoid build-time database queries
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Enable ISR with 60 seconds revalidation
+export const revalidate = 60;
 
 export default async function Prestations() {
   let services: any[] = [];
@@ -65,14 +65,16 @@ export default async function Prestations() {
                       </div>
                     )}
                     {service.mainImage ? (
-                      <img
+                      <Image
                         src={service.mainImage}
                         alt={service.name}
-                        className="w-full h-full"
+                        fill
+                        className="object-cover"
                         style={{
-                          objectFit: service.imageObjectFit || 'cover',
                           objectPosition: `${service.imagePositionX ?? 50}% ${service.imagePositionY ?? 50}%`
                         }}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={80}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

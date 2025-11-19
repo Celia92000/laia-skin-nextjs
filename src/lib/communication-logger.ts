@@ -102,7 +102,8 @@ export async function logWelcomeEmailWithCredentials(data: {
     metadata: {
       emailType: 'welcome',
       hasCredentials: true,
-      generatedPassword: data.generatedPassword, // Stocké pour référence admin (chiffrer en prod)
+      // ⚠️ NE JAMAIS stocker le mot de passe en clair - Violation RGPD/GDPR
+      passwordSentViaEmail: true, // Indicateur uniquement
       needsDataMigration: data.needsDataMigration || false,
       currentSoftware: data.currentSoftware || null,
       timestamp: new Date().toISOString()
