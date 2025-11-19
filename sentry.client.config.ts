@@ -1,62 +1,30 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Environnement et release
-  environment: process.env.NODE_ENV,
+  // Taux d'échantillonnage des traces de performance (100% = tout tracker)
+  tracesSampleRate: 1.0,
 
-  // Performance Monitoring
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  // Désactiver en développement (seulement actif en production)
+  enabled: process.env.NODE_ENV === "production",
 
-  // Session Replay
-  replaysSessionSampleRate: 0.1, // 10% des sessions en production
-  replaysOnErrorSampleRate: 1.0, // 100% des sessions avec erreur
-
-  // Intégrations
-  integrations: [
-    Sentry.replayIntegration({
-      maskAllText: false,
-      blockAllMedia: false,
-    }),
-  ],
-
-  // Ignorer certaines erreurs connues
-  ignoreErrors: [
-    // Erreurs de navigation
-    'ResizeObserver loop limit exceeded',
-    'ResizeObserver loop completed with undelivered notifications',
-    // Erreurs réseau temporaires
-    'NetworkError',
-    'Network request failed',
-    // Extensions navigateur
-    'Non-Error promise rejection captured',
-  ],
-
-  // Filtrer les transactions
+  // Configuration pour ignorer certaines erreurs
   beforeSend(event, hint) {
-    // Ne pas logger les erreurs 404
-    if (event.exception?.values?.[0]?.value?.includes('404')) {
+    // Ignorer les erreurs de navigation annulées (Next.js)
+    if (event.exception?.values?.[0]?.value?.includes('NEXT_REDIRECT')) {
       return null;
     }
 
-    // Ajouter des infos utilisateur si disponible
-    if (typeof window !== 'undefined') {
-      const user = window.localStorage.getItem('user');
-      if (user) {
-        try {
-          const userData = JSON.parse(user);
-          event.user = {
-            id: userData.id,
-            email: userData.email,
-            username: userData.firstName + ' ' + userData.lastName,
-          };
-        } catch (e) {
-          // Ignorer les erreurs de parsing
-        }
-      }
+    // Ignorer les erreurs de navigation
+    if (event.exception?.values?.[0]?.value?.includes('Navigation')) {
+      return null;
     }
 
     return event;
   },
+
+  // Capturer 100% des sessions pour le replay
+  replaysSessionSampleRate: 0.1, // 10% des sessions normales
+  replaysOnErrorSampleRate: 1.0, // 100% des sessions avec erreur
 });

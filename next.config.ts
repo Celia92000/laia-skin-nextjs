@@ -38,7 +38,6 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     cpus: 1,
   },
-  serverExternalPackages: ['pdfkit'],
   // 🔒 Headers de sécurité
   async headers() {
     return [

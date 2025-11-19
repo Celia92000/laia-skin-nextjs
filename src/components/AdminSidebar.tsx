@@ -218,6 +218,7 @@ export default function AdminSidebar({ activeTab, onTabChange, orgFeatures }: Ad
                   {item.tab ? (
                     <button
                       onClick={() => onTabChange(item.tab)}
+                      data-tour={item.id}
                       className={`
                         w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all
                         ${isActive
@@ -251,6 +252,7 @@ export default function AdminSidebar({ activeTab, onTabChange, orgFeatures }: Ad
                   ) : (
                     <Link
                       href={item.href}
+                      data-tour={item.id}
                       className={`
                         w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all
                         hover:bg-laia-nude text-laia-gray hover:text-laia-dark

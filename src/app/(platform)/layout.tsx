@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CookieConsent from "@/components/platform/CookieConsent";
+import CrispChat from "@/components/CrispChat";
 
 export const metadata: Metadata = {
   title: "LAIA Connect - Logiciel de Gestion pour Instituts de Beauté | SaaS",
@@ -53,6 +54,9 @@ export default function PlatformLayout({
     <>
       {children}
       <CookieConsent />
+      {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
+        <CrispChat websiteId={process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID} />
+      )}
     </>
   );
 }

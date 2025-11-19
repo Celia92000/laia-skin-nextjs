@@ -11,10 +11,6 @@ interface SupportTicket {
   status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_CUSTOMER' | 'RESOLVED' | 'CLOSED'
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   category: 'TECHNICAL' | 'BILLING' | 'FEATURE_REQUEST' | 'QUESTION' | 'BUG' | 'OTHER'
-  organization: {
-    id: string
-    name: string
-  }
   createdBy: {
     name: string
     email: string
@@ -256,9 +252,9 @@ export default function TicketsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organisation</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cat�gorie</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priorit�</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Créé par</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priorité</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -274,7 +270,7 @@ export default function TicketsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {ticket.organization.name}
+                      {ticket.createdBy.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {getCategoryLabel(ticket.category)}
@@ -327,11 +323,7 @@ export default function TicketsPage() {
             {/* Info ticket */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <label className="text-sm font-medium text-gray-600">Organisation</label>
-                <p className="text-gray-900">{selectedTicket.organization.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Cr�� par</label>
+                <label className="text-sm font-medium text-gray-600">Créé par</label>
                 <p className="text-gray-900">{selectedTicket.createdBy.name}</p>
                 <p className="text-sm text-gray-500">{selectedTicket.createdBy.email}</p>
               </div>

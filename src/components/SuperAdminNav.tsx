@@ -58,7 +58,6 @@ export default function SuperAdminNav() {
     { name: 'Métriques', href: '/super-admin/metrics', icon: BarChart3 },
     { name: 'CRM', href: '/super-admin/crm', icon: Target, badge: newLeadsCount },
     { name: 'Churn', href: '/super-admin/churn', icon: TrendingDown },
-    { name: 'Workflows', href: '/super-admin/workflows', icon: Zap },
     { name: 'Démos', href: '/super-admin/demos', icon: Calendar, badge: newDemosCount },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },

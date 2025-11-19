@@ -32,12 +32,6 @@ export async function GET() {
     // Récupérer tous les tickets avec leurs relations
     const tickets = await prisma.supportTicket.findMany({
       include: {
-        organization: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
         createdBy: {
           select: {
             name: true,

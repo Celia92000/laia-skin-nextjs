@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  ChevronDown, ChevronUp, Phone, Mail, Star, CheckCircle2, Play, Shield, Clock, Heart, Zap, TrendingUp
+  ChevronDown, ChevronUp, Phone, Mail, Star, CheckCircle2, Play, Shield, Clock, Heart, Zap, TrendingUp, Search
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,6 +12,7 @@ interface FAQItem {
   question: string;
   answer: string;
   category: string;
+  gif?: string; // URL du GIF animé
 }
 
 interface Testimonial {
@@ -36,6 +37,7 @@ interface Video {
 export default function AidePage() {
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // FAQ rassurante pour prospects
   const faqItems: FAQItem[] = [
@@ -43,93 +45,123 @@ export default function AidePage() {
       id: '1',
       question: 'Puis-je essayer LAIA Connect gratuitement ?',
       answer: 'Oui ! Vous bénéficiez de 30 jours d\'essai gratuit sans engagement. Aucune carte bancaire n\'est demandée à l\'inscription. Vous pouvez tester toutes les fonctionnalités de votre formule choisie pendant un mois complet.',
-      category: 'essai'
+      category: 'essai',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTlxdHZpZ3E3NXp3ZmN5YXdtYnQ5bHdoZWFsbHRkdWNxanBzNGkxZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6Ztl7JcvsWMZPfTq/giphy.gif'
     },
     {
       id: '2',
       question: 'Y a-t-il un engagement de durée ?',
       answer: 'Non, aucun engagement ! Votre abonnement est mensuel et vous pouvez l\'annuler à tout moment depuis votre espace admin. L\'annulation prend effet à la fin du mois en cours, sans pénalité.',
-      category: 'engagement'
+      category: 'engagement',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExejdqZGFndmY0OHoyOWViMHRlbTNhbWJ3MWJnN2ZsMXM0dmM3ZWNncSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6Mb7fO6MJHpxOyuA/giphy.gif'
     },
     {
       id: '3',
       question: 'Mes données sont-elles sécurisées ?',
       answer: 'Absolument. Vos données sont hébergées sur des serveurs sécurisés en Europe (conformité RGPD). Nous utilisons un chiffrement SSL/TLS pour toutes les communications. Vos données clients sont isolées et sauvegardées quotidiennement. Nous ne vendons ni ne partageons jamais vos données.',
-      category: 'securite'
+      category: 'securite',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2VhNnV6aGJjbWhnN2J5aGhseGJlOGw0cDdmbWExNGxtcTRrN3VwbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/xT9DPofgEkyu9t4wPm/giphy.gif'
     },
     {
       id: '4',
       question: 'Le support est-il inclus dans l\'abonnement ?',
       answer: 'Oui, le support technique est inclus dans toutes les formules sans exception. Vous pouvez nous contacter par email (réponse sous 24h) ou par téléphone du lundi au vendredi de 9h à 18h. Un centre d\'aide complet avec tutoriels vidéo est également disponible 24/7.',
-      category: 'support'
+      category: 'support',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaXVqa3dpcnlqcHFhYjZnbjFsNGl2NGc5ZDN1eWkzeWd5NWN0MjV1dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohzdGu4kGeeSUX7iw/giphy.gif'
     },
     {
       id: '5',
       question: 'Puis-je annuler à tout moment ?',
       answer: 'Oui, vous gardez le contrôle total. Vous pouvez annuler votre abonnement en quelques clics depuis votre espace admin. L\'annulation prend effet à la fin de votre période de facturation en cours, et vous conservez l\'accès jusqu\'à cette date.',
-      category: 'annulation'
+      category: 'annulation',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOXByNnZ2ZndjN2JscmpmamczaXp5enJwMWhtdHM3OGo3NnZqMHQxcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6EhGvKschtbrRjX2/giphy.gif'
     },
     {
       id: '6',
       question: 'Combien de temps prend la mise en place ?',
       answer: 'Vous pouvez être opérationnel en moins de 30 minutes ! L\'inscription prend 5 minutes, puis vous configurez vos services, votre planning et vos informations en 15-20 minutes. Votre site web personnalisé est créé automatiquement et vos clients peuvent réserver immédiatement.',
-      category: 'installation'
+      category: 'installation',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNGFzejFjdjl0eDl1YWd3anJodmhraDJwbnN5NDhpamdteWlscXd3byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7btNhMBytxAM6YBa/giphy.gif'
     },
     {
       id: '7',
       question: 'Que se passe-t-il avec mes données si je résilie ?',
       answer: 'Vous conservez la propriété totale de vos données. Avant résiliation, vous pouvez exporter toutes vos données clients, rendez-vous et statistiques au format CSV. Après résiliation, vos données sont conservées 30 jours puis supprimées définitivement de nos serveurs si vous ne revenez pas.',
-      category: 'donnees'
+      category: 'donnees',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3E4cmN6c2VsM2E4bGFiNmdwcHg2aDk5OXBzNzFqM3BsZ2Q4bXQ5aiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oz8xUK8V7suY7W9SE/giphy.gif'
     },
     {
       id: '8',
       question: 'LAIA Connect est-elle adaptée aux petits instituts ?',
       answer: 'Absolument ! Notre formule SOLO à 29€/mois est spécialement conçue pour les esthéticiennes indépendantes et petits instituts. Vous avez accès à toutes les fonctionnalités essentielles : réservation en ligne, gestion clients, planning, paiements sécurisés, sans limitation du nombre de clients.',
-      category: 'taille'
+      category: 'taille',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYXk2aWJ3OGlnN2d5d2NyajE0ZGEwbGRrMXczcHN3OTJvdHRoNDI4dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3q2K5jinAlChoCLS/giphy.gif'
     },
     {
       id: '9',
       question: 'Les paiements clients sont-ils sécurisés ?',
       answer: 'Oui, 100% sécurisés. Nous utilisons Stripe, le leader mondial du paiement en ligne (utilisé par Amazon, Google, etc.). Les transactions sont chiffrées et conformes PCI-DSS. Vos clients peuvent payer par carte bancaire en toute sécurité. Nous ne prenons aucune commission sur vos ventes.',
-      category: 'paiement'
+      category: 'paiement',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZzEwbDFpdDg0ejY5ZGRyNWljdHMyaDk3ZTNqNzdrMDBrNWoxcW5yZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oKIPf3C7HqqYBVcCk/giphy.gif'
     },
     {
       id: '10',
       question: 'Puis-je personnaliser mon site web ?',
       answer: 'Oui ! Votre site web est entièrement personnalisable : logo, couleurs, photos, textes, services, horaires. Vous pouvez utiliser votre propre nom de domaine (ex: www.votre-institut.fr) ou un sous-domaine LAIA gratuit (ex: votre-institut.laiaconnect.fr).',
-      category: 'personnalisation'
+      category: 'personnalisation',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWt6aHd1ODI3N3J2Z3BwYzJwcWlycGNwNDVhOW1uMmx0c3RlZ2FzYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMt1VVNkHV2PaE/giphy.gif'
     },
     {
       id: '11',
       question: 'Y a-t-il des frais cachés ou des commissions ?',
       answer: 'Non, aucun frais caché. Le prix de votre abonnement est tout compris : site web, réservation en ligne, SMS, emails, support, mises à jour. Nous ne prenons AUCUNE commission sur vos ventes et paiements clients. 0% de commission = 100% de vos revenus pour vous.',
-      category: 'tarifs'
+      category: 'tarifs',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaHloa2RrYTRtZHNlbWo3YTdkY3BjMjBoNzRpZDB6YnhqOGR6dWxobiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/67ThRZlYBvibtdF9JH/giphy.gif'
     },
     {
       id: '12',
       question: 'Puis-je changer de formule facilement ?',
       answer: 'Oui, très facilement. Vous pouvez passer à une formule supérieure à tout moment (effet immédiat avec proratisation). Pour passer à une formule inférieure, le changement s\'appliquera à votre prochaine échéance de paiement.',
-      category: 'formules'
+      category: 'formules',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbTBxdTExNnp5YWlwbDY3dWJiZ2Q3aXZ0cGZmNjlzOTdleTJiYTRpYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7qE1YN7aBOFPRw8E/giphy.gif'
     },
     {
       id: '13',
       question: 'Les mises à jour sont-elles incluses ?',
       answer: 'Oui, toutes les mises à jour et nouvelles fonctionnalités sont automatiquement incluses dans votre abonnement, sans surcoût. Vous profitez en permanence de la dernière version de LAIA Connect avec les améliorations de sécurité et les nouvelles fonctionnalités.',
-      category: 'maj'
+      category: 'maj',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWd1NG8ydGN1MjlneTlicDhzMm55ZWJoc2RqeHVrYzI2cHNjZWh2eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3orifgB6x6qJLvB6so/giphy.gif'
     },
     {
       id: '14',
       question: 'Ai-je besoin de compétences techniques ?',
       answer: 'Non, aucune compétence technique requise ! LAIA Connect est conçu pour être ultra-simple et intuitif. Si vous savez utiliser Facebook ou WhatsApp, vous savez utiliser LAIA Connect. Des tutoriels vidéo sont disponibles pour chaque fonctionnalité.',
-      category: 'technique'
+      category: 'technique',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdnRrNW1wOGx5NWdhdmhkaHM1dHowbTAwOGdkYThscXFxdXBjNmh2YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o6Ztbb7qQiKu4SDp6/giphy.gif'
     },
     {
       id: '15',
       question: 'Comment sont gérés les rappels clients ?',
       answer: 'Automatiquement ! Vos clients reçoivent des rappels de rendez-vous par email et SMS (24h avant). Vous pouvez aussi envoyer des campagnes de fidélisation, promotions et vœux d\'anniversaire en quelques clics. Tout est automatisé pour vous faire gagner du temps.',
-      category: 'communication'
+      category: 'communication',
+      gif: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ2FnN2U3ZG5qcWNsZWtkNzVjZ2Jlem9qeWVqcXJpYjFnN2hqNnJvMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKtnuHOHHUjR38Y/giphy.gif'
     }
   ];
+
+  // Filtrage des FAQ en fonction de la recherche
+  const filteredFAQs = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return faqItems;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return faqItems.filter(
+      (faq) =>
+        faq.question.toLowerCase().includes(query) ||
+        faq.answer.toLowerCase().includes(query) ||
+        faq.category.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   // Témoignages clients
   const testimonials: Testimonial[] = [
@@ -263,8 +295,39 @@ export default function AidePage() {
             </p>
           </div>
 
+          {/* Barre de recherche */}
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher une question... (ex: essai gratuit, sécurité, tarifs)"
+                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-gray-600 mt-2 ml-1">
+                {filteredFAQs.length} résultat{filteredFAQs.length > 1 ? 's' : ''} trouvé{filteredFAQs.length > 1 ? 's' : ''}
+                {filteredFAQs.length > 0 && ` pour "${searchQuery}"`}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-4 max-w-4xl mx-auto">
-            {faqItems.map((faq) => (
+            {filteredFAQs.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg mb-2">Aucun résultat trouvé pour "{searchQuery}"</p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-purple-600 hover:text-purple-700 font-semibold"
+                >
+                  Réinitialiser la recherche
+                </button>
+              </div>
+            ) : (
+              filteredFAQs.map((faq) => (
               <div
                 key={faq.id}
                 className="bg-white border-2 border-purple-100 rounded-xl overflow-hidden hover:border-purple-300 transition-colors"
@@ -286,13 +349,24 @@ export default function AidePage() {
                 </button>
                 {expandedFAQ === faq.id && (
                   <div className="px-6 py-5 bg-purple-50 border-t-2 border-purple-100">
+                    {faq.gif && (
+                      <div className="mb-4 rounded-lg overflow-hidden shadow-md">
+                        <img
+                          src={faq.gif}
+                          alt={faq.question}
+                          className="w-full max-w-md mx-auto"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <p className="text-gray-700 leading-relaxed text-base">
                       {faq.answer}
                     </p>
                   </div>
                 )}
               </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* CTA après FAQ */}

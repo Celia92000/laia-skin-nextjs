@@ -1,74 +1,66 @@
 import { NextResponse } from 'next/server';
-import { EmailSyncService } from '@/lib/email-sync';
-import { getPrismaClient } from '@/lib/prisma';
-import { getSiteConfig } from '@/lib/config-service';
+import { syncTicketEmailsFromGandi } from '@/lib/email-sync';
 import { log } from '@/lib/logger';
 
-// Cron job pour synchroniser automatiquement les emails
-// Appel automatique toutes les 10 minutes via Vercel Cron
+/**
+ * Cron job pour synchroniser automatiquement les réponses aux tickets depuis Gandi Mail
+ *
+ * Configuration Vercel Cron (vercel.json):
+ * {
+ *   "crons": [{
+ *     "path": "/api/cron/sync-emails?secret=VOTRE_CRON_SECRET",
+ *     "schedule": "*/2 * * * *"
+ *   }]
+ * }
+ *
+ * Appel manuel : GET /api/cron/sync-emails?secret=VOTRE_CRON_SECRET
+ */
 export async function GET(request: Request) {
-  const config = await getSiteConfig();
-  const email = config.email || 'contact@institut.fr';
-  const phone = config.phone || '06 XX XX XX XX';
-  const website = config.customDomain || 'https://votre-institut.fr';
-
-
-  const prisma = await getPrismaClient();
-
   try {
     // Vérifier le token secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
     const secret = searchParams.get('secret');
 
     if (secret !== process.env.CRON_SECRET) {
+      log.warn('[Cron Sync] Tentative d\'accès non autorisée');
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    // Vérifier que EMAIL_PASSWORD est configuré
-    if (!process.env.EMAIL_PASSWORD) {
-      log.info('EMAIL_PASSWORD non configuré - synchronisation ignorée');
+    // Vérifier que GANDI_EMAIL_PASSWORD est configuré
+    if (!process.env.GANDI_EMAIL_PASSWORD) {
+      log.info('[Cron Sync] GANDI_EMAIL_PASSWORD non configuré - synchronisation ignorée');
       return NextResponse.json({
         success: false,
-        message: 'EMAIL_PASSWORD non configuré'
+        message: 'GANDI_EMAIL_PASSWORD non configuré'
       });
     }
 
-    log.info('Début de la synchronisation automatique des emails...');
+    log.info('[Cron Sync] Début de la synchronisation des emails de tickets...');
 
-    // Créer le service de synchronisation
-    const syncService = new EmailSyncService({
-      user: process.env.EMAIL_USER || '${email}',
-      password: process.env.EMAIL_PASSWORD,
-      host: 'mail.gandi.net',
-      port: 993,
-      tls: true
-    });
+    // Synchroniser les emails
+    const result = await syncTicketEmailsFromGandi();
 
-    // Synchroniser les emails des 7 derniers jours
-    await syncService.connect();
-    await syncService.syncEmails(7);
-    syncService.disconnect();
+    if (!result.success) {
+      log.error('[Cron Sync] Échec de la synchronisation');
+      return NextResponse.json({
+        success: false,
+        message: 'Échec de la synchronisation',
+        ...result
+      }, { status: 500 });
+    }
 
-    // Compter les emails synchronisés
-    const emailCount = await prisma.emailHistory.count({
-      where: {
-        createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        }
-      }
-    });
-
-    log.info('Synchronisation automatique terminée');
+    log.info(`[Cron Sync] Synchronisation terminée : ${result.processed} emails traités, ${result.errors} erreurs`);
 
     return NextResponse.json({
       success: true,
       message: 'Synchronisation réussie',
-      emailCount,
-      syncedDays: 7
+      processed: result.processed,
+      errors: result.errors,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error: any) {
-    log.error('Erreur synchronisation automatique:', error);
+    log.error('[Cron Sync] Erreur synchronisation:', error);
 
     return NextResponse.json({
       success: false,
