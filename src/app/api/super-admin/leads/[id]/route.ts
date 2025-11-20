@@ -63,7 +63,7 @@ export async function GET(
         },
         demoBooking: {
           include: {
-            slot: {
+            DemoSlot: {
               select: {
                 id: true,
                 date: true,

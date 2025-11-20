@@ -38,7 +38,7 @@ export async function GET() {
       where: {
         status: 'CONFIRMED', // Démos confirmées, pas encore faites
         viewedByAdminAt: null, // Jamais vues par le super-admin
-        slot: {
+        DemoSlot: {
           date: {
             gte: new Date() // Rendez-vous dans le futur uniquement
           }

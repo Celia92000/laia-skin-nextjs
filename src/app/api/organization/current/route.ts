@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     if (!cleanHost.includes('localhost')) {
       organization = await prisma.organization.findUnique({
         where: { domain: cleanHost },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
       organization = await prisma.organization.findUnique({
         where: { subdomain },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (!organization) {
       organization = await prisma.organization.findFirst({
         where: { slug: 'laia-skin-institut' },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
 
@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Retourner uniquement les données nécessaires pour le menu
+    const config = organization.OrganizationConfig?.[0];
     return NextResponse.json({
       name: organization.name,
       plan: organization.plan,
@@ -54,11 +55,11 @@ export async function GET(request: NextRequest) {
       featureProducts: organization.featureProducts,
       featureFormations: organization.featureFormations,
       config: {
-        siteName: organization.config?.siteName,
-        logoUrl: organization.config?.logoUrl,
-        primaryColor: organization.config?.primaryColor || '#d4b5a0',
-        secondaryColor: organization.config?.secondaryColor || '#c9a084',
-        accentColor: organization.config?.accentColor || '#2c3e50',
+        siteName: config?.siteName,
+        logoUrl: config?.logoUrl,
+        primaryColor: config?.primaryColor || '#d4b5a0',
+        secondaryColor: config?.secondaryColor || '#c9a084',
+        accentColor: config?.accentColor || '#2c3e50',
       }
     });
   } catch (error) {

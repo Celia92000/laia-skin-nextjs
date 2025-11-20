@@ -31,14 +31,14 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
     organization = await prisma.organization.findUnique({
       where: { domain: cleanHost },
       include: {
-        config: true,
-        locations: {
+        OrganizationConfig: true,
+        Location: {
           where: { active: true },
           orderBy: { isMainLocation: 'desc' }
         },
-        paymentSettings: true,
-        loyaltyProgram: true,
-        bookingSettings: true
+        PaymentSettings: true,
+        LoyaltyProgramSettings: true,
+        BookingSettings: true
       }
     })
 
@@ -50,14 +50,14 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
       organization = await prisma.organization.findUnique({
         where: { subdomain },
         include: {
-          config: true,
-          locations: {
+          OrganizationConfig: true,
+          Location: {
             where: { active: true },
             orderBy: { isMainLocation: 'desc' }
           },
-          paymentSettings: true,
-          loyaltyProgram: true,
-          bookingSettings: true
+          PaymentSettings: true,
+          LoyaltyProgramSettings: true,
+          BookingSettings: true
         }
       })
     }
@@ -68,14 +68,14 @@ export async function getOrganizationByHost(host: string): Promise<Organization 
       organization = await prisma.organization.findFirst({
         where: { slug: 'laia-skin-institut' },
         include: {
-          config: true,
-          locations: {
+          OrganizationConfig: true,
+          Location: {
             where: { active: true },
             orderBy: { isMainLocation: 'desc' }
           },
-          paymentSettings: true,
-          loyaltyProgram: true,
-          bookingSettings: true
+          PaymentSettings: true,
+          LoyaltyProgramSettings: true,
+          BookingSettings: true
         }
       })
     }
@@ -103,14 +103,14 @@ export async function getOrganizationById(organizationId: string): Promise<Organ
     return await prisma.organization.findUnique({
       where: { id: organizationId },
       include: {
-        config: true,
-        locations: {
+        OrganizationConfig: true,
+        Location: {
           where: { active: true },
           orderBy: { isMainLocation: 'desc' }
         },
-        paymentSettings: true,
-        loyaltyProgram: true,
-        bookingSettings: true
+        PaymentSettings: true,
+        LoyaltyProgramSettings: true,
+        BookingSettings: true
       }
     })
   } catch (error) {
@@ -127,14 +127,14 @@ export async function getOrganizationBySlug(slug: string): Promise<Organization 
     return await prisma.organization.findUnique({
       where: { slug },
       include: {
-        config: true,
-        locations: {
+        OrganizationConfig: true,
+        Location: {
           where: { active: true },
           orderBy: { isMainLocation: 'desc' }
         },
-        paymentSettings: true,
-        loyaltyProgram: true,
-        bookingSettings: true
+        PaymentSettings: true,
+        LoyaltyProgramSettings: true,
+        BookingSettings: true
       }
     })
   } catch (error) {
@@ -152,8 +152,8 @@ export async function getAllOrganizations() {
       // Récupérer TOUTES les organisations (ACTIVE, TRIAL, SUSPENDED, etc.)
       // Le super admin doit pouvoir voir toutes les organisations
       include: {
-        config: true,
-        locations: {
+        OrganizationConfig: true,
+        Location: {
           where: { active: true },
           orderBy: { isMainLocation: 'desc' }
         }

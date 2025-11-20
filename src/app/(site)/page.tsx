@@ -40,16 +40,16 @@ export default async function Home() {
     !cleanHost.includes('localhost')
       ? prisma.organization.findUnique({
           where: { domain: cleanHost },
-          include: { config: true }
+          include: { OrganizationConfig: true }
         })
       : Promise.resolve(null),
     prisma.organization.findUnique({
       where: { subdomain: subdomain },
-      include: { config: true }
+      include: { OrganizationConfig: true }
     }),
     prisma.organization.findFirst({
       where: { slug: 'laia-skin-institut' },
-      include: { config: true }
+      include: { OrganizationConfig: true }
     })
   ]);
 

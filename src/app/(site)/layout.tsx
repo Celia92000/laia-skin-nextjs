@@ -26,7 +26,7 @@ export default async function SiteLayout({
     if (!cleanHost.includes('localhost')) {
       organization = await prisma.organization.findUnique({
         where: { domain: cleanHost },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
 
@@ -41,7 +41,7 @@ export default async function SiteLayout({
 
       organization = await prisma.organization.findUnique({
         where: { subdomain },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
 
@@ -49,7 +49,7 @@ export default async function SiteLayout({
     if (!organization) {
       organization = await prisma.organization.findFirst({
         where: { slug: 'laia-skin-institut' },
-        include: { config: true }
+        include: { OrganizationConfig: true }
       });
     }
   } catch (error) {
@@ -58,9 +58,9 @@ export default async function SiteLayout({
   }
 
   // Couleurs par défaut
-  const primaryColor = organization?.config?.primaryColor || '#d4b5a0';
-  const secondaryColor = organization?.config?.secondaryColor || '#c9a084';
-  const accentColor = organization?.config?.accentColor || '#2c3e50';
+  const primaryColor = organization?.OrganizationConfig?.[0]?.primaryColor || '#d4b5a0';
+  const secondaryColor = organization?.OrganizationConfig?.[0]?.secondaryColor || '#c9a084';
+  const accentColor = organization?.OrganizationConfig?.[0]?.accentColor || '#2c3e50';
 
   return (
     <div

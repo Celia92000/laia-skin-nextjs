@@ -12,9 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       valid: true,
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
+        userId: session.user.userId,
         role: session.user.role,
         organizationId: session.user.organizationId
       }

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findFirst({
       where: { email },
       include: {
-        organization: {
+        Organization: {
           select: {
             slug: true,
             status: true
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     // Vérifier que l'organisation n'est pas suspendue ou annulée
-    if (user.organization && ['SUSPENDED', 'CANCELLED'].includes(user.organization.status)) {
+    if (user.Organization && ['SUSPENDED', 'CANCELLED'].includes(user.Organization.status)) {
       return NextResponse.json(
         { error: 'Votre compte est suspendu. Contactez le support.' },
         { status: 403 }
