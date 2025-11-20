@@ -1,0 +1,242 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getPrismaClient } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// GET - Récupérer une carte cadeau spécifique
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const prisma = await getPrismaClient();
+  const { id } = await params;
+
+  try {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
+    }
+
+    // Récupérer la carte cadeau
+    const giftCard = await prisma.giftCard.findUnique({
+      where: { id },
+      include: {
+        purchaser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        reservations: true
+      }
+    });
+
+    if (!giftCard) {
+      return NextResponse.json({ error: 'Carte cadeau non trouvée' }, { status: 404 });
+    }
+
+    return NextResponse.json(giftCard);
+  } catch (error) {
+    log.error('Erreur lors de la récupération de la carte cadeau:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+// PATCH - Mettre à jour une carte cadeau
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const prisma = await getPrismaClient();
+  const { id } = await params;
+
+  try {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé', role: decoded.role }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      initialAmount,
+      balance,
+      purchasedFor,
+      recipientEmail,
+      recipientPhone,
+      message,
+      expiryDate,
+      status,
+      notes,
+      purchaserName,
+      paymentStatus,
+      paymentMethod
+    } = body;
+
+    // Préparer les données de mise à jour
+    const updateData: any = {};
+
+    if (initialAmount !== undefined) updateData.initialAmount = initialAmount;
+    if (balance !== undefined) updateData.balance = balance;
+    if (purchasedFor !== undefined) updateData.purchasedFor = purchasedFor;
+    if (recipientEmail !== undefined) updateData.recipientEmail = recipientEmail;
+    if (recipientPhone !== undefined) updateData.recipientPhone = recipientPhone;
+    if (message !== undefined) updateData.message = message;
+    if (expiryDate !== undefined) updateData.expiryDate = expiryDate ? new Date(expiryDate) : null;
+    if (status !== undefined) {
+      updateData.status = status;
+      if (status === 'used') updateData.usedDate = new Date();
+    }
+    if (notes !== undefined) updateData.notes = notes;
+    if (paymentStatus !== undefined) updateData.paymentStatus = paymentStatus;
+    if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
+
+    // Gérer le nom de l'émetteur
+    if (purchaserName !== undefined) {
+      // Récupérer la carte actuelle pour voir si elle a déjà un purchaser
+      const currentCard = await prisma.giftCard.findUnique({
+        where: { id },
+        include: { purchaser: true }
+      });
+
+      if (currentCard?.purchaser) {
+        // Mettre à jour le nom de l'utilisateur existant
+        await prisma.user.update({
+          where: { id: currentCard.purchaser.id },
+          data: { name: purchaserName }
+        });
+      } else if (purchaserName) {
+        // Créer un nouvel utilisateur pour l'émetteur
+        const newPurchaser = await prisma.user.create({
+          data: {
+            name: purchaserName,
+            email: `gift_purchaser_${Date.now()}@temp.com`,
+            password: 'temp_password',
+            role: 'CLIENT'
+          }
+        });
+        updateData.purchasedBy = newPurchaser.id;
+      }
+    }
+
+    // Calculer usedAmount si balance et initialAmount sont disponibles
+    if (initialAmount !== undefined && balance !== undefined) {
+      updateData.usedAmount = initialAmount - balance;
+    } else if (balance !== undefined) {
+      // Si seulement le balance est fourni, récupérer initialAmount de la base
+      const currentCard = await prisma.giftCard.findUnique({
+        where: { id }
+      });
+      if (currentCard) {
+        updateData.usedAmount = currentCard.initialAmount - balance;
+      }
+    }
+
+    // Mettre à jour la carte cadeau
+    const giftCard = await prisma.giftCard.update({
+      where: { id },
+      data: updateData,
+      include: {
+        purchaser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(giftCard);
+  } catch (error) {
+    log.error('Erreur lors de la mise à jour de la carte cadeau:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+// DELETE - Supprimer une carte cadeau
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const prisma = await getPrismaClient();
+  const { id } = await params;
+
+  try {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'EMPLOYEE'];
+    if (!allowedRoles.includes(decoded.role as string)) {
+      return NextResponse.json({ error: 'Accès refusé - suppression', role: decoded.role }, { status: 403 });
+    }
+
+    // Vérifier si la carte a des réservations
+    const giftCard = await prisma.giftCard.findUnique({
+      where: { id },
+      include: { reservations: true }
+    });
+
+    if (!giftCard) {
+      return NextResponse.json({ error: 'Carte cadeau non trouvée' }, { status: 404 });
+    }
+
+    if (giftCard.reservations && giftCard.reservations.length > 0) {
+      return NextResponse.json(
+        { error: 'Impossible de supprimer une carte avec des réservations' },
+        { status: 400 }
+      );
+    }
+
+    // Supprimer la carte cadeau
+    await prisma.giftCard.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ message: 'Carte cadeau supprimée' });
+  } catch (error) {
+    log.error('Erreur lors de la suppression de la carte cadeau:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}

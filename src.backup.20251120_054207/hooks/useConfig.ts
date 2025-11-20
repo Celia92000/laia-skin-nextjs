@@ -1,0 +1,122 @@
+import { useState, useEffect } from 'react';
+
+interface SiteConfig {
+  id?: string;
+  siteName: string;
+  siteTagline?: string;
+  siteDescription?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  whatsapp?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  footerColor?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+  businessHours?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImage?: string;
+  aboutText?: string;
+  termsAndConditions?: string;
+  privacyPolicy?: string;
+  legalNotice?: string;
+  emailSignature?: string;
+  welcomeEmailText?: string;
+
+  // Informations légales
+  legalName?: string;
+  siret?: string;
+  siren?: string;
+  tvaNumber?: string;
+  apeCode?: string;
+  rcs?: string;
+  capital?: string;
+  legalForm?: string;
+  insuranceCompany?: string;
+  insuranceContract?: string;
+  legalRepName?: string;
+  legalRepTitle?: string;
+  customDomain?: string;
+
+  // Section QR Codes & Réseaux Sociaux (Site vitrine)
+  showQRCodesSection?: boolean;
+  qrCodesSectionTitle?: string;
+  qrCodesSectionDescription?: string;
+
+  // Section Galerie Photos (Site vitrine)
+  showGallerySection?: boolean;
+  gallerySectionTitle?: string;
+  gallerySectionDescription?: string;
+  galleryImages?: string;
+}
+
+const defaultConfig: SiteConfig = {
+  siteName: 'LAIA SKIN Institut',
+  siteTagline: 'Institut de Beauté & Bien-être',
+  email: 'contact@laiaskininstitut.fr',
+  phone: '+33 6 31 10 75 31',
+  primaryColor: '#d4b5a0',
+  secondaryColor: '#c9a084',
+  accentColor: '#2c3e50',
+  footerColor: '#2c3e50'
+};
+
+export function useConfig() {
+  const [config, setConfig] = useState<SiteConfig>(defaultConfig);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch('/api/public/config/');
+      if (response.ok) {
+        const data = await response.json();
+        setConfig({ ...defaultConfig, ...data });
+
+        // Appliquer les couleurs CSS
+        if (data.primaryColor) {
+          document.documentElement.style.setProperty('--color-primary', data.primaryColor);
+        }
+        if (data.secondaryColor) {
+          document.documentElement.style.setProperty('--color-secondary', data.secondaryColor);
+        }
+        if (data.accentColor) {
+          document.documentElement.style.setProperty('--color-accent', data.accentColor);
+        }
+
+        // Appliquer la typographie
+        if (data.fontFamily) {
+          document.documentElement.style.setProperty('--font-family', data.fontFamily);
+          document.body.style.fontFamily = data.fontFamily;
+        }
+        if (data.headingFont) {
+          document.documentElement.style.setProperty('--font-heading', data.headingFont);
+        }
+        if (data.baseFontSize) {
+          document.documentElement.style.setProperty('--font-size-base', data.baseFontSize);
+          document.documentElement.style.fontSize = data.baseFontSize;
+        }
+        if (data.headingSize) {
+          document.documentElement.style.setProperty('--font-size-heading', data.headingSize);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { config, loading, refresh: fetchConfig };
+}
