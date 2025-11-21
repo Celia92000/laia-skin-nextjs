@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { NextRequest } from 'next/server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
@@ -11,14 +12,53 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 }
 
-export function generateToken(userId: string, role: string): string {
-  return jwt.sign({ userId, role }, JWT_SECRET, { expiresIn: '7d' });
+export function generateToken(
+  payload: { userId: string; role: string; organizationId?: string | null },
+  rememberMe: boolean = false
+): string {
+  const expiresIn = rememberMe ? '90d' : '30d';
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): { userId: string; role: string; organizationId?: string | null } | null {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET) as { userId: string; role: string; organizationId?: string | null };
   } catch (error) {
     return null;
+  }
+}
+
+export async function verifyAuth(request: NextRequest): Promise<{
+  isValid: boolean;
+  user?: { userId: string; role: string; organizationId?: string | null } | null;
+}> {
+  try {
+    // Essayer de lire le token depuis le cookie (priorité)
+    let token = request.cookies.get('auth-token')?.value;
+
+    // Si pas de cookie, essayer le header Authorization (fallback)
+    if (!token) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      }
+    }
+
+    if (!token) {
+      return { isValid: false };
+    }
+
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return { isValid: false };
+    }
+
+    return {
+      isValid: true,
+      user: decoded,
+    };
+  } catch (error) {
+    return { isValid: false };
   }
 }
