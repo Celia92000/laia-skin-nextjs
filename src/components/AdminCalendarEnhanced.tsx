@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatDateLocal } from '@/lib/date-utils';
 import { ChevronLeft, ChevronRight, Clock, User, Euro, Calendar, Grid3x3, List, CalendarDays, Mail, Phone } from "lucide-react";
-import { servicePricing, formatPriceDetails } from "@/lib/pricing";
+import ReservationPaymentButton from './ReservationPaymentButton';
+// import { servicePricing, formatPriceDetails } from "@/lib/pricing";
 
 interface Reservation {
   id: string;
@@ -12,10 +14,14 @@ interface Reservation {
   userEmail?: string;
   phone?: string;
   services: string[];
+  serviceName?: string; // Nom du service principal depuis la DB
+  packages?: Record<string, string>;
+  isSubscription?: boolean;
   totalPrice: number;
   status: string;
   notes?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 interface AdminCalendarEnhancedProps {
@@ -32,10 +38,10 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
 
   const services = {
     "hydro-naissance": "Hydro'Naissance",
-    "hydro": "Hydro'Cleaning",
+    "hydro-cleaning": "Hydro'Cleaning",
     "renaissance": "Renaissance",
-    "bbglow": "BB Glow",
-    "led": "LED Thérapie"
+    "bb-glow": "BB Glow",
+    "led-therapie": "LED Thérapie"
   };
 
   const monthNames = [
@@ -49,7 +55,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
   // Fonctions pour obtenir les réservations
   const getReservationsForDay = (date: Date | null) => {
     if (!date) return [];
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(date);
     return reservations.filter(r => r.date.startsWith(dateStr));
   };
 
@@ -84,7 +90,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
     const today = new Date();
     setCurrentDate(today);
     setSelectedDate(today);
-    onDateSelect(today.toISOString().split('T')[0]);
+    onDateSelect(formatDateLocal(today));
   };
 
   // Obtenir les jours de la semaine actuelle
@@ -138,7 +144,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
   const handleDateClick = (date: Date | null) => {
     if (date) {
       setSelectedDate(date);
-      onDateSelect(date.toISOString().split('T')[0]);
+      onDateSelect(formatDateLocal(date));
     }
   };
 
@@ -261,32 +267,144 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
               <div className="space-y-3">
                 {getReservationsForDay(currentDate)
                   .sort((a, b) => a.time.localeCompare(b.time))
-                  .map(reservation => (
-                    <div key={reservation.id} className="bg-white p-4 rounded-lg shadow-sm">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <Clock className="w-4 h-4 text-[#d4b5a0]" />
-                            <span className="font-semibold text-[#2c3e50]">{reservation.time}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <User className="w-4 h-4 text-[#2c3e50]/60" />
-                            <span className="text-sm text-[#2c3e50]">{reservation.userName}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {reservation.services.map(serviceId => (
-                              <span key={serviceId} className="px-2 py-1 bg-[#d4b5a0]/10 rounded text-xs">
-                                {services[serviceId as keyof typeof services]}
+                  .map(reservation => {
+                    // S'assurer que services est un tableau
+                    const servicesList = reservation.services && Array.isArray(reservation.services) 
+                      ? reservation.services 
+                      : [];
+                    
+                    // Si pas de services dans le tableau mais qu'il y a serviceName, l'utiliser
+                    const serviceDetails = servicesList.length > 0 
+                      ? servicesList.map(serviceId => {
+                          const packageType = reservation.packages?.[serviceId] || 'single';
+                          // const serviceInfo = servicePricing[serviceId as keyof typeof servicePricing];
+                          // if (!serviceInfo) return null;
+                          
+                          let price = 70; // Prix par défaut
+                          let label = '';
+                          
+                          return {
+                            name: services[serviceId as keyof typeof services] || serviceId,
+                            price,
+                            label,
+                            packageType
+                          };
+                        }).filter(Boolean)
+                      : (reservation as any).serviceName 
+                        ? [{
+                            name: (reservation as any).serviceName,
+                            price: reservation.totalPrice,
+                            label: '',
+                            packageType: 'single'
+                          }]
+                        : [];
+                    
+                    const statusColors = {
+                      'pending': 'bg-yellow-100 text-yellow-700',
+                      'confirmed': 'bg-green-100 text-green-700',
+                      'completed': 'bg-blue-100 text-blue-700',
+                      'cancelled': 'bg-red-100 text-red-700',
+                      'no_show': 'bg-gray-100 text-gray-700'
+                    };
+                    
+                    const statusLabels = {
+                      'pending': 'En attente',
+                      'confirmed': 'Confirmé',
+                      'completed': 'Terminé',
+                      'cancelled': 'Annulé',
+                      'no_show': 'Absent'
+                    };
+                    
+                    return (
+                      <div key={reservation.id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-[#d4b5a0]/10">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-[#d4b5a0]/10 p-2 rounded-lg">
+                              <Clock className="w-5 h-5 text-[#d4b5a0]" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-lg text-[#2c3e50]">{reservation.time}</span>
+                              <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${statusColors[reservation.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-700'}`}>
+                                {statusLabels[reservation.status as keyof typeof statusLabels] || reservation.status}
                               </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                            {reservation.paymentStatus === 'paid' && (
+                              <div className="text-xs text-green-600 font-medium mt-1">✓ Payé</div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-[#2c3e50]/60" />
+                            <span className="font-medium text-[#2c3e50]">{reservation.userName || 'Client'}</span>
+                          </div>
+                          
+                          {reservation.userEmail && (
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-[#2c3e50]/60" />
+                              <span className="text-sm text-[#2c3e50]/80">{reservation.userEmail}</span>
+                            </div>
+                          )}
+                          
+                          {reservation.phone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-[#2c3e50]/60" />
+                              <span className="text-sm text-[#2c3e50]/80">{reservation.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="border-t border-[#d4b5a0]/10 pt-3">
+                          <div className="font-medium text-sm text-[#2c3e50] mb-2">Prestations :</div>
+                          <div className="space-y-1">
+                            {serviceDetails.map((detail, idx) => detail && (
+                              <div key={idx} className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-[#2c3e50]">{detail.name}</span>
+                                  {detail.packageType === 'forfait' && (
+                                    <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                                      Forfait
+                                    </span>
+                                  )}
+                                  {reservation.isSubscription && (
+                                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                      Abo
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-[#d4b5a0]">{detail.price}€</span>
+                              </div>
                             ))}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                        
+                        {reservation.notes && (
+                          <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                            <div className="text-xs text-gray-600 font-medium mb-1">Notes :</div>
+                            <div className="text-xs text-gray-700">{reservation.notes}</div>
+                          </div>
+                        )}
+
+                        <div className="mt-3 pt-3 border-t border-[#d4b5a0]/10">
+                          <ReservationPaymentButton
+                            reservationId={reservation.id}
+                            amount={reservation.totalPrice}
+                            serviceName={reservation.serviceName || reservation.services[0] || 'Prestation'}
+                            paymentStatus={reservation.paymentStatus || 'unpaid'}
+                            paymentMethod={reservation.paymentMethod}
+                            onPaymentInitiated={() => {
+                              // Rafraîchir les réservations après paiement
+                              window.location.reload();
+                            }}
+                          />
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             )}
             
@@ -527,20 +645,43 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                               </div>
                             )}
                             
+                            {/* Badge abonnement si applicable */}
+                            {reservation.isSubscription && (
+                              <div className="mb-3 bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-purple-600">🔔</span>
+                                  <span className="text-sm font-medium text-purple-700">Rendez-vous mensuel d'abonnement</span>
+                                </div>
+                              </div>
+                            )}
+                            
                             {/* Services détaillés */}
                             <div className="mb-2">
                               <div className="text-xs text-[#2c3e50]/60 mb-1">Prestations</div>
                               <div className="flex flex-wrap gap-2">
-                                {reservation.services.map(serviceId => (
-                                  <div key={serviceId} className="bg-[#d4b5a0]/10 px-3 py-1.5 rounded-lg">
+                                {reservation.services && reservation.services.length > 0 ? (
+                                  reservation.services.map(serviceId => (
+                                    <div key={serviceId} className="bg-[#d4b5a0]/10 px-3 py-1.5 rounded-lg">
+                                      <span className="text-sm font-medium text-[#2c3e50]">
+                                        {services[serviceId as keyof typeof services] || serviceId}
+                                        {reservation.packages && reservation.packages[serviceId] === 'abonnement' && (
+                                          <span className="ml-2 text-xs text-purple-600 font-medium">(Abo)</span>
+                                        )}
+                                      </span>
+                                      {/* {servicePricing[serviceId as keyof typeof servicePricing] && (
+                                        <span className="text-xs text-[#2c3e50]/60 ml-2">• {servicePricing[serviceId as keyof typeof servicePricing]?.duration}</span>
+                                      )} */}
+                                    </div>
+                                  ))
+                                ) : reservation.serviceName ? (
+                                  <div className="bg-[#d4b5a0]/10 px-3 py-1.5 rounded-lg">
                                     <span className="text-sm font-medium text-[#2c3e50]">
-                                      {services[serviceId as keyof typeof services] || serviceId}
+                                      {reservation.serviceName}
                                     </span>
-                                    {servicePricing[serviceId] && (
-                                      <span className="text-xs text-[#2c3e50]/60 ml-2">• {formatPriceDetails(serviceId, true)}</span>
-                                    )}
                                   </div>
-                                ))}
+                                ) : (
+                                  <span className="text-xs text-[#2c3e50]/60">Aucun service</span>
+                                )}
                               </div>
                             </div>
                             
@@ -555,21 +696,21 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                         </div>
                         
                         {/* Prix et actions */}
-                        <div className="text-right">
+                        <div className="text-right space-y-2">
                           <div className="text-2xl font-bold text-[#d4b5a0] mb-2">
                             {reservation.totalPrice}€
                           </div>
-                          {reservation.paymentStatus && (
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              reservation.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' :
-                              reservation.paymentStatus === 'partial' ? 'bg-orange-100 text-orange-600' :
-                              'bg-gray-100 text-gray-600'
-                            }`}>
-                              {reservation.paymentStatus === 'paid' ? '✓ Payé' :
-                               reservation.paymentStatus === 'partial' ? 'Partiel' :
-                               'Non payé'}
-                            </span>
-                          )}
+                          <ReservationPaymentButton
+                            reservationId={reservation.id}
+                            amount={reservation.totalPrice}
+                            serviceName={reservation.serviceName || reservation.services[0] || 'Prestation'}
+                            paymentStatus={reservation.paymentStatus || 'unpaid'}
+                            paymentMethod={reservation.paymentMethod}
+                            onPaymentInitiated={() => {
+                              // Rafraîchir les réservations après paiement
+                              window.location.reload();
+                            }}
+                          />
                         </div>
                       </div>
                     </div>

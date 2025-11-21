@@ -1,16 +1,43 @@
-# Configuration des Cron Jobs
+# 🕐 CRON Jobs - Tâches automatiques LAIA
 
-## Cron Jobs Actifs sur Vercel (Limite : 2)
+Documentation des tâches planifiées automatiques de la plateforme LAIA.
 
-1. **Rappels de rendez-vous** - `/api/cron/reminder-emails`
-   - Horaire : Tous les jours à 18h
-   - Envoie des rappels 24h avant les rendez-vous
-   - PRIORITÉ HAUTE : Réduit les no-shows et améliore l'expérience client
+## 🏢 Cron Jobs Super-Admin (Facturation & Gestion)
 
-2. **Demandes d'avis clients** - `/api/cron/send-review-requests`
-   - Horaire : Tous les jours à 15h
-   - Envoie des demandes d'avis 3 jours après les rendez-vous
-   - PRIORITÉ HAUTE : Collecte des témoignages et améliore la réputation
+### 1. Génération factures mensuelles
+**Endpoint**: `/api/cron/generate-monthly-invoices`
+**Planification**: Le 1er de chaque mois à minuit (0 0 1 * *)
+**Durée max**: 5 minutes (300s)
+
+**Fonction**:
+- Génère automatiquement les factures mensuelles pour toutes les organisations ACTIVE
+- Calcul du montant selon le plan (SOLO: 49€, DUO: 99€, TEAM: 199€, PREMIUM: 399€)
+- Génération du PDF avec numéro unique (LAIA-2025-001234)
+- Ignore les organisations déjà facturées ce mois
+- Ignore les organisations en période d'essai
+
+### 2. Relances paiement
+**Endpoint**: `/api/cron/send-payment-reminders`
+**Planification**: Tous les jours à 9h (0 9 * * *)
+**Durée max**: 3 minutes (180s)
+
+**Fonction**:
+- Vérifie toutes les factures impayées (PENDING, FAILED)
+- **Après 7 jours**: 1ère relance par email
+- **Après 14 jours**: 2ème relance avec avertissement
+- **Après 21 jours**: Suspension automatique du compte
+
+## 📅 Cron Jobs Clients (Rendez-vous & Communication)
+
+### 3. Rappels de rendez-vous 24h
+**Endpoint**: `/api/cron/reminder-emails`
+**Planification**: Tous les jours à 18h
+**Fonction**: Envoie des rappels 24h avant les rendez-vous
+
+### 4. Demandes d'avis clients
+**Endpoint**: `/api/cron/send-review-requests`
+**Planification**: Tous les jours à 15h
+**Fonction**: Envoie des demandes d'avis 3 jours après les rendez-vous
 
 ## Cron Jobs Additionnels (Déclenchement Manuel)
 

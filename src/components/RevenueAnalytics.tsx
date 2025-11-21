@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { 
-  Calendar, Euro, TrendingUp, TrendingDown, Download, 
+import {
+  Calendar, Euro, TrendingUp, TrendingDown, Download,
   CalendarDays, Clock, Filter, BarChart3, PieChart
 } from 'lucide-react';
+import { formatDateLocal } from '@/lib/date-utils';
 
 interface Reservation {
   id: string;
@@ -20,14 +21,15 @@ interface Reservation {
 interface RevenueAnalyticsProps {
   reservations: Reservation[];
   services?: Record<string, string>;
+  onStatClick?: (type: string) => void;
 }
 
-export default function RevenueAnalytics({ reservations, services = {} }: RevenueAnalyticsProps) {
+export default function RevenueAnalytics({ reservations, services = {}, onStatClick }: RevenueAnalyticsProps) {
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month' | 'year' | 'custom'>('month');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()));
   const [customRange, setCustomRange] = useState({
-    start: new Date().toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: formatDateLocal(new Date()),
+    end: formatDateLocal(new Date())
   });
 
   // Calculer les revenus selon la période sélectionnée
@@ -168,7 +170,7 @@ export default function RevenueAnalytics({ reservations, services = {} }: Revenu
         break;
     }
 
-    // Calculer les totaux
+    // Calculer les totaux (utiliser totalPrice pour les montants)
     const totalRevenue = filteredReservations.reduce((sum, r) => sum + r.totalPrice, 0);
     const comparisonRevenue = comparisonReservations.reduce((sum, r) => sum + r.totalPrice, 0);
     const averageTicket = filteredReservations.length > 0 ? totalRevenue / filteredReservations.length : 0;
@@ -329,16 +331,20 @@ export default function RevenueAnalytics({ reservations, services = {} }: Revenu
         </div>
       </div>
 
-      {/* Résultats */}
+      {/* Résultats - Encadrés cliquables */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* CA Total */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6">
+        <button 
+          onClick={() => onStatClick?.('revenue')}
+          className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 text-left hover:shadow-lg transition-all group"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Chiffre d'affaires</span>
             <Euro className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-green-600">{revenueData.totalRevenue.toFixed(2)}€</p>
           <p className="text-xs text-gray-500 mt-2">{revenueData.periodLabel}</p>
+          <p className="text-xs text-green-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Cliquer pour voir les détails →</p>
           
           {revenueData.comparisonRevenue > 0 && (
             <div className="mt-3 pt-3 border-t border-green-200">
@@ -354,27 +360,35 @@ export default function RevenueAnalytics({ reservations, services = {} }: Revenu
               </div>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Nombre de prestations */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+        <button 
+          onClick={() => onStatClick?.('services')}
+          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 text-left hover:shadow-lg transition-all group"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Prestations</span>
             <Calendar className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-3xl font-bold text-blue-600">{revenueData.numberOfReservations}</p>
           <p className="text-xs text-gray-500 mt-2">Soins réalisés</p>
-        </div>
+          <p className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Voir tous les services →</p>
+        </button>
 
         {/* Panier moyen */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6">
+        <button 
+          onClick={() => onStatClick?.('average')}
+          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 text-left hover:shadow-lg transition-all group"
+        >
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Panier moyen</span>
             <PieChart className="w-5 h-5 text-purple-600" />
           </div>
           <p className="text-3xl font-bold text-purple-600">{revenueData.averageTicket.toFixed(2)}€</p>
           <p className="text-xs text-gray-500 mt-2">Par prestation</p>
-        </div>
+          <p className="text-xs text-purple-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Voir analyse détaillée →</p>
+        </button>
       </div>
 
       {/* Répartition par service */}

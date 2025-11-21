@@ -24,7 +24,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
       }
 
       try {
-        // Vérifier le token côté client
+        // Vérifier le token côté serveur
         const response = await fetch('/api/auth/verify', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -39,10 +39,13 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
         }
 
         const data = await response.json();
-        
-        if (requireAdmin && data.user.role !== 'admin') {
-          router.push('/');
-          return;
+
+        if (requireAdmin) {
+          const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'STAFF'];
+          if (!adminRoles.includes(data.user.role)) {
+            router.push('/espace-client');
+            return;
+          }
         }
 
         setIsAuthenticated(true);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer toutes les conversations
 export async function GET(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(conversations);
   } catch (error) {
-    console.error('Erreur lors de la récupération des conversations:', error);
+    log.error('Erreur lors de la récupération des conversations:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des conversations' },
       { status: 500 }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Erreur lors de l\'envoi du message:', error);
+    log.error('Erreur lors de l\'envoi du message:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi du message' },
       { status: 500 }

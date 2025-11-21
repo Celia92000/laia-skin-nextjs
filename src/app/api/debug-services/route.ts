@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
   try {
-    console.log('🔍 Debug: Récupération des services...');
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('VERCEL env:', !!process.env.VERCEL);
+    log.info('🔍 Debug: Récupération des services...');
+    log.info('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    log.info('VERCEL env:', !!process.env.VERCEL);
     
     const services = await prisma.service.findMany({
       where: { active: true }
@@ -30,7 +31,7 @@ export async function GET() {
     });
     
   } catch (error: any) {
-    console.error('❌ Erreur debug services:', error);
+    log.error('❌ Erreur debug services:', error);
     
     return NextResponse.json({
       success: false,

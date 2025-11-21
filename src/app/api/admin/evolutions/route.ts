@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
     
     return NextResponse.json(evolutions);
   } catch (error) {
-    console.error("Erreur lors de la récupération des évolutions:", error);
+    log.error("Erreur lors de la récupération des évolutions:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json(evolution);
   } catch (error) {
-    console.error("Erreur lors de la création de l'évolution:", error);
+    log.error("Erreur lors de la création de l'évolution:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -122,7 +123,7 @@ export async function PUT(request: Request) {
     
     return NextResponse.json(evolution);
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'évolution:", error);
+    log.error("Erreur lors de la mise à jour de l'évolution:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -142,7 +143,7 @@ export async function DELETE(request: Request) {
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erreur lors de la suppression de l'évolution:", error);
+    log.error("Erreur lors de la suppression de l'évolution:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

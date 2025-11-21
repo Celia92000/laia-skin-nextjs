@@ -1,32 +1,53 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// Configuration Google Business LAIA SKIN Institut
-const GOOGLE_PLACE_ID = '3014602962211627658';
-const GOOGLE_BUSINESS_URL = 'https://www.google.com/maps/place/?q=place_id:3014602962211627658';
+import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
   try {
-    // Récupérer les avis Google depuis la base
+    // Récupérer l'organisation courante
+    const organizationId = await getCurrentOrganizationId();
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
+    // Récupérer la config Google Business de l'organisation
+    const orgConfig = await prisma.organizationConfig.findUnique({
+      where: { organizationId },
+      select: {
+        googlePlaceId: true,
+        googleBusinessUrl: true,
+        lastGoogleSync: true
+      }
+    });
+
+    // Récupérer les avis Google de cette organisation uniquement
     const googleReviews = await prisma.googleReview.findMany({
+      where: { organizationId },
       orderBy: { publishedAt: 'desc' }
     });
 
-    // Récupérer ou créer les stats business
-    let businessStats = await prisma.businessStats.findFirst();
-    
-    if (!businessStats) {
-      businessStats = await prisma.businessStats.create({
-        data: {
-          googlePlaceId: GOOGLE_PLACE_ID,
-          googleBusinessUrl: GOOGLE_BUSINESS_URL
-        }
-      });
-    }
-
-    // Calculer les stats internes (vos propres avis)
+    // Calculer les stats internes (vos propres avis) pour cette organisation
     const internalReviews = await prisma.review.findMany({
-      where: { 
+      where: {
+        organizationId,
         approved: true,
         source: { not: 'google' }
       }
@@ -61,17 +82,6 @@ export async function GET(request: Request) {
       }
     };
 
-    // Mettre à jour les stats business
-    await prisma.businessStats.update({
-      where: { id: businessStats.id },
-      data: {
-        googleRating: googleStats.average,
-        googleReviewCount: googleStats.count,
-        internalRating: internalStats.average,
-        internalReviewCount: internalStats.count
-      }
-    });
-
     return NextResponse.json({
       internal: {
         reviews: internalReviews.slice(0, 10), // Les 10 derniers
@@ -80,7 +90,9 @@ export async function GET(request: Request) {
       google: {
         reviews: googleReviews.slice(0, 10), // Les 10 derniers
         stats: googleStats,
-        businessUrl: GOOGLE_BUSINESS_URL
+        businessUrl: orgConfig?.googleBusinessUrl || null,
+        placeId: orgConfig?.googlePlaceId || null,
+        lastSync: orgConfig?.lastGoogleSync || null
       },
       combined: {
         totalReviews: internalStats.count + googleStats.count,
@@ -93,7 +105,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Erreur récupération avis Google:', error);
+    log.error('Erreur récupération avis Google:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des avis' },
       { status: 500 }
@@ -101,9 +113,20 @@ export async function GET(request: Request) {
   }
 }
 
-// Endpoint pour synchroniser manuellement avec Google (optionnel)
+// Endpoint pour synchroniser manuellement avec Google (optionnel - DÉPRÉCIÉ)
+// NOTE: Utilisez plutôt /api/admin/google-reviews/sync pour la synchronisation
 export async function POST(request: Request) {
   try {
+    // Récupérer l'organisation courante
+    const organizationId = await getCurrentOrganizationId();
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
+
     // Pour une vraie implémentation, vous devriez utiliser l'API Google My Business
     // qui nécessite une authentification OAuth2
     // Voir: https://developers.google.com/my-business/reference/rest
@@ -111,14 +134,14 @@ export async function POST(request: Request) {
     // Exemple de données simulées pour test
     const mockGoogleReviews = [
       {
-        reviewId: 'google_1',
+        reviewId: `google_${organizationId}_1`,
         authorName: 'Marie L.',
         rating: 5,
         comment: 'Excellent institut ! Laïa est très professionnelle.',
         publishedAt: new Date('2025-01-15')
       },
       {
-        reviewId: 'google_2',
+        reviewId: `google_${organizationId}_2`,
         authorName: 'Sophie D.',
         rating: 5,
         comment: 'Je recommande vivement. Résultats visibles dès la première séance.',
@@ -126,11 +149,14 @@ export async function POST(request: Request) {
       }
     ];
 
-    // Insérer ou mettre à jour les avis Google
+    // Insérer ou mettre à jour les avis Google pour cette organisation
     for (const review of mockGoogleReviews) {
       await prisma.googleReview.upsert({
         where: { reviewId: review.reviewId },
-        create: review,
+        create: {
+          ...review,
+          organizationId
+        },
         update: {
           rating: review.rating,
           comment: review.comment
@@ -138,8 +164,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // Mettre à jour la date de dernière synchronisation
-    await prisma.businessStats.updateMany({
+    // Mettre à jour la date de dernière synchronisation dans OrganizationConfig
+    await prisma.organizationConfig.updateMany({
+      where: { organizationId },
       data: {
         lastGoogleSync: new Date()
       }
@@ -151,7 +178,7 @@ export async function POST(request: Request) {
       reviewsCount: mockGoogleReviews.length
     });
   } catch (error) {
-    console.error('Erreur synchronisation Google:', error);
+    log.error('Erreur synchronisation Google:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la synchronisation' },
       { status: 500 }

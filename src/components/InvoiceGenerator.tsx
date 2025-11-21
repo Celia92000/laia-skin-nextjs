@@ -20,12 +20,18 @@ interface InvoiceData {
   paymentAmount?: number;
   paymentMethod?: string;
   paymentStatus: string;
+  appliedDiscounts?: Array<{
+    description: string;
+    amount: number;
+  }>;
 }
 
 export function generateInvoiceHTML(data: InvoiceData): string {
   const subtotal = data.services.reduce((sum, service) => sum + (service.price * (service.quantity || 1)), 0);
-  const tva = subtotal * 0.20;
-  const totalTTC = subtotal + tva;
+  const totalDiscounts = data.appliedDiscounts ? data.appliedDiscounts.reduce((sum, d) => sum + d.amount, 0) : 0;
+  const subtotalAfterDiscount = subtotal - totalDiscounts;
+  const tva = subtotalAfterDiscount * 0.20;
+  const totalTTC = subtotalAfterDiscount + tva;
 
   const html = `
     <!DOCTYPE html>
@@ -216,7 +222,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
               <p>123 Avenue de la Beauté</p>
               <p>75001 Paris, France</p>
               <p>Tél: 01 23 45 67 89</p>
-              <p>Email: contact@laiaskin.com</p>
+              <p>Email: contact@laia.skin.com</p>
               <p>SIRET: 123 456 789 00012</p>
             </div>
           </div>
@@ -281,6 +287,18 @@ export function generateInvoiceHTML(data: InvoiceData): string {
             <span>Sous-total HT</span>
             <span>${subtotal.toFixed(2)}€</span>
           </div>
+          ${data.appliedDiscounts && data.appliedDiscounts.length > 0 ? `
+            ${data.appliedDiscounts.map(discount => `
+              <div class="total-row" style="color: #d4b5a0; font-weight: bold;">
+                <span>${discount.description}</span>
+                <span>-${discount.amount.toFixed(2)}€</span>
+              </div>
+            `).join('')}
+            <div class="total-row">
+              <span>Sous-total après réduction</span>
+              <span>${(subtotal - data.appliedDiscounts.reduce((sum, d) => sum + d.amount, 0)).toFixed(2)}€</span>
+            </div>
+          ` : ''}
           <div class="total-row">
             <span>TVA (20%)</span>
             <span>${tva.toFixed(2)}€</span>
@@ -338,17 +356,50 @@ export function InvoiceButton({ reservation }: { reservation: any }) {
       totalPrice: reservation.totalPrice,
       paymentAmount: reservation.paymentAmount,
       paymentMethod: reservation.paymentMethod,
-      paymentStatus: reservation.paymentStatus
+      paymentStatus: reservation.paymentStatus,
+      appliedDiscounts: reservation.appliedDiscounts
     };
 
     const invoiceHTML = generateInvoiceHTML(invoiceData);
+
+    // Ajouter des boutons d'action dans la facture
+    const htmlWithActions = invoiceHTML.replace(
+      '</body>',
+      `
+      <div style="position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #d4b5a0; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">
+          🖨️ Imprimer
+        </button>
+        <button onclick="downloadInvoice()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">
+          📥 Télécharger
+        </button>
+        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">
+          ✕ Fermer
+        </button>
+      </div>
+      <script>
+        function downloadInvoice() {
+          const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'facture_${invoiceData.invoiceNumber}.html';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      </script>
+      <style>
+        @media print {
+          button, div[style*="position: fixed"] { display: none !important; }
+        }
+      </style>
+      </body>`
+    );
+
     const newWindow = window.open('', '_blank');
     if (newWindow) {
-      newWindow.document.write(invoiceHTML);
+      newWindow.document.write(htmlWithActions);
       newWindow.document.close();
-      setTimeout(() => {
-        newWindow.print();
-      }, 500);
     }
   };
 
@@ -357,7 +408,7 @@ export function InvoiceButton({ reservation }: { reservation: any }) {
       onClick={handleGenerateInvoice}
       className="px-3 py-1 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] transition-colors text-sm"
     >
-      📄 Facture
+      👁️ Voir facture
     </button>
   );
 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -17,12 +19,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -43,12 +45,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(emailHistory);
   } catch (error) {
-    console.error('Erreur récupération historique emails:', error);
+    log.error('Erreur récupération historique emails:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Créer l'entrée dans l'historique
     const emailEntry = await prisma.emailHistory.create({
       data: {
-        from: data.from || 'contact@laiaskininstitut.fr',
+        from: data.from || '${email}',
         to: data.to,
         subject: data.subject,
         content: data.content,
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(emailEntry);
   } catch (error) {
-    console.error('Erreur création historique email:', error);
+    log.error('Erreur création historique email:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'laia-skin-secret-key-2024';
 
 export async function GET(request: Request) {
+  const prisma = await getPrismaClient();
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -12,18 +14,34 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    // Récupérer les avis de la base de données
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
+
+    // 🔒 Récupérer les avis DE CETTE ORGANISATION uniquement
     const reviews = await prisma.review.findMany({
+      where: {
+        organizationId: user.organizationId ?? undefined
+      },
       include: {
         user: true
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    // Récupérer aussi les avis Google
+    // 🔒 Récupérer aussi les avis Google DE CETTE ORGANISATION
     const googleReviews = await prisma.googleReview.findMany({
+      where: {
+        organizationId: user.organizationId ?? undefined
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -33,6 +51,7 @@ export async function GET(request: Request) {
         id: r.id,
         rating: r.rating,
         comment: r.comment,
+        satisfaction: r.satisfaction,
         clientName: r.user?.name || 'Client anonyme',
         clientEmail: r.user?.email,
         clientPhone: r.user?.phone,
@@ -41,7 +60,7 @@ export async function GET(request: Request) {
         createdAt: r.createdAt,
         published: r.approved,
         response: r.response,
-        photos: []
+        photos: r.photos ? JSON.parse(r.photos) : []
       })),
       ...googleReviews.map(g => ({
         id: 'google_' + g.id,
@@ -61,12 +80,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedReviews);
   } catch (error) {
-    console.error('Erreur lors de la récupération des avis:', error);
+    log.error('Erreur lors de la récupération des avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
+  const prisma = await getPrismaClient();
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -74,15 +94,27 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
     const data = await request.json();
-    
+
+    // 🔒 Créer l'avis AVEC organizationId
     const review = await prisma.review.create({
       data: {
         rating: data.rating,
         comment: data.comment,
         userId: data.clientId,
+        organizationId: user.organizationId ?? undefined,
         serviceName: data.serviceName,
         source: data.source || 'website',
         approved: data.published || false
@@ -91,7 +123,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(review);
   } catch (error) {
-    console.error('Erreur lors de la création de l\'avis:', error);
+    log.error('Erreur lors de la création de l\'avis:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

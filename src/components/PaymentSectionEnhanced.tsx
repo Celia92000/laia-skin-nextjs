@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Gift, CreditCard, Euro, Banknote, Building2, Users, Cake, Star, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { InvoiceButton } from './InvoiceGenerator';
+import ReservationPaymentButton from './ReservationPaymentButton';
 
 interface PaymentSectionProps {
   reservation: any;
@@ -30,31 +31,72 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
   const [manualDiscountReason, setManualDiscountReason] = useState('');
   const [availableReferralRewards, setAvailableReferralRewards] = useState(0);
   const [loadingReferrals, setLoadingReferrals] = useState(true);
-  
+  const [databaseDiscounts, setDatabaseDiscounts] = useState<any[]>([]);
+  const [loadingDiscounts, setLoadingDiscounts] = useState(true);
+
   // Trouver le profil de fidélité du client
   const userProfile = loyaltyProfiles.find(p => p.user.email === reservation.userEmail);
-  
+
+  // Charger les réductions depuis la base de données
+  useEffect(() => {
+    const loadDiscounts = async () => {
+      if (!reservation.userId) return;
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/discounts?userId=${reservation.userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const discounts = await response.json();
+          const availableDiscounts = discounts.filter((d: any) => d.status === 'available');
+          setDatabaseDiscounts(availableDiscounts);
+
+          // Auto-appliquer les réductions de la base de données
+          if (availableDiscounts.length > 0) {
+            const autoAppliedDiscounts = availableDiscounts.map((d: any) => ({
+              type: 'manual' as const,
+              amount: d.amount,
+              description: d.originalReason || `Réduction ${d.type}`,
+              icon: Gift,
+              color: 'bg-orange-500',
+              automatic: false
+            }));
+            setAppliedDiscounts(prev => [...prev, ...autoAppliedDiscounts]);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur chargement réductions:', error);
+      } finally {
+        setLoadingDiscounts(false);
+      }
+    };
+
+    loadDiscounts();
+  }, [reservation.userId]);
+
   // Calculer les réductions disponibles
   const availableDiscounts: AvailableDiscount[] = [];
   
-  // 6ème soin individuel = -20€
-  if (userProfile && userProfile.individualServicesCount === 5) {
+  // 5 soins individuels = -20€
+  if (userProfile && userProfile.individualServicesCount >= 5) {
     availableDiscounts.push({
       type: 'individual',
       amount: 20,
-      description: '6ème soin individuel',
+      description: '5 soins réalisés',
       icon: Gift,
       color: 'bg-[#d4b5a0]',
       automatic: true
     });
   }
   
-  // 4ème forfait = -40€
-  if (userProfile && userProfile.packagesCount === 3) {
+  // 3 forfaits = -40€
+  if (userProfile && userProfile.packagesCount >= 3) {
     availableDiscounts.push({
       type: 'package',
       amount: 40,
-      description: '4ème forfait',
+      description: '3 forfaits achetés',
       icon: Star,
       color: 'bg-purple-500',
       automatic: true
@@ -77,11 +119,76 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
     }
   }
 
+  // Ajouter les réductions de la base de données
+  databaseDiscounts.forEach(discount => {
+    availableDiscounts.push({
+      type: 'manual',
+      amount: discount.amount,
+      description: discount.originalReason || `Réduction ${discount.type}`,
+      icon: Gift,
+      color: 'bg-orange-500',
+      automatic: false
+    });
+  });
+
+  // Auto-appliquer les réductions automatiques au chargement
+  useEffect(() => {
+    // Ne le faire qu'une fois au chargement du composant
+    if (appliedDiscounts.length > 0 || !userProfile) return;
+
+    const autoDiscounts: AvailableDiscount[] = [];
+
+    // 5 soins individuels = -20€
+    if (userProfile.individualServicesCount >= 5) {
+      autoDiscounts.push({
+        type: 'individual',
+        amount: 20,
+        description: '5 soins réalisés',
+        icon: Gift,
+        color: 'bg-[#d4b5a0]',
+        automatic: true
+      });
+    }
+
+    // 3 forfaits = -40€
+    if (userProfile.packagesCount >= 3) {
+      autoDiscounts.push({
+        type: 'package',
+        amount: 40,
+        description: '3 forfaits achetés',
+        icon: Star,
+        color: 'bg-purple-500',
+        automatic: true
+      });
+    }
+
+    // Anniversaire = -10€
+    if (userProfile.user.birthDate) {
+      const birthDate = new Date(userProfile.user.birthDate);
+      const today = new Date();
+      if (birthDate.getMonth() === today.getMonth()) {
+        autoDiscounts.push({
+          type: 'birthday',
+          amount: 10,
+          description: `Anniversaire (${birthDate.getDate()}/${birthDate.getMonth() + 1})`,
+          icon: Cake,
+          color: 'bg-pink-500',
+          automatic: true
+        });
+      }
+    }
+
+    // Appliquer automatiquement ces réductions
+    if (autoDiscounts.length > 0) {
+      setAppliedDiscounts(autoDiscounts);
+    }
+  }, [userProfile]);
+
   // Charger les récompenses de parrainage disponibles
   useEffect(() => {
     const fetchReferralRewards = async () => {
       if (!userProfile) return;
-      
+
       try {
         const token = localStorage.getItem('token');
         const response = await fetch('/api/referral/available', {
@@ -98,7 +205,7 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
         if (response.ok) {
           const data = await response.json();
           setAvailableReferralRewards(data.totalAmount || 0);
-          
+
           // Ajouter les réductions de parrainage disponibles
           if (data.rewards && data.rewards.length > 0) {
             data.rewards.forEach((reward: any) => {
@@ -406,6 +513,7 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
                 <option value="cash">Espèces</option>
                 <option value="card">Carte bancaire</option>
                 <option value="transfer">Virement</option>
+                <option value="stripe">Stripe (en ligne)</option>
               </select>
             </div>
             <div>
@@ -485,21 +593,60 @@ export default function PaymentSectionEnhanced({ reservation, loyaltyProfiles, r
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex gap-3">
-        <button
-          onClick={handlePayment}
-          className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-        >
-          <CreditCard className="w-4 h-4" />
-          Valider le paiement
-        </button>
-        <InvoiceButton reservation={{
-          ...reservation,
-          client: reservation.userName || 'Client',
-          email: reservation.userEmail,
-          finalPrice: finalPrice,
-          appliedDiscounts: appliedDiscounts
-        }} />
+      <div className="space-y-3">
+        {/* Section Stripe - Paiement en ligne */}
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-900 mb-1 flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Paiement en ligne Stripe
+              </h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Générez un lien de paiement sécurisé pour que le client paie en ligne par carte bancaire
+              </p>
+              <ReservationPaymentButton
+                reservationId={reservation.id}
+                amount={finalPrice}
+                serviceName={reservation.services?.[0] || reservation.serviceName || 'Prestation'}
+                paymentStatus={reservation.paymentStatus || 'unpaid'}
+                paymentMethod={reservation.paymentMethod}
+                onPaymentInitiated={() => {
+                  // Rafraîchir après paiement
+                  window.location.reload();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Séparateur */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">OU</span>
+          </div>
+        </div>
+
+        {/* Section Paiement classique */}
+        <div className="flex gap-3">
+          <button
+            onClick={handlePayment}
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Valider le paiement (Espèces/CB/Virement)
+          </button>
+          <InvoiceButton reservation={{
+            ...reservation,
+            client: reservation.userName || 'Client',
+            email: reservation.userEmail,
+            finalPrice: finalPrice,
+            appliedDiscounts: appliedDiscounts
+          }} />
+        </div>
       </div>
     </div>
   );

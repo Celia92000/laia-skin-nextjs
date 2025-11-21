@@ -1,9 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { log } from '@/lib/logger';
 
 export async function GET() {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     const now = new Date();
     const next30Days = addDays(now, 30);
@@ -186,15 +201,15 @@ export async function GET() {
       openingHours: typeof openingHours === 'string' ? JSON.parse(openingHours) : openingHours,
       contact: {
         phone: '06 71 58 12 37',
-        email: 'contact@laiaskin.com',
+        email: '${email}',
         address: '1-11 Cr Alsace et Lorraine, 33000 Bordeaux',
         social: {
-          instagram: '@laiaskin',
+          instagram: '@laia.skin',
           facebook: 'laiaskin'
         }
       },
       seo: {
-        title: 'LAIA SKIN Institut - Soins du visage à Bordeaux',
+        title: '${siteName} - Soins du visage à Bordeaux',
         description: 'Institut de beauté spécialisé dans les soins du visage haute technologie à Bordeaux. HydraFacial, LED Therapy, Microneedling et plus.',
         keywords: 'institut beauté bordeaux, hydrafacial bordeaux, soin visage bordeaux, peeling bordeaux, microneedling bordeaux'
       },
@@ -216,7 +231,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Erreur lors de la synchronisation publique:', error);
+    log.error('Erreur lors de la synchronisation publique:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des données' },
       { status: 500 }

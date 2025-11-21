@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
+import { log } from '@/lib/logger';
 
 // Cette API doit être appelée tous les jours à 18h pour envoyer les rappels du lendemain
 export async function GET(request: Request) {
@@ -35,16 +36,21 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`📱 ${tomorrowReservations.length} rappels WhatsApp à envoyer pour demain`);
+    log.info(`📱 ${tomorrowReservations.length} rappels WhatsApp à envoyer pour demain`);
 
     let sentCount = 0;
     let errorCount = 0;
     
     for (const reservation of tomorrowReservations) {
       if (!reservation.user?.phone) {
-        console.log(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
+        log.info(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
         continue;
       }
+
+      // Note: Le champ whatsappNotifications n'existe pas dans le modèle User actuel
+      // Pour implémenter cette fonctionnalité, il faudrait ajouter ce champ au schéma Prisma
+      // En attendant, on suppose que tous les utilisateurs acceptent les notifications
+      log.info(`📱 Préparation du rappel WhatsApp pour ${reservation.user?.name}`);
 
       try {
         // Préparer les services
@@ -52,10 +58,10 @@ export async function GET(request: Request) {
         const serviceNames = services.map((s: string) => {
           const serviceMap: any = {
             'hydro-naissance': "Hydro'Naissance",
-            'hydro': "Hydro'Cleaning", 
+            'hydro-cleaning': "Hydro'Cleaning", 
             'renaissance': 'Renaissance',
-            'bbglow': 'BB Glow',
-            'led': 'LED Thérapie'
+            'bb-glow': 'BB Glow',
+            'led-therapie': 'LED Thérapie'
           };
           return serviceMap[s] || s;
         });
@@ -80,14 +86,14 @@ export async function GET(request: Request) {
           });
           
           sentCount++;
-          console.log(`✅ Rappel envoyé à ${reservation.user.name} (${reservation.user.phone})`);
+          log.info(`✅ Rappel envoyé à ${reservation.user.name} (${reservation.user.phone})`);
         } else {
           errorCount++;
-          console.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
+          log.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
         }
       } catch (error) {
         errorCount++;
-        console.error(`❌ Erreur pour ${reservation.user.name}:`, error);
+        log.error(`❌ Erreur pour ${reservation.user.name}:`, error);
       }
       
       // Attendre un peu entre chaque envoi pour éviter le spam
@@ -103,7 +109,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Erreur cron WhatsApp reminders:', error);
+    log.error('Erreur cron WhatsApp reminders:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des rappels' 
     }, { status: 500 });
@@ -138,10 +144,10 @@ export async function POST(request: Request) {
     const serviceNames = services.map((s: string) => {
       const serviceMap: any = {
         'hydro-naissance': "Hydro'Naissance",
-        'hydro': "Hydro'Cleaning",
+        'hydro-cleaning': "Hydro'Cleaning",
         'renaissance': 'Renaissance',
-        'bbglow': 'BB Glow',
-        'led': 'LED Thérapie'
+        'bb-glow': 'BB Glow',
+        'led-therapie': 'LED Thérapie'
       };
       return serviceMap[s] || s;
     });
@@ -177,7 +183,7 @@ export async function POST(request: Request) {
     }
 
   } catch (error) {
-    console.error('Erreur envoi rappel manuel:', error);
+    log.error('Erreur envoi rappel manuel:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi' 
     }, { status: 500 });

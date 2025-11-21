@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
+import {
   Search,
   Filter,
   Download,
@@ -22,89 +22,80 @@ import {
   Phone,
   Mail
 } from "lucide-react";
+import { getReservationWithServiceNames } from '@/lib/service-utils';
+import { formatDateLocal } from "@/lib/date-utils";
 
-// Données simulées
-const mockReservations = [
-  {
-    id: "RES001",
-    client: "Sophie Martin",
-    telephone: "06 12 34 56 78",
-    email: "sophie.martin@email.com",
-    service: "LAIA Hydro'Cleaning",
-    date: "2024-02-15",
-    heure: "10:00",
-    duree: 60,
-    prix: 90,
-    status: "confirmee" as const,
-    notes: "Première visite"
-  },
-  {
-    id: "RES002",
-    client: "Marie Dubois",
-    telephone: "06 98 76 54 32",
-    email: "marie.dubois@email.com",
-    service: "BB Glow",
-    date: "2024-02-15",
-    heure: "14:30",
-    duree: 90,
-    prix: 150,
-    status: "confirmee" as const,
-    notes: ""
-  },
-  {
-    id: "RES003",
-    client: "Julie Moreau",
-    telephone: "06 45 67 89 01",
-    email: "julie.moreau@email.com",
-    service: "LED Thérapie",
-    date: "2024-02-16",
-    heure: "11:00",
-    duree: 45,
-    prix: 70,
-    status: "en_attente" as const,
-    notes: "À confirmer par téléphone"
-  },
-  {
-    id: "RES004",
-    client: "Emma Laurent",
-    telephone: "06 23 45 67 89",
-    email: "emma.laurent@email.com",
-    service: "LAIA Renaissance",
-    date: "2024-02-14",
-    heure: "15:00",
-    duree: 75,
-    prix: 120,
-    status: "terminee" as const,
-    notes: "Cliente régulière"
-  },
-  {
-    id: "RES005",
-    client: "Léa Bernard",
-    telephone: "06 78 90 12 34",
-    email: "lea.bernard@email.com",
-    service: "Hydroneedling VIP",
-    date: "2024-02-13",
-    heure: "10:30",
-    duree: 120,
-    prix: 200,
-    status: "annulee" as const,
-    notes: "Annulé le 12/02"
-  }
-];
+interface Reservation {
+  id: string;
+  userName: string;
+  phone: string;
+  userEmail: string;
+  services: string[];
+  serviceName?: string;
+  formattedServices?: string[];
+  date: string;
+  time: string;
+  totalPrice: number;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  rescheduledFrom?: string;
+  rescheduledTo?: string;
+  rescheduledAt?: string;
+}
 
-type Status = "confirmee" | "en_attente" | "terminee" | "annulee";
+type Status = "confirmed" | "pending" | "completed" | "cancelled";
 
 export default function AdminReservations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 10;
 
+  // Charger les réservations depuis l'API
+  useEffect(() => {
+    fetchReservations();
+  }, []);
+
+  const fetchReservations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/reservations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Les données sont déjà enrichies côté serveur
+        const formattedReservations = data.map((reservation: any) => ({
+          ...reservation,
+          client: reservation.userName,
+          telephone: reservation.phone,
+          email: reservation.userEmail,
+          service: reservation.serviceName,
+          date: formatDateLocal(reservation.date),
+          heure: reservation.time,
+          duree: 60, // Durée par défaut
+          prix: reservation.totalPrice
+        }));
+        setReservations(formattedReservations);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des réservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filtrer les réservations
-  const filteredReservations = mockReservations.filter(res => {
-    const matchesSearch = res.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          res.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredReservations = reservations.filter(res => {
+    const matchesSearch = (res as any).client?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (res as any).service?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           res.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || res.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -128,46 +119,54 @@ export default function AdminReservations() {
   };
 
   // Obtenir la couleur du statut
-  const getStatusColor = (status: Status) => {
+  const getStatusColor = (status: string) => {
     switch(status) {
-      case 'confirmee': return 'bg-green-100 text-green-800';
-      case 'en_attente': return 'bg-orange-100 text-orange-800';
-      case 'terminee': return 'bg-gray-100 text-gray-800';
-      case 'annulee': return 'bg-red-100 text-red-800';
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-orange-100 text-orange-800';
+      case 'completed': return 'bg-gray-100 text-gray-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   // Obtenir l'icône du statut
-  const getStatusIcon = (status: Status) => {
+  const getStatusIcon = (status: string) => {
     switch(status) {
-      case 'confirmee': return <CheckCircle className="w-4 h-4" />;
-      case 'en_attente': return <AlertCircle className="w-4 h-4" />;
-      case 'terminee': return <Clock className="w-4 h-4" />;
-      case 'annulee': return <XCircle className="w-4 h-4" />;
+      case 'confirmed': return <CheckCircle className="w-4 h-4" />;
+      case 'pending': return <AlertCircle className="w-4 h-4" />;
+      case 'completed': return <Clock className="w-4 h-4" />;
+      case 'cancelled': return <XCircle className="w-4 h-4" />;
       default: return null;
     }
   };
 
   // Obtenir le label du statut
-  const getStatusLabel = (status: Status) => {
+  const getStatusLabel = (status: string) => {
     switch(status) {
-      case 'confirmee': return 'Confirmée';
-      case 'en_attente': return 'En attente';
-      case 'terminee': return 'Terminée';
-      case 'annulee': return 'Annulée';
+      case 'confirmed': return 'Confirmée';
+      case 'pending': return 'En attente';
+      case 'completed': return 'Terminée';
+      case 'cancelled': return 'Annulée';
       default: return status;
     }
   };
 
   // Calculer les statistiques
   const stats = {
-    total: mockReservations.length,
-    confirmees: mockReservations.filter(r => r.status === 'confirmee').length,
-    en_attente: mockReservations.filter(r => r.status === 'en_attente').length,
-    revenue: mockReservations.filter(r => r.status === 'confirmee' || r.status === 'terminee')
-                             .reduce((sum, r) => sum + r.prix, 0)
+    total: reservations.length,
+    confirmees: reservations.filter(r => r.status === 'confirmed').length,
+    en_attente: reservations.filter(r => r.status === 'pending').length,
+    revenue: reservations.filter(r => r.status === 'confirmed' || r.status === 'completed')
+                         .reduce((sum, r) => sum + r.totalPrice, 0)
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d4b5a0]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
@@ -268,10 +267,10 @@ export default function AdminReservations() {
               onChange={(e) => setStatusFilter(e.target.value as Status | "all")}
             >
               <option value="all">Tous les statuts</option>
-              <option value="confirmee">Confirmée</option>
-              <option value="en_attente">En attente</option>
-              <option value="terminee">Terminée</option>
-              <option value="annulee">Annulée</option>
+              <option value="confirmed">Confirmée</option>
+              <option value="pending">En attente</option>
+              <option value="completed">Terminée</option>
+              <option value="cancelled">Annulée</option>
             </select>
             
             <button className="px-4 py-2 bg-[#fdfbf7] text-[#2c3e50] rounded-lg hover:bg-[#f8f6f0] flex items-center gap-2">
@@ -319,30 +318,37 @@ export default function AdminReservations() {
                 {paginatedReservations.map((reservation) => (
                   <tr key={reservation.id} className="hover:bg-[#fdfbf7]/50 transition-colors">
                     <td className="px-4 py-4 text-sm font-medium text-[#2c3e50]">
-                      {reservation.id}
+                      <div className="flex items-center gap-2">
+                        {reservation.id}
+                        {(reservation.rescheduledFrom || reservation.rescheduledTo) && (
+                          <span className="text-yellow-600" title="Reprogrammation">
+                            🔄
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div>
-                        <div className="text-sm font-semibold text-[#2c3e50]">{reservation.client}</div>
+                        <div className="text-sm font-semibold text-[#2c3e50]">{(reservation as any).client}</div>
                         <div className="text-xs text-[#2c3e50]/60 flex items-center gap-2 mt-1">
                           <Phone className="w-3 h-3" />
-                          {reservation.telephone}
+                          {(reservation as any).telephone}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="text-sm text-[#2c3e50]">{reservation.service}</div>
-                      <div className="text-xs text-[#2c3e50]/60">{reservation.duree} min</div>
+                      <div className="text-sm text-[#2c3e50]">{(reservation as any).service}</div>
+                      <div className="text-xs text-[#2c3e50]/60">{(reservation as any).duree} min</div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="text-sm text-[#2c3e50]">{formatDate(reservation.date)}</div>
                       <div className="text-xs text-[#2c3e50]/60 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {reservation.heure}
+                        {(reservation as any).heure}
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-sm font-semibold text-[#d4b5a0]">{reservation.prix}€</span>
+                      <span className="text-sm font-semibold text-[#d4b5a0]">{reservation.totalPrice}€</span>
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(reservation.status)}`}>
@@ -491,6 +497,28 @@ export default function AdminReservations() {
                   <p className="text-sm text-[#2c3e50] bg-[#fdfbf7] p-3 rounded-lg">
                     {selectedReservation.notes}
                   </p>
+                </div>
+              )}
+
+              {/* Informations de reprogrammation */}
+              {(selectedReservation.rescheduledFrom || selectedReservation.rescheduledTo) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-yellow-800 mb-2">🔄 Reprogrammation</p>
+                  {selectedReservation.rescheduledFrom && (
+                    <p className="text-sm text-yellow-700">
+                      Cette réservation remplace une précédente réservation annulée
+                    </p>
+                  )}
+                  {selectedReservation.rescheduledTo && (
+                    <p className="text-sm text-yellow-700">
+                      Cette réservation a été reprogrammée vers une nouvelle date
+                    </p>
+                  )}
+                  {selectedReservation.rescheduledAt && (
+                    <p className="text-xs text-yellow-600 mt-1">
+                      Reprogrammée le {new Date(selectedReservation.rescheduledAt).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

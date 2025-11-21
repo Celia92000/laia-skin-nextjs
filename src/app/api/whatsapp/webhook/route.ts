@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Webhook pour recevoir les messages WhatsApp
 export async function POST(request: Request) {
   try {
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const phone = config.phone || '06 XX XX XX XX';
+    const website = config.customDomain || 'https://votre-institut.fr';
+
     const body = await request.json();
     
     // Vérifier le token de vérification
     const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     
     // Log pour debug
-    console.log('WhatsApp webhook reçu:', JSON.stringify(body, null, 2));
+    log.info('WhatsApp webhook reçu:', JSON.stringify(body, null, 2));
     
     // Traiter les messages entrants
     if (body.entry && body.entry[0] && body.entry[0].changes) {
@@ -29,13 +36,13 @@ export async function POST(request: Request) {
           if (lowerText.includes('rdv') || lowerText.includes('rendez-vous')) {
             // Envoyer un lien de réservation
             await sendAutoReply(from, 
-              `Pour prendre rendez-vous, cliquez ici:\n👉 https://laiaskin.fr/reservation\n\nOu appelez-nous au 01 23 45 67 89`
+              `Pour prendre rendez-vous, cliquez ici:\n👉 ${website}/reservation\n\nOu appelez-nous au ${phone}`
             );
           }
           
           if (lowerText.includes('prix') || lowerText.includes('tarif')) {
             await sendAutoReply(from,
-              `Nos tarifs:\n\n💆‍♀️ LAIA Hydro'Cleaning: 120€\n✨ LAIA Renaissance: 150€\n🌟 LAIA Hydro'Naissance: 180€\n💎 BB Glow: 90€\n💡 LED Thérapie: 60€\n\nPour plus d'infos: https://laiaskin.fr`
+              `Nos tarifs:\n\n💆‍♀️ Hydro'Cleaning: 120€\n✨ Renaissance: 150€\n🌟 Hydro'Naissance: 180€\n💎 BB Glow: 90€\n💡 LED Thérapie: 60€\n\nPour plus d'infos: ${website}`
             );
           }
           
@@ -56,10 +63,10 @@ export async function POST(request: Request) {
             
             if (client) {
               // Ajouter à l'historique des messages (si vous avez une table pour ça)
-              console.log(`Message reçu de ${client.name}: ${text}`);
+              log.info(`Message reçu de ${client.name}: ${text}`);
             }
           } catch (dbError) {
-            console.error('Erreur DB:', dbError);
+            log.error('Erreur DB:', dbError);
           }
         }
       }
@@ -68,7 +75,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'received' });
     
   } catch (error) {
-    console.error('Erreur webhook WhatsApp:', error);
+    log.error('Erreur webhook WhatsApp:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -84,7 +91,7 @@ export async function GET(request: Request) {
   const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'laia_skin_webhook_2025';
   
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Webhook WhatsApp vérifié avec succès');
+    log.info('Webhook WhatsApp vérifié avec succès');
     return new Response(challenge, { status: 200 });
   } else {
     return NextResponse.json({ error: 'Token invalide' }, { status: 403 });
@@ -100,6 +107,6 @@ async function sendAutoReply(to: string, message: string) {
       message
     });
   } catch (error) {
-    console.error('Erreur envoi réponse auto:', error);
+    log.error('Erreur envoi réponse auto:', error);
   }
 }

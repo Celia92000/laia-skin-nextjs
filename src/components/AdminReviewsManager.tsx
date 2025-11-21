@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Star, MessageSquare, Calendar, User, Mail, Phone, Check, X, Eye, ThumbsUp, MessageCircle, Camera, Grid, List, Filter, Search, Download, TrendingUp, Award, Package } from "lucide-react";
+import { formatDateLocal } from '@/lib/date-utils';
 
 interface Review {
   id: string;
   rating: number;
   comment: string;
+  satisfaction?: number;
   clientName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -404,6 +406,19 @@ export default function AdminReviewsManager() {
                   "{review.comment}"
                 </div>
 
+                {/* Niveau de satisfaction */}
+                {review.satisfaction && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm text-[#2c3e50]/60">Satisfaction :</span>
+                    <span className="text-xl">
+                      {['😞', '😐', '🙂', '😊', '😍'][review.satisfaction - 1] || '😊'}
+                    </span>
+                    <span className="text-sm text-[#2c3e50]/60">
+                      ({review.satisfaction}/5)
+                    </span>
+                  </div>
+                )}
+
                 {/* Photos */}
                 {review.photos && review.photos.length > 0 && (
                   <div className="flex gap-2 mb-3">
@@ -634,7 +649,7 @@ export default function AdminReviewsManager() {
                     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                     const link = document.createElement('a');
                     link.setAttribute('href', dataUri);
-                    link.setAttribute('download', `export_photos_avis_${new Date().toISOString().split('T')[0]}.json`);
+                    link.setAttribute('download', `export_photos_avis_${formatDateLocal(new Date())}.json`);
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -691,7 +706,7 @@ export default function AdminReviewsManager() {
                     const link = document.createElement('a');
                     const url = URL.createObjectURL(blob);
                     link.setAttribute('href', url);
-                    link.setAttribute('download', `export_avis_photos_${new Date().toISOString().split('T')[0]}.csv`);
+                    link.setAttribute('download', `export_avis_photos_${formatDateLocal(new Date())}.csv`);
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);

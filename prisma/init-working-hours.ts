@@ -5,23 +5,63 @@ const prisma = new PrismaClient()
 async function main() {
   console.log("🕐 Initialisation des horaires de travail...")
 
+  // Récupérer la première location
+  let location = await prisma.location.findFirst({
+    where: { isMainLocation: true }
+  })
+
+  if (!location) {
+    location = await prisma.location.findFirst()
+  }
+
+  if (!location) {
+    console.log("⚠️ Aucune location trouvée. Création d'une location par défaut...")
+    location = await prisma.location.create({
+      data: {
+        name: "Institut Principal",
+        address: "À définir",
+        city: "Paris",
+        postalCode: "75001",
+        isMainLocation: true,
+        active: true
+      }
+    })
+  }
+
   // Définir les horaires par défaut (14h-20h tous les jours)
   const defaultHours = [
-    { dayOfWeek: 0, startTime: '14:00', endTime: '20:00', isOpen: true }, // Dimanche
-    { dayOfWeek: 1, startTime: '14:00', endTime: '20:00', isOpen: true }, // Lundi
-    { dayOfWeek: 2, startTime: '14:00', endTime: '20:00', isOpen: true }, // Mardi
-    { dayOfWeek: 3, startTime: '14:00', endTime: '20:00', isOpen: true }, // Mercredi
-    { dayOfWeek: 4, startTime: '14:00', endTime: '20:00', isOpen: true }, // Jeudi
-    { dayOfWeek: 5, startTime: '14:00', endTime: '20:00', isOpen: true }, // Vendredi
-    { dayOfWeek: 6, startTime: '14:00', endTime: '20:00', isOpen: true }, // Samedi
+    { dayOfWeek: 0, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Dimanche
+    { dayOfWeek: 1, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Lundi
+    { dayOfWeek: 2, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Mardi
+    { dayOfWeek: 3, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Mercredi
+    { dayOfWeek: 4, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Jeudi
+    { dayOfWeek: 5, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Vendredi
+    { dayOfWeek: 6, startTime: '14:00', endTime: '20:00', isOpen: true, locationId: location.id }, // Samedi
   ]
 
   for (const hours of defaultHours) {
-    await prisma.workingHours.upsert({
-      where: { dayOfWeek: hours.dayOfWeek },
-      update: hours,
-      create: hours
+    // Chercher si l'enregistrement existe déjà
+    const existing = await prisma.workingHours.findFirst({
+      where: {
+        dayOfWeek: hours.dayOfWeek,
+        locationId: hours.locationId
+      }
     })
+
+    if (existing) {
+      await prisma.workingHours.update({
+        where: { id: existing.id },
+        data: {
+          startTime: hours.startTime,
+          endTime: hours.endTime,
+          isOpen: hours.isOpen
+        }
+      })
+    } else {
+      await prisma.workingHours.create({
+        data: hours
+      })
+    }
   }
 
   console.log("✅ Horaires de travail initialisés")

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsAppMessage, formatPhoneNumber, whatsappTemplates } from '@/lib/whatsapp-meta';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Erreur API WhatsApp:', error);
+    log.error('Erreur API WhatsApp:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'envoi du message WhatsApp' },
       { status: 500 }
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Erreur vérification statut:', error);
+    log.error('Erreur vérification statut:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la vérification du statut' },
       { status: 500 }

@@ -1,14 +1,37 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
+    const prisma = await getPrismaClient();
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { date, time } = await request.json();
-    
-    // Vérifier si le créneau est déjà pris
+
+    // Normaliser la date pour éviter les problèmes de timezone
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    // Créer une plage de dates pour la journée entière
+    const startOfDay = new Date(checkDate);
+    const endOfDay = new Date(checkDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // 🔒 Vérifier si le créneau est déjà pris DANS CETTE ORGANISATION
     const existingReservation = await prisma.reservation.findFirst({
       where: {
-        date: new Date(date),
+        organizationId: organizationId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
         time: time,
         status: {
           notIn: ['cancelled'] // On ignore les réservations annulées
@@ -17,6 +40,7 @@ export async function POST(request: Request) {
     });
 
     if (existingReservation) {
+      log.info('Créneau déjà réservé:', date, time, 'Réservation:', existingReservation);
       return NextResponse.json({ 
         available: false, 
         message: 'Ce créneau est déjà réservé' 
@@ -28,16 +52,24 @@ export async function POST(request: Request) {
       message: 'Créneau disponible'
     });
   } catch (error) {
-    console.error('Error checking availability:', error);
+    log.error('Error checking availability:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function GET(request: Request) {
   try {
+    const prisma = await getPrismaClient();
+
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
-    
+
     if (!date) {
       return NextResponse.json({ error: 'Date requise' }, { status: 400 });
     }
@@ -50,7 +82,7 @@ export async function GET(request: Request) {
     }
 
     // Vérifier si toute la journée est bloquée
-    const dayBlocked = blockedSlots.some(slot => 
+    const dayBlocked = blockedSlots.some(slot =>
       slot.date === date && slot.allDay
     );
 
@@ -63,7 +95,7 @@ export async function GET(request: Request) {
           allSlots.push(`${hour.toString().padStart(2, '0')}:30`);
         }
       }
-      
+
       return NextResponse.json(
         allSlots.map(slot => ({
           time: slot,
@@ -73,10 +105,22 @@ export async function GET(request: Request) {
       );
     }
 
-    // Récupérer toutes les réservations pour cette date
+    // Normaliser la date pour éviter les problèmes de timezone
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    const startOfDay = new Date(checkDate);
+    const endOfDay = new Date(checkDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // 🔒 Récupérer toutes les réservations POUR CETTE ORGANISATION
     const reservations = await prisma.reservation.findMany({
       where: {
-        date: new Date(date),
+        organizationId: organizationId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
         status: {
           notIn: ['cancelled']
         }
@@ -97,7 +141,7 @@ export async function GET(request: Request) {
         duration = 90; // 1h30
       } else if (services.includes('hydro') || services.includes('renaissance')) {
         duration = 60; // 1h
-      } else if (services.includes('bbglow') || services.includes('led')) {
+      } else if (services.includes('bb-glow') || services.includes('led')) {
         duration = 30; // 30min
       }
       
@@ -152,7 +196,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(availability);
   } catch (error) {
-    console.error('Error fetching availability:', error);
+    log.error('Error fetching availability:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -16,17 +32,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    // 🔒 Récupérer l'admin avec son organizationId
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer toutes les campagnes
+    // ⚠️ EmailCampaign est un modèle global (pas de organizationId dans le schema)
     const campaigns = await prisma.emailCampaign.findMany({
       include: {
         _count: {
@@ -42,28 +62,39 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(campaigns);
   } catch (error) {
-    console.error('Erreur récupération campagnes:', error);
+    log.error('Erreur récupération campagnes:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const data = await request.json();
 
-    // Créer la campagne
+    // ⚠️ EmailCampaign est un modèle global (pas de organizationId dans le schema)
     const campaign = await prisma.emailCampaign.create({
       data: {
         name: data.name,
@@ -79,9 +110,13 @@ export async function POST(request: NextRequest) {
 
     // Si la campagne doit être envoyée immédiatement
     if (data.status === 'sent' && data.sendNow) {
+      // Récupérer les informations de l'organisation
+      const siteName = 'LAIA Institut';
+      const email = 'contact@laia-institut.fr';
+
       // Envoyer les emails et créer l'historique
       const recipients = JSON.parse(campaign.recipients);
-      
+
       for (const recipient of recipients) {
         try {
           // Envoyer via EmailJS
@@ -99,8 +134,8 @@ export async function POST(request: NextRequest) {
                 client_name: recipient.name,
                 subject: data.subject,
                 message: data.content,
-                from_name: 'LAIA SKIN Institut',
-                reply_to: 'contact@laiaskininstitut.fr',
+                from_name: `${siteName}`,
+                reply_to: `${email}`,
                 service_name: data.subject,
                 review_link: 'https://laiaskin.fr',
                 loyalty_progress: '',
@@ -109,10 +144,10 @@ export async function POST(request: NextRequest) {
             })
           });
 
-          // Créer l'historique
+          // ⚠️ EmailHistory n'a pas de organizationId dans le schema
           await prisma.emailHistory.create({
             data: {
-              from: 'contact@laiaskininstitut.fr',
+              from: `${email}`,
               to: recipient.email,
               subject: data.subject,
               content: data.content,
@@ -123,7 +158,7 @@ export async function POST(request: NextRequest) {
             }
           });
         } catch (error) {
-          console.error(`Erreur envoi à ${recipient.email}:`, error);
+          log.error(`Erreur envoi à ${recipient.email}:`, error);
         }
       }
 
@@ -139,26 +174,46 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur création campagne:', error);
+    log.error('Erreur création campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { id, ...data } = await request.json();
+
+    // ⚠️ EmailCampaign est un modèle global - pas de vérification organizationId
+    const existingCampaign = await prisma.emailCampaign.findFirst({
+      where: { id }
+    });
+
+    if (!existingCampaign) {
+      return NextResponse.json({ error: 'Campagne non trouvée' }, { status: 404 });
+    }
 
     // Mettre à jour la campagne
     const campaign = await prisma.emailCampaign.update({
@@ -177,23 +232,34 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(campaign);
   } catch (error) {
-    console.error('Erreur mise à jour campagne:', error);
+    log.error('Erreur mise à jour campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -203,6 +269,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID requis' }, { status: 400 });
     }
 
+    // ⚠️ EmailCampaign est un modèle global - pas de vérification organizationId
+    const campaign = await prisma.emailCampaign.findFirst({
+      where: { id }
+    });
+
+    if (!campaign) {
+      return NextResponse.json({ error: 'Campagne non trouvée' }, { status: 404 });
+    }
+
     // Supprimer la campagne
     await prisma.emailCampaign.delete({
       where: { id }
@@ -210,7 +285,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur suppression campagne:', error);
+    log.error('Erreur suppression campagne:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

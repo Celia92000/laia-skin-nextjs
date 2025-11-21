@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Resend } from 'resend';
-
-// Initialiser Resend avec une clé dummy pour le build
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
+import { getResend } from '@/lib/resend';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +14,10 @@ export async function GET(request: NextRequest) {
 
     // Vérifier que Resend est bien configuré
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'dummy_key_for_build') {
-      console.log('Resend API key not configured, skipping email send');
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Resend non configuré - emails non envoyés' 
+      log.info('Resend API key not configured, skipping email send');
+      return NextResponse.json({
+        success: false,
+        message: 'Resend non configuré - emails non envoyés'
       });
     }
 
@@ -27,15 +26,39 @@ export async function GET(request: NextRequest) {
     const todayMonth = today.getMonth() + 1;
     const todayDay = today.getDate();
 
-    console.log(`Vérification des anniversaires pour le ${todayDay}/${todayMonth}`);
+    log.info(`Vérification des anniversaires pour le ${todayDay}/${todayMonth}`);
 
-    // Récupérer les clients dont c'est l'anniversaire aujourd'hui
-    const users = await prisma.user.findMany({
-      where: {
-        birthDate: { not: null },
-        email: { not: '' }
-      }
+    // 🔒 Récupérer toutes les organisations actives
+    const organizations = await prisma.organization.findMany({
+      where: { status: 'ACTIVE' }
     });
+
+    let totalSent = 0;
+
+    // 🔒 Traiter chaque organisation séparément
+    for (const organization of organizations) {
+      // Récupérer la config de cette organisation
+      const orgConfig = await prisma.organizationConfig.findUnique({
+        where: { organizationId: organization.id }
+      });
+
+      const siteName = orgConfig?.siteName || organization.name || 'Mon Institut';
+      const email = orgConfig?.email || 'contact@institut.fr';
+      const phone = orgConfig?.phone || '06 XX XX XX XX';
+      const address = orgConfig?.address || '';
+      const city = orgConfig?.city || '';
+      const postalCode = orgConfig?.postalCode || '';
+      const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+      const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+
+      // 🔒 Récupérer les clients DE CETTE ORGANISATION dont c'est l'anniversaire
+      const users = await prisma.user.findMany({
+        where: {
+          organizationId: organization.id,
+          birthDate: { not: null },
+          email: { not: '' }
+        }
+      });
 
     // Filtrer les utilisateurs dont c'est l'anniversaire
     const birthdayUsers = users.filter(user => {
@@ -44,7 +67,7 @@ export async function GET(request: NextRequest) {
       return birthday.getMonth() + 1 === todayMonth && birthday.getDate() === todayDay;
     });
 
-    console.log(`${birthdayUsers.length} anniversaire(s) trouvé(s)`);
+    log.info(`${birthdayUsers.length} anniversaire(s) trouvé(s)`);
 
     // Envoyer un email à chaque personne
     for (const user of birthdayUsers) {
@@ -74,7 +97,7 @@ export async function GET(request: NextRequest) {
       
       <div class="birthday-box">
         <h2>C'est votre jour spécial !</h2>
-        <p>Toute l'équipe de LAIA SKIN Institut vous souhaite un merveilleux anniversaire !</p>
+        <p>Toute l'équipe de ${siteName} vous souhaite un merveilleux anniversaire !</p>
         
         <p><strong>Notre cadeau pour vous :</strong></p>
         <div class="code">-30% SUR TOUS LES SOINS</div>
@@ -85,59 +108,64 @@ export async function GET(request: NextRequest) {
       
       <p>Pour réserver, contactez-nous :</p>
       <ul>
-        <li>📞 WhatsApp : 06 83 71 70 50</li>
-        <li>✉️ Email : contact@laiaskininstitut.fr</li>
+        <li>📞 WhatsApp : ${phone}</li>
+        <li>✉️ Email : ${email}</li>
       </ul>
       
       <p>Nous avons hâte de célébrer avec vous !</p>
       
       <p>Très belle journée à vous,<br>
       <strong>Laïa</strong><br>
-      LAIA SKIN Institut</p>
+      ${siteName}</p>
     </div>
     <div class="footer">
-      <p>📍 23 rue de la Beauté, 75001 Paris<br>
-      🌐 laiaskininstitut.fr</p>
+      <p>📍 ${fullAddress}<br>
+      🌐 ${website.replace('https://', '').replace('http://', '')}</p>
     </div>
   </div>
 </body>
 </html>`;
 
-        await resend!.emails.send({
-          from: 'LAIA SKIN Institut <onboarding@resend.dev>',
+        await getResend().emails.send({
+          from: process.env.RESEND_FROM_EMAIL || `${siteName} <${email}>`,
           to: [user.email!],
           subject: `🎂 Joyeux anniversaire ${user.name} ! Une surprise vous attend`,
           html: htmlContent,
           text: `Joyeux anniversaire ${user.name} ! Profitez de -30% sur tous nos soins ce mois-ci.`
         });
 
-        // Enregistrer dans l'historique
+        // 🔒 Enregistrer dans l'historique AVEC organizationId
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laiaskininstitut.fr',
+            from: `${email}`,
             to: user.email!,
             subject: `🎂 Joyeux anniversaire ${user.name} !`,
             content: 'Email d\'anniversaire automatique',
             template: 'birthday',
             status: 'sent',
             direction: 'outgoing',
-            userId: user.id
+            userId: user.id,
+            organizationId: organization.id
           }
         });
 
-        console.log(`Email d'anniversaire envoyé à ${user.name}`);
+        log.info(`[${organization.name}] Email d'anniversaire envoyé à ${user.name}`);
+        totalSent++;
       } catch (emailError) {
-        console.error(`Erreur envoi email à ${user.name}:`, emailError);
+        log.error(`[${organization.name}] Erreur envoi email à ${user.name}:`, emailError);
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `${birthdayUsers.length} email(s) d'anniversaire envoyé(s)` 
+    log.info(`[${organization.name}] ${birthdayUsers.length} anniversaire(s) traité(s)`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${totalSent} email(s) d'anniversaire envoyé(s) sur ${organizations.length} organisation(s)`
     });
 
   } catch (error) {
-    console.error('Erreur cron anniversaires:', error);
+    log.error('Erreur cron anniversaires:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des emails d\'anniversaire',
       details: error instanceof Error ? error.message : 'Erreur inconnue'

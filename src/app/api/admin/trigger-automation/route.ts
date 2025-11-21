@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -45,8 +61,8 @@ export async function POST(request: NextRequest) {
         let templateParams: any = {
           to_email: client.email,
           client_name: client.name,
-          from_name: 'LAIA SKIN Institut',
-          reply_to: 'contact@laiaskininstitut.fr'
+          from_name: `${siteName}`,
+          reply_to: `${email}`
         };
 
         // Adapter les paramètres selon le trigger
@@ -72,15 +88,15 @@ export async function POST(request: NextRequest) {
               templateParams.service_name = nextReservation.service?.name || 'votre soin';
               templateParams.appointment_date = nextReservation.date.toLocaleDateString('fr-FR');
               templateParams.appointment_time = nextReservation.time;
-              templateParams.salon_name = 'LAIA SKIN Institut';
-              templateParams.salon_address = '23 rue de la Beauté, 75001 Paris';
+              templateParams.salon_name = `${siteName}`;
+              templateParams.salon_address = '${fullAddress}';
             } else {
               // Si pas de réservation, utiliser des valeurs par défaut
               templateParams.service_name = 'votre prochain soin';
               templateParams.appointment_date = 'à confirmer';
               templateParams.appointment_time = 'à confirmer';
-              templateParams.salon_name = 'LAIA SKIN Institut';
-              templateParams.salon_address = '23 rue de la Beauté, 75001 Paris';
+              templateParams.salon_name = `${siteName}`;
+              templateParams.salon_address = '${fullAddress}';
             }
             break;
 
@@ -102,7 +118,7 @@ export async function POST(request: NextRequest) {
             });
 
             templateParams.service_name = lastReservation?.service?.name || 'votre dernier soin';
-            templateParams.review_link = `https://laiaskininstitut.fr/avis?client=${client.id}`;
+            templateParams.review_link = `https://${website.replace('https://', '').replace('http://', '')}/avis?client=${client.id}`;
             templateParams.loyalty_progress = `${client.loyaltyPoints || 0} points`;
             templateParams.next_reward = 'Prochain palier : -10% à 100 points';
             break;
@@ -129,15 +145,15 @@ export async function POST(request: NextRequest) {
               templateParams.service_name = upcomingReservation.service?.name || 'votre soin';
               templateParams.appointment_date = upcomingReservation.date.toLocaleDateString('fr-FR');
               templateParams.appointment_time = upcomingReservation.time;
-              templateParams.salon_name = 'LAIA SKIN Institut';
-              templateParams.salon_address = '23 rue de la Beauté, 75001 Paris';
+              templateParams.salon_name = `${siteName}`;
+              templateParams.salon_address = '${fullAddress}';
             }
             break;
 
           case 'birthday':
             // Pour anniversaire
             templateParams.service_name = 'Joyeux anniversaire !';
-            templateParams.review_link = 'https://laiaskininstitut.fr';
+            templateParams.review_link = `https://${website.replace('https://', '').replace('http://', '')}`;
             templateParams.loyalty_progress = '🎂 Offre anniversaire : -30% sur un soin';
             templateParams.next_reward = 'Valable tout le mois de votre anniversaire';
             break;
@@ -168,7 +184,7 @@ export async function POST(request: NextRequest) {
         // Enregistrer dans l'historique
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laiaskininstitut.fr',
+            from: `${email}`,
             to: client.email,
             subject: `${automation.name} - Envoi manuel`,
             content: `Automatisation déclenchée manuellement : ${automation.name}`,
@@ -186,7 +202,7 @@ export async function POST(request: NextRequest) {
         });
 
       } catch (error) {
-        console.error(`Erreur envoi à ${client.email}:`, error);
+        log.error(`Erreur envoi à ${client.email}:`, error);
         results.push({
           email: client.email,
           name: client.name,
@@ -214,7 +230,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur déclenchement automatisation:', error);
+    log.error('Erreur déclenchement automatisation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

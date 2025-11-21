@@ -1,9 +1,39 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from 'date-fns';
+import { log } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const prisma = await getPrismaClient();
   try {
+    // Authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
     const now = new Date();
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
@@ -12,7 +42,7 @@ export async function GET() {
     const monthStart = startOfMonth(now);
     const monthEnd = endOfMonth(now);
 
-    // Récupérer toutes les données nécessaires
+    // Récupérer toutes les données DE CETTE ORGANISATION
     const [
       todayReservations,
       weekReservations,
@@ -26,9 +56,10 @@ export async function GET() {
       reviews,
       blockedSlots
     ] = await Promise.all([
-      // Réservations d'aujourd'hui
+      // Réservations d'aujourd'hui DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          user: { organizationId: user.organizationId ?? undefined },
           date: {
             gte: todayStart,
             lte: todayEnd
@@ -40,9 +71,10 @@ export async function GET() {
         }
       }),
 
-      // Réservations de la semaine
+      // Réservations de la semaine DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          user: { organizationId: user.organizationId ?? undefined },
           date: {
             gte: weekStart,
             lte: weekEnd
@@ -53,9 +85,10 @@ export async function GET() {
         }
       }),
 
-      // Réservations du mois
+      // Réservations du mois DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          user: { organizationId: user.organizationId ?? undefined },
           date: {
             gte: monthStart,
             lte: monthEnd
@@ -66,9 +99,10 @@ export async function GET() {
         }
       }),
 
-      // Réservations en attente
+      // Réservations en attente DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          user: { organizationId: user.organizationId ?? undefined },
           status: 'pending',
           date: {
             gte: now
@@ -80,12 +114,19 @@ export async function GET() {
         }
       }),
 
-      // Total des clients
-      prisma.user.count(),
-
-      // Clients actifs (avec réservation dans les 30 derniers jours)
+      // Total des clients DE CETTE ORGANISATION
       prisma.user.count({
         where: {
+          organizationId: user.organizationId ?? undefined,
+          role: 'CLIENT'
+        }
+      }),
+
+      // Clients actifs DE CETTE ORGANISATION
+      prisma.user.count({
+        where: {
+          organizationId: user.organizationId ?? undefined,
+          role: 'CLIENT',
           reservations: {
             some: {
               date: {
@@ -96,8 +137,11 @@ export async function GET() {
         }
       }),
 
-      // Réservations récentes
+      // Réservations récentes DE CETTE ORGANISATION
       prisma.reservation.findMany({
+        where: {
+          user: { organizationId: user.organizationId ?? undefined }
+        },
         orderBy: {
           createdAt: 'desc'
         },
@@ -108,9 +152,10 @@ export async function GET() {
         }
       }),
 
-      // Prochaines réservations
+      // Prochaines réservations DE CETTE ORGANISATION
       prisma.reservation.findMany({
         where: {
+          user: { organizationId: user.organizationId ?? undefined },
           date: {
             gte: now
           },
@@ -126,8 +171,11 @@ export async function GET() {
         }
       }),
 
-      // Services
+      // Services DE CETTE ORGANISATION
       prisma.service.findMany({
+        where: {
+          organizationId: user.organizationId ?? undefined
+        },
         include: {
           _count: {
             select: { reservations: true }
@@ -135,8 +183,11 @@ export async function GET() {
         }
       }),
 
-      // Avis récents
+      // 🔒 Avis récents DE CETTE ORGANISATION
       prisma.review.findMany({
+        where: {
+          organizationId: user.organizationId ?? undefined
+        },
         orderBy: {
           createdAt: 'desc'
         },
@@ -146,9 +197,12 @@ export async function GET() {
         }
       }),
 
-      // Créneaux bloqués
+      // 🔒 Créneaux bloqués DE CETTE ORGANISATION
       prisma.blockedSlot.findMany({
         where: {
+          location: {
+            organizationId: user.organizationId ?? undefined
+          },
           date: {
             gte: now
           }
@@ -253,7 +307,7 @@ export async function GET() {
 
     return NextResponse.json(dashboardData);
   } catch (error) {
-    console.error('Erreur lors de la récupération des données du dashboard:', error);
+    log.error('Erreur lors de la récupération des données du dashboard:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des données' },
       { status: 500 }

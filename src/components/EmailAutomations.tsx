@@ -9,8 +9,9 @@ import {
   Save, Copy, ArrowRight, Target, Sparkles,
   Heart, ShoppingBag, UserPlus, UserCheck,
   CalendarCheck, Timer, RefreshCw, Activity,
-  Search, SortDesc, FileText
+  Search, SortDesc, FileText, GitBranch
 } from 'lucide-react';
+import WorkflowBuilder from './WorkflowBuilder';
 
 interface EmailAutomation {
   id: string;
@@ -64,7 +65,7 @@ export default function EmailAutomations() {
   const [automations, setAutomations] = useState<EmailAutomation[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<EmailAutomation | null>(null);
-  const [activeTab, setActiveTab] = useState<'active' | 'templates' | 'analytics'>('active');
+  const [activeTab, setActiveTab] = useState<'active' | 'templates' | 'analytics' | 'workflows'>('active');
   const [showSentEmails, setShowSentEmails] = useState(false);
   const [selectedAutomationForEmails, setSelectedAutomationForEmails] = useState<EmailAutomation | null>(null);
   
@@ -672,37 +673,57 @@ Laïa`,
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab('active')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'active'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Automatisations actives
-        </button>
-        <button
-          onClick={() => setActiveTab('templates')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'templates'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Templates
-        </button>
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'analytics'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          Analytics
-        </button>
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'active'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span className="hidden sm:inline">Automatisations actives</span>
+            <span className="sm:hidden">⚡</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('workflows')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'workflows'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <GitBranch className="w-4 h-4" />
+            <span className="hidden sm:inline">Workflows Intelligents</span>
+            <span className="sm:hidden">🔀</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('templates')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'templates'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Copy className="w-4 h-4" />
+            <span className="hidden sm:inline">Templates</span>
+            <span className="sm:hidden">📋</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'analytics'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            <span className="hidden sm:inline">Analytics</span>
+            <span className="sm:hidden">📊</span>
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -750,6 +771,49 @@ Laïa`,
                           <Activity className="w-3 h-3" />
                           Dernier : {new Date(automation.lastTriggered).toLocaleDateString()}
                         </span>
+                      )}
+                    </div>
+                    
+                    {/* Indicateurs de performance */}
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      {automation.triggerCount > 0 && (
+                        <>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            automation.sentEmails && automation.sentEmails.filter(e => e.opened).length / automation.sentEmails.length > 0.5
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            📧 Taux ouverture: {automation.sentEmails ? 
+                              Math.round((automation.sentEmails.filter(e => e.opened).length / automation.sentEmails.length) * 100) : 0}%
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            automation.sentEmails && automation.sentEmails.filter(e => e.clicked).length > 0
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            🔗 Clics: {automation.sentEmails ? 
+                              automation.sentEmails.filter(e => e.clicked).length : 0}
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            automation.lastTriggered && (Date.now() - new Date(automation.lastTriggered).getTime()) < 7 * 24 * 60 * 60 * 1000
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            {automation.lastTriggered && (Date.now() - new Date(automation.lastTriggered).getTime()) < 7 * 24 * 60 * 60 * 1000
+                              ? '✅ Actif récemment'
+                              : '⚠️ Inactif +7j'}
+                          </div>
+                          <div className={`px-2 py-1 rounded text-xs font-medium ${
+                            automation.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {automation.enabled ? '🟢 En marche' : '🔴 Arrêté'}
+                          </div>
+                        </>
+                      )}
+                      {automation.triggerCount === 0 && (
+                        <div className="col-span-4 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs text-center">
+                          ⏳ Pas encore déclenché - En attente du premier événement
+                        </div>
                       )}
                     </div>
                     {automation.sentEmails && automation.sentEmails.length > 0 && (
@@ -813,6 +877,10 @@ Laïa`,
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'workflows' && (
+        <WorkflowBuilder />
       )}
 
       {activeTab === 'templates' && (

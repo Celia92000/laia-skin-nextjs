@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Calendar, ChevronLeft, ChevronRight, Eye, CalendarDays, 
+import {
+  Calendar, ChevronLeft, ChevronRight, Eye, CalendarDays,
   Grid3x3, CalendarRange, User, Clock, Euro, Ban, Plus,
-  X, Check, AlertCircle
+  X, Check, AlertCircle, Gift
 } from "lucide-react";
+import { isTimeSlotAvailable, getTotalDuration } from "@/lib/time-utils";
+import { formatDateLocal } from "@/lib/date-utils";
 
 interface Reservation {
   id: string;
@@ -14,6 +16,8 @@ interface Reservation {
   userName?: string;
   userEmail: string;
   services: any[];
+  serviceName?: string;
+  serviceDuration?: number;
   status: string;
   totalPrice: number;
 }
@@ -30,11 +34,13 @@ type ViewMode = 'day' | 'week' | 'month' | 'year';
 
 interface PlanningCalendarProps {
   reservations: Reservation[];
+  services?: Record<string, string>;
+  dbServices?: any[];
   onNewReservation?: () => void;
   onDateClick?: (date: Date) => void;
 }
 
-export default function PlanningCalendar({ reservations, onNewReservation, onDateClick }: PlanningCalendarProps) {
+export default function PlanningCalendar({ reservations, services, dbServices, onNewReservation, onDateClick }: PlanningCalendarProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
@@ -53,8 +59,29 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
   const [clientName, setClientName] = useState<string>('');
   const [clientEmail, setClientEmail] = useState<string>('');
   const [clientPhone, setClientPhone] = useState<string>('');
-  const [services, setServices] = useState<any[]>([]);
+  const [localServices, setLocalServices] = useState<any[]>([]);
   const [isBlockMode, setIsBlockMode] = useState(false);
+
+  // États pour carte cadeau
+  const [useGiftCard, setUseGiftCard] = useState(false);
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftCardData, setGiftCardData] = useState<any>(null);
+  const [giftCardError, setGiftCardError] = useState('');
+  const [isVerifyingGiftCard, setIsVerifyingGiftCard] = useState(false);
+
+  // États pour la modification de réservation
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedReservation, setEditedReservation] = useState<any>(null);
+  const [editDate, setEditDate] = useState<string>('');
+  const [editTime, setEditTime] = useState<string>('');
+  const [editStatus, setEditStatus] = useState<string>('');
+
+  // Debug: vérifier les props
+  useEffect(() => {
+    if (services) {
+      console.log('PlanningCalendar services type:', typeof services, Object.entries(services).slice(0, 1));
+    }
+  }, [services]);
 
   useEffect(() => {
     fetchBlockedSlots();
@@ -62,7 +89,12 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
 
   const fetchBlockedSlots = async () => {
     try {
-      const response = await fetch('/api/admin/blocked-slots');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/blocked-slots', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setBlockedSlots(data);
@@ -80,30 +112,93 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
     '21:00', '21:30', '22:00', '22:30', '23:00'
   ];
 
-  // Helper pour obtenir le prix d'un service
-  const getServicePrice = (serviceName: string): number => {
-    const prices: Record<string, number> = {
-      'BB Glow': 130,
-      'Hydrocleaning': 89,
-      'Microneedling': 110,
-      'Thérapie LED': 45,
-      'Renaissance': 180,
-      'Éclat Suprême': 150
-    };
-    return prices[serviceName] || 0;
+  // Helper pour obtenir le prix d'un service depuis la base de données
+  const getServicePrice = (serviceSlug: string): number => {
+    if (!dbServices) return 0;
+    const service = dbServices.find(s => s.slug === serviceSlug);
+    return service ? (service.promoPrice || service.price) : 0;
+  };
+
+  // Fonction pour réinitialiser le formulaire de réservation
+  const resetReservationForm = () => {
+    setShowQuickReservation(false);
+    setSelectedSlot(null);
+    setSelectedService('');
+    setClientName('');
+    setClientEmail('');
+    setClientPhone('');
+    setUseGiftCard(false);
+    setGiftCardCode('');
+    setGiftCardData(null);
+    setGiftCardError('');
+  };
+
+  // Fonction pour vérifier la carte cadeau
+  const verifyGiftCard = async () => {
+    if (!giftCardCode.trim()) {
+      setGiftCardError('Veuillez entrer un code');
+      return;
+    }
+
+    setIsVerifyingGiftCard(true);
+    setGiftCardError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/gift-cards/verify?code=${giftCardCode.toUpperCase()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setGiftCardData(data.giftCard);
+        setGiftCardError('');
+      } else {
+        setGiftCardError(data.error || 'Code invalide');
+        setGiftCardData(null);
+      }
+    } catch (error) {
+      console.error('Erreur vérification carte cadeau:', error);
+      setGiftCardError('Erreur lors de la vérification');
+      setGiftCardData(null);
+    } finally {
+      setIsVerifyingGiftCard(false);
+    }
   };
 
   // Helper pour obtenir la durée d'un service en minutes
-  const getServiceDuration = (serviceName: string): number => {
-    const durations: Record<string, number> = {
-      'BB Glow': 90,
-      'Hydrocleaning': 60,
-      'Microneedling': 75,
-      'Thérapie LED': 30,
-      'Renaissance': 120,
-      'Éclat Suprême': 90
-    };
-    return durations[serviceName] || 60;
+  const getServiceDuration = (serviceName: string, reservation?: any): number => {
+    // Si la durée est déjà dans la réservation, l'utiliser
+    if (reservation?.serviceDuration) {
+      return reservation.serviceDuration;
+    }
+    
+    // Chercher dans dbServices par slug ou nom
+    if (dbServices) {
+      // Si on a un tableau de services dans la réservation
+      if (reservation?.services && reservation.services.length > 0) {
+        const serviceSlug = reservation.services[0];
+        const service = dbServices.find(s => s.slug === serviceSlug || s.name === serviceName);
+        if (service?.duration) {
+          return service.duration;
+        }
+      }
+      
+      // Sinon chercher par nom de service
+      if (serviceName || reservation?.serviceName) {
+        const name = serviceName || reservation.serviceName;
+        const service = dbServices.find(s => s.name === name);
+        if (service?.duration) {
+          return service.duration;
+        }
+      }
+    }
+    
+    // Valeur par défaut
+    return 60;
   };
 
   // Vérifier si un créneau est disponible (pas de chevauchement)
@@ -113,8 +208,8 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
     const endMinutes = startMinutes + duration + 15; // +15 min de préparation
 
     // Vérifier les réservations existantes
-    const dayReservations = reservations.filter(r => 
-      r.date.split('T')[0] === dateStr && r.status === 'confirmed'
+    const dayReservations = reservations.filter(r =>
+      formatDateLocal(r.date) === dateStr && r.status === 'confirmed'
     );
 
     for (const reservation of dayReservations) {
@@ -200,8 +295,8 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
       !reservations.some(r => r.id === sr.id)
     )];
     
-    return allReservations.filter(r => 
-      r.date.split('T')[0] === dateStr && 
+    return allReservations.filter(r =>
+      formatDateLocal(r.date) === dateStr &&
       r.status === 'confirmed' // Seulement les réservations confirmées dans le calendrier
     );
   };
@@ -230,26 +325,19 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
     ).length;
   };
 
-  // Fonction pour formater une date en YYYY-MM-DD en heure locale
-  const formatDateLocal = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // Note: formatDateLocal est importé depuis @/lib/date-utils
 
   // Fonctions pour la sélection par glisser-déposer
   const handleMouseDown = (time: string, date: Date = currentDate) => {
     const dateStr = formatDateLocal(date);
-    const hasReservation = reservations.some(r => 
-      r.date.split('T')[0] === dateStr && r.time === time && r.status === 'confirmed'
+    // Utiliser la nouvelle fonction qui prend en compte la durée
+    const isAvailable = isTimeSlotAvailable(time, date, reservations, dbServices);
+    const isBlocked = blockedSlots.some(slot =>
+      slot.date === dateStr && (slot.allDay || slot.time === time)
     );
-    const isBlocked = blockedSlots.some(slot => 
-      slot.date === dateStr && slot.time === time
-    );
-    
+
     // Ne permettre le drag que si pas de réservation
-    if (!hasReservation && !isDateBlocked(date)) {
+    if (isAvailable && !isBlocked && !isDateBlocked(date)) {
       // En mode blocage on peut sélectionner tous les créneaux
       // En mode normal, seulement les créneaux non bloqués
       if (isBlockMode || !isBlocked) {
@@ -425,7 +513,7 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
-            {timeSlots.map(time => {
+            {timeSlots.map((time, index) => {
               const reservation = dayReservations.find(r => r.time === time);
               const isBlocked = blockedSlots.some(slot => 
                 slot.date === formatDateLocal(currentDate) && 
@@ -438,8 +526,7 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
               const isInReservedRange = dayReservations.some(r => {
                 const resStart = timeToMinutes(r.time);
                 // Récupérer la durée du service ou utiliser la durée par défaut
-                const serviceName = r.services?.[0]?.name || r.service || '';
-                const resDuration = r.services?.[0]?.duration || r.serviceDuration || getServiceDuration(serviceName);
+                const resDuration = r.serviceDuration || getServiceDuration(r.serviceName || '', dbServices);
                 const resEnd = resStart + resDuration + 15; // +15 min préparation
                 return timeMin >= resStart && timeMin < resEnd;
               });
@@ -450,25 +537,14 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
               let showReservationBlock = false;
               
               if (isReservationStart && reservation) {
-                const serviceName = reservation.services?.[0]?.name || reservation.service || '';
-                const duration = reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(serviceName);
+                const duration = reservation.serviceDuration || getServiceDuration(reservation.serviceName || '', dbServices);
                 reservationSpan = Math.ceil((duration + 15) / 30); // Nombre de créneaux de 30 min (incluant préparation)
                 showReservationBlock = true;
               }
 
               // Ne pas afficher les créneaux qui sont dans la continuité d'une réservation
               if (!showReservationBlock && isInReservedRange && !reservation) {
-                return (
-                  <div
-                    key={time}
-                    className="p-3 rounded-lg border-2 bg-orange-50 border-orange-200 cursor-not-allowed opacity-75 select-none"
-                  >
-                    <div className="flex items-center justify-between text-gray-500">
-                      <span className="text-sm font-medium">{time}</span>
-                      <span className="text-xs">Occupé</span>
-                    </div>
-                  </div>
-                );
+                return null; // On masque complètement les créneaux qui font partie d'une réservation
               }
 
               return (
@@ -476,7 +552,7 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                   key={time}
                   className={`relative ${showReservationBlock ? '' : 'p-3'} rounded-lg border-2 transition-all select-none ${
                     reservation 
-                      ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 cursor-pointer' 
+                      ? 'bg-gradient-to-b from-blue-500 to-blue-400 text-white border-blue-600 hover:from-blue-600 hover:to-blue-500 cursor-pointer shadow-lg' 
                       : isInReservedRange
                       ? 'bg-orange-50 border-orange-200 cursor-not-allowed opacity-75'
                       : isBlocked
@@ -484,10 +560,10 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                       : isSelected
                       ? 'bg-yellow-100 border-yellow-400 cursor-pointer'
                       : 'bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer'
-                  } ${showReservationBlock ? `row-span-${reservationSpan}` : ''}`}
+                  }`}
                   style={showReservationBlock ? {
-                    gridRow: `span ${reservationSpan}`,
-                    minHeight: `${reservationSpan * 60}px`
+                    minHeight: `${reservationSpan * 65 - 8}px`,
+                    marginBottom: `${(reservationSpan - 1) * 8}px`
                   } : {}}
                   onMouseDown={() => !reservation && handleMouseDown(time)}
                   onMouseEnter={() => handleMouseEnter(time)}
@@ -559,27 +635,44 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                 >
                   {showReservationBlock && reservation ? (
                     // Affichage étendu pour les réservations
-                    <div className="p-3 h-full flex flex-col justify-between bg-gradient-to-b from-blue-100 to-blue-50">
+                    <div className="p-3 h-full flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-bold text-[#2c3e50]">{time}</span>
-                          <span className="text-xs text-blue-600">
-                            {Math.floor((reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) / 60)}h
-                            {((reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) % 60) > 0 ? 
-                              `${(reservation.services?.[0]?.duration || reservation.serviceDuration || getServiceDuration(reservation.service || '')) % 60}min` : ''}
+                          <span className="font-bold text-white">{time}</span>
+                          <span className="text-xs text-white/90 bg-white/20 px-2 py-0.5 rounded-full">
+                            {Math.floor((reservation.serviceDuration || getServiceDuration(reservation.serviceName || '', dbServices)) / 60)}h
+                            {((reservation.serviceDuration || getServiceDuration(reservation.serviceName || '', dbServices)) % 60) > 0 ? 
+                              `${(reservation.serviceDuration || getServiceDuration(reservation.serviceName || '', dbServices)) % 60}min` : ''}
                           </span>
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <User className="w-4 h-4 text-blue-700" />
-                            <span className="text-sm font-semibold text-blue-800">
+                            <User className="w-4 h-4 text-white/90" />
+                            <span className="text-sm font-semibold text-white">
                               {reservation.userName}
                             </span>
                           </div>
-                          <div className="text-xs text-blue-700">
-                            {reservation.services?.[0]?.name || reservation.service || 'Service'}
+                          <div className="text-xs text-white/80">
+                            {(() => {
+                              // S'assurer de toujours retourner une string
+                              if (reservation.serviceName) return reservation.serviceName;
+                              if (reservation.services?.[0]) {
+                                const firstService = reservation.services[0];
+                                if (typeof firstService === 'object' && firstService.name) {
+                                  return String(firstService.name);
+                                }
+                                if (typeof firstService === 'string') {
+                                  const serviceName = services?.[firstService];
+                                  if (serviceName && typeof serviceName === 'string') {
+                                    return serviceName;
+                                  }
+                                  return firstService;
+                                }
+                              }
+                              return 'Service';
+                            })()}
                           </div>
-                          <div className="text-sm font-semibold text-blue-900">
+                          <div className="text-lg font-bold text-white">
                             {reservation.totalPrice}€
                           </div>
                         </div>
@@ -610,6 +703,28 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
     );
   };
 
+  // Fonction pour calculer le nombre de créneaux pour une réservation
+  const getReservationSlots = (reservation: any): number => {
+    const duration = getServiceDuration(reservation.serviceName, dbServices);
+    // Chaque créneau est de 30 minutes
+    return Math.ceil(duration / 30);
+  };
+
+  // Fonction pour vérifier si un créneau est occupé par une réservation
+  const isTimeSlotOccupied = (date: Date, time: string, reservations: any[]): any => {
+    for (const reservation of reservations) {
+      const resTime = reservation.time;
+      const resTimeIndex = timeSlots.indexOf(resTime);
+      const duration = getReservationSlots(reservation);
+      const checkTimeIndex = timeSlots.indexOf(time);
+      
+      if (resTimeIndex <= checkTimeIndex && checkTimeIndex < resTimeIndex + duration) {
+        return reservation;
+      }
+    }
+    return null;
+  };
+
   // Vue Semaine
   const WeekView = () => {
     const startOfWeek = new Date(currentDate);
@@ -620,11 +735,9 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
       if (!isBlockMode) return; // Seulement en mode blocage
       
       const dateStr = formatDateLocal(date);
-      const hasReservation = reservations.some(r => 
-        r.date.split('T')[0] === dateStr && r.time === time && r.status === 'confirmed'
-      );
-      
-      if (!hasReservation && !isDateBlocked(date)) {
+      const isAvailable = isTimeSlotAvailable(time, date, reservations, dbServices);
+
+      if (isAvailable && !isDateBlocked(date)) {
         setIsDragging(true);
         setDragStartTime(time);
         setDragDate(date);
@@ -760,7 +873,8 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
               {[0, 1, 2, 3, 4, 5, 6].map(dayOffset => {
                 const date = new Date(startOfWeek);
                 date.setDate(startOfWeek.getDate() + dayOffset);
-                const reservation = getReservationsForDate(date).find(r => r.time === time);
+                const dayReservations = getReservationsForDate(date);
+                const occupyingReservation = isTimeSlotOccupied(date, time, dayReservations);
                 const dateStr = formatDateLocal(date);
                 const isBlocked = blockedSlots.some(slot => 
                   slot.date === dateStr && 
@@ -768,26 +882,44 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                 );
                 const isSelected = weekSelectedSlots.some(s => s.date === dateStr && s.time === time);
 
+                // Si c'est le début d'une réservation, on calcule la durée
+                const isStartOfReservation = occupyingReservation && occupyingReservation.time === time;
+                const reservationSlots = isStartOfReservation ? getReservationSlots(occupyingReservation) : 0;
+                
+                // Style différent si le créneau est occupé ou début de réservation
+                let bgClass = '';
+                if (occupyingReservation) {
+                  if (isStartOfReservation) {
+                    bgClass = 'bg-blue-500 text-white hover:bg-blue-600 font-semibold rounded-t-lg';
+                  } else {
+                    bgClass = 'bg-blue-300 hover:bg-blue-400';
+                  }
+                } else if (isBlocked) {
+                  bgClass = 'bg-red-100 hover:bg-red-200 border-red-300';
+                } else if (isSelected) {
+                  bgClass = 'bg-yellow-100 border-yellow-400';
+                } else {
+                  bgClass = 'hover:bg-green-100';
+                }
+
                 return (
                   <div
                     key={`${dayOffset}-${time}`}
-                    className={`p-1 border-t text-xs cursor-pointer transition-all select-none ${
-                      reservation 
-                        ? 'bg-blue-100 hover:bg-blue-200' 
-                        : isBlocked
-                        ? 'bg-red-100 hover:bg-red-200 border-red-300'
-                        : isSelected
-                        ? 'bg-yellow-100 border-yellow-400'
-                        : 'hover:bg-green-100'
+                    className={`p-1 border-t text-xs cursor-pointer transition-all select-none ${bgClass} ${
+                      isStartOfReservation && reservationSlots > 1 ? 'relative' : ''
                     }`}
-                    onMouseDown={() => isBlockMode && !reservation && !isBlocked && handleWeekMouseDown(time, date)}
+                    style={isStartOfReservation && reservationSlots > 1 ? {
+                      gridRow: `span ${reservationSlots}`,
+                      minHeight: `${reservationSlots * 40}px`
+                    } : {}}
+                    onMouseDown={() => isBlockMode && !occupyingReservation && !isBlocked && handleWeekMouseDown(time, date)}
                     onMouseEnter={() => handleWeekMouseEnter(time, date)}
                     onClick={async () => {
                       if (isDragging) return;
                       
-                      if (reservation) {
+                      if (occupyingReservation) {
                         // Afficher les détails de la réservation
-                        setSelectedReservation(reservation);
+                        setSelectedReservation(occupyingReservation);
                         setShowReservationDetail(true);
                       } else if (isBlockMode) {
                         // En mode blocage
@@ -842,7 +974,7 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                       } else {
                         // En mode normal, ouvrir le formulaire de création
                         // (même si le créneau est bloqué, on peut vouloir voir le détail)
-                        if (!isBlocked) {
+                        if (!isBlocked && !occupyingReservation) {
                           setSelectedSlot({ 
                             date: date, 
                             time: time,
@@ -853,10 +985,16 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                       }
                     }}
                   >
-                    {reservation && (
-                      <div className="truncate">
-                        <p className="font-semibold text-blue-900">
-                          {reservation.userName?.split(' ')[0]}
+                    {isStartOfReservation && (
+                      <div className="text-xs">
+                        <p className="font-semibold truncate">
+                          {occupyingReservation.userName?.split(' ')[0]}
+                        </p>
+                        <p className="text-[10px] opacity-90">
+                          {occupyingReservation.serviceName}
+                        </p>
+                        <p className="text-[10px] opacity-80">
+                          {getServiceDuration(occupyingReservation.serviceName, dbServices)} min
                         </p>
                       </div>
                     )}
@@ -1276,8 +1414,19 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
 
       {/* Modal détail jour (depuis vue mois) */}
       {showDayDetail && selectedDate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Si on clique sur le fond (backdrop)
+            if (e.target === e.currentTarget) {
+              setShowDayDetail(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-[#2c3e50]">
                 {selectedDate.toLocaleDateString('fr-FR', { 
@@ -1342,6 +1491,23 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                     <div>
                       <p className="font-semibold text-[#2c3e50]">
                         {reservation.time} - {reservation.userName}
+                      </p>
+                      <p className="text-sm text-[#2c3e50]/60">
+                        {(() => {
+                          if (reservation.serviceName) return reservation.serviceName;
+                          if (reservation.services && reservation.services.length > 0) {
+                            const firstService = reservation.services[0];
+                            if (typeof firstService === 'string' && services) {
+                              const serviceName = services[firstService];
+                              if (serviceName && typeof serviceName === 'string') {
+                                return serviceName;
+                              }
+                              return firstService;
+                            }
+                            return typeof firstService === 'string' ? firstService : 'Service';
+                          }
+                          return 'Service';
+                        })()}
                       </p>
                       <p className="text-sm text-[#2c3e50]/70">
                         {reservation.totalPrice}€
@@ -1432,8 +1598,14 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                   {selectedReservation.services && selectedReservation.services.length > 0 ? (
                     selectedReservation.services.map((service: any, index: number) => (
                       <div key={index} className="flex justify-between items-center text-sm">
-                        <span>{service.name || service}</span>
-                        {service.price && <span className="font-medium">{service.price}€</span>}
+                        <span>
+                          {typeof service === 'string'
+                            ? (services && typeof services[service] === 'string' ? services[service] : service)
+                            : (typeof service === 'object' && service !== null ? (service.name || 'Service inconnu') : 'Service')}
+                        </span>
+                        {typeof service === 'object' && service !== null && service.price && (
+                          <span className="font-medium">{service.price}€</span>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -1479,12 +1651,250 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                   Fermer
                 </button>
                 {selectedReservation.status !== 'cancelled' && (
-                  <button
-                    className="flex-1 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
-                  >
-                    Modifier
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsEditMode(true);
+                        setEditedReservation(selectedReservation);
+                        setEditDate(formatDateLocal(new Date(selectedReservation.date)));
+                        setEditTime(selectedReservation.time);
+                        setEditStatus(selectedReservation.status);
+                      }}
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (confirm('Êtes-vous sûr de vouloir supprimer cette réservation ?')) {
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch(`/api/admin/reservations/${selectedReservation.id}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+
+                            if (response.ok) {
+                              alert('Réservation supprimée avec succès');
+                              setShowReservationDetail(false);
+                              setSelectedReservation(null);
+                              setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
+                            } else {
+                              const errorData = await response.json();
+                              alert(errorData.error || 'Erreur lors de la suppression');
+                            }
+                          } catch (error) {
+                            alert('Erreur lors de la suppression de la réservation');
+                          }
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      Supprimer
+                    </button>
+                  </>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification de réservation */}
+      {isEditMode && editedReservation && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-[#2c3e50]">
+                Modifier la réservation
+              </h3>
+              <button
+                onClick={() => {
+                  setIsEditMode(false);
+                  setEditedReservation(null);
+                }}
+                className="text-[#2c3e50]/50 hover:text-[#2c3e50]"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Informations client (non modifiables) */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-[#2c3e50] mb-3">Client</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[#2c3e50]/70">Nom:</span>
+                    <span className="font-medium">{editedReservation.userName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#2c3e50]/70">Email:</span>
+                    <span className="font-medium">{editedReservation.userEmail}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date modifiable */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                />
+              </div>
+
+              {/* Heure modifiable */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-3">
+                  Heure
+                </label>
+                <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                  {["09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+                    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+                    "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+                    "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
+                    "21:00", "21:30", "22:00", "22:30", "23:00"].map(time => {
+                    // Vérifier si ce créneau est disponible pour la date sélectionnée
+                    const dateToCheck = editDate ? new Date(editDate) : new Date();
+                    // Utiliser la fonction qui prend en compte la durée des services
+                    const filteredReservations = reservations.filter(r => r.id !== editedReservation.id);
+                    const isAvailable = isTimeSlotAvailable(time, dateToCheck, filteredReservations, dbServices);
+                    // Vérifier les créneaux bloqués
+                    const isBlocked = blockedSlots.some(s =>
+                      new Date(s.date).toDateString() === dateToCheck.toDateString() &&
+                      (s.allDay || s.time === time)
+                    );
+                    const hasConflict = !isAvailable || isBlocked;
+
+                    return (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => !hasConflict && setEditTime(time)}
+                        disabled={hasConflict}
+                        className={`py-2 px-3 rounded-lg border-2 font-medium text-sm transition-all duration-300 ${
+                          hasConflict
+                            ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed line-through"
+                            : editTime === time
+                            ? "border-[#d4b5a0] bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                            : "border-gray-200 hover:border-[#d4b5a0] text-[#2c3e50] hover:shadow-md"
+                        }`}
+                        title={
+                          !isAvailable ? "Ce créneau est déjà réservé ou en conflit" :
+                          isBlocked ? "Ce créneau est bloqué" :
+                          "Créneau disponible"
+                        }
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Légende */}
+                <div className="mt-3 flex gap-4 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 border-2 border-gray-200 rounded"></div>
+                    <span className="text-[#2c3e50]/60">Disponible</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-50 border-2 border-red-200 rounded"></div>
+                    <span className="text-[#2c3e50]/60">Indisponible</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] rounded"></div>
+                    <span className="text-[#2c3e50]/60">Sélectionné</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Statut modifiable */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Statut
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                >
+                  <option value="pending">En attente</option>
+                  <option value="confirmed">Confirmé</option>
+                  <option value="completed">Terminé</option>
+                  <option value="cancelled">Annulé</option>
+                </select>
+              </div>
+
+              {/* Services (non modifiables pour l'instant) */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-[#2c3e50] mb-3">Services</h4>
+                <div className="space-y-2">
+                  {editedReservation.services && editedReservation.services.map((service: any, index: number) => (
+                    <div key={index} className="text-sm">
+                      {typeof service === 'string' ? service : service.name}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-lg font-bold text-[#d4b5a0]">
+                  Total: {editedReservation.totalPrice}€
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setEditedReservation(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-[#2c3e50] rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = localStorage.getItem('token');
+                      const response = await fetch(`/api/admin/reservations/${editedReservation.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                          date: editDate,
+                          time: editTime,
+                          status: editStatus,
+                          totalPrice: editedReservation.totalPrice,
+                          services: editedReservation.services
+                        })
+                      });
+
+                      if (response.ok) {
+                        alert('Réservation modifiée avec succès');
+                        setIsEditMode(false);
+                        setEditedReservation(null);
+                        setShowReservationDetail(false);
+                        setSelectedReservation(null);
+                        setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement
+                      } else {
+                        const errorData = await response.json();
+                        alert(errorData.error || 'Erreur lors de la modification');
+                      }
+                    } catch (error) {
+                      alert('Erreur lors de la modification de la réservation');
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:shadow-lg transition-all"
+                >
+                  Enregistrer les modifications
+                </button>
               </div>
             </div>
           </div>
@@ -1493,21 +1903,35 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
 
       {/* Modal de création rapide de réservation */}
       {showQuickReservation && selectedSlot && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Si on clique sur le fond (backdrop)
+            if (e.target === e.currentTarget) {
+              // Vérifier si des données ont été saisies
+              const hasData = selectedService || clientName || clientEmail || clientPhone;
+              
+              if (hasData) {
+                // Demander confirmation avant de fermer
+                if (confirm('Vous avez des données non sauvegardées. Voulez-vous vraiment fermer ?')) {
+                  resetReservationForm();
+                }
+              } else {
+                resetReservationForm();
+              }
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-[#2c3e50]">
                 Nouvelle réservation
               </h3>
               <button
-                onClick={() => {
-                  setShowQuickReservation(false);
-                  setSelectedSlot(null);
-                  setSelectedService('');
-                  setClientName('');
-                  setClientEmail('');
-                  setClientPhone('');
-                }}
+                onClick={resetReservationForm}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -1516,11 +1940,11 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
 
             <div className="space-y-4">
               {/* Informations du créneau */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
+              <div className="bg-blue-50 p-4 rounded-lg space-y-3">
+                <div className="flex items-center gap-3">
                   <CalendarDays className="w-5 h-5 text-blue-600" />
                   <span className="font-semibold text-[#2c3e50]">
-                    {selectedSlot.date.toLocaleDateString('fr-FR', { 
+                    {selectedSlot.date.toLocaleDateString('fr-FR', {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
@@ -1528,13 +1952,72 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                     })}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold text-[#2c3e50]">
-                    {selectedSlot.slots && selectedSlot.slots.length > 1 
-                      ? `${selectedSlot.time} - ${selectedSlot.endTime} (${selectedSlot.slots.length * 30} minutes)`
-                      : selectedSlot.time}
-                  </span>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    <label className="text-sm font-medium text-[#2c3e50]">Horaire</label>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                    {["09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+                      "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+                      "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+                      "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
+                      "21:00", "21:30", "22:00", "22:30", "23:00"].map(time => {
+                      // Vérifier si ce créneau est disponible avec la durée du service
+                      const isAvailable = isTimeSlotAvailable(time, selectedSlot.date, reservations, dbServices);
+                      const isBlocked = blockedSlots.some(s =>
+                        new Date(s.date).toDateString() === selectedSlot.date.toDateString() &&
+                        (s.allDay || s.time === time)
+                      );
+                      const hasConflict = !isAvailable || isBlocked;
+
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => {
+                            if (!hasConflict) {
+                              setSelectedSlot({
+                                ...selectedSlot,
+                                time: time,
+                                slots: [time]
+                              });
+                            }
+                          }}
+                          disabled={hasConflict}
+                          className={`py-2 px-3 rounded-lg border-2 font-medium text-sm transition-all duration-300 ${
+                            hasConflict
+                              ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed line-through"
+                              : selectedSlot.time === time
+                              ? "border-[#d4b5a0] bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                              : "border-gray-200 hover:border-[#d4b5a0] text-[#2c3e50] hover:shadow-md"
+                          }`}
+                          title={
+                            !isAvailable ? "Ce créneau est déjà réservé ou en conflit" :
+                            isBlocked ? "Ce créneau est bloqué" :
+                            "Créneau disponible"
+                          }
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Légende */}
+                  <div className="mt-3 flex gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 border-2 border-gray-200 rounded"></div>
+                      <span className="text-[#2c3e50]/60">Disponible</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-50 border-2 border-red-200 rounded"></div>
+                      <span className="text-[#2c3e50]/60">Indisponible</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] rounded"></div>
+                      <span className="text-[#2c3e50]/60">Sélectionné</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1549,12 +2032,14 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                 >
                   <option value="">Sélectionner une prestation</option>
-                  <option value="BB Glow">BB Glow - 90 min - 130€</option>
-                  <option value="Hydrocleaning">Hydrocleaning - 60 min - 89€</option>
-                  <option value="Microneedling">Microneedling - 75 min - 110€</option>
-                  <option value="Thérapie LED">Thérapie LED - 30 min - 45€</option>
-                  <option value="Renaissance">Renaissance - 120 min - 180€</option>
-                  <option value="Éclat Suprême">Éclat Suprême - 90 min - 150€</option>
+                  {dbServices && dbServices
+                    .filter(s => s.active)
+                    .map(service => (
+                      <option key={service.slug} value={service.slug}>
+                        {service.name} - {service.duration} min - {service.promoPrice || service.price}€
+                      </option>
+                    ))
+                  }
                 </select>
                 {selectedSlot.slots && selectedSlot.slots.length > 1 && selectedService && (
                   <p className="text-sm text-amber-600 mt-2">
@@ -1605,6 +2090,102 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                 </div>
               </div>
 
+              {/* Carte cadeau (optionnel) */}
+              <div className="border-2 border-pink-200 rounded-xl p-4 bg-pink-50">
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="useGiftCard"
+                    checked={useGiftCard}
+                    onChange={(e) => {
+                      setUseGiftCard(e.target.checked);
+                      if (!e.target.checked) {
+                        setGiftCardCode('');
+                        setGiftCardData(null);
+                        setGiftCardError('');
+                      }
+                    }}
+                    className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
+                  />
+                  <label htmlFor="useGiftCard" className="flex items-center gap-2 text-sm font-semibold text-pink-900 cursor-pointer">
+                    <Gift className="w-5 h-5 text-pink-600" />
+                    Utiliser une carte cadeau (optionnel)
+                  </label>
+                </div>
+
+                {useGiftCard && (
+                  <div className="space-y-3">
+                    {!giftCardData ? (
+                      <>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={giftCardCode}
+                            onChange={(e) => {
+                              setGiftCardCode(e.target.value.toUpperCase());
+                              setGiftCardError('');
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                verifyGiftCard();
+                              }
+                            }}
+                            placeholder="GIFT-XXXX-XXXX"
+                            maxLength={14}
+                            className="flex-1 px-4 py-2 border-2 border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-mono uppercase"
+                          />
+                          <button
+                            type="button"
+                            onClick={verifyGiftCard}
+                            disabled={isVerifyingGiftCard || !giftCardCode.trim()}
+                            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+                          >
+                            {isVerifyingGiftCard ? 'Vérification...' : 'Vérifier'}
+                          </button>
+                        </div>
+                        {giftCardError && (
+                          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                            <AlertCircle className="w-4 h-4" />
+                            {giftCardError}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="bg-white rounded-lg p-3 border-2 border-pink-300">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-pink-600 font-medium">Code validé</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGiftCardData(null);
+                                setGiftCardCode('');
+                              }}
+                              className="text-pink-600 hover:text-pink-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <p className="font-mono font-bold text-pink-900 mb-1">{giftCardData.code}</p>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-pink-700">Solde disponible:</span>
+                            <span className="font-bold text-pink-900">{giftCardData.balance}€</span>
+                          </div>
+                          {giftCardData.purchasedFor && (
+                            <p className="text-xs text-pink-600 mt-1">Pour: {giftCardData.purchasedFor}</p>
+                          )}
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-2 flex items-center gap-2 text-sm text-green-700">
+                          <Check className="w-4 h-4" />
+                          <span>Cette carte sera utilisée lors de la réservation</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Actions */}
               <div className="space-y-3 pt-4 border-t">
                 <button
@@ -1636,37 +2217,49 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                     try {
                       const token = localStorage.getItem('token');
                       const dateStr = formatDateLocal(selectedSlot.date);
-                      
+
                       // Calculer l'heure de fin avec le temps de préparation
                       const endMinutes = timeToMinutes(selectedSlot.time) + totalDuration;
                       const endTime = minutesToTime(endMinutes);
-                      
-                      // Créer la réservation
-                      const reservationData = {
+
+                      // Préparer les données de la réservation
+                      const reservationData: any = {
+                        client: clientName,
+                        email: clientEmail,
+                        phone: clientPhone,
                         date: dateStr,
                         time: selectedSlot.time,
-                        endTime: endTime,
-                        service: selectedService,
-                        serviceDuration: totalDuration,
-                        clientName,
-                        clientEmail,
-                        clientPhone,
+                        services: [selectedService],
+                        totalPrice: getServicePrice(selectedService),
                         status: 'confirmed',
-                        totalPrice: getServicePrice(selectedService)
+                        source: 'admin-calendar'
                       };
 
-                      // Sauvegarder dans le localStorage
-                      const existingReservations = JSON.parse(localStorage.getItem('admin_reservations') || '[]');
-                      const newReservation = {
-                        ...reservationData,
-                        id: `res_${Date.now()}`,
-                        userName: clientName,
-                        userEmail: clientEmail,
-                        services: [{ name: selectedService, price: getServicePrice(selectedService), duration: totalDuration }],
-                        createdAt: new Date().toISOString()
-                      };
-                      existingReservations.push(newReservation);
-                      localStorage.setItem('admin_reservations', JSON.stringify(existingReservations));
+                      // Ajouter les données de carte cadeau si utilisée
+                      if (giftCardData) {
+                        const servicPrice = getServicePrice(selectedService);
+                        const giftCardAmount = Math.min(giftCardData.balance, servicPrice);
+                        reservationData.giftCardId = giftCardData.id;
+                        reservationData.giftCardUsedAmount = giftCardAmount;
+                      }
+
+                      // Créer la réservation via l'API (qui vérifie les doublons)
+                      const response = await fetch('/api/admin/reservations', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(reservationData)
+                      });
+
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        alert(errorData.error || 'Erreur lors de la création de la réservation');
+                        return;
+                      }
+
+                      const newReservation = await response.json();
 
                       // Bloquer automatiquement les 15 minutes après pour la préparation
                       const prepStartMinutes = endMinutes;
@@ -1690,14 +2283,16 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
 
                       // Rafraîchir les données sans recharger la page
                       await fetchBlockedSlots();
-                      setShowQuickReservation(false);
-                      setSelectedSlot(null);
-                      setSelectedService('');
-                      setClientName('');
-                      setClientEmail('');
-                      setClientPhone('');
+
+                      const usedGiftCard = giftCardData !== null;
+                      resetReservationForm();
                       setRefreshKey(prev => prev + 1); // Forcer le rafraîchissement des vues
-                      alert('✅ Réservation créée avec succès!');
+
+                      if (usedGiftCard) {
+                        alert('✅ Réservation créée avec succès!\n💳 Carte cadeau utilisée avec succès');
+                      } else {
+                        alert('✅ Réservation créée avec succès!');
+                      }
                     } catch (error) {
                       console.error('Erreur lors de la création:', error);
                       alert('Erreur lors de la création de la réservation');
@@ -1711,14 +2306,7 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
                 </button>
 
                 <button
-                  onClick={() => {
-                    setShowQuickReservation(false);
-                    setSelectedSlot(null);
-                    setSelectedService('');
-                    setClientName('');
-                    setClientEmail('');
-                    setClientPhone('');
-                  }}
+                  onClick={resetReservationForm}
                   className="w-full px-4 py-3 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Annuler
@@ -1730,12 +2318,4 @@ export default function PlanningCalendar({ reservations, onNewReservation, onDat
       )}
     </div>
   );
-}
-
-// Helper pour obtenir le format de date local
-function formatDateLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatDateLocal } from '@/lib/date-utils';
 import { Mail, Send, Inbox, Clock, CheckCircle, XCircle, Search, Filter, Calendar, Eye, RefreshCw } from 'lucide-react';
 
 interface EmailRecord {
@@ -41,7 +42,7 @@ export default function EmailHistory() {
         setEmails([
           {
             id: '1',
-            from: 'contact@laiaskininstitut.fr',
+            from: 'contact@laia.skininstitut.fr',
             to: 'celia.ivorra95@hotmail.fr',
             subject: '✅ Confirmation de votre réservation',
             content: 'Bonjour Célia,\n\nVotre réservation pour le 15/09/2025 à 14h00 est confirmée.\n\nÀ très bientôt,\nLaïa',
@@ -53,7 +54,7 @@ export default function EmailHistory() {
           },
           {
             id: '2',
-            from: 'contact@laiaskininstitut.fr',
+            from: 'contact@laia.skininstitut.fr',
             to: 'marie.dupont@email.com',
             subject: '🌟 Votre avis compte pour nous',
             content: 'Bonjour Marie,\n\nNous espérons que vous avez apprécié votre soin.\n\nPouvez-vous prendre 2 minutes pour nous laisser un avis ?\n\nMerci,\nLaïa',
@@ -65,7 +66,7 @@ export default function EmailHistory() {
           {
             id: '3',
             from: 'marie.dupont@email.com',
-            to: 'contact@laiaskininstitut.fr',
+            to: 'contact@laia.skininstitut.fr',
             subject: 'Question sur les soins',
             content: 'Bonjour,\n\nJe voudrais savoir si le soin HydraFacial convient aux peaux sensibles ?\n\nMerci',
             status: 'received',
@@ -111,7 +112,7 @@ export default function EmailHistory() {
 
     // Filtre par date
     if (dateFilter) {
-      const emailDate = new Date(email.createdAt).toISOString().split('T')[0];
+      const emailDate = formatDateLocal(new Date(email.createdAt));
       if (emailDate !== dateFilter) return false;
     }
 

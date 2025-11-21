@@ -362,7 +362,7 @@ export async function sendWelcomeEmail(
                 <h3 style="color: #1e40af; font-size: 18px; margin: 0 0 15px 0;">💬 Besoin d'aide ?</h3>
                 <p style="color: #1e3a8a; font-size: 15px; line-height: 1.6; margin: 0;">
                   Notre équipe est là pour vous accompagner :<br>
-                  📧 Email : <a href="mailto:contact@laiaconnect.fr" style="color: #3b82f6; text-decoration: none;">contact@laiaconnect.fr</a><br>
+                  📧 Email : <a href="mailto:support@laia-connect.fr" style="color: #3b82f6; text-decoration: none;">support@laia-connect.fr</a><br>
                   📚 Centre d'aide : <a href="https://help.laia-connect.fr" style="color: #3b82f6; text-decoration: none;">help.laia-connect.fr</a><br>
                   💬 Chat en direct : Disponible dans votre espace admin
                 </p>
@@ -607,7 +607,7 @@ export async function sendOnboardingGuide(data: WelcomeEmailData) {
                 <li><a href="https://help.laia-connect.fr/videos" style="color: #3b82f6; text-decoration: none;">Vidéos tutoriels</a></li>
                 <li><a href="https://docs.laia-connect.fr/domaine-personnalise" style="color: #3b82f6; text-decoration: none;">🌐 Guide : Configurer votre domaine personnalisé</a></li>
                 <li><a href="https://help.laia-connect.fr/faq" style="color: #3b82f6; text-decoration: none;">FAQ</a></li>
-                <li><a href="mailto:contact@laiaconnect.fr" style="color: #3b82f6; text-decoration: none;">Support par email</a></li>
+                <li><a href="mailto:support@laia-connect.fr" style="color: #3b82f6; text-decoration: none;">Support par email</a></li>
               </ul>
 
               <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 30px 0 0 0;">
@@ -641,7 +641,7 @@ export async function sendOnboardingGuide(data: WelcomeEmailData) {
 
   try {
     const result = await resend.emails.send({
-      from: 'LAIA Connect <contact@laiaconnect.fr>',
+      from: 'LAIA Connect <support@laia-connect.fr>',
       to: [ownerEmail],
       subject: `📚 Guide de démarrage - ${organizationName}`,
       html: guideHtml
@@ -770,7 +770,7 @@ export async function sendPendingActivationEmail(data: WelcomeEmailData) {
               </ol>
 
               <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                Des questions ? Contactez-nous à <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea; text-decoration: none;">contact@laiaconnect.fr</a>
+                Des questions ? Contactez-nous à <a href="mailto:support@laia-connect.fr" style="color: #9333ea; text-decoration: none;">support@laia-connect.fr</a>
               </p>
             </td>
           </tr>
@@ -944,7 +944,7 @@ export async function sendAccountActivationEmail(data: WelcomeEmailData) {
               </div>
 
               <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                Besoin d'aide ? Consultez notre <a href="https://docs.laia-connect.fr" style="color: #9333ea;">documentation</a> ou contactez-nous à <a href="mailto:contact@laiaconnect.fr" style="color: #9333ea;">contact@laiaconnect.fr</a>
+                Besoin d'aide ? Consultez notre <a href="https://docs.laia-connect.fr" style="color: #9333ea;">documentation</a> ou contactez-nous à <a href="mailto:support@laia-connect.fr" style="color: #9333ea;">support@laia-connect.fr</a>
               </p>
             </td>
           </tr>

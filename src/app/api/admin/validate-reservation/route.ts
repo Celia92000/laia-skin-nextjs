@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp-meta';
 import { sendReservationConfirmationEmail } from '@/lib/resend-email-service';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
+  const prisma = await getPrismaClient();
   try {
     const { reservationId, action } = await request.json();
     
@@ -37,10 +53,10 @@ export async function POST(request: Request) {
       const serviceNames = services.map((s: string) => {
         const serviceMap: any = {
           'hydro-naissance': "Hydro'Naissance",
-          'hydro': "Hydro'Cleaning",
+          'hydro-cleaning': "Hydro'Cleaning",
           'renaissance': 'Renaissance',
-          'bbglow': 'BB Glow',
-          'led': 'LED Thérapie'
+          'bb-glow': 'BB Glow',
+          'led-therapie': 'LED Thérapie'
         };
         return serviceMap[s] || s;
       });
@@ -64,9 +80,9 @@ export async function POST(request: Request) {
             totalPrice: reservation.totalPrice,
             reservationId: reservation.id
           });
-          console.log(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
+          log.info(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
         } catch (emailError) {
-          console.error('Erreur envoi email:', emailError);
+          log.error('Erreur envoi email:', emailError);
         }
       }
       
@@ -86,7 +102,7 @@ export async function POST(request: Request) {
           message: confirmMessage
         }).catch(console.error);
         
-        console.log(`📱 WhatsApp de confirmation envoyé à ${reservation.user.phone}`);
+        log.info(`📱 WhatsApp de confirmation envoyé à ${reservation.user.phone}`);
       }
       
       // 3. Programmer le rappel 24h avant (sera envoyé par le CRON)
@@ -110,7 +126,7 @@ export async function POST(request: Request) {
           `Malheureusement, votre demande de réservation pour le ${new Date(reservation.date).toLocaleDateString('fr-FR')} à ${reservation.time} n'a pas pu être acceptée.\n\n` +
           `Nous vous invitons à choisir un autre créneau sur notre site : https://laiaskin.fr\n\n` +
           `Merci de votre compréhension.\n` +
-          `LAIA SKIN Institut`;
+          `${siteName}`;
         
         sendWhatsAppMessage({
           to: reservation.user.phone,
@@ -127,7 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Action invalide' }, { status: 400 });
     
   } catch (error) {
-    console.error('Erreur validation réservation:', error);
+    log.error('Erreur validation réservation:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -144,7 +160,7 @@ async function scheduleReminder(reservation: any) {
   // - Bull Queue
   // - AWS EventBridge
   
-  console.log(`Rappel programmé pour ${reservation.user.name} le ${reminderDate.toISOString()}`);
+  log.info(`Rappel programmé pour ${reservation.user.name} le ${reminderDate.toISOString()}`);
   
   // Pour l'instant, stocker dans la DB
   // TODO: Créer le modèle Reminder dans le schéma Prisma
@@ -160,7 +176,7 @@ async function scheduleReminder(reservation: any) {
     });
   } catch (error) {
     // La table reminder n'existe peut-être pas encore
-    console.log('Table reminder à créer dans le schéma Prisma');
+    log.info('Table reminder à créer dans le schéma Prisma');
   }
   */
 }

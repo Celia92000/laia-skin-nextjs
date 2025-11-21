@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  Calendar, Clock, Ban, Plus, Trash2, X, 
+import { useState, useEffect, useRef } from "react";
+import {
+  Calendar, Clock, Ban, Plus, Trash2, X,
   CalendarX, AlertCircle, Check
 } from "lucide-react";
+import { formatDateLocal } from "@/lib/date-utils";
 
 interface BlockedSlot {
   id: string;
@@ -14,18 +15,134 @@ interface BlockedSlot {
   reason?: string;
 }
 
+// Composant pour la sélection des créneaux avec glissement
+function TimeSlotSelector({ 
+  timeSlots, 
+  selectedTimeSlots, 
+  onSelectionChange 
+}: {
+  timeSlots: string[];
+  selectedTimeSlots: string[];
+  onSelectionChange: (slots: string[]) => void;
+}) {
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<number | null>(null);
+  const [currentSelection, setCurrentSelection] = useState<Set<string>>(new Set());
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isSelecting) {
+        setIsSelecting(false);
+        onSelectionChange(Array.from(currentSelection));
+        setSelectionStart(null);
+      }
+    };
+
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, [isSelecting, currentSelection, onSelectionChange]);
+
+  const handleMouseDown = (index: number, time: string) => {
+    setIsSelecting(true);
+    setSelectionStart(index);
+    
+    // Si le créneau est déjà sélectionné, on le désélectionne
+    if (selectedTimeSlots.includes(time)) {
+      const newSelection = selectedTimeSlots.filter(t => t !== time);
+      setCurrentSelection(new Set(newSelection));
+    } else {
+      // Sinon on l'ajoute à la sélection
+      setCurrentSelection(new Set([...selectedTimeSlots, time]));
+    }
+  };
+
+  const handleMouseEnter = (index: number, time: string) => {
+    if (isSelecting && selectionStart !== null) {
+      // Calculer la plage de sélection
+      const start = Math.min(selectionStart, index);
+      const end = Math.max(selectionStart, index);
+      
+      // Créer une nouvelle sélection basée sur la plage
+      const rangeSelection = new Set(selectedTimeSlots);
+      for (let i = start; i <= end; i++) {
+        rangeSelection.add(timeSlots[i]);
+      }
+      setCurrentSelection(rangeSelection);
+    }
+  };
+
+  const toggleSingleSlot = (time: string) => {
+    if (!isSelecting) {
+      if (selectedTimeSlots.includes(time)) {
+        onSelectionChange(selectedTimeSlots.filter(t => t !== time));
+      } else {
+        onSelectionChange([...selectedTimeSlots, time]);
+      }
+    }
+  };
+
+  const displaySelection = isSelecting ? currentSelection : new Set(selectedTimeSlots);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2 mb-2">
+        <button
+          type="button"
+          onClick={() => onSelectionChange(timeSlots)}
+          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+        >
+          Tout sélectionner
+        </button>
+        <button
+          type="button"
+          onClick={() => onSelectionChange([])}
+          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+        >
+          Tout désélectionner
+        </button>
+      </div>
+      
+      <div 
+        ref={containerRef}
+        className="grid grid-cols-4 gap-1 p-3 border-2 border-[#d4b5a0]/20 rounded-lg bg-white select-none"
+        style={{ userSelect: 'none' }}
+      >
+        {timeSlots.map((time, index) => {
+          const isSelected = displaySelection.has(time);
+          return (
+            <div
+              key={time}
+              className={`
+                px-3 py-2 text-sm text-center rounded cursor-pointer transition-all
+                ${isSelected 
+                  ? 'bg-[#d4b5a0] text-white font-medium shadow-sm' 
+                  : 'bg-gray-50 hover:bg-gray-100 text-[#2c3e50]'
+                }
+              `}
+              onMouseDown={() => handleMouseDown(index, time)}
+              onMouseEnter={() => handleMouseEnter(index, time)}
+              onClick={() => toggleSingleSlot(time)}
+            >
+              {time}
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="text-xs text-gray-500">
+        💡 Astuce : Cliquez et glissez pour sélectionner une plage de créneaux
+      </div>
+    </div>
+  );
+}
+
 export default function QuickBlockManager() {
   const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [blockType, setBlockType] = useState<'single' | 'range' | 'specific' | 'timeRange'>('single');
   
-  // Fonction pour formater une date en YYYY-MM-DD en heure locale
-  const formatDateLocal = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // Note: formatDateLocal est importé depuis @/lib/date-utils
   
   const [selectedDate, setSelectedDate] = useState(formatDateLocal(new Date()));
   const [selectedTime, setSelectedTime] = useState('');
@@ -50,10 +167,17 @@ export default function QuickBlockManager() {
 
   const fetchBlockedSlots = async () => {
     try {
-      const response = await fetch('/api/admin/blocked-slots');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/blocked-slots', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setBlockedSlots(data);
+      } else {
+        console.error('Erreur lors du chargement des créneaux bloqués:', response.status);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des créneaux bloqués:', error);
@@ -177,7 +301,7 @@ export default function QuickBlockManager() {
   const deleteBlockedSlot = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/blocked-slots?id=${id}`, {
+      const response = await fetch(`/api/admin/blocked-slots/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -478,25 +602,14 @@ export default function QuickBlockManager() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Créneaux à bloquer
                   </label>
-                  <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border border-[#d4b5a0]/20 rounded-lg">
-                    {timeSlots.map(time => (
-                      <label key={time} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedTimeSlots.includes(time)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedTimeSlots([...selectedTimeSlots, time]);
-                            } else {
-                              setSelectedTimeSlots(selectedTimeSlots.filter(t => t !== time));
-                            }
-                          }}
-                          className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
-                        />
-                        <span className="text-sm text-[#2c3e50]">{time}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <p className="text-xs text-[#2c3e50]/60 mb-2">
+                    Cliquez sur un créneau pour le sélectionner, ou cliquez et maintenez pour sélectionner plusieurs créneaux
+                  </p>
+                  <TimeSlotSelector
+                    timeSlots={timeSlots}
+                    selectedTimeSlots={selectedTimeSlots}
+                    onSelectionChange={setSelectedTimeSlots}
+                  />
                   {selectedTimeSlots.length > 0 && (
                     <p className="text-xs text-[#d4b5a0] mt-2">
                       {selectedTimeSlots.length} créneaux sélectionnés

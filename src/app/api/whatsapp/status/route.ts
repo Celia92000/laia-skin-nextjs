@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -50,7 +65,7 @@ export async function GET(request: NextRequest) {
             id: WHATSAPP_BUSINESS_ACCOUNT_ID,
             phoneNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
             displayPhoneNumber: data.display_phone_number || '0683717050',
-            verifiedName: data.verified_name || 'LAIA SKIN Institut',
+            verifiedName: data.verified_name || `${siteName}`,
             hasToken: true,
             qualityRating: data.quality_rating || 'GREEN',
             platform: data.platform || 'WHATSAPP'
@@ -77,7 +92,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Erreur status WhatsApp:', error);
+    log.error('Erreur status WhatsApp:', error);
     return NextResponse.json({ 
       connected: false,
       error: 'Erreur serveur' 

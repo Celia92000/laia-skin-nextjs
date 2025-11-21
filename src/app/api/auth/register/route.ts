@@ -2,16 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, phone } = await request.json();
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation du site
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: 'Organisation non trouvée' },
+        { status: 404 }
+      );
+    }
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    const { email, password, name, phone, referralCode } = await request.json();
+
+    // 🔒 Vérifier si l'utilisateur existe déjà DANS CETTE ORGANISATION
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email,
+        organizationId: organizationId
+      }
     });
 
     if (existingUser) {
@@ -24,16 +38,100 @@ export async function POST(request: NextRequest) {
     // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Créer l'utilisateur
+    // 🔒 Créer l'utilisateur RATTACHÉ À CETTE ORGANISATION
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
         phone,
-        role: 'client',
+        role: "CLIENT",
+        organizationId: organizationId, // 🔒 CRITIQUE : Rattacher à l'organisation
         loyaltyPoints: 0,
         totalSpent: 0
+      }
+    });
+
+    // Créer le profil de fidélité avec code de parrainage unique
+    const userReferralCode = `LAIA${name.slice(0, 3).toUpperCase()}${user.id.slice(-4).toUpperCase()}`;
+    
+    // 🔒 Si un code de parrainage a été fourni, le valider DANS CETTE ORGANISATION
+    let referrerProfile = null;
+    if (referralCode) {
+      referrerProfile = await prisma.loyaltyProfile.findFirst({
+        where: {
+          referralCode: referralCode,
+          organizationId: organizationId,
+          userId: { not: user.id }
+        },
+        include: { user: true }
+      });
+
+      if (referrerProfile) {
+        // 🔒 Créer la réduction pour le nouveau client (filleul) - 10€ DANS CETTE ORGANISATION
+        await prisma.discount.create({
+          data: {
+            userId: user.id,
+            organizationId: organizationId,
+            type: 'referral_referred',
+            amount: 10,
+            status: 'available',
+            originalReason: `Bienvenue ! Code parrainage de ${referrerProfile.user.name}`,
+            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 jours
+          }
+        });
+
+        // 🔒 Créer une réduction en attente pour le parrain - 15€ DANS CETTE ORGANISATION
+        await prisma.discount.create({
+          data: {
+            userId: referrerProfile.userId,
+            organizationId: organizationId,
+            type: 'referral_sponsor',
+            amount: 15,
+            status: 'pending',
+            originalReason: `Parrainage de ${name}`,
+            notes: 'Sera activée après le premier soin du filleul'
+          }
+        });
+
+        // 🔒 Créer l'entrée de parrainage DANS CETTE ORGANISATION
+        await prisma.referral.create({
+          data: {
+            referrerUserId: referrerProfile.userId,
+            organizationId: organizationId,
+            referralCode: referralCode,
+            referredUserId: user.id,
+            status: 'used',
+            rewardAmount: 15
+          }
+        });
+
+        // 🔒 Notification au parrain DANS CETTE ORGANISATION
+        await prisma.notification.create({
+          data: {
+            userId: referrerProfile.userId,
+            organizationId: organizationId,
+            type: 'referral',
+            title: 'Nouveau filleul',
+            message: `🎉 ${name} vient de s'inscrire avec votre code ! Vous recevrez 15€ après son premier soin.`,
+            read: false
+          }
+        });
+      }
+    }
+
+    // 🔒 Créer le profil de fidélité RATTACHÉ À CETTE ORGANISATION
+    await prisma.loyaltyProfile.create({
+      data: {
+        userId: user.id,
+        organizationId: organizationId,
+        referralCode: userReferralCode,
+        referredBy: referralCode || null,
+        points: 0,
+        individualServicesCount: 0,
+        packagesCount: 0,
+        totalSpent: 0,
+        totalReferrals: 0
       }
     });
 
@@ -52,7 +150,7 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword
     });
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
+    log.error('Erreur lors de l\'inscription:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'inscription' },
       { status: 500 }

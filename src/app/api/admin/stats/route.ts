@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getPrismaClient } from '@/lib/prisma';
+import { formatDateLocal } from "@/lib/date-utils";
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -54,19 +55,21 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Revenus
+    // Revenus (basés sur les réservations confirmées ET terminées)
     const confirmedReservationsList = await prisma.reservation.findMany({
-      where: { status: 'confirmed' }
+      where: { 
+        status: { in: ['confirmed', 'completed'] }
+      }
     });
 
     const totalRevenue = confirmedReservationsList.reduce((sum, res) => sum + res.totalPrice, 0);
     
     const thisMonthRevenue = confirmedReservationsList
-      .filter(res => res.createdAt >= thisMonth)
+      .filter(res => res.date >= thisMonth) // Utiliser la date de la réservation, pas la création
       .reduce((sum, res) => sum + res.totalPrice, 0);
     
     const lastMonthRevenue = confirmedReservationsList
-      .filter(res => res.createdAt >= lastMonth && res.createdAt < thisMonth)
+      .filter(res => res.date >= lastMonth && res.date < thisMonth)
       .reduce((sum, res) => sum + res.totalPrice, 0);
 
     // Statistiques par jour (derniers 7 jours)
@@ -76,12 +79,12 @@ export async function GET(request: NextRequest) {
     });
 
     const dailyStatsMap = recentReservations.reduce((acc, res) => {
-      const date = res.createdAt.toISOString().split('T')[0];
+      const date = formatDateLocal(res.date); // Utiliser la date de réservation
       if (!acc[date]) {
         acc[date] = { count: 0, revenue: 0 };
       }
       acc[date].count++;
-      if (res.status === 'confirmed') {
+      if (res.status === 'confirmed' || res.status === 'completed') {
         acc[date].revenue += res.totalPrice;
       }
       return acc;
@@ -97,13 +100,17 @@ export async function GET(request: NextRequest) {
       : 0;
 
     // Clients récurrents
-    const clientReservations = await prisma.reservation.groupBy({
-      by: ['userId'],
+    const allReservations = await prisma.reservation.findMany({
       where: { status: { not: 'cancelled' } },
-      _count: true
+      select: { userId: true }
     });
 
-    const recurringClients = clientReservations.filter(c => c._count > 1).length;
+    const userCounts = allReservations.reduce((acc: Record<string, number>, res) => {
+      acc[res.userId] = (acc[res.userId] || 0) + 1;
+      return acc;
+    }, {});
+
+    const recurringClients = Object.values(userCounts).filter(count => count > 1).length;
 
     const stats = {
       reservations: {
@@ -128,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Erreur lors de la récupération des statistiques:', error);
+    log.error('Erreur lors de la récupération des statistiques:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des statistiques' },
       { status: 500 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Send, Users, Clock, Check, AlertCircle, Filter, Search, Plus, X } from "lucide-react";
+import { Mail, Send, Users, Clock, Check, AlertCircle, Filter, Search, Plus, X, Eye, Copy, Edit2, Trash2 } from "lucide-react";
 
 interface Client {
   id: string;
@@ -20,104 +20,158 @@ interface EmailTemplate {
 }
 
 export default function AdminEmailingTab() {
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'newsletter'>('campaigns');
   const [clients, setClients] = useState<Client[]>([]);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<any[]>([]);
+  const [newsletterStats, setNewsletterStats] = useState({ total: 0, active: 0, inactive: 0 });
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterActive, setFilterActive] = useState<'all' | 'recent' | 'vip'>('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    minSpent: 0,
+    maxSpent: 1000,
+    visitDateFrom: '',
+    visitDateTo: '',
+    hasPhone: false,
+    hasReservation: false
+  });
+  const [testEmail, setTestEmail] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
   const [sendHistory, setSendHistory] = useState<any[]>([]);
+  const [includeNewsletter, setIncludeNewsletter] = useState(false);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    subject: '',
+    content: '',
+    category: 'general'
+  });
 
-  // Templates prédéfinis
-  const templates: EmailTemplate[] = [
-    {
-      id: "promo",
-      name: "Promotion du mois",
-      subject: "🎁 [Prénom], profitez de -20% ce mois-ci !",
-      content: `Bonjour [Prénom],
-
-J'espère que vous allez bien !
-
-Ce mois-ci, profitez de -20% sur tous nos soins visage.
-C'est le moment idéal pour prendre soin de vous !
-
-Réservez vite votre créneau :
-https://laiaskin.fr/reservation
-
-À très bientôt,
-Laïa
-LAIA SKIN Institut`
-    },
-    {
-      id: "rappel",
-      name: "Rappel de soin",
-      subject: "Il est temps de reprendre soin de votre peau !",
-      content: `Bonjour [Prénom],
-
-Cela fait maintenant 2 mois depuis votre dernier soin.
-
-Pour maintenir les bienfaits et continuer à sublimer votre peau, 
-je vous recommande de planifier votre prochain rendez-vous.
-
-Réservez en ligne : https://laiaskin.fr/reservation
-Ou répondez simplement à cet email !
-
-Au plaisir de vous revoir,
-Laïa`
-    },
-    {
-      id: "nouveaute",
-      name: "Nouveau soin",
-      subject: "✨ Découvrez notre nouveau soin exclusif !",
-      content: `Bonjour [Prénom],
-
-J'ai le plaisir de vous annoncer l'arrivée d'un nouveau soin !
-
-[Description du nouveau soin]
-
-Pour le lancement, profitez de -15% sur ce soin.
-
-Réservez votre découverte : https://laiaskin.fr/reservation
-
-À bientôt,
-Laïa`
-    },
-    {
-      id: "anniversaire",
-      name: "Anniversaire",
-      subject: "🎂 Joyeux anniversaire [Prénom] !",
-      content: `Bonjour [Prénom],
-
-Toute l'équipe de LAIA SKIN vous souhaite un merveilleux anniversaire !
-
-Pour l'occasion, je vous offre -30% sur le soin de votre choix.
-Valable tout le mois !
-
-Réservez votre moment de détente : https://laiaskin.fr/reservation
-
-Belle journée à vous,
-Laïa`
-    }
-  ];
-
+  // Charger les templates depuis l'API
   useEffect(() => {
-    fetchClients();
-    fetchEmailHistory();
+    fetchTemplates();
   }, []);
 
-  const fetchClients = async () => {
+  const fetchTemplates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/clients', {
+      console.log('🔍 [Campagnes] Chargement templates...');
+
+      const response = await fetch('/api/admin/email-templates/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+
+      console.log('📡 [Campagnes] Réponse API:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        setClients(data);
+        console.log('✅ [Campagnes] Templates reçus:', data.length, data.map((t: any) => t.name));
+        setTemplates(data);
+      }
+    } catch (error) {
+      console.error('❌ [Campagnes] Erreur chargement templates:', error);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = editingTemplate
+        ? `/api/admin/email-templates/${editingTemplate.id}`
+        : '/api/admin/email-templates/';
+
+      const method = editingTemplate ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(templateForm)
+      });
+
+      if (response.ok) {
+        await fetchTemplates();
+        setShowTemplateModal(false);
+        setEditingTemplate(null);
+        setTemplateForm({ name: '', subject: '', content: '', category: 'general' });
+      } else {
+        alert('Erreur lors de la sauvegarde du template');
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde template:', error);
+      alert('Erreur lors de la sauvegarde du template');
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/email-templates/${templateId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        await fetchTemplates();
+      } else {
+        alert('Erreur lors de la suppression du template');
+      }
+    } catch (error) {
+      console.error('Erreur suppression template:', error);
+      alert('Erreur lors de la suppression du template');
+    }
+  };
+
+
+  useEffect(() => {
+    fetchClients();
+    fetchEmailHistory();
+    fetchNewsletterSubscribers();
+  }, []);
+
+  const fetchNewsletterSubscribers = async () => {
+    try {
+      const response = await fetch('/api/newsletter/subscribe');
+      if (response.ok) {
+        const data = await response.json();
+        setNewsletterSubscribers(data.subscribers || []);
+        setNewsletterStats(data.stats || { total: 0, active: 0, inactive: 0 });
+      }
+    } catch (error) {
+      console.error('Erreur chargement inscrits newsletter:', error);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await fetch('/api/admin/clients', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setClients(data);
+        }
       }
     } catch (error) {
       console.error('Erreur chargement clients:', error);
@@ -232,6 +286,26 @@ Laïa`
     
     if (!matchesSearch) return false;
     
+    // Filtres avancés
+    if (showAdvancedFilters) {
+      const spent = client.totalSpent || 0;
+      if (spent < filters.minSpent || spent > filters.maxSpent) return false;
+      
+      if (filters.hasPhone && !client.phone) return false;
+      
+      if (filters.visitDateFrom && client.lastVisit) {
+        const visitDate = new Date(client.lastVisit);
+        const fromDate = new Date(filters.visitDateFrom);
+        if (visitDate < fromDate) return false;
+      }
+      
+      if (filters.visitDateTo && client.lastVisit) {
+        const visitDate = new Date(client.lastVisit);
+        const toDate = new Date(filters.visitDateTo);
+        if (visitDate > toDate) return false;
+      }
+    }
+    
     if (filterActive === 'recent') {
       // Clients vus dans les 30 derniers jours
       if (!client.lastVisit) return false;
@@ -248,6 +322,45 @@ Laïa`
     
     return true;
   });
+  
+  const sendTestEmail = async () => {
+    if (!testEmail || !emailSubject || !emailContent) {
+      alert('Veuillez remplir l\'email de test et le contenu');
+      return;
+    }
+    
+    const testClient = {
+      id: 'test',
+      name: 'Test Client',
+      email: testEmail
+    };
+    
+    try {
+      const personalizedSubject = personalizeContent(emailSubject, testClient);
+      const personalizedContent = personalizeContent(emailContent, testClient);
+      
+      const response = await fetch('/api/admin/emails/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to: testEmail,
+          subject: `[TEST] ${personalizedSubject}`,
+          content: personalizedContent,
+          isTest: true
+        })
+      });
+      
+      if (response.ok) {
+        alert(`Email de test envoyé à ${testEmail} !`);
+      } else {
+        alert('Erreur lors de l\'envoi de l\'email de test');
+      }
+    } catch (error) {
+      alert('Erreur lors de l\'envoi');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -325,7 +438,82 @@ Laïa`
               >
                 VIP (200€+)
               </button>
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  showAdvancedFilters 
+                    ? 'bg-[#d4b5a0] text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Filter className="w-4 h-4 inline mr-1" />
+                Filtres avancés
+              </button>
             </div>
+            
+            {/* Filtres avancés */}
+            {showAdvancedFilters && (
+              <div className="p-3 bg-gray-50 rounded-lg space-y-3 mt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Dépenses min (€)</label>
+                    <input
+                      type="number"
+                      value={filters.minSpent}
+                      onChange={(e) => setFilters({...filters, minSpent: Number(e.target.value)})}
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Dépenses max (€)</label>
+                    <input
+                      type="number"
+                      value={filters.maxSpent}
+                      onChange={(e) => setFilters({...filters, maxSpent: Number(e.target.value)})}
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Visite du</label>
+                    <input
+                      type="date"
+                      value={filters.visitDateFrom}
+                      onChange={(e) => setFilters({...filters, visitDateFrom: e.target.value})}
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Visite au</label>
+                    <input
+                      type="date"
+                      value={filters.visitDateTo}
+                      onChange={(e) => setFilters({...filters, visitDateTo: e.target.value})}
+                      className="w-full px-2 py-1 text-sm border rounded"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.hasPhone}
+                      onChange={(e) => setFilters({...filters, hasPhone: e.target.checked})}
+                      className="w-4 h-4 text-[#d4b5a0]"
+                    />
+                    <span className="text-sm">Avec téléphone</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.hasReservation}
+                      onChange={(e) => setFilters({...filters, hasReservation: e.target.checked})}
+                      className="w-4 h-4 text-[#d4b5a0]"
+                    />
+                    <span className="text-sm">Avec réservation</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sélectionner tout */}
@@ -371,18 +559,85 @@ Laïa`
 
           {/* Templates */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-[#2c3e50] mb-2">
-              Templates rapides
-            </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-[#2c3e50]">
+                Templates rapides ({templates.length} modèles disponibles)
+              </label>
+              <button
+                onClick={() => {
+                  setEditingTemplate(null);
+                  setTemplateForm({ name: '', subject: '', content: '', category: 'general' });
+                  setShowTemplateModal(true);
+                }}
+                className="px-3 py-1 text-sm bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Nouveau template
+              </button>
+            </div>
+            <div className="border rounded-lg p-2 space-y-1">
               {templates.map(template => (
-                <button
+                <div
                   key={template.id}
-                  onClick={() => loadTemplate(template)}
-                  className="px-3 py-2 text-sm bg-gray-100 hover:bg-[#d4b5a0]/20 rounded-lg text-left transition-colors"
+                  className="w-full px-3 py-2 text-sm bg-gray-50 hover:bg-[#d4b5a0]/20 rounded-lg transition-colors flex justify-between items-center group"
                 >
-                  {template.name}
-                </button>
+                  <span className="font-medium">{template.name}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setPreviewTemplate(template);
+                        setShowPreview(true);
+                      }}
+                      className="p-1 hover:bg-[#d4b5a0]/30 rounded"
+                      title="Aperçu"
+                    >
+                      <Eye className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        const duplicated = {
+                          ...template,
+                          id: `${template.id}_copy_${Date.now()}`,
+                          name: `${template.name} (copie)`
+                        };
+                        loadTemplate(duplicated);
+                      }}
+                      className="p-1 hover:bg-[#d4b5a0]/30 rounded"
+                      title="Dupliquer"
+                    >
+                      <Copy className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingTemplate(template);
+                        setTemplateForm({
+                          name: template.name,
+                          subject: template.subject,
+                          content: template.content,
+                          category: (template as any).category || 'general'
+                        });
+                        setShowTemplateModal(true);
+                      }}
+                      className="p-1 hover:bg-blue-100 rounded text-blue-600"
+                      title="Modifier"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="p-1 hover:bg-red-100 rounded text-red-600"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => loadTemplate(template)}
+                      className="px-2 py-1 text-xs bg-[#d4b5a0] text-white rounded hover:bg-[#c4a590]"
+                    >
+                      Utiliser
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -423,6 +678,33 @@ Utilisez [Prénom] pour personnaliser"
             <div className="flex flex-wrap gap-2">
               <code className="px-2 py-1 bg-white rounded text-xs">[Prénom]</code>
               <code className="px-2 py-1 bg-white rounded text-xs">[Nom]</code>
+            </div>
+          </div>
+
+          {/* Zone de test */}
+          <div className="bg-blue-50 rounded-lg p-3 mb-4">
+            <p className="text-sm font-medium text-[#2c3e50] mb-2">
+              Tester avant envoi
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Email de test..."
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-[#d4b5a0]"
+              />
+              <button
+                onClick={sendTestEmail}
+                disabled={!testEmail || !emailSubject || !emailContent}
+                className={`px-4 py-2 text-sm rounded-lg font-medium ${
+                  !testEmail || !emailSubject || !emailContent
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                Envoyer test
+              </button>
             </div>
           </div>
 
@@ -497,29 +779,182 @@ Utilisez [Prénom] pour personnaliser"
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Aperçu de l'email</h3>
-              <button onClick={() => setShowPreview(false)}>
+              <h3 className="text-lg font-semibold">
+                Aperçu : {previewTemplate?.name || 'Email'}
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowPreview(false);
+                  setPreviewTemplate(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6">
               <div className="mb-4">
                 <p className="text-sm text-gray-500">Sujet :</p>
-                <p className="font-medium">{personalizeContent(emailSubject, { 
-                  id: '1', 
-                  name: 'Marie Dupont', 
-                  email: 'marie@example.com' 
-                })}</p>
-              </div>
-              <div className="border-t pt-4">
-                <p className="text-sm text-gray-500 mb-2">Message :</p>
-                <div className="whitespace-pre-wrap">
-                  {personalizeContent(emailContent, { 
+                <p className="font-medium">{personalizeContent(
+                  previewTemplate?.subject || emailSubject, 
+                  { 
                     id: '1', 
                     name: 'Marie Dupont', 
                     email: 'marie@example.com' 
-                  })}
+                  }
+                )}</p>
+              </div>
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-500 mb-2">Message :</p>
+                <div className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
+                  {personalizeContent(
+                    previewTemplate?.content || emailContent, 
+                    { 
+                      id: '1', 
+                      name: 'Marie Dupont', 
+                      email: 'marie@example.com' 
+                    }
+                  )}
                 </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowPreview(false);
+                    setPreviewTemplate(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Fermer
+                </button>
+                {previewTemplate && (
+                  <button
+                    onClick={() => {
+                      loadTemplate(previewTemplate);
+                      setShowPreview(false);
+                      setPreviewTemplate(null);
+                    }}
+                    className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590]"
+                  >
+                    Utiliser ce template
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de création/édition de template */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white px-6 py-4 flex justify-between items-center">
+              <h3 className="text-xl font-semibold">
+                {editingTemplate ? 'Modifier le template' : 'Nouveau template'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowTemplateModal(false);
+                  setEditingTemplate(null);
+                  setTemplateForm({ name: '', subject: '', content: '', category: 'general' });
+                }}
+                className="hover:bg-white/20 rounded-lg p-1"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Nom du template */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Nom du template *
+                </label>
+                <input
+                  type="text"
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                  placeholder="Ex: Promotion du mois"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                />
+              </div>
+
+              {/* Catégorie */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Catégorie
+                </label>
+                <select
+                  value={templateForm.category}
+                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                >
+                  <option value="general">Général</option>
+                  <option value="promo">Promotion</option>
+                  <option value="rappel">Rappel</option>
+                  <option value="nouveaute">Nouveauté</option>
+                  <option value="anniversaire">Anniversaire</option>
+                  <option value="fidelite">Fidélité</option>
+                </select>
+              </div>
+
+              {/* Sujet */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Sujet *
+                </label>
+                <input
+                  type="text"
+                  value={templateForm.subject}
+                  onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+                  placeholder="Ex: 🎁 [Prénom], profitez de -20% ce mois-ci !"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                />
+              </div>
+
+              {/* Contenu */}
+              <div>
+                <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                  Contenu *
+                </label>
+                <textarea
+                  value={templateForm.content}
+                  onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
+                  placeholder="Votre message ici... Utilisez [Prénom] et [Nom] pour personnaliser"
+                  rows={10}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Variables disponibles */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-[#2c3e50]/60 mb-2">Variables disponibles :</p>
+                <div className="flex flex-wrap gap-2">
+                  <code className="px-2 py-1 bg-white rounded text-xs">[Prénom]</code>
+                  <code className="px-2 py-1 bg-white rounded text-xs">[Nom]</code>
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowTemplateModal(false);
+                    setEditingTemplate(null);
+                    setTemplateForm({ name: '', subject: '', content: '', category: 'general' });
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSaveTemplate}
+                  disabled={!templateForm.name || !templateForm.subject || !templateForm.content}
+                  className="px-4 py-2 bg-[#d4b5a0] text-white rounded-lg hover:bg-[#c4a590] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editingTemplate ? 'Enregistrer' : 'Créer'}
+                </button>
               </div>
             </div>
           </div>

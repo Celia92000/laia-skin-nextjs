@@ -1,0 +1,3015 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// MULTI-TENANCY MODELS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN // Propriétaire de la plateforme (accès complet à tous les instituts)
+  ORG_OWNER // Propriétaire d'un institut (accès complet à son organisation)
+  ORG_ADMIN // Co-gérant d'un institut (accès complet à l'organisation)
+  ACCOUNTANT // Comptable (accès aux factures, paiements, stats financières)
+  LOCATION_MANAGER // Responsable d'un point de vente (accès limité à son emplacement)
+  STAFF // Employé (accès opérationnel limité)
+  RECEPTIONIST // Réceptionniste (accès limité à la prise de RDV)
+  CLIENT // Client (accès espace client)
+}
+
+enum OrgType {
+  SINGLE_LOCATION // Institut avec un seul point de vente
+  MULTI_LOCATION // Institut avec plusieurs points de vente
+}
+
+enum OrgPlan {
+  SOLO // 49€/mois - 1 emplacement, 1 utilisateur admin
+  DUO // 99€/mois - 1 emplacement, 3 utilisateurs
+  TEAM // 199€/mois - 3 emplacements, 10 utilisateurs
+  PREMIUM // 399€/mois - Emplacements illimités, utilisateurs illimités
+  STARTER // Ancien nom - à supprimer après migration
+  ESSENTIAL // Ancien nom - à supprimer après migration
+  PROFESSIONAL // Ancien nom - à supprimer après migration
+  ENTERPRISE // Ancien nom - à supprimer après migration
+}
+
+// Formules d'abonnement configurables depuis le super-admin
+model SubscriptionPlan {
+  id            String   @id @default(cuid())
+  planKey       OrgPlan  @unique // SOLO, DUO, TEAM, PREMIUM
+
+  // Informations principales
+  name          String   // "Solo", "Duo", "Team", "Premium"
+  displayName   String   // "Formule Solo" (affiché dans l'interface)
+  description   String   @db.Text // "Parfait pour un institut indépendant..."
+
+  // Tarification
+  priceMonthly  Int      // Prix en euros (49, 69, 119, 179)
+  priceYearly   Int?     // Prix annuel (si différent du mensuel x12)
+
+  // Limites
+  maxLocations  Int      @default(1) // Nombre d'emplacements max
+  maxUsers      Int      @default(1) // Nombre d'utilisateurs max
+  maxStorage    Int      @default(5) // Stockage en GB
+
+  // Features principales (JSON pour flexibilité)
+  features      String   @db.Text @default("[]") // JSON array des features activées
+
+  // Highlights pour affichage marketing
+  highlights    String   @db.Text @default("[]") // JSON array: ["CRM complet", "Blog SEO", ...]
+
+  // Affichage
+  isPopular     Boolean  @default(false) // Badge "Populaire"
+  isRecommended Boolean  @default(false) // Badge "Recommandé"
+  displayOrder  Int      @default(0)     // Ordre d'affichage (1, 2, 3, 4)
+
+  // Stripe
+  stripePriceId String?  // ID du prix Stripe associé
+
+  // Statut
+  isActive      Boolean  @default(true) // Si false, plan non disponible à la souscription
+
+  // Métadonnées
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([planKey])
+  @@index([isActive])
+}
+
+enum OrgStatus {
+  PENDING // En attente d'activation (payé mais pas encore activé)
+  ACTIVE // Organisation active
+  TRIAL // Période d'essai
+  SUSPENDED // Suspendue (impayé)
+  CANCELLED // Annulée
+}
+
+enum LeadSource {
+  WEBSITE // Formulaire site web LAIA Connect
+  DEMO_FORM // Formulaire de réservation démo
+  REFERRAL // Bouche à oreille / Parrainage
+  MARKETING // Campagne marketing (email, pub, etc.)
+  SOCIAL_MEDIA // Réseaux sociaux
+  EVENT // Événement / Salon
+  PARTNER // Partenaire commercial
+  DIRECT // Contact direct
+  OTHER // Autre
+}
+
+enum PaymentProvider {
+  STRIPE // Stripe Connect
+  SUMUP // SumUp
+  PAYPAL // PayPal
+  POS_CLYO // Logiciel de caisse Clyo
+  POS_ADORIA // Logiciel de caisse Adoria
+  POS_SHORTCUTS // Logiciel de caisse Shortcuts
+  POS_OTHER // Autre logiciel de caisse
+}
+
+// Organisation (Institut de beauté)
+model Organization {
+  id        String  @id @default(cuid())
+  name      String // "Beauté Éternelle Paris"
+  slug      String  @unique // "beaute-eternelle-paris"
+  legalName String? // Raison sociale
+  type      OrgType @default(SINGLE_LOCATION)
+
+  // Domaine personnalisé
+  domain    String? @unique // "beaute-eternelle.fr"
+  subdomain String  @unique // "beaute-eternelle"
+
+  // Base de données dédiée (chiffrée)
+  databaseUrl String? // URL de la base de données PostgreSQL dédiée
+
+  // Abonnement
+  plan           OrgPlan   @default(SOLO)
+  status         OrgStatus @default(TRIAL)
+  trialEndsAt    DateTime?
+  subscriptionId String? // ID d'abonnement Stripe
+
+  // CRM & Tracking
+  leadSource   LeadSource? @default(WEBSITE) // Origine du prospect/client
+  activatedAt  DateTime? // Date d'activation manuelle par le super-admin
+  convertedAt  DateTime? // Date de conversion prospect → client (paiement)
+
+  // Limites du plan
+  maxLocations Int @default(1)
+  maxUsers     Int @default(1)
+  maxStorage   Int @default(5) // En GB
+
+  // Customisation des features (override par le super-admin)
+  customFeaturesEnabled  String? @db.Text @default("[]") // JSON array des features ajoutées manuellement
+  customFeaturesDisabled String? @db.Text @default("[]") // JSON array des features retirées manuellement
+
+  // Contact principal
+  ownerFirstName String? // Prénom du propriétaire
+  ownerLastName  String? // Nom du propriétaire
+  ownerEmail     String
+  ownerPhone     String?
+
+  // Informations légales et facturation
+  siret             String? // SIRET obligatoire pour facturation française
+  tvaNumber         String? // Numéro TVA intracommunautaire
+  billingEmail      String? // Email de facturation (si différent de ownerEmail)
+  billingAddress    String? // Rue et numéro
+  billingPostalCode String? // Code postal
+  billingCity       String? // Ville
+  billingCountry    String? @default("France") // Pays
+
+  // Paiement géré par Stripe - Plus besoin de stocker les données bancaires
+  sepaMandateRef    String? // Référence unique du mandat (RUM) - pour affichage uniquement
+  sepaMandateDate   DateTime? // Date de signature du mandat
+
+  // Prochaine facturation
+  nextBillingDate DateTime? // Date du prochain prélèvement
+  lastBillingDate DateTime? // Date du dernier prélèvement
+  lastPaymentDate DateTime? // Date du dernier paiement réussi
+  monthlyAmount   Float? // Montant mensuel de l'abonnement
+
+  // Stripe - Facturation de l'abonnement LAIA (compte Stripe de LAIA Platform)
+  stripeCustomerId      String? @unique // ID du client Stripe pour facturer l'abonnement
+  stripeSubscriptionId  String? @unique // ID de l'abonnement Stripe actif
+
+  // Stripe Connect - Paiements des clientes de l'institut (compte Stripe de l'institut)
+  stripeConnectedAccountId String? @unique // ID du compte Stripe Connect de l'institut
+  stripeOnboardingComplete Boolean @default(false) // Onboarding Stripe Connect terminé
+  stripeChargesEnabled     Boolean @default(false) // Peut accepter des paiements
+  stripePayoutsEnabled     Boolean @default(false) // Peut recevoir des virements
+
+  // Contrat d'abonnement
+  contractNumber    String? // Numéro du contrat (ex: CONTRAT-LAIA-20250106-123456)
+  contractPdfPath   String? // Chemin vers le PDF du contrat (uploads/documents/contracts/...)
+  contractSignedAt  DateTime? // Date de signature électronique du contrat
+
+  // Planity - Intégration OAuth pour réservations
+  planityConnected      Boolean   @default(false) // Connecté à Planity
+  planityAccessToken    String? // Token d'accès (chiffré)
+  planityRefreshToken   String? // Token de rafraîchissement (chiffré)
+  planityTokenExpiry    DateTime? // Date d'expiration du token
+  planityBusinessId     String? // ID du salon sur Planity
+  planityBusinessName   String? // Nom du salon sur Planity
+
+  // Treatwell - Intégration OAuth pour réservations
+  treatwellConnected     Boolean   @default(false) // Connecté à Treatwell
+  treatwellAccessToken   String? // Token d'accès (chiffré)
+  treatwellRefreshToken  String? // Token de rafraîchissement (chiffré)
+  treatwellTokenExpiry   DateTime? // Date d'expiration du token
+  treatwellVenueId       String? // ID du salon sur Treatwell
+  treatwellVenueName     String? // Nom du salon sur Treatwell
+
+  // PayPal - Intégration OAuth pour paiements
+  paypalConnected        Boolean   @default(false) // Connecté à PayPal
+  paypalAccessToken      String? // Token d'accès (chiffré)
+  paypalRefreshToken     String? // Token de rafraîchissement (chiffré)
+  paypalTokenExpiry      DateTime? // Date d'expiration du token
+  paypalMerchantId       String? // ID du compte marchand PayPal
+  paypalEmail            String? // Email du compte PayPal
+
+  // SumUp - Intégration OAuth pour paiements
+  sumupConnected         Boolean   @default(false) // Connecté à SumUp
+  sumupAccessToken       String? // Token d'accès (chiffré)
+  sumupRefreshToken      String? // Token de rafraîchissement (chiffré)
+  sumupTokenExpiry       DateTime? // Date d'expiration du token
+  sumupMerchantCode      String? // Code marchand SumUp
+  sumupCurrency          String? // Devise par défaut
+
+  // Google Calendar - Intégration OAuth pour synchronisation
+  googleCalendarConnected Boolean   @default(false) // Connecté à Google Calendar
+  googleCalendarAccessToken String? // Token d'accès (chiffré)
+  googleCalendarRefreshToken String? // Token de rafraîchissement (chiffré)
+  googleCalendarTokenExpiry DateTime? // Date d'expiration du token
+  googleCalendarId       String? // ID du calendrier principal
+  googleCalendarEmail    String? // Email du compte Google
+
+  // Template et versioning (pour modèle centralisé LAIA)
+  templateVersion    String    @default("1.0.0") // Version du template utilisée
+  lastTemplateUpdate DateTime? // Dernière mise à jour du template
+
+  // Features activées selon le forfait (LAIA Connect)
+  featureBlog       Boolean @default(false) // Blog (DUO+)
+  featureProducts   Boolean @default(false) // Boutique produits (TEAM+)
+  featureCRM        Boolean @default(false) // CRM & Leads (TEAM+)
+  featureStock      Boolean @default(false) // Gestion de stock (PREMIUM)
+  featureFormations Boolean @default(false) // Vente de formations (PREMIUM)
+
+  // Options supplémentaires payantes (add-ons)
+  addons String? @default("{}") @db.Text // JSON stockant les addons actifs et historique
+
+  // Configuration
+  config OrganizationConfig?
+
+  // Relations
+  locations               Location[]
+  users                   User[]
+  services                Service[]
+  products                Product[]
+  blogPosts               BlogPost[]
+  paymentSettings         PaymentSettings?
+  loyaltyProgram          LoyaltyProgramSettings?
+  bookingSettings         BookingSettings?
+  superAdminNotifications SuperAdminNotification[] // Notifications super admin
+  auditLogs               AuditLog[] // Logs d'audit
+  invoices                Invoice[] // Factures
+  supportTickets          SupportTicket[] // Tickets de support
+  subscriptionPromoCodes  SubscriptionPromoCode[]  @relation("SubscriptionPromoUsage") // Codes promo utilisés
+  testimonials            Testimonial[]            @relation("OrganizationTestimonials") // Témoignages
+  giftCards               GiftCard[]               @relation("OrganizationGiftCards") // Cartes cadeaux
+  reviews                 Review[]                 @relation("OrganizationReviews") // Avis clients
+  googleReviews           GoogleReview[] // Avis Google synchronisés
+
+  // CRM Relations
+  convertedLeads Lead[] // Leads convertis en clients
+  segments       ClientSegment[] // Segments de clients
+  funnels        ConversionFunnel[] // Funnels de conversion
+
+  // API Tokens (réseaux sociaux, paiements, etc.)
+  apiTokens ApiToken[] // Tokens API de l'organisation
+
+  // Templates email
+  emailTemplates EmailTemplate[] // Templates email de l'organisation
+
+  // Template de site web
+  websiteTemplateId String?
+  websiteTemplate   WebsiteTemplate? @relation("OrganizationWebsiteTemplate", fields: [websiteTemplateId], references: [id])
+
+  // Onboarding
+  isOnboarded Boolean @default(false) // Configuration initiale terminée
+  temporaryPassword String? // Mot de passe temporaire initial (chiffré) - effacé une fois que l'admin change son mot de passe
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Rapports sauvegardés
+  savedReports SavedReport[]
+
+  // Workflows et churn management
+  workflowExecutions   WorkflowExecution[]
+  churnRiskProfile     ChurnRiskProfile?
+  cancellationFeedback CancellationFeedback[]
+
+  @@index([slug])
+  @@index([subdomain])
+  @@index([status])
+}
+
+// Configuration d'une organisation (remplace SiteConfig)
+model OrganizationConfig {
+  id             String @id @default(cuid())
+  organizationId String @unique
+
+  // Informations générales
+  siteName        String  @default("Mon Institut de Beauté")
+  siteTagline     String? @default("Institut de Beauté & Bien-être")
+  siteDescription String?
+
+  // Contact
+  email        String? @default("contact@mon-institut.fr")
+  contactEmail String? // Email de contact principal (alias de email)
+  phone        String? @default("+33 6 00 00 00 00")
+  address      String?
+  city         String?
+  postalCode   String?
+  country      String? @default("France")
+
+  // Réseaux sociaux
+  facebook  String?
+  instagram String?
+  tiktok    String?
+  whatsapp  String?
+  linkedin  String?
+  youtube   String?
+
+  // Apparence
+  primaryColor   String? @default("#d4b5a0")
+  secondaryColor String? @default("#2c3e50")
+  accentColor    String? @default("#20b2aa")
+  logoUrl        String?
+  faviconUrl     String?
+
+  // Typographie
+  fontFamily   String? @default("Inter")
+  headingFont  String? @default("Playfair Display")
+  baseFontSize String? @default("16px")
+  headingSize  String? @default("2.5rem")
+
+  // Horaires (JSON)
+  businessHours String? // {"lundi": "9h-18h", ...}
+
+  // Géolocalisation
+  latitude      String?
+  longitude     String?
+  googleMapsUrl String?
+
+  // Page d'accueil
+  heroTitle    String?
+  heroSubtitle String?
+  heroImage    String?
+  aboutText    String?
+
+  // Fondateur/Fondatrice
+  founderName   String?
+  founderTitle  String?
+  founderQuote  String? @db.Text
+  founderImage  String?
+  aboutIntro    String? @db.Text
+  aboutParcours String? @db.Text
+
+  // Témoignages et formations (JSON)
+  testimonials String? @db.Text
+  formations   String? @db.Text
+
+  // CGV et mentions légales
+  termsAndConditions String? @db.Text
+  privacyPolicy      String? @db.Text
+  legalNotice        String? @db.Text
+
+  // Emails
+  emailSignature   String?
+  welcomeEmailText String? @db.Text
+
+  // Informations légales
+  siret     String?
+  siren     String?
+  tvaNumber String?
+  apeCode   String?
+  rcs       String?
+  capital   String?
+  legalForm String?
+
+  // Assurance
+  insuranceCompany  String?
+  insuranceContract String?
+  insuranceAddress  String?
+
+  // Banque
+  bankName String?
+  bankIban String?
+  bankBic  String?
+
+  // Représentant légal
+  legalRepName  String?
+  legalRepTitle String?
+
+  // Tracking et Analytics
+  googleAnalyticsId      String?
+  facebookPixelId        String?
+  metaVerificationCode   String?
+  googleVerificationCode String?
+
+  // Chat en direct (Crisp)
+  crispWebsiteId String? // Website ID de Crisp
+  crispEnabled   Boolean @default(false)
+
+  // SEO Global
+  defaultMetaTitle       String?
+  defaultMetaDescription String?
+  defaultMetaKeywords    String?
+
+  // Design avancé (niveau 2 - personnalisation automatisée)
+  // Template de page d'accueil choisi (classic, modern, elegant, minimal, bold)
+  homeTemplate String? @default("classic")
+
+  // Configuration des sections homepage (JSON)
+  // Ex: [{"id": "hero", "active": true, "order": 1}, {"id": "services", "active": true, "order": 2}, ...]
+  homeSections String? @default("[]") @db.Text
+
+  // Configuration du footer (JSON)
+  // Ex: {"columns": 3, "showSocial": true, "showNewsletter": true, "links": [...]}
+  footerConfig String? @default("{}") @db.Text
+
+  // Couleurs étendues (JSON)
+  // Ex: {"buttonHover": "#...", "background": "#...", "textMuted": "#..."}
+  extendedColors String? @default("{}") @db.Text
+
+  // Template tracking (LAIA Connect)
+  // JSON object listing which fields are customized vs inherited
+  // Ex: {"primaryColor": "customized", "heroTitle": "template", ...}
+  customizedFields String? @default("{}") @db.Text
+
+  // Google My Business - Configuration par organisation
+  googlePlaceId         String?   // ID unique de l'établissement Google (ex: ChIJxxx...)
+  googleBusinessUrl     String?   // URL Google Maps/Business profile
+  googleApiKey          String?   // Clé API (chiffrée) - optionnel
+  lastGoogleSync        DateTime? // Dernière synchronisation Google Reviews
+  autoSyncGoogleReviews Boolean   @default(false) // Activer sync automatique quotidienne
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Point de vente / Emplacement
+model Location {
+  id             String @id @default(cuid())
+  organizationId String
+
+  name String // "Beauté Éternelle - Champs-Élysées"
+  slug String // "champs-elysees"
+
+  // Adresse
+  address    String
+  city       String
+  postalCode String
+  country    String  @default("France")
+  latitude   String?
+  longitude  String?
+
+  // Contact
+  phone String?
+  email String?
+
+  // Horaires spécifiques (si différents de l'organisation)
+  businessHours String? // JSON
+
+  // Configuration
+  isMainLocation Boolean @default(false)
+  active         Boolean @default(true)
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  staff        UserLocation[]
+  workingHours WorkingHours[]
+  blockedSlots BlockedSlot[]
+  reservations Reservation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([active])
+}
+
+// Paramètres de paiement d'une organisation
+model PaymentSettings {
+  id             String @id @default(cuid())
+  organizationId String @unique
+
+  // Fournisseur principal
+  primaryProvider PaymentProvider @default(STRIPE)
+
+  // Stripe Connect
+  stripeAccountId           String? // ID du compte Stripe Connect
+  stripePublicKey           String?
+  stripeSecretKey           String? // Chiffré
+  stripeConnected           Boolean @default(false)
+  stripeOnboardingCompleted Boolean @default(false)
+
+  // Autres fournisseurs
+  sumupApiKey     String? // Chiffré
+  paypalClientId  String?
+  paypalSecretKey String? // Chiffré
+
+  // Logiciel de caisse (POS)
+  posProvider    PaymentProvider?
+  posApiUrl      String?
+  posApiKey      String? // Chiffré
+  posWebhookUrl  String?
+  posSyncEnabled Boolean          @default(false)
+  posLastSync    DateTime?
+
+  // Frais de plateforme (pour future monétisation)
+  platformFeePercent Float @default(0)
+  platformFeeFixed   Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Programme de fidélité d'une organisation
+model LoyaltyProgramSettings {
+  id             String @id @default(cuid())
+  organizationId String @unique
+
+  // Activation
+  isEnabled Boolean @default(false)
+
+  // Configuration des points
+  pointsPerEuro        Float @default(1) // 1 point par euro dépensé
+  pointsValue          Float @default(0.01) // 1 point = 0.01€
+  minPointsToRedeem    Int   @default(100) // Minimum 100 points pour utiliser
+  pointsExpirationDays Int? // null = pas d'expiration
+
+  // Paliers VIP
+  bronzeThreshold   Float @default(0) // Dès l'inscription
+  silverThreshold   Float @default(500) // 500€ dépensés
+  goldThreshold     Float @default(1500) // 1500€ dépensés
+  platinumThreshold Float @default(5000) // 5000€ dépensés
+
+  // Avantages par palier (JSON)
+  bronzePerks   String? // [{"type": "discount", "value": 5}]
+  silverPerks   String?
+  goldPerks     String?
+  platinumPerks String?
+
+  // Programme de parrainage
+  referralEnabled      Boolean @default(true)
+  referralRewardAmount Float   @default(20) // 20€ de réduction
+  referralMinimumSpend Float   @default(0) // Dépense minimum du filleul
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Paramètres de réservation d'une organisation
+model BookingSettings {
+  id             String @id @default(cuid())
+  organizationId String @unique
+
+  // Contraintes de réservation
+  minAdvanceBookingHours    Int @default(2) // Minimum 2h à l'avance
+  maxAdvanceBookingDays     Int @default(30) // Maximum 30 jours à l'avance
+  cancellationDeadlineHours Int @default(24) // Annulation gratuite 24h avant
+
+  // Options
+  allowStaffSelection      Boolean @default(true) // Client peut choisir son praticien
+  requireLocationSelection Boolean @default(false) // Obligatoire si multi-emplacements
+  allowOnlinePayment       Boolean @default(true)
+  requireDepositPercent    Float? // % d'acompte requis
+
+  // Notifications automatiques
+  sendConfirmationEmail Boolean @default(true)
+  sendReminder24h       Boolean @default(true)
+  sendReminder2h        Boolean @default(false)
+  sendReviewRequest     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Utilisateur (client ou staff)
+model User {
+  id             String   @id @default(cuid())
+  organizationId String? // null pour SUPER_ADMIN
+  email          String
+  password       String
+  name           String
+  phone          String?
+  role           UserRole @default(CLIENT)
+
+  // Permissions personnalisées (JSON)
+  customPermissions String? // {"canViewRevenue": false, "canDeleteReservations": true}
+
+  // Visibilité et disponibilité (pour le staff)
+  isVisible   Boolean @default(true) // Visible dans la liste des praticiens
+  isAvailable Boolean @default(true) // Disponible pour les réservations
+
+  // Client data
+  loyaltyPoints Int       @default(0)
+  totalSpent    Float     @default(0)
+  adminNotes    String?
+  allergies     String?
+  birthDate     DateTime?
+  lastVisit     DateTime?
+  medicalNotes  String?
+  preferences   String?
+  skinType      String?
+
+  // Auth
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  lastLoginAt      DateTime? // Dernière connexion
+
+  // Relations
+  organization      Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locations         UserLocation[] // Emplacements assignés (pour le staff)
+  evolutions        ClientEvolution[]
+  loyaltyHistory    LoyaltyHistory[]
+  loyaltyProfile    LoyaltyProfile?
+  reservations      Reservation[]     @relation("UserReservations")
+  staffReservations Reservation[]     @relation("StaffReservations")
+  reviews           Review[]
+  notifications     Notification[]
+  referralsMade     Referral[]        @relation("ReferralReferrer")
+  referredBy        Referral?         @relation("ReferralReferred")
+  discounts         Discount[]
+
+  // CRM Relations
+  assignedLeads    Lead[]
+  leadInteractions LeadInteraction[]
+  contactFormLeads ContactFormLead[]
+  demoSlots        DemoSlot[]        @relation("DemoSlots")
+  funnelEntries    FunnelEntry[] // Progression dans les funnels
+  orders           Order[]
+  payments         Payment[]
+  stockMovements   StockMovement[]
+  giftCards        GiftCard[]        @relation("GiftCardPurchaser")
+  auditLogs        AuditLog[] // Logs d'actions (pour SUPER_ADMIN)
+  ticketsCreated   SupportTicket[]   @relation("TicketCreator")
+  ticketsAssigned  SupportTicket[]   @relation("TicketAssignee")
+  ticketMessages   TicketMessage[]
+  platformNews     PlatformNews[] // Nouveautés LAIA Connect créées
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, email])
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+  @@index([createdAt])
+}
+
+// Association User <-> Location (Many-to-Many)
+model UserLocation {
+  id         String @id @default(cuid())
+  userId     String
+  locationId String
+
+  // Rôle spécifique à cet emplacement (peut différer du rôle global)
+  roleAtLocation UserRole @default(STAFF)
+
+  // Permissions spécifiques
+  canManageSchedule Boolean @default(false)
+  canViewRevenue    Boolean @default(false)
+  canManageStock    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+}
+
+model Reservation {
+  id                 String          @id @default(cuid())
+  organizationId     String
+  locationId         String? // null si la réservation n'est pas liée à un emplacement spécifique
+  userId             String
+  staffId            String? // Praticien assigné
+  serviceId          String?
+  services           String          @default("[]") // JSON array of service IDs
+  packages           String          @default("{}") // JSON object with service packages (single/forfait/abonnement)
+  isSubscription     Boolean         @default(false) // True si c'est un abonnement mensuel
+  date               DateTime
+  time               String
+  totalPrice         Float
+  status             String          @default("pending")
+  source             String          @default("site")
+  notes              String?
+  paymentStatus      String          @default("unpaid")
+  paymentDate        DateTime?
+  paymentAmount      Float?
+  paymentMethod      String?
+  stripePaymentId    String? // ID du paiement Stripe (payment_intent_xxx)
+  stripeSessionId    String? // ID de la session Stripe Checkout
+  invoiceNumber      String?
+  paymentNotes       String?
+  reviewEmailSent    Boolean         @default(false)
+  reviewWhatsAppSent Boolean         @default(false)
+  reminderSent       Boolean         @default(false)
+  reminder24hSent    Boolean         @default(false)
+  reminder2hSent     Boolean         @default(false)
+  rescheduledFrom    String? // ID de la réservation d'origine si reprogrammée
+  rescheduledTo      String? // ID de la nouvelle réservation si reprogrammée
+  rescheduledAt      DateTime? // Date de la reprogrammation
+  giftCardId         String? // ID de la carte cadeau utilisée pour cette réservation
+  giftCardUsedAmount Float? // Montant de la carte cadeau utilisé
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  location           Location?       @relation(fields: [locationId], references: [id])
+  user               User            @relation("UserReservations", fields: [userId], references: [id])
+  staff              User?           @relation("StaffReservations", fields: [staffId], references: [id])
+  service            Service?        @relation(fields: [serviceId], references: [id])
+  giftCard           GiftCard?       @relation("GiftCardReservations", fields: [giftCardId], references: [id])
+  review             Review?
+  stockMovements     StockMovement[]
+
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([userId])
+  @@index([staffId])
+  @@index([date])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Service {
+  id                String  @id @default(cuid())
+  organizationId    String
+  slug              String  @default("")
+  name              String
+  shortDescription  String  @default("")
+  description       String
+  metaTitle         String?
+  metaDescription   String?
+  keywords          String?
+  price             Float
+  launchPrice       Float?
+  promoPrice        Float?
+  forfaitPrice      Float?
+  forfaitPromo      Float?
+  duration          Int
+  benefits          String? // JSON
+  process           String? // JSON - Deprecated, use protocol instead
+  protocol          String? // JSON - Array of {title, duration, desc}
+  recommendations   String?
+  contraindications String?
+  mainImage         String?
+  imageSettings     String? // JSON pour objectFit, position, zoom
+  imagePositionX    Int?    @default(50) // Position horizontale en %
+  imagePositionY    Int?    @default(50) // Position verticale en %
+  imageObjectFit    String? @default("cover") // "cover" ou "contain"
+  gallery           String? // JSON
+  videoUrl          String?
+  canBeOption       Boolean @default(false)
+  category          String? // DEPRECATED: Utiliser categoryId et subcategoryId
+  categoryId        String? // Nouvelle relation vers ServiceCategory
+  subcategoryId     String? // Relation vers ServiceSubcategory
+  order             Int     @default(0)
+  active            Boolean @default(true)
+  featured          Boolean @default(false)
+
+  // Template tracking (LAIA Connect)
+  templateSourceId String? // ID du service template d'origine
+  isCustomized     Boolean @default(false) // true si modifié par le client
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  organization       Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations       Reservation[]
+  stockLinks         ServiceStock[] // Relation avec le stock
+  serviceCategory    ServiceCategory?    @relation("ServiceToCategory", fields: [categoryId], references: [id])
+  serviceSubcategory ServiceSubcategory? @relation("ServiceToSubcategory", fields: [subcategoryId], references: [id])
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([active, featured])
+  @@index([active, order])
+  @@index([categoryId, active])
+}
+
+model LoyaltyProfile {
+  id                      String           @id @default(cuid())
+  userId                  String           @unique
+  points                  Int              @default(0)
+  tier                    String           @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
+  individualServicesCount Int              @default(0)
+  packagesCount           Int              @default(0)
+  totalSpent              Float            @default(0)
+  availableDiscounts      String           @default("[]") // JSON
+  referralCode            String?          @unique // Code parrainage unique du client
+  referredBy              String? // Code de parrainage utilisé lors de l'inscription
+  totalReferrals          Int              @default(0) // Nombre de parrainages effectués
+  lastVisit               DateTime?
+  notes                   String?          @db.Text // Notes administratives sur le client
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  user                    User             @relation(fields: [userId], references: [id])
+  history                 LoyaltyHistory[]
+}
+
+model LoyaltyHistory {
+  id            String          @id @default(cuid())
+  userId        String
+  profileId     String?
+  action        String
+  points        Int             @default(0)
+  description   String
+  reservationId String?
+  orderId       String? // Pour achats produits/formations
+  createdAt     DateTime        @default(now())
+  user          User            @relation(fields: [userId], references: [id])
+  profile       LoyaltyProfile? @relation(fields: [profileId], references: [id])
+}
+
+model Referral {
+  id               String    @id @default(cuid())
+  referrerUserId   String // ID de l'utilisateur parrain
+  referralCode     String    @unique // Code unique de parrainage
+  referredEmail    String? // Email du filleul avant inscription
+  referredName     String? // Nom du filleul
+  referredUserId   String?   @unique // ID du filleul une fois inscrit
+  status           String    @default("pending") // pending, used, rewarded
+  rewardAmount     Float     @default(20) // Montant de la récompense en euros
+  rewardUsedAt     DateTime? // Date d'utilisation de la récompense
+  firstServiceDate DateTime? // Date du premier soin du filleul
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  referrer User  @relation("ReferralReferrer", fields: [referrerUserId], references: [id])
+  referred User? @relation("ReferralReferred", fields: [referredUserId], references: [id])
+}
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  organizationId  String
+  slug            String
+  title           String
+  excerpt         String
+  content         String
+  category        String
+  author          String   @default("LAIA SKIN Institut")
+  readTime        String   @default("5 min")
+  featured        Boolean  @default(false)
+  published       Boolean  @default(true)
+  mainImage       String?
+  gallery         String? // JSON
+  tags            String? // JSON
+  metaTitle       String?
+  metaDescription String?
+  publishedAt     DateTime @default(now())
+
+  // Template tracking (LAIA Connect)
+  templateSourceId String? // ID de l'article template d'origine
+  isCustomized     Boolean @default(false) // true si modifié par le client
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([published])
+}
+
+model ClientEvolution {
+  id             String   @id @default(cuid())
+  userId         String
+  sessionNumber  Int
+  serviceName    String
+  sessionDate    DateTime
+  beforePhoto    String?
+  afterPhoto     String?
+  videoUrl       String?
+  improvements   String? // JSON
+  clientFeedback String?
+  adminNotes     String?
+  skinAnalysis   String? // JSON
+  treatedAreas   String? // JSON
+  productsUsed   String? // JSON
+  hydrationLevel Int?
+  elasticity     Int?
+  pigmentation   Int?
+  wrinkleDepth   Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
+  userId         String
+  reservationId  String?      @unique
+  orderId        String?      @unique // Pour avis sur produits/formations
+  serviceName    String?
+  itemType       String? // "service", "product", "formation"
+  itemId         String? // ID du service/produit/formation
+  itemName       String? // Nom du service/produit/formation
+  rating         Int
+  comment        String
+  satisfaction   Int          @default(5)
+  photos         String       @default("[]") // JSON array of photo URLs
+  response       String?
+  approved       Boolean      @default(false)
+  featured       Boolean      @default(false)
+  source         String       @default("site") // site, email, whatsapp, google
+  googleReview   Boolean      @default(false)
+  googleUrl      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization? @relation("OrganizationReviews", fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
+  order          Order?       @relation(fields: [orderId], references: [id])
+
+  @@index([organizationId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // reminder, promotion, loyalty, birthday, etc.
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  actionUrl String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BlockedSlot {
+  id         String    @id @default(cuid())
+  locationId String
+  date       DateTime
+  time       String? // Si null, toute la journée est bloquée
+  allDay     Boolean   @default(false)
+  reason     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+}
+
+model WorkingHours {
+  id         String    @id @default(cuid())
+  locationId String
+  dayOfWeek  Int // 0 = Dimanche, 1 = Lundi, etc.
+  startTime  String // Format: "14:00"
+  endTime    String // Format: "20:00"
+  isOpen     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([locationId])
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  services    String // JSON array of service IDs
+  price       Float
+  validDays   Int      @default(90)
+  maxUses     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Lead - Modèle basique de capture formulaire (conservé pour compatibilité)
+// Pour le CRM complet, voir le modèle Lead CRM plus bas
+model ContactFormLead {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  subject   String?
+  message   String?
+  source    String   @default("contact_form") // contact_form, instagram, facebook, phone
+  status    String   @default("new") // new, contacted, qualified, converted, lost
+  notes     String?
+  userId    String? // Lien vers User si converti en client
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model SiteConfig {
+  id             String  @id @default(cuid())
+  organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
+
+  // Informations générales
+  siteName        String  @default("Mon Institut de Beauté")
+  siteTagline     String? @default("Institut de Beauté & Bien-être")
+  siteDescription String?
+
+  // Contact
+  email      String? @default("contact@mon-institut.fr")
+  phone      String? @default("+33 6 00 00 00 00")
+  address    String?
+  city       String?
+  postalCode String?
+  country    String? @default("France")
+
+  // Réseaux sociaux
+  facebook  String?
+  instagram String?
+  tiktok    String?
+  whatsapp  String?
+  linkedin  String?
+  youtube   String?
+
+  // Apparence
+  primaryColor   String? @default("#d4b5a0")
+  secondaryColor String? @default("#2c3e50")
+  accentColor    String? @default("#20b2aa")
+  logoUrl        String?
+  faviconUrl     String?
+
+  // Typographie
+  fontFamily   String? @default("Inter") // Police principale
+  headingFont  String? @default("Playfair Display") // Police des titres
+  baseFontSize String? @default("16px") // Taille de base
+  headingSize  String? @default("2.5rem") // Taille des titres
+
+  // Horaires (JSON)
+  businessHours String? // {"lundi": "9h-18h", "mardi": "9h-18h", ...}
+
+  // Géolocalisation pour SEO Schema.org
+  latitude      String?
+  longitude     String?
+  googleMapsUrl String?
+
+  // Page d'accueil
+  heroTitle    String?
+  heroSubtitle String?
+  heroImage    String?
+  aboutText    String?
+
+  // Fondateur/Fondatrice
+  founderName   String? // Ex: "Laïa Gherbi"
+  founderTitle  String? // Ex: "Fondatrice & Experte en soins esthétiques"
+  founderQuote  String? @db.Text // Citation du fondateur
+  founderImage  String? // Photo du fondateur
+  aboutIntro    String? @db.Text // Texte d'introduction page À propos
+  aboutParcours String? @db.Text // Parcours professionnel
+
+  // Témoignages (JSON array)
+  testimonials String? @db.Text // [{"name": "...", "text": "...", "rating": 5}]
+
+  // Formations (JSON array pour page À propos)
+  formations String? @db.Text // [{"name": "CAP Esthétique", "year": "2010"}]
+
+  // CGV et mentions légales
+  termsAndConditions String? @db.Text
+  privacyPolicy      String? @db.Text
+  legalNotice        String? @db.Text
+
+  // Emails
+  emailSignature   String?
+  welcomeEmailText String? @db.Text
+
+  // Informations légales (ajoutées pour white-labeling)
+  legalName String? // Raison sociale
+  siret     String?
+  siren     String?
+  tvaNumber String? // N° TVA intracommunautaire
+  apeCode   String? // Code APE/NAF
+  rcs       String? // RCS
+  capital   String? // Capital social
+  legalForm String? // SARL, SAS, EURL, etc.
+
+  // Assurance
+  insuranceCompany  String?
+  insuranceContract String?
+  insuranceAddress  String? // Adresse de l'assureur
+
+  // Banque (pour mentions légales complètes)
+  bankName String?
+  bankIban String?
+  bankBic  String?
+
+  // Représentant légal
+  legalRepName  String?
+  legalRepTitle String? // Gérant(e), Président(e), etc.
+
+  // URLs et domaines
+  customDomain String? @unique
+  baseUrl      String? // URL de base du site (ex: https://mon-institut.fr)
+
+  // Tracking et Analytics
+  googleAnalyticsId      String?
+  facebookPixelId        String?
+  metaVerificationCode   String?
+  googleVerificationCode String?
+
+  // SEO Global
+  defaultMetaTitle       String?
+  defaultMetaDescription String?
+  defaultMetaKeywords    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([createdAt]) // Index pour optimiser findFirst()
+}
+
+model EmailHistory {
+  id           String         @id @default(cuid())
+  from         String         @default("contact@laiaskininstitut.fr")
+  to           String // Email ou liste d'emails séparés par virgule
+  subject      String
+  content      String         @db.Text // Contenu du message
+  template     String? // Template utilisé
+  status       String         @default("sent") // sent, failed, pending, delivered, received, opened, clicked, bounced
+  direction    String         @default("outgoing") // outgoing, incoming
+  campaignId   String?
+  userId       String? // Client associé
+  errorMessage String?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  openCount    Int            @default(0) // Nombre d'ouvertures
+  clickCount   Int            @default(0) // Nombre de clics
+  resendId     String? // ID Resend pour le tracking
+  messageId    String? // Message-ID de l'email
+  archived     Boolean        @default(false) // Pour archiver les conversations
+  createdAt    DateTime       @default(now())
+  campaign     EmailCampaign? @relation(fields: [campaignId], references: [id])
+}
+
+model EmailCampaign {
+  id             String         @id @default(cuid())
+  name           String
+  subject        String
+  content        String
+  template       String?
+  recipients     String // JSON array des destinataires
+  recipientCount Int            @default(0)
+  status         String         @default("draft") // draft, scheduled, sent, cancelled
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  openRate       Float          @default(0)
+  clickRate      Float          @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  emails         EmailHistory[]
+  segments       CampaignSegment[]
+}
+
+model Discount {
+  id                 String    @id @default(cuid())
+  userId             String
+  type               String // service_5, package_9, birthday, referral, postponed
+  amount             Float
+  status             String    @default("available") // available, used, expired, postponed
+  originalReason     String // Raison initiale (ex: "5ème soin", "9ème séance", "Anniversaire")
+  usedAt             DateTime?
+  usedForReservation String? // ID de la réservation où la réduction a été utilisée
+  expiresAt          DateTime? // Date d'expiration
+  postponedFrom      String? // ID de la réduction d'origine si reportée
+  postponedTo        DateTime? // Date jusqu'à laquelle c'est reporté
+  postponedReason    String? // Raison du report
+  notes              String? // Notes additionnelles
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User      @relation(fields: [userId], references: [id])
+}
+
+model PromoCode {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  discount   Float // Montant de la réduction
+  type       String // birthday, referral, special
+  validFrom  DateTime  @default(now())
+  validUntil DateTime?
+  maxUses    Int? // Nombre max d'utilisations
+  usedCount  Int       @default(0)
+  userId     String? // Si le code est spécifique à un utilisateur
+  conditions String? // Conditions d'utilisation (JSON)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model EmailAutomation {
+  id         String    @id @default(cuid())
+  name       String
+  trigger    String // birthday, appointment_reminder, review_request, etc.
+  template   String // EmailJS template ID
+  enabled    Boolean   @default(true)
+  timing     String? // JSON avec les infos de timing
+  conditions String? // JSON avec les conditions
+  lastRun    DateTime?
+  nextRun    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model GoogleReview {
+  id             String       @id @default(cuid())
+  organizationId String       // Lien vers l'organisation
+  authorName     String
+  authorPhoto    String?
+  rating         Int
+  comment        String
+  reviewId       String       @unique // ID Google pour éviter les doublons
+  publishedAt    DateTime
+  replyText      String?
+  replyAt        DateTime?
+  helpful        Int          @default(0)
+  language       String       @default("fr")
+  syncedAt       DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, publishedAt])
+}
+
+model BusinessStats {
+  id                  String    @id @default(cuid())
+  googleRating        Float     @default(0)
+  googleReviewCount   Int       @default(0)
+  internalRating      Float     @default(0)
+  internalReviewCount Int       @default(0)
+  lastGoogleSync      DateTime?
+  googlePlaceId       String?
+  googleBusinessUrl   String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  isActive       Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model WhatsAppHistory {
+  id           String    @id @default(cuid())
+  from         String // Numéro de téléphone de l'expéditeur
+  to           String // Numéro de téléphone du destinataire
+  message      String // Contenu du message
+  status       String    @default("sent") // sent, delivered, read, failed
+  direction    String    @default("outgoing") // outgoing, incoming
+  userId       String? // Client associé
+  mediaUrl     String? // URL des médias attachés
+  errorMessage String?
+  deliveredAt  DateTime?
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model WhatsAppTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String // reminder, promotion, birthday, followup, custom
+  content     String // Template avec variables {name}, {time}, etc.
+  variables   String // JSON array des variables utilisées
+  usage       Int      @default(0)
+  successRate Float    @default(100)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WhatsAppAutomation {
+  id           String    @id @default(cuid())
+  name         String
+  trigger      String // appointment_24h, appointment_48h, birthday, post_service, review_request
+  templateId   String // Référence au template
+  enabled      Boolean   @default(true)
+  timing       String? // JSON avec les infos de timing (heures avant/après, heure d'envoi, etc.)
+  conditions   String? // JSON avec les conditions d'envoi
+  lastRun      DateTime?
+  nextRun      DateTime?
+  messagesSent Int       @default(0)
+  successCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model WhatsAppCampaign {
+  id             String    @id @default(cuid())
+  name           String
+  templateId     String // Référence au template
+  recipients     String // JSON array des numéros ou tags
+  recipientCount Int       @default(0)
+  status         String    @default("draft") // draft, scheduled, active, paused, completed, cancelled
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  sentCount      Int       @default(0)
+  deliveredCount Int       @default(0)
+  readCount      Int       @default(0)
+  failedCount    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model CommunicationHistory {
+  id        String   @id @default(cuid())
+  userId    String // Client associé
+  type      String // email, whatsapp, sms, call
+  direction String // incoming, outgoing
+  subject   String? // Pour les emails
+  content   String // Contenu du message
+  status    String   @default("sent") // sent, delivered, read, failed
+  metadata  String? // JSON avec métadonnées supplémentaires
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  organizationId   String
+  slug             String           @default("")
+  name             String
+  description      String
+  shortDescription String?
+  metaTitle        String?
+  metaDescription  String?
+  keywords         String?
+  price            Float
+  salePrice        Float?
+  category         String?
+  categoryId       String?
+  productCategory  ProductCategory? @relation(fields: [categoryId], references: [id])
+  brand            String?
+  mainImage        String?
+  imageSettings    String? // JSON pour objectFit, position, zoom
+  gallery          String? // JSON array d'URLs d'images
+  ingredients      String?
+  usage            String?
+  benefits         String?
+  active           Boolean          @default(true)
+  featured         Boolean          @default(false)
+  order            Int              @default(0)
+
+  // Template tracking (LAIA Connect)
+  templateSourceId String? // ID du produit template d'origine
+  isCustomized     Boolean @default(false) // true si modifié par le client
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([active])
+}
+
+model ProductCategory {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  active    Boolean   @default(true)
+  order     Int       @default(0)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Stock {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  category        String? // Consommables, Matériel, Produits de soin, etc.
+  quantity        Int       @default(0)
+  initialQuantity Int? // Quantité initiale pour afficher "X sur Y"
+  minQuantity     Int       @default(5) // Seuil d'alerte
+  unit            String? // ml, g, pièce, etc.
+  cost            Float? // Prix d'achat
+  supplier        String?
+  purchaseUrl     String? // URL pour racheter le produit
+  reference       String?
+  barcode         String?
+  expiryDate      DateTime?
+  lastRestocked   DateTime?
+  location        String? // Emplacement dans le stock
+  notes           String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  serviceLinks ServiceStock[] // Relation avec les services
+  movements    StockMovement[] // Historique des mouvements
+
+  @@index([category])
+}
+
+// Table de liaison entre Services et Stock (Many-to-Many)
+model ServiceStock {
+  id             String   @id @default(cuid())
+  serviceId      String
+  stockId        String
+  quantityPerUse Float    @default(1) // Quantité consommée par prestation (ex: 5ml, 10g, etc.)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  stock   Stock   @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, stockId])
+  @@index([serviceId])
+  @@index([stockId])
+}
+
+// Historique des mouvements de stock
+model StockMovement {
+  id            String   @id @default(cuid())
+  stockId       String
+  type          String // "IN" (ajout), "OUT" (utilisation), "ADJUSTMENT" (ajustement manuel)
+  quantity      Float // Quantité (positive ou négative)
+  reason        String? // Raison du mouvement
+  reservationId String? // Si lié à une réservation
+  userId        String? // Qui a effectué l'action
+  createdAt     DateTime @default(now())
+
+  stock       Stock        @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([stockId])
+  @@index([reservationId])
+  @@index([createdAt])
+}
+
+model Formation {
+  id               String  @id @default(cuid())
+  slug             String  @unique @default("")
+  name             String
+  shortDescription String  @default("")
+  description      String
+  metaTitle        String?
+  metaDescription  String?
+  keywords         String?
+  price            Float
+  promoPrice       Float?
+  duration         Int // Durée en heures
+  level            String? // Débutant, Intermédiaire, Avancé
+  program          String? // JSON - Programme détaillé de la formation
+  objectives       String? // JSON - Objectifs pédagogiques
+  prerequisites    String? // Prérequis
+  certification    String? // Type de certification délivrée
+  maxParticipants  Int? // Nombre max de participants
+  mainImage        String?
+  imageSettings    String? // JSON pour objectFit, position, zoom
+  gallery          String? // JSON
+  videoUrl         String?
+  category         String?
+  instructor       String? // Nom du formateur
+  active           Boolean @default(true)
+  featured         Boolean @default(false)
+  order            Int     @default(0)
+
+  // Template tracking (LAIA Connect)
+  templateSourceId String? // ID de la formation template d'origine
+  isCustomized     Boolean @default(false) // true si modifié par le client
+  organizationId   String? // Organisation propriétaire (multi-tenant)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model Order {
+  id              String  @id @default(cuid())
+  orderNumber     String  @unique // Numéro de commande unique (ex: ORD-2024-00001)
+  organizationId  String? // Organisation (multi-tenant)
+  userId          String? // Peut être null pour commandes invités
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  customerAddress String? // JSON avec adresse complète
+
+  orderType String // "product" ou "formation"
+  items     String // JSON array des articles commandés [{id, name, quantity, price}]
+
+  subtotal     Float // Sous-total
+  shippingCost Float @default(0)
+  discount     Float @default(0)
+  totalAmount  Float // Montant total
+
+  paymentStatus String    @default("pending") // pending, paid, failed, refunded
+  paymentMethod String? // card, transfer, cash, stripe
+  paymentDate   DateTime?
+  transactionId String? // ID de transaction Stripe/autre
+
+  status         String  @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled
+  shippingStatus String? // pending, shipped, delivered
+  trackingNumber String?
+
+  scheduledDate DateTime? // Date prévue de retrait/livraison/formation
+  scheduledTime String? // Heure prévue (format HH:mm)
+
+  notes      String? // Notes client
+  adminNotes String? // Notes internes admin
+
+  invoiceUrl String? // URL de la facture générée
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User?    @relation(fields: [userId], references: [id])
+  reviews Review[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([orderNumber])
+  @@index([paymentStatus])
+  @@index([status])
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model GiftCard {
+  id             String    @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
+  code           String    @unique // Code unique de la carte cadeau (ex: GIFT-XXXX-XXXX)
+  amount         Float // Montant de la carte cadeau
+  initialAmount  Float // Montant initial (pour historique)
+  balance        Float // Solde restant
+  purchasedBy    String? // ID de l'utilisateur qui a acheté
+  purchasedFor   String? // Nom du bénéficiaire si cadeau
+  recipientEmail String? // Email du bénéficiaire
+  recipientPhone String? // Téléphone du bénéficiaire
+  message        String? // Message personnalisé
+  status         String    @default("active") // active, used, expired, cancelled
+  purchaseDate   DateTime  @default(now())
+  expiryDate     DateTime? // Date d'expiration (optionnelle)
+  usedDate       DateTime? // Date d'utilisation complète
+  createdBy      String? // ID admin qui a créé (si création manuelle)
+  notes          String? // Notes admin
+  paymentMethod  String? // Mode de paiement (CB, espèces, chèque, etc.)
+  paymentStatus  String    @default("paid") // paid, pending
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization? @relation("OrganizationGiftCards", fields: [organizationId], references: [id])
+  purchaser    User?         @relation("GiftCardPurchaser", fields: [purchasedBy], references: [id])
+  reservations Reservation[] @relation("GiftCardReservations") // Réservations faites avec cette carte
+
+  @@index([organizationId])
+  @@index([code])
+  @@index([purchasedBy])
+  @@index([status])
+}
+
+model GiftCardSettings {
+  id                       String   @id @default(cuid())
+  emailSubject             String   @default("Vous avez reçu une carte cadeau Laia Skin Institut !")
+  emailTitle               String   @default("🎁 Vous avez reçu une Carte Cadeau !")
+  emailIntro               String   @default("Quelle belle attention ! Vous venez de recevoir une carte cadeau pour découvrir ou redécouvrir les soins d'exception de Laia Skin Institut.") @db.Text
+  emailInstructions        String   @default("Utilisez le code ci-dessous lors de votre réservation en ligne ou contactez-nous pour prendre rendez-vous.") @db.Text
+  emailFooter              String   @default("Cette carte cadeau est valable 1 an à partir de la date d'émission.") @db.Text
+  physicalCardTitle        String   @default("CARTE CADEAU")
+  physicalCardSubtitle     String   @default("Laia Skin Institut")
+  physicalCardValidity     String   @default("Valable 1 an")
+  physicalCardInstructions String   @default("Présentez cette carte lors de votre visite ou utilisez le code en ligne.") @db.Text
+  cardColorFrom            String   @default("#ec4899") // Couleur gradient début (rose par défaut)
+  cardColorTo              String   @default("#be185d") // Couleur gradient fin (rose foncé par défaut)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@map("gift_card_settings")
+}
+
+model EmailTemplate {
+  id             String        @id @default(cuid())
+  slug           String // Identifiant unique (ex: "onboarding-welcome", "payment-confirmation")
+  name           String // Nom du template (ex: "Email de bienvenue onboarding")
+  description    String?       @db.Text // Description du template pour documentation
+  subject        String // Sujet de l'email
+  content        String        @db.Text // Contenu HTML de l'email
+  textContent    String?       @db.Text // Version texte brut (fallback)
+  availableVariables Json? // Liste des variables disponibles (ex: {firstName, organizationName, ...})
+  category       String?       @default("general") // general, onboarding, promo, rappel, transactionnel
+  isActive       Boolean       @default(true)
+  isSystem       Boolean       @default(false) // Templates système non modifiables/supprimables
+  fromName       String? // Nom expéditeur (override si besoin)
+  fromEmail      String? // Email expéditeur (override si besoin)
+  language       String        @default("fr") // Langue du template (fr, en, es, ...)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Multi-tenant: isolation par organisation (null = template global LAIA Connect)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, organizationId]) // Un slug unique par organisation
+  @@index([category])
+  @@index([isActive])
+  @@index([isSystem])
+  @@map("email_templates")
+}
+
+model SocialMediaPost {
+  id             String    @id @default(cuid())
+  userId         String? // Propriétaire du post
+  socialConfigId String? // Compte social media utilisé
+  title          String // Titre/sujet de la publication
+  content        String    @db.Text // Texte de la publication
+  platform       String? // Instagram, Facebook, TikTok, etc.
+  scheduledDate  DateTime // Date de publication prévue
+  status         String    @default("draft") // draft, scheduled, published, cancelled
+  notes          String?   @db.Text // Notes et idées supplémentaires
+  links          String?   @db.Text // JSON array de liens utiles
+  hashtags       String? // Hashtags à utiliser
+  mediaUrls      String?   @db.Text // JSON array d'URLs des médias (images/vidéos)
+  publishedAt    DateTime? // Date de publication effective
+  apiPostId      String? // ID de la publication sur la plateforme
+  errorMessage   String?   @db.Text // Message d'erreur en cas d'échec
+  instagramType  String? // post, story, reel
+  facebookType   String? // post, story, reel
+  tiktokType     String? // reel
+  category       String? // conseils, avant-apres, nouveaute, promotion, etc.
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([category])
+}
+
+model SocialMediaConfig {
+  id           String    @id @default(cuid())
+  userId       String? // Propriétaire du compte (null = compte global)
+  platform     String // instagram, facebook, tiktok, youtube
+  accountName  String? // Nom du compte/page pour affichage
+  accessToken  String?   @db.Text // Token d'accès
+  refreshToken String?   @db.Text // Token de rafraîchissement
+  pageId       String? // ID de la page/compte
+  accountId    String? // ID du compte Instagram/Facebook
+  appId        String? // App ID Meta
+  appSecret    String?   @db.Text // App Secret Meta
+  expiresAt    DateTime? // Date d'expiration du token
+  enabled      Boolean   @default(false)
+  autoPublish  Boolean   @default(false) // Publication automatique activée
+  isDefault    Boolean   @default(false) // Compte par défaut pour ce user
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([userId, platform, accountId]) // Un user peut avoir plusieurs comptes par plateforme
+  @@index([userId])
+  @@index([platform])
+}
+
+model WhatsAppConfig {
+  id                 String    @id @default(cuid())
+  userId             String? // Propriétaire du compte (null = compte global)
+  accountName        String? // Nom du compte pour affichage
+  phoneNumberId      String? // ID du numéro de téléphone WhatsApp Business
+  phoneNumber        String? // Numéro de téléphone formaté
+  accessToken        String?   @db.Text // Token d'accès WhatsApp Business API
+  businessAccountId  String? // ID du compte WhatsApp Business
+  appId              String? // App ID Meta
+  appSecret          String?   @db.Text // App Secret Meta
+  webhookVerifyToken String? // Token de vérification webhook
+  expiresAt          DateTime? // Date d'expiration du token
+  enabled            Boolean   @default(false)
+  isDefault          Boolean   @default(false) // Compte par défaut pour ce user
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([userId, phoneNumberId])
+  @@index([userId])
+}
+
+model EmailConfig {
+  id          String   @id @default(cuid())
+  userId      String? // Propriétaire du compte (null = compte global)
+  accountName String? // Nom du compte pour affichage (ex: "Contact Laia Skin")
+  provider    String // resend, gmail, outlook, etc.
+  email       String // Adresse email
+  apiKey      String?  @db.Text // API Key (pour Resend, SendGrid, etc.)
+  password    String?  @db.Text // Mot de passe (pour SMTP)
+  smtpHost    String? // Serveur SMTP
+  smtpPort    Int? // Port SMTP
+  imapHost    String? // Serveur IMAP pour réception
+  imapPort    Int? // Port IMAP
+  enabled     Boolean  @default(false)
+  isDefault   Boolean  @default(false) // Compte par défaut pour ce user
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, email])
+  @@index([userId])
+}
+
+model Integration {
+  id      String  @id @default(cuid())
+  userId  String? // Propriétaire (null = config globale)
+  type    String // 'stripe', 'google_calendar', 'paypal', 'twilio', etc.
+  enabled Boolean @default(false)
+
+  // Configuration chiffrée (JSON contenant les clés API, tokens, etc.)
+  config Json @default("{}")
+
+  // Statut de la connexion
+  status       String    @default("disconnected") // disconnected, connected, error, expired
+  lastSync     DateTime?
+  errorMessage String?   @db.Text
+
+  // Métadonnées
+  displayName String? // Nom affiché dans l'interface
+  description String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
+  @@index([enabled])
+}
+
+// Catégories de services (ex: Soins du visage, Soins du corps, Épilation)
+model ServiceCategory {
+  id          String  @id @default(cuid())
+  name        String // Ex: "Soins du visage"
+  slug        String  @unique // Ex: "soins-visage"
+  description String? @db.Text
+  icon        String? // Ex: "FaFaceSmile" (nom de l'icône React Icons)
+  color       String  @default("#e11d48") // Couleur hex pour l'interface
+  image       String? // Image de bannière de la catégorie
+  order       Int     @default(0) // Ordre d'affichage
+  active      Boolean @default(true)
+  featured    Boolean @default(false) // Mettre en avant sur la page d'accueil
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  keywords        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  subcategories ServiceSubcategory[]
+  services      Service[]            @relation("ServiceToCategory")
+
+  @@index([slug])
+  @@index([active])
+  @@index([order])
+}
+
+// Sous-catégories de services (ex: sous "Soins du visage" → HydroFacial, BB Glow)
+model ServiceSubcategory {
+  id          String  @id @default(cuid())
+  categoryId  String
+  name        String // Ex: "Soins anti-âge"
+  slug        String  @unique // Ex: "soins-anti-age"
+  description String? @db.Text
+  icon        String? // Icône spécifique
+  image       String? // Image de la sous-catégorie
+  order       Int     @default(0)
+  active      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  services Service[]       @relation("ServiceToSubcategory")
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([active])
+  @@index([order])
+}
+
+// Historique des paiements (tous types confondus)
+model Payment {
+  id            String  @id @default(cuid())
+  type          String // "reservation", "order", "giftcard"
+  reservationId String?
+  orderId       String?
+  giftCardId    String?
+  userId        String
+  amount        Float
+  currency      String  @default("eur")
+  status        String // "pending", "succeeded", "failed", "refunded"
+  paymentMethod String // "stripe", "cash", "transfer", "check"
+
+  // Stripe specific
+  stripePaymentId  String? @unique // payment_intent_xxx
+  stripeSessionId  String? // checkout_session_xxx
+  stripeCustomerId String?
+  stripeChargeId   String?
+  stripeFees       Float? // Frais Stripe
+
+  // Métadonnées
+  description   String?
+  metadata      String? // JSON pour infos supplémentaires
+  receiptUrl    String? // URL du reçu Stripe
+  invoiceNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([reservationId])
+  @@index([orderId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([stripePaymentId])
+  @@index([createdAt])
+}
+
+// ============================================
+// SUPER ADMIN MODELS
+// ============================================
+
+enum NotificationType {
+  TRIAL_EXPIRING_7D // Essai expire dans 7 jours
+  TRIAL_EXPIRING_3D // Essai expire dans 3 jours
+  TRIAL_EXPIRED // Essai expiré
+  LIMIT_REACHED_80 // 80% de la limite atteinte
+  LIMIT_REACHED_100 // 100% de la limite atteinte
+  PAYMENT_FAILED // Paiement échoué
+  INACTIVE_ORG // Organisation inactive
+  NEW_ORGANIZATION // Nouvelle organisation créée
+  CANCELLED_SUBSCRIPTION // Abonnement annulé
+}
+
+model SuperAdminNotification {
+  id             String           @id @default(cuid())
+  type           NotificationType
+  title          String
+  message        String           @db.Text
+  organizationId String?
+  userId         String?
+  read           Boolean          @default(false)
+  actionUrl      String?
+  metadata       Json? // Données additionnelles
+  createdAt      DateTime         @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([read])
+  @@index([type])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+enum AuditAction {
+  CREATE_ORG
+  UPDATE_ORG
+  DELETE_ORG
+  SUSPEND_ORG
+  ACTIVATE_ORG
+  CANCEL_ORG
+  CHANGE_PLAN
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
+  IMPERSONATE
+  END_IMPERSONATE
+  CREATE_LOCATION
+  UPDATE_LOCATION
+  DELETE_LOCATION
+  UPDATE_SETTINGS
+  RESET_PASSWORD
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  userId         String // Super admin qui a fait l'action
+  action         AuditAction
+  targetType     String // ORGANIZATION, USER, LOCATION, etc.
+  targetId       String?
+  organizationId String?
+  before         Json? // État avant (pour updates)
+  after          Json? // État après (pour updates)
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json? // Données additionnelles
+  createdAt      DateTime    @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([targetType])
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+  REPLACED
+  OVERDUE
+}
+
+enum PaymentMethod {
+  STRIPE
+  MANUAL
+  BANK_TRANSFER
+  PAYPAL
+}
+
+model Invoice {
+  id                    String        @id @default(cuid())
+  organizationId        String
+  invoiceNumber         String        @unique // LAIA-2025-001234
+  amount                Float
+  currency              String        @default("EUR")
+  plan                  String? // SOLO, DUO, TEAM, PREMIUM
+  status                InvoiceStatus @default(PENDING)
+  stripeInvoiceId       String?       @unique
+  stripePaymentIntentId String? // ID du PaymentIntent Stripe
+  paidAt                DateTime?
+  issueDate             DateTime      @default(now()) // Date d'émission
+  dueDate               DateTime
+  description           String?
+  pdfPath               String? // Chemin vers le PDF
+  metadata              Json? // Détails additionnels
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments     BillingPayment[]
+
+  @@index([organizationId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([dueDate])
+  @@index([createdAt])
+}
+
+model BillingPayment {
+  id              String        @id @default(cuid())
+  invoiceId       String
+  amount          Float
+  method          PaymentMethod
+  stripePaymentId String?       @unique
+  status          InvoiceStatus
+  metadata        Json? // Détails additionnels
+  createdAt       DateTime      @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Configuration des factures LAIA (paramètres globaux)
+model InvoiceSettings {
+  id String @id @default(cuid())
+
+  // Statut juridique
+  isCompany     Boolean @default(false) // false = auto-entrepreneur, true = société
+  legalStatus   String  @default("Auto-Entrepreneur") // "Auto-Entrepreneur", "SAS", "SARL", "SASU", etc.
+
+  // Informations émetteur (LAIA)
+  companyName   String @default("LAIA Connect")
+  address       String @default("[Votre adresse]")
+  postalCode    String @default("[Code postal]")
+  city          String @default("[Ville]")
+  country       String @default("France")
+  siret         String @default("[Votre SIRET]")
+  tvaNumber     String? @default("") // Vide si auto-entrepreneur en franchise
+  capitalSocial String? @default("") // Vide si auto-entrepreneur
+  rcs           String? @default("") // Vide si auto-entrepreneur
+  apeCode       String  @default("6201Z") // Code APE/NAF
+
+  // Contact
+  email   String  @default("[Votre email]")
+  phone   String? @default("[Votre téléphone]")
+  website String? @default("https://www.laia-connect.fr")
+
+  // Design
+  logoUrl        String? // URL du logo
+  primaryColor   String  @default("#667eea") // Violet
+  secondaryColor String  @default("#764ba2") // Rose
+
+  // Paramètres facture
+  invoicePrefix String @default("LAIA") // LAIA-2025-001234
+  tvaRate       Float  @default(0.0) // 0 pour auto-entrepreneur, 20 pour société
+
+  // Mentions légales
+  paymentTerms String  @default("Prélèvement SEPA automatique")
+  latePenalty  String  @default("En cas de retard de paiement, indemnité forfaitaire de 40€ pour frais de recouvrement.")
+  footerText   String? @default("Dispensé d'immatriculation au RCS et au RM")
+
+  // Templates de contrat (articles modifiables)
+  contractArticle1 String @db.Text @default("Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.")
+  contractArticle3 String @db.Text @default("Le Client bénéficie d'une période d'essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra à l'issue de cette période.")
+  contractArticle4 String @db.Text @default("Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.")
+  contractArticle6 String @db.Text @default("Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l'adresse : https://www.laiaconnect.fr/cgv-laia-connect\n\nLe Client déclare avoir pris connaissance des CGV et les accepter sans réserve.")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Modèle pour les clauses de contrat (système modulaire et personnalisable)
+model ContractClause {
+  id        String   @id @default(cuid())
+  key       String   @unique // article_1, article_2, etc.
+  title     String   // "ARTICLE 1 - OBJET DU CONTRAT"
+  content   String   @db.Text // Contenu de l'article (supporte {variables})
+  order     Int      @default(0) // Ordre d'affichage dans le contrat
+  isDefault Boolean  @default(true) // Clause par défaut ou personnalisée
+  isActive  Boolean  @default(true) // Afficher dans le contrat ou non
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+  @@index([isActive])
+}
+
+enum SuperAdminEmailKey {
+  WELCOME
+  TRIAL_ENDING_7D
+  TRIAL_ENDING_3D
+  TRIAL_EXPIRED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  LIMIT_REACHED
+  NEWSLETTER
+  PASSWORD_RESET
+}
+
+model SuperAdminEmailTemplate {
+  id        String             @id @default(cuid())
+  key       SuperAdminEmailKey @unique
+  name      String
+  subject   String
+  htmlBody  String             @db.Text
+  textBody  String?            @db.Text
+  variables Json // Liste des variables disponibles
+  active    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([key])
+  @@index([active])
+}
+
+model PlatformConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   String // User ID du super admin
+
+  @@index([key])
+}
+
+// ============================================
+// API TOKEN MANAGEMENT (Sécurité)
+// ============================================
+
+// Stockage sécurisé des tokens API (chiffrés)
+model ApiToken {
+  id String @id @default(cuid())
+
+  // Multi-tenant: chaque organisation a ses propres tokens
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  service        String // WHATSAPP, INSTAGRAM, FACEBOOK, STRIPE, RESEND, SNAPCHAT, TIKTOK, LINKEDIN, TWITTER
+  name           String // access_token, secret_key, page_id, account_id, etc.
+  encryptedToken String    @db.Text
+  expiresAt      DateTime?
+  metadata       Json? // Pour stocker des infos supplémentaires (account_id, page_id, etc.)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Unique par organisation + service + name (ou global si organizationId = null)
+  @@unique([organizationId, service, name])
+  @@map("api_tokens")
+}
+
+// ============================================
+// SUPER ADMIN - SUPPORT
+// ============================================
+
+// Tickets de support
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  TECHNICAL // Problème technique
+  BILLING // Facturation
+  FEATURE_REQUEST // Demande de fonctionnalité
+  QUESTION // Question
+  BUG // Bug
+  OTHER // Autre
+}
+
+model SupportTicket {
+  id             String         @id @default(cuid())
+  ticketNumber   String         @unique // #TICKET-001
+  subject        String
+  description    String         @db.Text
+  status         TicketStatus   @default(OPEN)
+  priority       TicketPriority @default(MEDIUM)
+  category       TicketCategory
+  organizationId String
+  createdById    String // User qui a créé le ticket
+  assignedToId   String? // Super admin assigné
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+
+  // SLA Tracking
+  firstResponseAt     DateTime? // Timestamp de la première réponse
+  slaResponseDeadline DateTime? // Deadline pour la première réponse (calculé selon la priorité)
+  slaResponseBreach   Boolean   @default(false) // Violation du SLA de réponse
+  slaResolutionDeadline DateTime? // Deadline pour la résolution (calculé selon la priorité)
+  slaResolutionBreach Boolean   @default(false) // Violation du SLA de résolution
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User            @relation("TicketCreator", fields: [createdById], references: [id])
+  assignedTo   User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  messages     TicketMessage[]
+
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([organizationId])
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([slaResponseBreach])
+  @@index([slaResolutionBreach])
+}
+
+model TicketMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  authorId    String
+  message     String   @db.Text
+  attachments Json? // URLs des fichiers
+  isInternal  Boolean  @default(false) // Note interne (non visible par le client)
+  createdAt   DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+// ============================================
+// PRIORITÉ 2 - SUPER ADMIN FEATURES
+// ============================================
+
+// Codes promo pour les abonnements LAIA
+enum SubscriptionPromoType {
+  PERCENTAGE // Réduction en pourcentage
+  FIXED // Montant fixe
+  FREE_TRIAL // Essai gratuit prolongé
+}
+
+enum SubscriptionPromoStatus {
+  ACTIVE // Actif
+  EXPIRED // Expiré
+  DISABLED // Désactivé
+}
+
+model SubscriptionPromoCode {
+  id          String                @id @default(cuid())
+  code        String                @unique // "LAIA2025"
+  description String? // "Promotion lancement 2025"
+  type        SubscriptionPromoType
+  value       Float // 20 (pour 20%) ou 50 (pour 50€)
+
+  // Applicabilité
+  targetPlans String[] // ["SOLO", "DUO"] ou [] pour tous
+  maxUses     Int? // Nombre max d'utilisations (null = illimité)
+  currentUses Int      @default(0)
+
+  // Dates de validité
+  validFrom  DateTime  @default(now())
+  validUntil DateTime?
+
+  status SubscriptionPromoStatus @default(ACTIVE)
+
+  // Utilisation
+  usedBy Organization[] @relation("SubscriptionPromoUsage")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@index([status])
+  @@index([validFrom])
+  @@index([validUntil])
+}
+
+// Témoignages clients pour le marketing
+enum TestimonialStatus {
+  PENDING // En attente d'approbation
+  APPROVED // Approuvé et visible
+  REJECTED // Rejeté
+}
+
+model Testimonial {
+  id String @id @default(cuid())
+
+  // Client
+  clientName     String // "Marie Dupont"
+  clientRole     String? // "Gérante, Beauté Éternelle Paris"
+  clientPhoto    String? // URL de la photo
+  organizationId String? // Lien vers l'organisation (optionnel)
+
+  // Contenu
+  content String @db.Text
+  rating  Int    @default(5) // 1-5 étoiles
+
+  // Métadonnées
+  status        TestimonialStatus @default(PENDING)
+  featured      Boolean           @default(false) // Mis en avant
+  showOnLanding Boolean           @default(false) // Afficher sur la page d'accueil
+
+  // Tags pour filtrer
+  tags String[] // ["onboarding", "support", "features"]
+
+  organization Organization? @relation("OrganizationTestimonials", fields: [organizationId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([featured])
+  @@index([showOnLanding])
+  @@index([organizationId])
+}
+
+// Notifications push pour les organisations
+enum PushNotificationStatus {
+  SCHEDULED // Programmée
+  SENT // Envoyée
+  FAILED // Échec
+}
+
+model PushNotification {
+  id    String  @id @default(cuid())
+  title String
+  body  String  @db.Text
+  icon  String?
+  url   String? // URL de redirection au clic
+
+  // Ciblage
+  targetAll   Boolean  @default(false)
+  targetPlans String[] // ["SOLO", "DUO"]
+  targetOrgs  String[] // IDs des organisations ciblées
+
+  // Programmation
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  status      PushNotificationStatus @default(SCHEDULED)
+
+  // Statistiques
+  totalSent    Int @default(0)
+  totalClicked Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([sentAt])
+}
+
+// ============================================
+// CRM & PROSPECTION MODELS
+// ============================================
+
+enum LeadStatus {
+  NEW // Nouveau lead (découverte)
+  CONTACTED // Premier contact effectué
+  QUALIFIED // Prospect qualifié (intéressé)
+  DEMO_SCHEDULED // Démo planifiée
+  DEMO_DONE // Démo effectuée
+  PROPOSAL_SENT // Proposition commerciale envoyée
+  NEGOTIATION // En négociation
+  WON // Gagné → converti en client
+  LOST // Perdu
+  ON_HOLD // En attente
+}
+
+enum LeadQualification {
+  COLD // Lead froid - peu d'intérêt
+  WARM // Lead moyen - intéressé mais pas pressé
+  HOT // Lead chaud - très intéressé, prêt à acheter
+}
+
+enum InteractionType {
+  EMAIL
+  PHONE
+  MEETING
+  DEMO
+  WHATSAPP
+  LINKEDIN_MESSAGE
+  NOTE
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Informations institut
+  institutName String
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  website      String?
+  address      String?
+  city         String?
+  postalCode   String?
+  country      String  @default("France")
+
+  // Informations business
+  numberOfLocations Int      @default(1)
+  numberOfEmployees Int?
+  currentSoftware   String? // Logiciel actuel utilisé
+  estimatedRevenue  Decimal? @db.Decimal(10, 2)
+  painPoints        String[] // Points de douleur
+
+  // Pipeline
+  status         LeadStatus          @default(NEW)
+  qualification  LeadQualification? // Qualification du lead (froid/moyen/chaud)
+  source         LeadSource
+  score          Int                 @default(0) // Score de qualité 0-100
+  probability    Int                 @default(0) // Probabilité de conversion 0-100%
+  estimatedValue Decimal?            @db.Decimal(10, 2)
+
+  // Suivi commercial
+  assignedToUserId  String?
+  assignedTo        User?     @relation(fields: [assignedToUserId], references: [id])
+  nextFollowUpDate  DateTime?
+  lastContactDate   DateTime?
+  expectedCloseDate DateTime?
+
+  // Conversion
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  convertedAt    DateTime?
+  lostReason     String?
+
+  // Métadonnées
+  tags  String[]
+  notes String?  @db.Text
+
+  interactions  LeadInteraction[]
+  demoBooking   DemoBooking?      @relation("DemoBookingLead")
+  funnelEntries FunnelEntry[] // Progression dans les funnels
+
+  @@index([status])
+  @@index([assignedToUserId])
+  @@index([source])
+  @@index([nextFollowUpDate])
+  @@index([contactEmail])
+  @@index([city])
+}
+
+model LeadInteraction {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type           InteractionType
+  subject        String?
+  content        String          @db.Text
+  nextAction     String?
+  nextActionDate DateTime?
+
+  // Pièces jointes
+  attachments String[]
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ProspectingEmailTemplate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name     String
+  subject  String
+  body     String  @db.Text // HTML avec variables {{institutName}}, {{contactName}}, etc.
+  category String? // 'first_contact', 'follow_up', 'demo', 'proposal', etc.
+  isActive Boolean @default(true)
+}
+
+// Système de calendrier pour les démos commerciales
+model DemoSlot {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  date     DateTime // Date et heure du créneau
+  duration Int      @default(30) // Durée en minutes
+  userId   String? // Commercial assigné (super-admin)
+  user     User?    @relation("DemoSlots", fields: [userId], references: [id])
+
+  isAvailable Boolean @default(true)
+  isRecurring Boolean @default(false) // Créneau récurrent chaque semaine
+  dayOfWeek   Int? // 0=Dimanche, 1=Lundi, etc. (pour récurrence)
+
+  bookings DemoBooking[]
+}
+
+model DemoBooking {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slotId String
+  slot   DemoSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  // Informations du prospect
+  institutName String
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  message      String? @db.Text
+
+  // Lead associé
+  leadId String? @unique
+  lead   Lead?   @relation("DemoBookingLead", fields: [leadId], references: [id])
+
+  // Origine du prospect
+  leadSource LeadSource? @default(DEMO_FORM) // D'où vient ce prospect
+
+  // Type de rendez-vous
+  type     String  @default("ONLINE") // ONLINE (visio) ou PHYSICAL (physique)
+  location String? // Adresse si rendez-vous physique
+
+  // Durée personnalisée (optionnelle, sinon prend la durée du slot)
+  customDuration Int? // Durée en minutes
+
+  status     String  @default("CONFIRMED") // CONFIRMED, COMPLETED, CANCELLED, NO_SHOW
+  meetingUrl String? // URL visio si démo en ligne
+  notes      String? @db.Text
+
+  reminderSent Boolean   @default(false)
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+
+  // Super-admin tracking
+  viewedByAdminAt DateTime? // Date à laquelle le super-admin a vu cette démo
+}
+
+// ============================================
+// PLATFORM NEWS - NOUVEAUTÉS LAIA BEAUTY
+// ============================================
+
+enum PlatformNewsStatus {
+  DRAFT // Brouillon
+  PUBLISHED // Publié
+  ARCHIVED // Archivé
+}
+
+model PlatformNews {
+  id       String             @id @default(cuid())
+  title    String
+  slug     String             @unique
+  excerpt  String             @db.Text
+  content  String             @db.Text
+  category String // "Nouvelle fonctionnalité", "Mise à jour", "Conseil", etc.
+  status   PlatformNewsStatus @default(DRAFT)
+
+  featuredImage String?
+  tags          Json? // ["automatisation", "réservation", "IA"]
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // Author (Super Admin)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([category])
+  @@index([authorId])
+}
+
+// ============================================
+// AI CONTENT ANALYSIS & SUGGESTIONS
+// ============================================
+
+// Analyse IA du feed social media
+model ContentAnalysis {
+  id             String  @id @default(cuid())
+  organizationId String?
+  platform       String // "instagram", "facebook"
+
+  // Analyse du feed
+  toneOfVoice   String @db.Text // "friendly", "professional", "casual"
+  topHashtags   Json // ["hashtag1", "hashtag2"...]
+  avgEngagement Float
+  bestPostTypes Json // ["reel", "carousel", "photo"]
+  bestPostTimes Json // ["14:00", "18:00"]
+
+  // Exemples de posts performants
+  topPosts Json // [{content, likes, comments}...]
+
+  analyzedAt DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([platform])
+  @@index([analyzedAt])
+}
+
+// Suggestions de contenu générées par IA
+model AISuggestion {
+  id             String  @id @default(cuid())
+  organizationId String?
+  category       String // "conseils", "avant-apres", etc.
+  contentType    String // "post", "story", "reel"
+
+  title        String
+  content      String  @db.Text
+  hashtags     String?
+  trendingNote String?
+
+  generatedBy String   @default("openai-gpt4")
+  createdAt   DateTime @default(now())
+
+  @@index([organizationId, category])
+  @@index([contentType])
+  @@index([createdAt])
+}
+
+// ============================================
+// ACTIVITY LOG (AUDIT TRAIL)
+// ============================================
+
+// Journal des activités système et utilisateur
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String // ID de l'utilisateur qui a effectué l'action (ou "system" pour les actions automatiques)
+  action      String // Type d'action (PAYMENT_REMINDER_1, PAYMENT_REMINDER_2, ORGANIZATION_SUSPENDED, etc.)
+  entityType  String // Type d'entité concernée (INVOICE, ORGANIZATION, USER, etc.)
+  entityId    String // ID de l'entité concernée
+  description String   @db.Text // Description de l'action
+  metadata    Json? // Données supplémentaires (montant, numéro de facture, etc.)
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================
+// WEBSITE TEMPLATES
+// ============================================
+
+// Templates de sites web pour les organisations
+model WebsiteTemplate {
+  id               String   @id @default(cuid())
+  name             String // Nom du template (ex: "Élégance Rose", "Minimaliste Zen")
+  description      String   @db.Text // Description du template
+  previewImageUrl  String? // URL de l'image de prévisualisation
+
+  // Configuration du template (couleurs, polices, layout, etc.)
+  config           Json // { colors: { primary, secondary, accent }, fonts: { heading, body }, layout: "classic" | "modern" }
+
+  // Tier d'accès
+  minTier          String   @default("DUO") // Tier minimum requis: SOLO, DUO, TEAM, ENTERPRISE
+
+  // Métadonnées
+  category         String   @default("beauty") // beauty, spa, salon, barbershop, wellness
+  isActive         Boolean  @default(true)
+  displayOrder     Int      @default(0)
+
+  // Relations
+  organizations    Organization[] @relation("OrganizationWebsiteTemplate")
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([minTier])
+  @@index([category])
+  @@index([isActive, displayOrder])
+}
+
+// ============================================================================
+// CRM: SEGMENTATION CLIENTS
+// ============================================================================
+
+model ClientSegment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String // "Clients VIP", "Inactifs 6 mois", etc.
+  description String?
+  color       String  @default("#3B82F6") // Couleur pour l'UI
+
+  // Critères de segmentation (JSON)
+  criteria Json // {totalSpent: {min: 500}, lastVisit: {daysAgo: {max: 30}}, etc.}
+
+  // Statistiques
+  clientCount Int @default(0)
+  totalValue  Decimal? @db.Decimal(10, 2)
+
+  // Automatisation
+  isAutomatic Boolean @default(true) // Se met à jour automatiquement
+  isActive    Boolean @default(true)
+
+  // Relations
+  campaigns CampaignSegment[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model CampaignSegment {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  segmentId String
+  segment   ClientSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([campaignId, segmentId])
+  @@index([campaignId])
+  @@index([segmentId])
+}
+
+// ============================================================================
+// CRM: FUNNEL DE CONVERSION
+// ============================================================================
+
+enum FunnelStage {
+  AWARENESS      // Prise de conscience
+  INTEREST       // Intérêt
+  CONSIDERATION  // Considération  
+  INTENT         // Intention
+  EVALUATION     // Évaluation
+  PURCHASE       // Achat
+}
+
+model ConversionFunnel {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  // Étapes du funnel
+  stages Json // [{name: "Visite site", stage: "AWARENESS"}, ...]
+
+  // Statistiques
+  isActive Boolean @default(true)
+
+  entries FunnelEntry[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model FunnelEntry {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  funnelId String
+  funnel   ConversionFunnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  // Lead ou Client
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Étape actuelle
+  currentStage FunnelStage @default(AWARENESS)
+  
+  // Progression
+  stages Json // [{stage: "AWARENESS", enteredAt: "...", exitedAt: "..."}]
+
+  // Conversion
+  isConverted   Boolean   @default(false)
+  convertedAt   DateTime?
+  conversionValue Decimal? @db.Decimal(10, 2)
+
+  // Métadonnées
+  source String? // Google Ads, Réseaux sociaux, Référence, etc.
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+
+  @@index([funnelId])
+  @@index([leadId])
+  @@index([userId])
+  @@index([currentStage])
+  @@index([isConverted])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// SAVED REPORTS
+// ============================================================================
+
+model SavedReport {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name            String
+  metrics         Json     // Array of metric IDs
+  period          String   // 7d, 30d, 90d, 1y, custom
+  autoSend        Boolean  @default(false)
+  emailSchedule   String?  // daily, weekly, monthly
+  lastSent        DateTime?
+
+  @@index([organizationId])
+  @@index([autoSend])
+}
+
+// ============================================================================
+// ENUMS ADDITIONNELS
+// ============================================================================
+
+enum SegmentCriteriaType {
+  TOTAL_SPENT
+  LAST_VISIT
+  VISIT_FREQUENCY
+  SERVICE_TYPE
+  PRODUCT_PURCHASED
+  LOYALTY_POINTS
+  REFERRAL_COUNT
+  BOOKING_COUNT
+  AVERAGE_TICKET
+  LIFETIME_VALUE
+}
+
+// ============================================================================
+// WORKFLOWS & CHURN MANAGEMENT (SUPER-ADMIN)
+// ============================================================================
+
+enum WorkflowTrigger {
+  ONBOARDING_DAY_1      // J+1 après inscription
+  ONBOARDING_DAY_7      // J+7 après inscription
+  ONBOARDING_DAY_15     // J+15 après inscription
+  ONBOARDING_DAY_25     // J+25 (5 jours avant fin d'essai)
+  TRIAL_ENDING_SOON     // 5 jours avant fin d'essai
+  TRIAL_ENDED           // Fin de période d'essai
+  NO_LOGIN_7_DAYS       // Pas de connexion depuis 7 jours
+  NO_BOOKINGS_15_DAYS   // 0 rendez-vous créé après 15 jours
+  SUBSCRIPTION_ACTIVE_60_DAYS // Après 60 jours d'utilisation
+  PAYMENT_FAILED        // Échec de paiement
+  SUBSCRIPTION_CANCELLED // Abonnement annulé
+  HIGH_USAGE            // Utilisation élevée (upgrade suggéré)
+  LOW_USAGE             // Faible utilisation (risque churn)
+}
+
+enum WorkflowStatus {
+  ACTIVE     // Workflow actif
+  PAUSED     // Workflow en pause
+  ARCHIVED   // Workflow archivé
+}
+
+// Template de workflow automatique
+model WorkflowTemplate {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Informations
+  name            String   // "Onboarding J+1", "Relance inactif 7j"
+  description     String?  @db.Text
+  trigger         WorkflowTrigger
+  status          WorkflowStatus @default(ACTIVE)
+
+  // Conditions d'exécution
+  delayDays       Int      @default(0) // Délai en jours avant exécution
+  
+  // Email settings
+  subject         String
+  emailTemplate   String   @db.Text // Template HTML de l'email
+  
+  // Statistiques
+  sentCount       Int      @default(0)
+  openRate        Float    @default(0)
+  clickRate       Float    @default(0)
+  
+  // Relations
+  executions      WorkflowExecution[]
+  
+  @@index([trigger])
+  @@index([status])
+}
+
+// Exécution d'un workflow pour une organisation
+model WorkflowExecution {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  executedAt        DateTime?
+  
+  workflowId        String
+  workflow          WorkflowTemplate @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Statut
+  status            String   // pending, sent, failed, opened, clicked
+  error             String?  @db.Text
+  
+  // Tracking email
+  emailSentAt       DateTime?
+  emailOpenedAt     DateTime?
+  emailClickedAt    DateTime?
+  
+  @@index([workflowId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// Métriques de churn et rétention
+model ChurnMetric {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now()) // Date du calcul
+  
+  // Métriques MRR
+  totalMRR        Float    // MRR total
+  newMRR          Float    // MRR des nouveaux clients
+  expansionMRR    Float    // MRR des upgrades
+  contractionMRR  Float    // MRR des downgrades
+  churnedMRR      Float    // MRR perdu
+  
+  // Métriques clients
+  totalCustomers      Int
+  newCustomers        Int
+  churnedCustomers    Int
+  activeTrials        Int
+  
+  // Taux (en %)
+  churnRate           Float  // Taux de churn mensuel
+  retentionRate       Float  // Taux de rétention
+  
+  // LTV moyen
+  averageLTV          Float  // Lifetime Value moyen
+  
+  @@index([date])
+}
+
+// Clients à risque de churn
+model ChurnRiskProfile {
+  id                  String   @id @default(cuid())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  organizationId      String   @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Score de risque (0-100)
+  riskScore           Int      // 0 = aucun risque, 100 = churn imminent
+  
+  // Facteurs de risque
+  daysWithoutLogin    Int      @default(0)
+  daysWithoutBooking  Int      @default(0)
+  bookingsCount       Int      @default(0)
+  usageLevel          String   // low, medium, high
+  
+  // Support tickets
+  supportTicketsCount Int      @default(0)
+  lastSupportDate     DateTime?
+  
+  // Actions prises
+  contactAttempts     Int      @default(0)
+  lastContactDate     DateTime?
+  
+  // Statut
+  isAtRisk            Boolean  @default(false)
+  churned             Boolean  @default(false)
+  churnedAt           DateTime?
+  churnReason         String?  @db.Text
+  
+  @@index([riskScore])
+  @@index([isAtRisk])
+  @@index([churned])
+}
+
+// Raisons d'annulation (post-churn survey)
+model CancellationFeedback {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Raison principale
+  reason            String   // price, features, complexity, competition, other
+  detailedReason    String?  @db.Text
+  
+  // Feedback
+  wouldRecommend    Boolean?
+  rating            Int?     // 1-5
+  suggestions       String?  @db.Text
+  
+  // Context
+  plan              String
+  monthsSubscribed  Int
+  
+  @@index([organizationId])
+  @@index([reason])
+}
+

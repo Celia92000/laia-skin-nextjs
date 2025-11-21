@@ -1,36 +1,27 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET() {
+  const prisma = await getPrismaClient();
   try {
-    const serviceCount = await prisma.service.count();
-    
-    const services = await prisma.service.findMany({
-      select: {
-        id: true,
-        name: true,
-        active: true
-      }
-    });
+    // Test de connexion simple
+    const userCount = await prisma.user.count();
     
     return NextResponse.json({
       success: true,
-      database_url: process.env.DATABASE_URL ? 'Configured' : 'Missing',
-      is_vercel: process.env.VERCEL ? 'Yes' : 'No',
-      service_count: serviceCount,
-      services: services,
-      timestamp: new Date().toISOString()
+      message: 'Connexion à la base de données réussie',
+      userCount: userCount,
+      databaseUrl: process.env.DATABASE_URL ? 'Définie' : 'Non définie'
     });
   } catch (error: any) {
-    console.error('Database connection error:', error);
+    log.error('Erreur de connexion DB:', error);
     
     return NextResponse.json({
       success: false,
       error: error.message,
-      database_url: process.env.DATABASE_URL ? 'Configured' : 'Missing',
-      is_vercel: process.env.VERCEL ? 'Yes' : 'No',
-      error_code: error.code,
-      timestamp: new Date().toISOString()
+      databaseUrl: process.env.DATABASE_URL ? 'Définie' : 'Non définie',
+      details: error.toString()
     }, { status: 500 });
   }
 }

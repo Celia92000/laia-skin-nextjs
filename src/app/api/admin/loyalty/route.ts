@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
-// Fonction pour vérifier l'authentification admin
+// 🔒 Fonction pour vérifier l'authentification admin AVEC organizationId
 async function verifyAdmin(request: NextRequest) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  
+
   if (!token) {
     return null;
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
+
+    const prisma = await getPrismaClient();
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        role: true,
+        organizationId: true
+      }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role as string)) {
       return null;
     }
 
@@ -27,8 +34,9 @@ async function verifyAdmin(request: NextRequest) {
   }
 }
 
-// GET - Récupérer tous les profils de fidélité
+// GET - Récupérer tous les profils de fidélité de l'organisation
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json(
@@ -37,9 +45,22 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Vérifier que l'admin a un organizationId
+  if (!admin.organizationId) {
+    return NextResponse.json(
+      { error: 'Organization ID manquant' },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Récupérer tous les profils de fidélité avec les utilisateurs
+    // Récupérer UNIQUEMENT les profils de fidélité de cette organisation
     const loyaltyProfiles = await prisma.loyaltyProfile.findMany({
+      where: {
+        user: {
+          organizationId: admin.organizationId ?? undefined
+        }
+      },
       include: {
         user: {
           select: {
@@ -59,10 +80,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Récupérer aussi les utilisateurs sans profil de fidélité
+    // Récupérer aussi les utilisateurs sans profil de fidélité (UNIQUEMENT de cette organisation)
     const usersWithoutProfile = await prisma.user.findMany({
       where: {
-        role: 'client',
+        organizationId: admin.organizationId ?? undefined,
+        role: 'CLIENT',
         loyaltyProfile: null
       },
       select: {
@@ -105,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(processedProfiles);
   } catch (error) {
-    console.error('Erreur lors de la récupération des profils:', error);
+    log.error('Erreur lors de la récupération des profils:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
@@ -115,6 +137,7 @@ export async function GET(request: NextRequest) {
 
 // POST - Appliquer une réduction manuelle
 export async function POST(request: NextRequest) {
+  const prisma = await getPrismaClient();
   const admin = await verifyAdmin(request);
   if (!admin) {
     return NextResponse.json(
@@ -127,15 +150,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, discountAmount, reason } = body;
 
-    // Récupérer ou créer le profil de fidélité
-    let loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId }
+    // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
+    let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId,
+        organizationId: admin.organizationId ?? undefined
+      }
     });
 
     if (!loyaltyProfile) {
       loyaltyProfile = await prisma.loyaltyProfile.create({
         data: {
           userId,
+          organizationId: admin.organizationId ?? undefined,
           individualServicesCount: 0,
           packagesCount: 0,
           totalSpent: 0,
@@ -144,10 +171,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Créer une entrée dans l'historique
+    // 🔒 Créer une entrée dans l'historique DE CETTE ORGANISATION
     await prisma.loyaltyHistory.create({
       data: {
         userId,
+        organizationId: admin.organizationId ?? undefined,
         action: 'DISCOUNT_APPLIED',
         points: 0,
         description: `Réduction manuelle de ${discountAmount}€ : ${reason}`
@@ -173,7 +201,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erreur lors de l\'application de la réduction:', error);
+    log.error('Erreur lors de l\'application de la réduction:', error);
     return NextResponse.json(
       { error: 'Erreur lors de l\'application' },
       { status: 500 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -17,28 +19,53 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Récupérer tous les services
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    // Récupérer tous les services DE CETTE ORGANISATION triés par ordre d'affichage
     const services = await prisma.service.findMany({
-      orderBy: { createdAt: 'asc' }
+      where: {
+        organizationId: user.organizationId ?? undefined
+      },
+      include: {
+        serviceCategory: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true
+          }
+        },
+        serviceSubcategory: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
+      },
+      orderBy: { order: 'asc' }
     });
 
     return NextResponse.json(services);
   } catch (error) {
-    console.error('Erreur lors de la récupération des services:', error);
+    log.error('Erreur lors de la récupération des services:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -53,28 +80,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
+    if (!user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const body = await request.json();
-    
+
     // Supprimer l'id s'il existe (pour la création)
     delete body.id;
 
-    // Créer le service
+    // Créer le service POUR CETTE ORGANISATION
     const service = await prisma.service.create({
-      data: body
+      data: {
+        ...body,
+        organizationId: user.organizationId ?? undefined
+      }
     });
 
     return NextResponse.json(service);
   } catch (error) {
-    console.error('Erreur lors de la création du service:', error);
+    log.error('Erreur lors de la création du service:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

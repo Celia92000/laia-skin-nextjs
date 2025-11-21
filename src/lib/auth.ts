@@ -33,21 +33,13 @@ export async function verifyAuth(request: NextRequest): Promise<{
   user?: { userId: string; role: string; organizationId?: string | null } | null;
 }> {
   try {
-    // Essayer de lire le token depuis le cookie (priorité)
-    let token = request.cookies.get('auth-token')?.value;
+    const authHeader = request.headers.get('authorization');
 
-    // Si pas de cookie, essayer le header Authorization (fallback)
-    if (!token) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7); // Remove 'Bearer ' prefix
-      }
-    }
-
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return { isValid: false };
     }
 
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const decoded = verifyToken(token);
 
     if (!decoded) {

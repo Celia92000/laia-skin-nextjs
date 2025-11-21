@@ -1,9 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsAppMessage } from '@/lib/whatsapp-meta';
+import { getSiteConfig } from '@/lib/config-service';
+import { log } from '@/lib/logger';
 
 // Cette API doit être appelée tous les jours à 10h pour envoyer les demandes d'avis
 export async function GET(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+  const email = config.email || 'contact@institut.fr';
+  const primaryColor = config.primaryColor || '#d4b5a0';
+  const phone = config.phone || '06 XX XX XX XX';
+  const address = config.address || '';
+  const city = config.city || '';
+  const postalCode = config.postalCode || '';
+  const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+  const website = config.customDomain || 'https://votre-institut.fr';
+  const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+
+
   try {
     // Vérifier le secret pour sécuriser l'endpoint
     const { searchParams } = new URL(request.url);
@@ -39,14 +54,14 @@ export async function GET(request: Request) {
       }
     });
 
-    console.log(`📱 ${completedReservations.length} demandes d'avis WhatsApp à envoyer`);
+    log.info(`📱 ${completedReservations.length} demandes d'avis WhatsApp à envoyer`);
 
     let sentCount = 0;
     let errorCount = 0;
     
     for (const reservation of completedReservations) {
       if (!reservation.user?.phone) {
-        console.log(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
+        log.info(`⚠️ Pas de téléphone pour ${reservation.user?.name}`);
         continue;
       }
 
@@ -56,10 +71,10 @@ export async function GET(request: Request) {
         const serviceNames = services.map((s: string) => {
           const serviceMap: any = {
             'hydro-naissance': "Hydro'Naissance",
-            'hydro': "Hydro'Cleaning",
+            'hydro-cleaning': "Hydro'Cleaning",
             'renaissance': 'Renaissance',
-            'bbglow': 'BB Glow',
-            'led': 'LED Thérapie'
+            'bb-glow': 'BB Glow',
+            'led-therapie': 'LED Thérapie'
           };
           return serviceMap[s] || s;
         }).join(', ');
@@ -84,7 +99,7 @@ export async function GET(request: Request) {
         }
 
         // Message WhatsApp pour demande d'avis
-        const reviewMessage = `✨ *LAIA SKIN Institut* ✨
+        const reviewMessage = `✨ *${siteName}* ✨
 
 Bonjour ${reservation.user.name} ! 💕
 
@@ -104,7 +119,7 @@ ${loyaltyProgress}
 ${nextReward}
 
 Merci infiniment ! 🙏
-*LAIA SKIN Institut*`;
+*${siteName}*`;
         
         const result = await sendWhatsAppMessage({
           to: reservation.user.phone,
@@ -122,7 +137,7 @@ Merci infiniment ! 🙏
           try {
             await prisma.emailHistory.create({
               data: {
-                from: 'LAIA SKIN Institut',
+                from: `${siteName}`,
                 to: reservation.user.phone,
                 subject: `Demande d'avis WhatsApp`,
                 content: `Demande d'avis automatique pour ${serviceNames}`,
@@ -137,14 +152,14 @@ Merci infiniment ! 🙏
           }
           
           sentCount++;
-          console.log(`✅ Avis WhatsApp envoyé à ${reservation.user.name} (${reservation.user.phone})`);
+          log.info(`✅ Avis WhatsApp envoyé à ${reservation.user.name} (${reservation.user.phone})`);
         } else {
           errorCount++;
-          console.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
+          log.error(`❌ Échec envoi à ${reservation.user.name}:`, result.error);
         }
       } catch (error) {
         errorCount++;
-        console.error(`❌ Erreur pour ${reservation.user.name}:`, error);
+        log.error(`❌ Erreur pour ${reservation.user.name}:`, error);
       }
       
       // Attendre un peu entre chaque envoi
@@ -160,7 +175,7 @@ Merci infiniment ! 🙏
     });
 
   } catch (error) {
-    console.error('Erreur cron WhatsApp reviews:', error);
+    log.error('Erreur cron WhatsApp reviews:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi des demandes d\'avis' 
     }, { status: 500 });
@@ -169,6 +184,9 @@ Merci infiniment ! 🙏
 
 // Endpoint pour tester l'envoi manuel d'une demande d'avis
 export async function POST(request: Request) {
+  const config = await getSiteConfig();
+  const siteName = config.siteName || 'Mon Institut';
+
   try {
     const body = await request.json();
     const { reservationId } = body;
@@ -201,10 +219,10 @@ export async function POST(request: Request) {
     const serviceNames = services.map((s: string) => {
       const serviceMap: any = {
         'hydro-naissance': "Hydro'Naissance",
-        'hydro': "Hydro'Cleaning",
+        'hydro-cleaning': "Hydro'Cleaning",
         'renaissance': 'Renaissance',
-        'bbglow': 'BB Glow',
-        'led': 'LED Thérapie'
+        'bb-glow': 'BB Glow',
+        'led-therapie': 'LED Thérapie'
       };
       return serviceMap[s] || s;
     }).join(', ');
@@ -214,7 +232,7 @@ export async function POST(request: Request) {
     const sessionsCount = loyaltyProfile?.individualServicesCount || 0;
     
     // Message WhatsApp
-    const reviewMessage = `✨ *LAIA SKIN Institut* ✨
+    const reviewMessage = `✨ *${siteName}* ✨
 
 Bonjour ${reservation.user.name} ! 💕
 
@@ -227,7 +245,7 @@ Partagez votre expérience en répondant à ce message ou en cliquant ici :
 🎁 Programme de fidélité : ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''}
 
 Merci ! 🙏
-*LAIA SKIN Institut*`;
+*${siteName}*`;
     
     const result = await sendWhatsAppMessage({
       to: reservation.user.phone,
@@ -253,7 +271,7 @@ Merci ! 🙏
     }
 
   } catch (error) {
-    console.error('Erreur envoi avis manuel:', error);
+    log.error('Erreur envoi avis manuel:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'envoi' 
     }, { status: 500 });

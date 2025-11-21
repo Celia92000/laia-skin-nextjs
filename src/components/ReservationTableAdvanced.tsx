@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { 
+import {
   Calendar, Clock, User, Euro, Filter, Download, ChevronUp, ChevronDown,
-  Search, Phone, Instagram, Globe, MessageCircle, Users, MapPin, MoreHorizontal
+  Search, Phone, Instagram, Globe, MessageCircle, Users, MapPin, MoreHorizontal,
+  FileText, Eye
 } from 'lucide-react';
+import { formatDateLocal } from '@/lib/date-utils';
 
 interface Reservation {
   id: string;
@@ -29,14 +31,23 @@ interface Reservation {
   paymentNotes?: string;
   createdAt: Date | string;
   cancelReason?: string;
+  staffId?: string | null;
+  staffName?: string | null;
+}
+
+interface Employee {
+  id: string;
+  name: string;
 }
 
 interface ReservationTableProps {
   reservations: Reservation[];
   services: Record<string, string>;
+  employees?: Employee[];
   onEdit?: (reservation: Reservation) => void;
   onCancel?: (reservation: Reservation) => void;
   onStatusChange?: (id: string, status: string) => void;
+  onAssignStaff?: (reservationId: string, staffId: string | null) => Promise<void>;
 }
 
 const sourceIcons: Record<string, any> = {
@@ -77,11 +88,13 @@ const statusLabels: Record<string, string> = {
   no_show: 'No show'
 };
 
-export default function ReservationTableAdvanced({ 
-  reservations, 
+export default function ReservationTableAdvanced({
+  reservations,
   services,
+  employees = [],
   onEdit,
-  onStatusChange 
+  onStatusChange,
+  onAssignStaff
 }: ReservationTableProps) {
   const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -134,6 +147,15 @@ export default function ReservationTableAdvanced({
       } else if (sortField === 'totalPrice') {
         aVal = a.totalPrice;
         bVal = b.totalPrice;
+      } else if (sortField === 'userName') {
+        aVal = (a.userName || '').toLowerCase();
+        bVal = (b.userName || '').toLowerCase();
+      } else if (sortField === 'status') {
+        aVal = a.status || 'pending';
+        bVal = b.status || 'pending';
+      } else if (sortField === 'paymentStatus') {
+        aVal = a.paymentStatus || 'pending';
+        bVal = b.paymentStatus || 'pending';
       }
 
       if (sortDirection === 'asc') {
@@ -191,7 +213,7 @@ export default function ReservationTableAdvanced({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `reservations_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `reservations_${formatDateLocal(new Date())}.csv`;
     link.click();
   };
 
@@ -362,7 +384,18 @@ export default function ReservationTableAdvanced({
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Heure</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Client</th>
+                <th
+                  className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleSort('userName')}
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    Client
+                    {sortField === 'userName' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Employé</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Services</th>
                 <th 
                   className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
@@ -375,16 +408,36 @@ export default function ReservationTableAdvanced({
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Statut</th>
+                <th 
+                  className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleSort('status')}
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    Statut
+                    {sortField === 'status' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Source</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Paiement</th>
+                <th 
+                  className="px-4 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleSort('paymentStatus')}
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    Paiement
+                    {sortField === 'paymentStatus' && (
+                      sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                    )}
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredAndSortedReservations.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                     Aucune réservation trouvée
                   </td>
                 </tr>
@@ -417,8 +470,42 @@ export default function ReservationTableAdvanced({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-sm">
-                          {reservation.services.map(s => services[s] || s).join(', ')}
+                        {onAssignStaff ? (
+                          <select
+                            value={reservation.staffId || ''}
+                            onChange={async (e) => {
+                              const newStaffId = e.target.value || null;
+                              await onAssignStaff(reservation.id, newStaffId);
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="">Non assigné</option>
+                            {employees.map(emp => (
+                              <option key={emp.id} value={emp.id}>{emp.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-sm text-gray-600">
+                            {reservation.staffName || 'Non assigné'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <div className="text-sm">
+                            {reservation.services && reservation.services.length > 0
+                              ? reservation.services.map((s: string) => services[s] || s).join(', ')
+                              : 'Aucun service'
+                            }
+                          </div>
+                          {/* Affichage des remarques si présentes */}
+                          {reservation.notes && (
+                            <div className="bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                              <p className="text-xs text-amber-700">
+                                <span className="font-medium">Note :</span> {reservation.notes}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -439,16 +526,39 @@ export default function ReservationTableAdvanced({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          (reservation.paymentStatus || 'pending') === 'paid' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {(reservation.paymentStatus || 'pending') === 'paid' ? 'Payé' : 'Non payé'}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            (reservation.paymentStatus || 'pending') === 'paid' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {(reservation.paymentStatus || 'pending') === 'paid' ? '✓ Payé' : 'Non payé'}
+                          </span>
+                          {reservation.invoiceNumber && (
+                            <div className="text-xs text-gray-600 flex items-center gap-1">
+                              <span className="font-medium">📄</span>
+                              {reservation.invoiceNumber}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
+                          {/* Bouton Facture pour les réservations payées */}
+                          {reservation.paymentStatus === 'paid' && reservation.invoiceNumber && (
+                            <button
+                              onClick={() => {
+                                // Ouvrir la facture dans un nouvel onglet
+                                const invoiceUrl = `/api/invoice/${reservation.id}`;
+                                window.open(invoiceUrl, '_blank');
+                              }}
+                              className="px-2 py-1 bg-[#d4b5a0] text-white text-xs rounded hover:bg-[#c9a084] flex items-center gap-1"
+                              title={`Voir facture ${reservation.invoiceNumber}`}
+                            >
+                              <FileText className="w-3 h-3" />
+                              Facture
+                            </button>
+                          )}
                           {reservation.status === 'pending' && (
                             <>
                               <button

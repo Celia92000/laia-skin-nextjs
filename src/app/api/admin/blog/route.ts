@@ -1,27 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+import { getPrismaClient } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer tous les articles
 export async function GET(request: Request) {
-  try {
-    // Récupération sans authentification pour debug
-    const posts = await prisma.blogPost.findMany({
-      orderBy: { publishedAt: 'desc' }
-    });
-
-    console.log('📚 Articles trouvés dans la DB:', posts.length);
-    return NextResponse.json(posts);
-  } catch (error) {
-    console.error('❌ Erreur lors de la récupération des articles:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
-  }
-}
-
-// POST - Créer un nouvel article
-export async function POST(request: Request) {
+  const prisma = await getPrismaClient();
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -29,10 +13,74 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.substring(7);
-    jwt.verify(token, JWT_SECRET);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    // Récupérer les articles DE CETTE ORGANISATION
+    const posts = await prisma.blogPost.findMany({
+      where: {
+        organizationId: user.organizationId ?? undefined
+      },
+      orderBy: { publishedAt: 'desc' }
+    });
+
+    log.info('📚 Articles trouvés dans la DB:', { count: posts.length });
+    return NextResponse.json(posts);
+  } catch (error) {
+    log.error('❌ Erreur lors de la récupération des articles:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+// POST - Créer un nouvel article
+export async function POST(request: Request) {
+  const prisma = await getPrismaClient();
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // Récupérer l'utilisateur avec son organizationId
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true, role: true }
+    });
+
+    if (!user || !user.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    if (!['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
 
     const data = await request.json();
-    
+
     // Générer le slug si non fourni
     if (!data.slug && data.title) {
       data.slug = data.title
@@ -47,16 +95,18 @@ export async function POST(request: Request) {
         .replace(/^-|-$/g, '');
     }
 
+    // Créer l'article POUR CETTE ORGANISATION
     const post = await prisma.blogPost.create({
       data: {
         ...data,
+        organizationId: user.organizationId ?? undefined,
         publishedAt: data.published ? new Date() : null
       }
     });
 
     return NextResponse.json(post);
   } catch (error) {
-    console.error('Erreur lors de la création de l\'article:', error);
+    log.error('Erreur lors de la création de l\'article:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que l'utilisateur existe toujours
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: {
         id: true,
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
       user 
     });
   } catch (error) {
-    console.error('Erreur de vérification:', error);
+    log.error('Erreur de vérification:', error);
     return NextResponse.json({ error: 'Erreur de vérification' }, { status: 500 });
   }
 }

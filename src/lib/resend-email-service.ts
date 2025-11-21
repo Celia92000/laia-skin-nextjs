@@ -1,7 +1,4 @@
-import { Resend } from 'resend';
-
-// Initialiser Resend
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key');
+import { getResend } from '@/lib/resend';
 
 export interface ReservationEmailData {
   to: string;
@@ -110,11 +107,12 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
           <strong>LAIA SKIN INSTITUT</strong>
         </p>
         <p style="color: #666; margin: 10px 0;">
-          5 allée Jean de la Fontaine<br>
+          Allée Jean de la Fontaine<br>
           92000 Nanterre
         </p>
         <div class="building-info">
-          🏢 Bâtiment 5 - 2ème étage - Porte 523
+          📱 Appelez-moi au 06 83 71 70 50<br>
+          quand vous serez arrivé
         </div>
         <p style="color: #666; margin: 10px 0;">
           🚇 À 6 minutes à pied de la gare<br>
@@ -123,7 +121,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
       </div>
       
       <div class="buttons">
-        <a href="https://maps.google.com/?q=5+allée+Jean+de+la+Fontaine+92000+Nanterre" class="button button-primary">
+        <a href="https://maps.google.com/?q=Nanterre+Université+RER+A" class="button button-primary">
           📍 Voir l'itinéraire
         </a>
         <a href="https://wa.me/33683717050" class="button button-whatsapp">
@@ -153,12 +151,12 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
       </p>
       <p>
         📱 WhatsApp : 06 83 71 70 50<br>
-        📧 contact@laiaskin.fr
+        📧 contact@laia.skin.fr
       </p>
       <div class="social-links">
         <a href="https://www.instagram.com/laia.skin/">Instagram</a> • 
         <a href="https://www.facebook.com/profile.php?id=61578944046472">Facebook</a> • 
-        <a href="https://www.tiktok.com/@laiaskin">TikTok</a>
+        <a href="https://www.tiktok.com/@laia.skin">TikTok</a>
       </div>
     </div>
   </div>
@@ -181,11 +179,11 @@ Montant : ${data.totalPrice}€
 
 ADRESSE :
 LAIA SKIN INSTITUT
-5 allée Jean de la Fontaine, 92000 Nanterre
-Bâtiment 5 - 2ème étage - Porte 523
+Allée Jean de la Fontaine, 92000 Nanterre
+📱 Appelez-moi au 06 83 71 70 50 quand vous serez arrivé
 (6 min à pied de la gare Nanterre Université RER A)
 
-Google Maps : https://maps.google.com/?q=5+allée+Jean+de+la+Fontaine+92000+Nanterre
+Google Maps : https://maps.google.com/?q=Nanterre+Université+RER+A
 
 BON À SAVOIR :
 • Merci d'arriver 5 minutes avant
@@ -201,8 +199,9 @@ WhatsApp : 06 83 71 70 50
 Instagram : @laia.skin`;
 
     // Envoyer l'email via Resend
-    const { data: emailData, error } = await resend.emails.send({
-      from: 'LAIA SKIN Institut <onboarding@resend.dev>', // Temporaire en attendant validation domaine
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA SKIN Institut <contact@laiaskininstitut.fr>';
+    const { data: emailData, error } = await getResend().emails.send({
+      from: fromEmail,
       to: [data.to],
       subject: `✨ Confirmation RDV - ${data.date} à ${data.time}`,
       html: htmlContent,
@@ -222,7 +221,7 @@ Instagram : @laia.skin`;
       const { prisma } = await import('@/lib/prisma');
       await prisma.emailHistory.create({
         data: {
-          from: 'contact@laiaskin.fr',
+          from: 'contact@laia.skin.fr',
           to: data.to,
           subject: `Confirmation RDV - ${data.date} à ${data.time}`,
           content: 'Email de confirmation de réservation',

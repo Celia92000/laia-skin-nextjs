@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAvailableSlots, getBlockedDatesForMonth, getWorkingHours } from '@/lib/availability-service';
+import { formatDateLocal } from '@/lib/date-utils';
+import { log } from '@/lib/logger';
 
 // GET - Récupérer les disponibilités publiques
 export async function GET(request: NextRequest) {
@@ -13,10 +15,14 @@ export async function GET(request: NextRequest) {
       if (!dateStr) {
         return NextResponse.json({ error: 'Date requise' }, { status: 400 });
       }
-      
+
+      // Récupérer la durée des services si fournie
+      const serviceDuration = searchParams.get('duration');
+      const duration = serviceDuration ? parseInt(serviceDuration) : undefined;
+
       const date = new Date(dateStr);
-      const slots = await getAvailableSlots(date);
-      
+      const slots = await getAvailableSlots(date, duration);
+
       return NextResponse.json({ slots });
     } 
     else if (action === 'blocked') {
@@ -26,8 +32,8 @@ export async function GET(request: NextRequest) {
       
       const blockedDates = await getBlockedDatesForMonth(year, month);
       
-      return NextResponse.json({ 
-        blockedDates: blockedDates.map(d => d.toISOString().split('T')[0]) 
+      return NextResponse.json({
+        blockedDates: blockedDates.map(d => formatDateLocal(d))
       });
     }
     else {
@@ -37,7 +43,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ workingHours });
     }
   } catch (error) {
-    console.error('Erreur lors de la récupération des disponibilités:', error);
+    log.error('Erreur lors de la récupération des disponibilités:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

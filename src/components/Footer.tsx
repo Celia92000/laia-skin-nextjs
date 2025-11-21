@@ -1,8 +1,53 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles, CheckCircle } from "lucide-react";
+import { useConfig } from "@/hooks/useConfig";
 
-export default function Footer() {
+interface FooterProps {
+  organizationData?: any;
+}
+
+export default function Footer({ organizationData }: FooterProps) {
+  const pathname = usePathname();
+  const { config: fetchedConfig } = useConfig();
+  const config = organizationData?.config || fetchedConfig;
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubscribed(true);
+        setEmail("");
+        setTimeout(() => setSubscribed(false), 5000);
+      } else {
+        setError(data.error || "Erreur lors de l'inscription");
+      }
+    } catch (err) {
+      setError("Erreur de connexion");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-accent text-white">
       {/* Main Footer */}
@@ -19,47 +64,53 @@ export default function Footer() {
                   className="object-contain"
                 />
               </div>
-              <h3 className="text-xl font-playfair tracking-normal text-white">LAIA SKIN INSTITUT</h3>
+              <h3 className="text-xl font-playfair tracking-normal text-white">{pathname === '/login' || pathname.startsWith('/status') || pathname.startsWith('/privacy') || pathname.startsWith('/cgv-laia-connect') || pathname.startsWith('/dpa') ? 'LAIA Connect' : config.siteName?.toUpperCase() || 'LAIA SKIN INSTITUT'}</h3>
             </div>
             <p className="text-base text-white leading-relaxed mb-4 font-playfair italic">
-              Une peau respectée, une beauté révélée
+              {config.siteTagline || 'Une peau respectée, une beauté révélée'}
             </p>
             <div className="flex gap-3">
-              <a 
-                href="https://www.instagram.com/laia.skin/" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
-                title="Suivez-nous sur Instagram"
-              >
-                <Instagram size={18} />
-              </a>
-              <a 
-                href="https://www.facebook.com/profile.php?id=61578944046472" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
-                title="Suivez-nous sur Facebook"
-              >
-                <Facebook size={18} />
-              </a>
-              <a 
-                href="https://www.tiktok.com/@laiaskin" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
-                title="Suivez-nous sur TikTok"
-              >
-                <svg 
-                  width="18" 
-                  height="18" 
-                  viewBox="0 0 24 24" 
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
+              {config.instagram && (
+                <a
+                  href={config.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                  title="Suivez-nous sur Instagram"
                 >
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.37 6.37 0 0 0-1-.05A6.34 6.34 0 0 0 3 15.7a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.44a8.27 8.27 0 0 0 4.74 1.48V6.46a4.79 4.79 0 0 1-1.83.23z"/>
-                </svg>
-              </a>
+                  <Instagram size={18} />
+                </a>
+              )}
+              {config.facebook && (
+                <a
+                  href={config.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                  title="Suivez-nous sur Facebook"
+                >
+                  <Facebook size={18} />
+                </a>
+              )}
+              {config.tiktok && (
+                <a
+                  href={config.tiktok}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center"
+                  title="Suivez-nous sur TikTok"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.37 6.37 0 0 0-1-.05A6.34 6.34 0 0 0 3 15.7a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.44a8.27 8.27 0 0 0 4.74 1.48V6.46a4.79 4.79 0 0 1-1.83.23z"/>
+                  </svg>
+                </a>
+              )}
             </div>
           </div>
 
@@ -99,11 +150,31 @@ export default function Footer() {
           <div>
             <h4 className="font-playfair text-xl mb-4 text-white">Mes prestations</h4>
             <ul className="space-y-2">
-              <li className="text-base text-white/95">Hydro'Naissance</li>
-              <li className="text-base text-white/95">Hydro'Cleaning</li>
-              <li className="text-base text-white/95">Renaissance</li>
-              <li className="text-base text-white/95">BB Glow</li>
-              <li className="text-base text-white/95">LED Thérapie</li>
+              <li>
+                <Link href="/services/hydro-naissance" className="text-base text-white/95 hover:text-white transition-colors">
+                  Hydro'Naissance
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/hydro-cleaning" className="text-base text-white/95 hover:text-white transition-colors">
+                  Hydro'Cleaning
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/renaissance" className="text-base text-white/95 hover:text-white transition-colors">
+                  Renaissance
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/bb-glow" className="text-base text-white/95 hover:text-white transition-colors">
+                  BB Glow
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/led-therapie" className="text-base text-white/95 hover:text-white transition-colors">
+                  LED Thérapie
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -111,27 +182,59 @@ export default function Footer() {
           <div>
             <h4 className="font-playfair text-xl mb-4 text-white">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <MapPin size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-base text-white/95">
-                  À 6 minutes de la gare<br />de Nanterre Université
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Instagram size={16} className="text-primary flex-shrink-0" />
-                <a href="https://www.instagram.com/laia.skin/" target="_blank" rel="noopener noreferrer" className="text-base text-white/95 hover:text-white transition-colors">@laia.skin</a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail size={16} className="text-primary flex-shrink-0" />
-                <span className="text-base text-white/95">contact@laia-skin.fr</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Clock size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                <span className="text-base text-white/95">
-                  Lun-Ven: 14h-20h<br />
-                  Sam-Dim: 14h-20h
-                </span>
-              </li>
+              {config.address && (
+                <li className="flex items-start gap-3">
+                  <MapPin size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-base text-white/95">
+                    {config.address}
+                    {config.city && config.postalCode && <><br />{config.postalCode} {config.city}</>}
+                  </span>
+                </li>
+              )}
+              {config.instagram && (
+                <li className="flex items-center gap-3">
+                  <Instagram size={16} className="text-primary flex-shrink-0" />
+                  <a href={config.instagram} target="_blank" rel="noopener noreferrer" className="text-base text-white/95 hover:text-white transition-colors">
+                    @{config.instagram.split('/').pop() || 'laia.skin'}
+                  </a>
+                </li>
+              )}
+              {config.email && (
+                <li className="flex items-center gap-3">
+                  <Mail size={16} className="text-primary flex-shrink-0" />
+                  <a href={`mailto:${config.email}`} className="text-base text-white/95 hover:text-white transition-colors">
+                    {config.email}
+                  </a>
+                </li>
+              )}
+              {config.phone && (
+                <li className="flex items-center gap-3">
+                  <Phone size={16} className="text-primary flex-shrink-0" />
+                  <a href={`tel:${config.phone}`} className="text-base text-white/95 hover:text-white transition-colors">
+                    {config.phone}
+                  </a>
+                </li>
+              )}
+              {config.businessHours && (
+                <li className="flex items-start gap-3">
+                  <Clock size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-base text-white/95">
+                    {(() => {
+                      try {
+                        const hours = JSON.parse(config.businessHours);
+                        return Object.entries(hours).slice(0, 2).map(([day, time], i) => (
+                          <span key={day}>
+                            {i > 0 && <br />}
+                            {day}: {time as string}
+                          </span>
+                        ));
+                      } catch {
+                        return 'Lun-Ven: 14h-20h';
+                      }
+                    })()}
+                  </span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
@@ -148,19 +251,33 @@ export default function Footer() {
                 <p className="text-sm text-white/90">Recevez mes offres et actualités</p>
               </div>
             </div>
-            <form className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Votre email"
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:border-primary w-full sm:w-64"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary text-accent rounded-full hover:bg-primary-light transition-colors text-sm font-light whitespace-nowrap w-full sm:w-auto"
-              >
-                S'inscrire
-              </button>
-            </form>
+            {subscribed ? (
+              <div className="flex items-center gap-2 px-6 py-3 bg-green-600/20 border border-green-500/30 rounded-full">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <span className="text-green-400 font-medium">Inscription réussie ! Bienvenue 🎉</span>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <input
+                  type="email"
+                  placeholder="Votre email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm text-white placeholder-white/50 focus:outline-none focus:border-primary focus:bg-white/20 w-full sm:w-64"
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary-light hover:shadow-lg transition-all text-sm font-medium whitespace-nowrap w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Inscription..." : "S'inscrire"}
+                </button>
+              </form>
+            )}
+            {error && (
+              <p className="text-red-400 text-sm mt-2">{error}</p>
+            )}
           </div>
         </div>
       </div>
@@ -170,17 +287,20 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-white/80">
-              © 2024 LAIA SKIN Institut. Tous droits réservés.
+              © {new Date().getFullYear()} {pathname === '/login' || pathname.startsWith('/status') || pathname.startsWith('/privacy') || pathname.startsWith('/cgv-laia-connect') || pathname.startsWith('/dpa') ? 'LAIA Connect' : config.siteName?.toUpperCase() || 'MON INSTITUT'}. Tous droits réservés.
             </p>
             <div className="flex gap-6">
-              <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">
+              <Link href="/mentions-legales" className="text-sm text-white/80 hover:text-white transition-colors">
                 Mentions légales
               </Link>
-              <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">
+              <Link href="/politique-confidentialite" className="text-sm text-white/80 hover:text-white transition-colors">
                 Politique de confidentialité
               </Link>
-              <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">
+              <Link href="/cgv" className="text-sm text-white/80 hover:text-white transition-colors">
                 CGV
+              </Link>
+              <Link href="/status" className="text-sm text-white/80 hover:text-white transition-colors">
+                Statut
               </Link>
             </div>
           </div>

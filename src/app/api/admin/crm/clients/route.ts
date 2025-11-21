@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { log } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -17,19 +19,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
     // Récupérer tous les clients
     const clients = await prisma.user.findMany({
       where: {
-        role: 'client'
+        OR: [
+          { role: 'CLIENT' },
+          { role: 'CLIENT' }
+        ]
       },
       select: {
         id: true,
@@ -51,24 +56,25 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    console.log(`📱 API Clients: ${clients.length} clients trouvés`);
+    log.info(`📱 API Clients: ${clients.length} clients trouvés`);
     
     // Log les clients avec téléphone pour debug
     const clientsWithPhone = clients.filter(c => c.phone);
-    console.log(`📞 Clients avec téléphone: ${clientsWithPhone.length}`);
+    log.info(`📞 Clients avec téléphone: ${clientsWithPhone.length}`);
     clientsWithPhone.forEach(c => {
-      console.log(`  - ${c.name}: ${c.phone}`);
+      log.info(`  - ${c.name}: ${c.phone}`);
     });
 
     return NextResponse.json(clients);
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des clients:', error);
+    log.error('Erreur lors de la récupération des clients:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  const prisma = await getPrismaClient();
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -83,12 +89,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier que c'est un admin
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { role: true }
     });
 
-    if (!user || user.role !== 'admin') {
+    if (!user || !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(user.role as string)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
     const { name, email, phone, birthDate, skinType, allergies, medicalNotes, preferences, adminNotes } = body;
 
     // Vérifier si l'email existe déjà
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findFirst({
       where: { email }
     });
 
@@ -111,7 +117,7 @@ export async function POST(request: NextRequest) {
         email,
         phone: phone || null,
         password: `temp_${Date.now()}`, // Mot de passe temporaire
-        role: 'client',
+        role: 'CLIENT',
         birthDate: birthDate ? new Date(birthDate) : null,
         skinType: skinType || null,
         allergies: allergies || null,
@@ -121,7 +127,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`✅ Nouveau client créé: ${newClient.name}`);
+    log.info(`✅ Nouveau client créé: ${newClient.name}`);
 
     return NextResponse.json({
       id: newClient.id,
@@ -131,7 +137,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Erreur lors de la création du client:', error);
+    log.error('Erreur lors de la création du client:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

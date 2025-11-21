@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Plus, Edit2, Save, X, Trash2, Eye, EyeOff, Image, 
+import {
+  Plus, Edit2, Save, X, Trash2, Eye, EyeOff, Image,
   Clock, Euro, Tag, Search, Upload, ChevronUp, ChevronDown,
-  Globe, FileText, Star, AlertCircle, CheckCircle, BookOpen
+  Globe, FileText, Star, AlertCircle, CheckCircle, BookOpen,
+  ArrowUp, ArrowDown, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight
 } from "lucide-react";
 import AdminBlogTab from "./AdminBlogTab";
+import AdminProductsTab from "./AdminProductsTab";
+import AdminFormationsTab from "./AdminFormationsTab";
+import ServiceStockLinkManager from "./ServiceStockLinkManager";
+import AdminCategoriesManager from "./AdminCategoriesManager";
 
 interface Service {
   id: string;
@@ -24,13 +29,19 @@ interface Service {
   duration: number;
   benefits?: string;
   process?: string;
+  protocol?: string;
   recommendations?: string;
   contraindications?: string;
   mainImage?: string;
+  imagePositionX?: number;
+  imagePositionY?: number;
+  imageObjectFit?: string;
   gallery?: string;
   videoUrl?: string;
   canBeOption: boolean;
   category?: string;
+  categoryId?: string;
+  subcategoryId?: string;
   order: number;
   active: boolean;
   featured: boolean;
@@ -41,13 +52,21 @@ export default function AdminServicesTab() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'media' | 'details'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'media' | 'details' | 'stock'>('general');
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [mainTab, setMainTab] = useState<'services' | 'blog'>('services');
+  const [mainTab, setMainTab] = useState<'services' | 'categories' | 'products' | 'formations' | 'blog'>('services');
+  const [productsCount, setProductsCount] = useState(0);
+  const [formationsCount, setFormationsCount] = useState(0);
+  const [servicesCount, setServicesCount] = useState(0);
+  const [imageObjectFit, setImageObjectFit] = useState<'cover' | 'contain' | 'fill'>('cover');
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 50 }); // Position en pourcentage
+  const [imageZoom, setImageZoom] = useState(100);
 
   useEffect(() => {
     fetchServices();
+    fetchProductsCount();
+    fetchFormationsCount();
   }, []);
 
   const fetchServices = async () => {
@@ -58,15 +77,54 @@ export default function AdminServicesTab() {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        setServices(data);
+        // Trier les services par ordre d'affichage
+        const sortedData = data.sort((a: Service, b: Service) => a.order - b.order);
+        setServices(sortedData);
+        setServicesCount(sortedData.length);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des services:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProductsCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/products', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProductsCount(data.length);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits:', error);
+    }
+  };
+
+  const fetchFormationsCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/formations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFormationsCount(data.length);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des formations:', error);
     }
   };
 
@@ -158,8 +216,54 @@ export default function AdminServicesTab() {
     } as Service);
 
     const [benefits, setBenefits] = useState<string[]>(parseJsonField(formData.benefits));
-    const [process, setProcess] = useState<string[]>(parseJsonField(formData.process));
+    const [processSteps, setProcessSteps] = useState<string[]>(parseJsonField(formData.process));
+    const [protocol, setProtocol] = useState<{title: string, duration: string, desc: string}[]>(
+      formData.protocol ? (typeof formData.protocol === 'string' ? JSON.parse(formData.protocol) : formData.protocol) : []
+    );
     const [gallery, setGallery] = useState<string[]>(parseJsonField(formData.gallery));
+    const [imageObjectFit, setImageObjectFit] = useState<'cover' | 'contain' | 'fill'>(
+      (formData.imageObjectFit as 'cover' | 'contain' | 'fill') || 'cover'
+    );
+    const [imagePosition, setImagePosition] = useState({
+      x: formData.imagePositionX ?? 50,
+      y: formData.imagePositionY ?? 50
+    });
+
+    // États pour les catégories et sous-catégories
+    const [categories, setCategories] = useState<any[]>([]);
+    const [subcategories, setSubcategories] = useState<any[]>([]);
+
+    // Charger les catégories au montage du composant
+    useEffect(() => {
+      const fetchCategories = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('/api/admin/categories', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setCategories(data.filter((c: any) => c.active));
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement des catégories:', error);
+        }
+      };
+      fetchCategories();
+    }, []);
+
+    // Charger les sous-catégories quand une catégorie est sélectionnée
+    useEffect(() => {
+      if (formData.categoryId) {
+        const selectedCategory = categories.find(c => c.id === formData.categoryId);
+        if (selectedCategory?.subcategories) {
+          setSubcategories(selectedCategory.subcategories.filter((s: any) => s.active));
+        }
+      } else {
+        setSubcategories([]);
+        setFormData({ ...formData, subcategoryId: undefined });
+      }
+    }, [formData.categoryId, categories]);
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -179,9 +283,13 @@ export default function AdminServicesTab() {
 
       const dataToSave = {
         ...formData,
-        benefits: JSON.stringify(benefits.filter(b => b.trim())),
-        process: JSON.stringify(process.filter(p => p.trim())),
-        gallery: JSON.stringify(gallery.filter(g => g.trim()))
+        benefits: JSON.stringify(benefits.filter(b => typeof b === 'string' && b.trim())),
+        process: JSON.stringify(processSteps.filter(p => typeof p === 'string' && p.trim())),
+        protocol: JSON.stringify(protocol.filter(p => p.title?.trim() || p.desc?.trim())),
+        gallery: JSON.stringify(gallery.filter(g => typeof g === 'string' && g.trim())),
+        imagePositionX: imagePosition.x,
+        imagePositionY: imagePosition.y,
+        imageObjectFit: imageObjectFit
       };
 
       handleSaveService(dataToSave);
@@ -215,29 +323,53 @@ export default function AdminServicesTab() {
 
           <form onSubmit={handleSubmit} className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-[#d4b5a0]/20 overflow-x-auto">
-              {(['general', 'seo', 'media', 'details'] as const).map(tab => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 font-medium transition-all whitespace-nowrap ${
-                    activeTab === tab
-                      ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
-                      : 'text-[#2c3e50]/60 hover:text-[#2c3e50]'
-                  }`}
-                >
-                  {tab === 'general' && '📋 Général'}
-                  {tab === 'seo' && '🔍 SEO'}
-                  {tab === 'media' && (
-                    <span className="flex items-center gap-1">
-                      📸 Médias
-                      <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">Images</span>
-                    </span>
-                  )}
-                  {tab === 'details' && '📝 Détails'}
-                </button>
-              ))}
+            <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {(['general', 'seo', 'media', 'details', 'stock'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+                      activeTab === tab
+                        ? 'bg-[#d4b5a0] text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tab === 'general' && (
+                      <>
+                        <span className="hidden sm:inline">📋 Général</span>
+                        <span className="sm:hidden">📋</span>
+                      </>
+                    )}
+                    {tab === 'seo' && (
+                      <>
+                        <span className="hidden sm:inline">🔍 SEO</span>
+                        <span className="sm:hidden">🔍</span>
+                      </>
+                    )}
+                    {tab === 'media' && (
+                      <span className="flex items-center gap-1">
+                        <span className="hidden sm:inline">📸 Médias</span>
+                        <span className="sm:hidden">📸</span>
+                        <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">Images</span>
+                      </span>
+                    )}
+                    {tab === 'details' && (
+                      <>
+                        <span className="hidden sm:inline">📝 Détails</span>
+                        <span className="sm:hidden">📝</span>
+                      </>
+                    )}
+                    {tab === 'stock' && (
+                      <>
+                        <span className="hidden sm:inline">📦 Consommables</span>
+                        <span className="sm:hidden">📦</span>
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* General Tab */}
@@ -397,18 +529,55 @@ export default function AdminServicesTab() {
                       Catégorie
                     </label>
                     <select
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      value={formData.categoryId || ''}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          categoryId: e.target.value || undefined,
+                          subcategoryId: undefined // Réinitialiser la sous-catégorie
+                        });
+                      }}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     >
-                      <option value="">Sélectionner</option>
-                      <option value="signature">Signature</option>
-                      <option value="hydro">Hydro</option>
-                      <option value="antiage">Anti-âge</option>
-                      <option value="beauty">Beauté</option>
-                      <option value="technology">Technologie</option>
+                      <option value="">-- Sélectionner une catégorie --</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {categories.length === 0
+                        ? "Aucune catégorie disponible. Créez-en une dans l'onglet Catégories."
+                        : "Sélectionnez la catégorie principale du service"}
+                    </p>
                   </div>
+
+                  {formData.categoryId && subcategories.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-[#2c3e50] mb-2">
+                        Sous-catégorie (optionnel)
+                      </label>
+                      <select
+                        value={formData.subcategoryId || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          subcategoryId: e.target.value || undefined
+                        })}
+                        className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                      >
+                        <option value="">-- Aucune sous-catégorie --</option>
+                        {subcategories.map((subcat) => (
+                          <option key={subcat.id} value={subcat.id}>
+                            {subcat.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Affinez la catégorisation du service
+                      </p>
+                    </div>
+                  )}
                   
                   <div>
                     <label className="block text-sm font-medium text-[#2c3e50] mb-2">
@@ -546,17 +715,250 @@ export default function AdminServicesTab() {
                     💡 Formats: URL externe (https://...) ou chemin local (/images/...)
                   </p>
                   {formData.mainImage && (
-                    <div className="mt-4 p-2 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Aperçu :</p>
-                      <img 
-                        src={formData.mainImage} 
-                        alt="Aperçu" 
-                        className="w-full max-w-md h-64 object-cover rounded-lg shadow-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
-                          (e.target as HTMLImageElement).alt = 'Image non trouvée';
-                        }}
-                      />
+                    <div className="mt-6 bg-gradient-to-br from-[#d4b5a0]/10 to-white rounded-xl shadow-lg border-2 border-[#d4b5a0]/30 overflow-hidden">
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] px-6 py-4">
+                        <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          Éditeur d'image avancé
+                        </h3>
+                        <p className="text-white/90 text-sm mt-1">Ajustez précisément votre image en temps réel</p>
+                      </div>
+
+                      <div className="p-6 space-y-6">
+                        {/* Preview Section */}
+                        <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+                          {/* Grid overlay */}
+                          <div className="absolute inset-0 pointer-events-none opacity-20 z-10">
+                            <div className="grid grid-cols-3 grid-rows-3 h-full">
+                              {[...Array(9)].map((_, i) => (
+                                <div key={i} className="border border-white/30"></div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Interactive Image */}
+                          <div
+                            className="relative h-80 cursor-crosshair"
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                              const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+                              setImagePosition({ x, y });
+                            }}
+                          >
+                            <img
+                              src={formData.mainImage}
+                              alt="Aperçu"
+                              className="w-full h-full transition-all duration-300"
+                              style={{
+                                objectFit: imageObjectFit,
+                                objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+                                transform: `scale(${imageZoom / 100})`
+                              }}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                              }}
+                            />
+                            {/* Position indicator */}
+                            <div
+                              className="absolute w-4 h-4 bg-[#d4b5a0] border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20 animate-pulse"
+                              style={{ left: `${imagePosition.x}%`, top: `${imagePosition.y}%` }}
+                            />
+                          </div>
+
+                          {/* Quick info overlay */}
+                          <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-xs font-mono">
+                            Position: {imagePosition.x}%, {imagePosition.y}% | Zoom: {imageZoom}%
+                          </div>
+                        </div>
+
+                        {/* Controls Section */}
+                        <div className="space-y-4">
+                          {/* Object Fit Modes */}
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-800 mb-3">Mode d'affichage</label>
+                            <div className="grid grid-cols-3 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setImageObjectFit('cover')}
+                                className={`group relative px-4 py-3 rounded-xl border-2 transition-all ${
+                                  imageObjectFit === 'cover'
+                                    ? 'border-[#d4b5a0] bg-[#d4b5a0]/10 shadow-md'
+                                    : 'border-gray-200 hover:border-[#d4b5a0] hover:bg-[#d4b5a0]/5'
+                                }`}
+                              >
+                                <div className="text-2xl mb-1">📐</div>
+                                <div className="text-xs font-semibold text-gray-700">Remplir</div>
+                                <div className="text-xs text-gray-500">Cover</div>
+                                {imageObjectFit === 'cover' && (
+                                  <div className="absolute top-2 right-2 w-2 h-2 bg-[#d4b5a0] rounded-full"></div>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setImageObjectFit('contain')}
+                                className={`group relative px-4 py-3 rounded-xl border-2 transition-all ${
+                                  imageObjectFit === 'contain'
+                                    ? 'border-[#d4b5a0] bg-[#d4b5a0]/10 shadow-md'
+                                    : 'border-gray-200 hover:border-[#d4b5a0] hover:bg-[#d4b5a0]/5'
+                                }`}
+                              >
+                                <div className="text-2xl mb-1">🔲</div>
+                                <div className="text-xs font-semibold text-gray-700">Contenir</div>
+                                <div className="text-xs text-gray-500">Contain</div>
+                                {imageObjectFit === 'contain' && (
+                                  <div className="absolute top-2 right-2 w-2 h-2 bg-[#d4b5a0] rounded-full"></div>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setImageObjectFit('fill')}
+                                className={`group relative px-4 py-3 rounded-xl border-2 transition-all ${
+                                  imageObjectFit === 'fill'
+                                    ? 'border-[#d4b5a0] bg-[#d4b5a0]/10 shadow-md'
+                                    : 'border-gray-200 hover:border-[#d4b5a0] hover:bg-[#d4b5a0]/5'
+                                }`}
+                              >
+                                <div className="text-2xl mb-1">↔️</div>
+                                <div className="text-xs font-semibold text-gray-700">Étirer</div>
+                                <div className="text-xs text-gray-500">Fill</div>
+                                {imageObjectFit === 'fill' && (
+                                  <div className="absolute top-2 right-2 w-2 h-2 bg-[#d4b5a0] rounded-full"></div>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Position Controls */}
+                          <div className="bg-white rounded-xl p-4 border border-gray-200">
+                            <label className="block text-sm font-semibold text-gray-800 mb-3">Position de l'image</label>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-gray-600">Horizontal (X)</span>
+                                  <span className="text-xs font-mono font-bold text-[#d4b5a0]">{imagePosition.x}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={imagePosition.x}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, x: parseInt(e.target.value) }))}
+                                  className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-gray-600">Vertical (Y)</span>
+                                  <span className="text-xs font-mono font-bold text-[#d4b5a0]">{imagePosition.y}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={imagePosition.y}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, y: parseInt(e.target.value) }))}
+                                  className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Position Presets */}
+                            <div className="mt-4">
+                              <span className="text-xs font-medium text-gray-600 mb-2 block">Positions rapides</span>
+                              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                                {[
+                                  { dx: -10, dy: -10, icon: '↖' }, { dx: 0, dy: -10, icon: '↑' }, { dx: 10, dy: -10, icon: '↗' },
+                                  { dx: -10, dy: 0, icon: '←' }, { dx: 0, dy: 0, icon: '·', reset: true }, { dx: 10, dy: 0, icon: '→' },
+                                  { dx: -10, dy: 10, icon: '↙' }, { dx: 0, dy: 10, icon: '↓' }, { dx: 10, dy: 10, icon: '↘' }
+                                ].map(({ dx, dy, icon, reset }, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      if (reset) {
+                                        setImagePosition({ x: 50, y: 50 });
+                                      } else {
+                                        setImagePosition({
+                                          x: Math.max(0, Math.min(100, imagePosition.x + dx)),
+                                          y: Math.max(0, Math.min(100, imagePosition.y + dy))
+                                        });
+                                      }
+                                    }}
+                                    className={`w-7 h-7 text-xs rounded transition-all ${
+                                      reset && imagePosition.x === 50 && imagePosition.y === 50
+                                        ? 'bg-[#d4b5a0] text-white shadow-sm'
+                                        : 'text-gray-600 hover:bg-white'
+                                    }`}
+                                    title={reset ? 'Centrer' : `Déplacer de ${Math.abs(dx || dy)}%`}
+                                  >
+                                    {icon}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Zoom Control */}
+                          <div className="bg-white rounded-xl p-4 border border-gray-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <label className="text-sm font-semibold text-gray-800">Zoom</label>
+                              <span className="text-sm font-mono font-bold text-[#d4b5a0]">{imageZoom}%</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setImageZoom(Math.max(50, imageZoom - 10))}
+                                className="px-3 py-2 bg-[#d4b5a0]/20 text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/30 transition-colors font-bold"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="range"
+                                min="50"
+                                max="200"
+                                value={imageZoom}
+                                onChange={(e) => setImageZoom(parseInt(e.target.value))}
+                                className="flex-1 h-2 bg-gradient-to-r from-blue-200 via-[#d4b5a0] to-pink-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setImageZoom(Math.min(200, imageZoom + 10))}
+                                className="px-3 py-2 bg-[#d4b5a0]/20 text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/30 transition-colors font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Reset Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImageObjectFit('cover');
+                              setImagePosition({ x: 50, y: 50 });
+                              setImageZoom(100);
+                            }}
+                            className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Réinitialiser
+                          </button>
+                        </div>
+
+                        {/* Info */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-xs text-blue-800">
+                            💡 <strong>Astuce :</strong> Cliquez directement sur l'image pour positionner le point focal, ou utilisez les curseurs pour un ajustement précis.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -581,31 +983,102 @@ export default function AdminServicesTab() {
                   <p className="text-sm text-gray-500 mb-4">
                     Ajoutez plusieurs images pour créer une galerie sur la page du service
                   </p>
-                  {gallery.map((url, index) => (
-                    <div key={index} className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={url}
-                        onChange={(e) => updateListItem(gallery, setGallery, index, e.target.value)}
-                        placeholder="URL de l'image"
-                        className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeListItem(gallery, setGallery, index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+
+                  <div className="space-y-4">
+                    {gallery.map((url, index) => (
+                      <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="flex gap-2 mb-3">
+                          <input
+                            type="text"
+                            value={url}
+                            onChange={(e) => updateListItem(gallery, setGallery, index, e.target.value)}
+                            placeholder="URL de l'image"
+                            className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeListItem(gallery, setGallery, index)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {url && (
+                          <div className="relative">
+                            {/* Adjustment Buttons */}
+                            <div className="flex gap-2 mb-2">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const img = e.currentTarget.closest('.relative')?.querySelector('img') as HTMLImageElement;
+                                  if (img) img.style.objectFit = 'cover';
+                                }}
+                                className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-[#d4b5a0]/20 hover:border-[#d4b5a0] transition"
+                                title="Remplir"
+                              >
+                                📐
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const img = e.currentTarget.closest('.relative')?.querySelector('img') as HTMLImageElement;
+                                  if (img) img.style.objectFit = 'contain';
+                                }}
+                                className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-[#d4b5a0]/20 hover:border-[#d4b5a0] transition"
+                                title="Afficher entière"
+                              >
+                                🔲
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const img = e.currentTarget.closest('.relative')?.querySelector('img') as HTMLImageElement;
+                                  if (img) img.style.objectFit = 'fill';
+                                }}
+                                className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-[#d4b5a0]/20 hover:border-[#d4b5a0] transition"
+                                title="Étirer"
+                              >
+                                ↔️
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  const img = e.currentTarget.closest('.relative')?.querySelector('img') as HTMLImageElement;
+                                  if (img) {
+                                    img.style.objectPosition = img.style.objectPosition === 'top' ? 'center' : 'top';
+                                  }
+                                }}
+                                className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-[#d4b5a0]/20 hover:border-[#d4b5a0] transition"
+                                title="Position Haut/Centre"
+                              >
+                                ⬆️
+                              </button>
+                            </div>
+                            <img
+                              src={url}
+                              alt={`Galerie ${index + 1}`}
+                              className="w-full h-40 rounded-lg shadow-sm"
+                              style={{ objectFit: 'cover', objectPosition: 'center' }}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                (e.target as HTMLImageElement).alt = 'Image non trouvée';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => addListItem(gallery, setGallery)}
-                    className="px-4 py-2 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/20"
+                    className="mt-4 w-full px-4 py-3 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/20 transition-colors font-medium"
                   >
                     <Plus className="w-4 h-4 inline mr-2" />
-                    Ajouter une image
+                    Ajouter une image à la galerie
                   </button>
                 </div>
               </div>
@@ -656,7 +1129,7 @@ export default function AdminServicesTab() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Étapes du protocole
                   </label>
-                  {process.map((step, index) => (
+                  {processSteps.map((step, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <span className="flex-shrink-0 w-8 h-8 bg-[#d4b5a0] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         {index + 1}
@@ -664,13 +1137,13 @@ export default function AdminServicesTab() {
                       <input
                         type="text"
                         value={step}
-                        onChange={(e) => updateListItem(process, setProcess, index, e.target.value)}
+                        onChange={(e) => updateListItem(processSteps, setProcessSteps, index, e.target.value)}
                         placeholder="Ex: Diagnostic de peau personnalisé (10 min)"
                         className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                       <button
                         type="button"
-                        onClick={() => removeListItem(process, setProcess, index)}
+                        onClick={() => removeListItem(processSteps, setProcessSteps, index)}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -679,7 +1152,7 @@ export default function AdminServicesTab() {
                   ))}
                   <button
                     type="button"
-                    onClick={() => addListItem(process, setProcess)}
+                    onClick={() => addListItem(processSteps, setProcessSteps)}
                     className="px-4 py-2 bg-[#d4b5a0]/10 text-[#d4b5a0] rounded-lg hover:bg-[#d4b5a0]/20"
                   >
                     <Plus className="w-4 h-4 inline mr-2" />
@@ -712,6 +1185,15 @@ export default function AdminServicesTab() {
                     className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Stock/Consommables Tab */}
+            {activeTab === 'stock' && (
+              <div className="space-y-6">
+                <ServiceStockLinkManager
+                  serviceId={editingService?.id || 'new'}
+                />
               </div>
             )}
 
@@ -776,29 +1258,75 @@ export default function AdminServicesTab() {
   return (
     <div>
       {/* Main Tabs */}
-      <div className="flex gap-4 mb-6 border-b border-[#d4b5a0]/20">
-        <button
-          onClick={() => setMainTab('services')}
-          className={`px-4 py-3 font-medium transition-all flex items-center gap-2 ${
-            mainTab === 'services'
-              ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
-              : 'text-[#2c3e50]/60 hover:text-[#2c3e50]'
-          }`}
-        >
-          <FileText className="w-5 h-5" />
-          Prestations
-        </button>
-        <button
-          onClick={() => setMainTab('blog')}
-          className={`px-4 py-3 font-medium transition-all flex items-center gap-2 ${
-            mainTab === 'blog'
-              ? 'text-[#d4b5a0] border-b-2 border-[#d4b5a0]'
-              : 'text-[#2c3e50]/60 hover:text-[#2c3e50]'
-          }`}
-        >
-          <BookOpen className="w-5 h-5" />
-          Articles Blog
-        </button>
+      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <button
+            onClick={() => setMainTab('services')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              mainTab === 'services'
+                ? 'bg-[#d4b5a0] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">Prestations</span>
+            <span className="sm:hidden">💆</span>
+            {servicesCount > 0 && <span className="text-xs opacity-75">({servicesCount})</span>}
+          </button>
+
+          <button
+            onClick={() => setMainTab('categories')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              mainTab === 'categories'
+                ? 'bg-[#d4b5a0] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span className="hidden sm:inline">Catégories</span>
+            <span className="sm:hidden">🏷️</span>
+          </button>
+
+          <button
+            onClick={() => setMainTab('products')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              mainTab === 'products'
+                ? 'bg-[#d4b5a0] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span className="hidden sm:inline">Produits</span>
+            <span className="sm:hidden">🏷️</span>
+            {productsCount > 0 && <span className="text-xs opacity-75">({productsCount})</span>}
+          </button>
+
+          <button
+            onClick={() => setMainTab('formations')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              mainTab === 'formations'
+                ? 'bg-[#d4b5a0] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Star className="w-4 h-4" />
+            <span className="hidden sm:inline">Formations</span>
+            <span className="sm:hidden">⭐</span>
+            {formationsCount > 0 && <span className="text-xs opacity-75">({formationsCount})</span>}
+          </button>
+          <button
+            onClick={() => setMainTab('blog')}
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${
+              mainTab === 'blog'
+                ? 'bg-[#d4b5a0] text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span className="hidden sm:inline">Articles Blog</span>
+            <span className="sm:hidden">📝</span>
+          </button>
+        </div>
       </div>
 
       {/* Services Tab Content */}
@@ -866,6 +1394,14 @@ export default function AdminServicesTab() {
                         )}
                       </span>
                     </div>
+                    
+                    {service.forfaitPrice && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                          Forfait: {service.forfaitPromo || service.forfaitPrice}€
+                        </span>
+                      </div>
+                    )}
                     
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4 text-[#d4b5a0]" />
@@ -935,6 +1471,43 @@ export default function AdminServicesTab() {
               {/* Expanded Details */}
               {expandedServices.has(service.id) && (
                 <div className="mt-6 pt-6 border-t border-[#d4b5a0]/10 space-y-4">
+                  {/* Tarification complète */}
+                  <div className="bg-[#d4b5a0]/5 rounded-lg p-4">
+                    <h4 className="font-medium text-[#2c3e50] mb-3">💰 Tarification complète</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <span className="text-xs text-[#2c3e50]/60">Séance unique</span>
+                        <p className="font-semibold text-lg text-[#2c3e50]">
+                          {service.promoPrice ? (
+                            <>
+                              <span className="line-through text-sm text-[#2c3e50]/40">{service.price}€</span>
+                              {' '}
+                              <span className="text-[#d4b5a0]">{service.promoPrice}€</span>
+                            </>
+                          ) : (
+                            `${service.price}€`
+                          )}
+                        </p>
+                      </div>
+                      {service.forfaitPrice && (
+                        <div>
+                          <span className="text-xs text-[#2c3e50]/60">Forfait 4 séances</span>
+                          <p className="font-semibold text-lg text-green-600">
+                            {service.forfaitPromo ? (
+                              <>
+                                <span className="line-through text-sm text-[#2c3e50]/40">{service.forfaitPrice}€</span>
+                                {' '}
+                                {service.forfaitPromo}€
+                              </>
+                            ) : (
+                              `${service.forfaitPrice}€`
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
                   <div>
                     <h4 className="font-medium text-[#2c3e50] mb-2">Description complète</h4>
                     <p className="text-sm text-[#2c3e50]/70 whitespace-pre-line">{service.description}</p>
@@ -1009,6 +1582,15 @@ export default function AdminServicesTab() {
             <ServiceForm service={editingService} onClose={() => setEditingService(null)} />
           )}
         </>
+      ) : mainTab === 'categories' ? (
+        /* Categories Tab Content */
+        <AdminCategoriesManager />
+      ) : mainTab === 'products' ? (
+        /* Products Tab Content */
+        <AdminProductsTab />
+      ) : mainTab === 'formations' ? (
+        /* Formations Tab Content */
+        <AdminFormationsTab />
       ) : (
         /* Blog Tab Content */
         <AdminBlogTab />

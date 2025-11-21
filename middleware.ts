@@ -27,10 +27,17 @@ export async function middleware(request: NextRequest) {
       : await checkRateLimit(ip);
 
     if (!rateLimitResult.success) {
+      // Convertir reset en Date si c'est un timestamp
+      const resetDate = typeof rateLimitResult.reset === 'number'
+        ? new Date(rateLimitResult.reset)
+        : rateLimitResult.reset;
+
+      const retryAfter = Math.ceil((resetDate.getTime() - Date.now()) / 1000);
+
       return new NextResponse(
         JSON.stringify({
           error: 'Trop de requêtes. Veuillez réessayer dans quelques instants.',
-          retryAfter: Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000),
+          retryAfter,
         }),
         {
           status: 429,
@@ -38,8 +45,8 @@ export async function middleware(request: NextRequest) {
             'Content-Type': 'application/json',
             'X-RateLimit-Limit': rateLimitResult.limit.toString(),
             'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-            'X-RateLimit-Reset': rateLimitResult.reset.toISOString(),
-            'Retry-After': Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000).toString(),
+            'X-RateLimit-Reset': resetDate.toISOString(),
+            'Retry-After': retryAfter.toString(),
           },
         }
       );

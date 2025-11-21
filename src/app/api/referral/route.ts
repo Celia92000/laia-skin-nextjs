@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
+import { log } from '@/lib/logger';
 
 // Générer un code de parrainage unique
 function generateReferralCode(name: string): string {
@@ -11,6 +12,7 @@ function generateReferralCode(name: string): string {
 
 // GET - Obtenir les informations de parrainage d'un utilisateur
 export async function GET(request: Request) {
+  const prisma = await getPrismaClient();
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -20,9 +22,12 @@ export async function GET(request: Request) {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
 
-    // Récupérer le profil de fidélité avec code de parrainage
-    const loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId: decoded.id },
+    // 🔒 Récupérer le profil de fidélité DE CETTE ORGANISATION
+    const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: {
         user: true
       }
@@ -38,9 +43,12 @@ export async function GET(request: Request) {
       loyaltyProfile.referralCode = code;
     }
 
-    // Récupérer les parrainages effectués
+    // 🔒 Récupérer les parrainages effectués DE CETTE ORGANISATION
     const referrals = await prisma.referral.findMany({
-      where: { referrerUserId: decoded.id },
+      where: {
+        referrerUserId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: {
         referred: true
       },
@@ -70,7 +78,7 @@ export async function GET(request: Request) {
       shareUrl: `https://laiaskin.fr/register?ref=${loyaltyProfile?.referralCode}`
     });
   } catch (error) {
-    console.error('Erreur récupération parrainage:', error);
+    log.error('Erreur récupération parrainage:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la récupération des informations' 
     }, { status: 500 });
@@ -79,6 +87,7 @@ export async function GET(request: Request) {
 
 // POST - Créer un nouveau parrainage
 export async function POST(request: Request) {
+  const prisma = await getPrismaClient();
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -87,52 +96,60 @@ export async function POST(request: Request) {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
-    
+
     const { email, name } = await request.json();
 
-    // Vérifier si l'email n'est pas déjà client
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    // 🔒 Vérifier si l'email n'est pas déjà client DE CETTE ORGANISATION
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email,
+        organizationId: decoded.organizationId
+      }
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        error: 'Cette personne est déjà cliente' 
+      return NextResponse.json({
+        error: 'Cette personne est déjà cliente'
       }, { status: 400 });
     }
 
-    // Vérifier si pas déjà parrainé
+    // 🔒 Vérifier si pas déjà parrainé DANS CETTE ORGANISATION
     const existingReferral = await prisma.referral.findFirst({
-      where: { 
+      where: {
         referredEmail: email,
+        organizationId: decoded.organizationId,
         status: { not: 'cancelled' }
       }
     });
 
     if (existingReferral) {
-      return NextResponse.json({ 
-        error: 'Cette personne a déjà été parrainée' 
+      return NextResponse.json({
+        error: 'Cette personne a déjà été parrainée'
       }, { status: 400 });
     }
 
-    // Récupérer le profil de fidélité du parrain
-    const loyaltyProfile = await prisma.loyaltyProfile.findUnique({
-      where: { userId: decoded.id },
+    // 🔒 Récupérer le profil de fidélité du parrain DE CETTE ORGANISATION
+    const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
+      where: {
+        userId: decoded.id,
+        organizationId: decoded.organizationId
+      },
       include: { user: true }
     });
 
     if (!loyaltyProfile?.referralCode) {
       const code = generateReferralCode(decoded.name);
       await prisma.loyaltyProfile.update({
-        where: { userId: decoded.id },
+        where: { id: loyaltyProfile.id },
         data: { referralCode: code }
       });
     }
 
-    // Créer le parrainage
+    // 🔒 Créer le parrainage POUR CETTE ORGANISATION
     const referral = await prisma.referral.create({
       data: {
         referrerUserId: decoded.id,
+        organizationId: decoded.organizationId,
         referralCode: `${loyaltyProfile?.referralCode || generateReferralCode(decoded.name)}-${Date.now()}`,
         referredEmail: email,
         referredName: name,
@@ -150,7 +167,7 @@ export async function POST(request: Request) {
       message: 'Invitation envoyée avec succès'
     });
   } catch (error) {
-    console.error('Erreur création parrainage:', error);
+    log.error('Erreur création parrainage:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de la création du parrainage' 
     }, { status: 500 });
@@ -159,7 +176,8 @@ export async function POST(request: Request) {
 
 // PUT - Utiliser une récompense de parrainage
 export async function PUT(request: Request) {
-  try {
+  const prisma = await getPrismaClient();
+  try{
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -167,14 +185,15 @@ export async function PUT(request: Request) {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
-    
+
     const { referralId } = await request.json();
 
-    // Vérifier que le parrainage existe et appartient à l'utilisateur
+    // 🔒 Vérifier que le parrainage existe, appartient à l'utilisateur ET à cette organisation
     const referral = await prisma.referral.findFirst({
       where: {
         id: referralId,
         referrerUserId: decoded.id,
+        organizationId: decoded.organizationId,
         status: 'rewarded',
         rewardUsedAt: null
       }
@@ -197,7 +216,7 @@ export async function PUT(request: Request) {
       message: `Réduction de ${referral.rewardAmount}€ appliquée`
     });
   } catch (error) {
-    console.error('Erreur utilisation récompense:', error);
+    log.error('Erreur utilisation récompense:', error);
     return NextResponse.json({ 
       error: 'Erreur lors de l\'utilisation de la récompense' 
     }, { status: 500 });

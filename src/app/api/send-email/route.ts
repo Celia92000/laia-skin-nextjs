@@ -1,12 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { prisma } from '@/lib/prisma';
-
-// Initialiser Resend avec la clé API
-const resend = new Resend(process.env.RESEND_API_KEY || 're_123456789');
+import { getResend } from '@/lib/resend';
+import { getPrismaClient } from '@/lib/prisma';
+import { getSiteConfig } from '@/lib/config-service';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { log } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation
+    const organizationId = await getCurrentOrganizationId();
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
+    const prisma = await getPrismaClient();
+    const config = await getSiteConfig();
+    const siteName = config.siteName || 'Mon Institut';
+    const ownerName = config.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
+    const phone = config.phone || '06 XX XX XX XX';
+    const email = config.email || 'contact@institut.fr';
+    const address = config.address || '';
+    const city = config.city || '';
+    const postalCode = config.postalCode || '';
+    const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
+    const instagram = config.instagram || '';
+    const primaryColor = config.primaryColor || '#667eea';
+
     const { to, subject, message, clientName } = await request.json();
 
     // Template HTML professionnel
@@ -33,8 +52,8 @@ export async function POST(request: NextRequest) {
       overflow: hidden;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .header { 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .header {
+      background: linear-gradient(135deg, ${primaryColor} 0%, #764ba2 100%);
       color: white;
       padding: 30px;
       text-align: center;
@@ -69,8 +88,8 @@ export async function POST(request: NextRequest) {
       color: #666;
       font-size: 14px;
     }
-    .footer a { 
-      color: #667eea;
+    .footer a {
+      color: ${primaryColor};
       text-decoration: none;
     }
   </style>
@@ -79,23 +98,23 @@ export async function POST(request: NextRequest) {
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>LAIA SKIN Institut</h1>
+        <h1>${siteName.toUpperCase()}</h1>
       </div>
       <div class="content">
-        <p>Bonjour ${clientName},</p>
-        <div class="message">${message.replace(/\n/g, '<br>')}</div>
+        <p>Bonjour ${clientName || 'Cliente'},</p>
+        <div class="message">${message ? message.replace(/\n/g, '<br>') : 'Votre réservation a été confirmée.'}</div>
         <div class="signature">
           <p>À très bientôt,<br>
-          <strong>Laïa</strong><br>
-          LAIA SKIN Institut</p>
+          <strong>${ownerName}</strong><br>
+          ${siteName}</p>
         </div>
       </div>
       <div class="footer">
         <p>
-          📍 23 rue de la Beauté, 75001 Paris<br>
-          📞 06 12 34 56 78<br>
-          ✉️ <a href="mailto:contact@laiaskininstitut.fr">contact@laiaskininstitut.fr</a><br>
-          🌐 <a href="https://laiaskininstitut.fr">laiaskininstitut.fr</a>
+          📍 ${fullAddress}<br>
+          📞 ${phone}<br>
+          ✉️ <a href="mailto:${email}">${email}</a><br>
+          ${instagram ? `📸 <a href="${instagram}">${instagram.split('/').pop() ? '@' + instagram.split('/').pop() : instagram}</a>` : ''}
         </p>
       </div>
     </div>
@@ -121,29 +140,31 @@ export async function POST(request: NextRequest) {
 
     try {
       // Envoyer l'email avec Resend
-      const data = await resend.emails.send({
-        from: 'LAIA SKIN Institut <onboarding@resend.dev>', // Domaine de test gratuit de Resend
+      const fromEmail = `${siteName} <${email}>`;
+      const data = await getResend().emails.send({
+        from: fromEmail,
         to: [to],
         subject: subject,
         html: htmlContent,
-        text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\nLaïa\nLAIA SKIN Institut`
+        text: `Bonjour ${clientName},\n\n${message}\n\nÀ très bientôt,\n${ownerName}\n${siteName}`
       });
 
-      // Enregistrer dans l'historique
+      // 🔒 Enregistrer dans l'historique DE CETTE ORGANISATION
       try {
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laiaskininstitut.fr',
+            from: email,
             to: to,
             subject: subject,
-            content: message,
+            content: message || '',
             template: 'custom',
             status: 'sent',
-            direction: 'outgoing'
+            direction: 'outgoing',
+            organizationId: organizationId
           }
         });
       } catch (dbError) {
-        console.log('Erreur enregistrement historique:', dbError);
+        log.info('Erreur enregistrement historique:', dbError);
       }
 
       return NextResponse.json({ 
@@ -153,24 +174,25 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (resendError: any) {
-      console.error('Erreur Resend:', resendError);
+      log.error('Erreur Resend:', resendError);
       
-      // Enregistrer l'échec dans l'historique
+      // 🔒 Enregistrer l'échec dans l'historique DE CETTE ORGANISATION
       try {
         await prisma.emailHistory.create({
           data: {
-            from: 'contact@laiaskininstitut.fr',
+            from: email,
             to: to,
             subject: subject,
-            content: message,
+            content: message || '',
             template: 'custom',
             status: 'failed',
             direction: 'outgoing',
+            organizationId: organizationId,
             errorMessage: resendError.message
           }
         });
       } catch (dbError) {
-        console.log('Erreur enregistrement historique:', dbError);
+        log.info('Erreur enregistrement historique:', dbError);
       }
 
       return NextResponse.json({ 
@@ -181,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Erreur générale:', error);
+    log.error('Erreur générale:', error);
     return NextResponse.json({ 
       error: 'Erreur serveur',
       details: error instanceof Error ? error.message : 'Erreur inconnue'
