@@ -94,13 +94,16 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
         if (org.addons) {
           try {
             const addons = JSON.parse(org.addons)
-            const activeAddons = [
-              ...(addons.recurring || []),
-              ...(addons.oneTime || [])
-            ]
-            setSelectedAddons(activeAddons)
+            if (typeof addons === 'object' && addons !== null) {
+              const activeAddons = [
+                ...(Array.isArray(addons.recurring) ? addons.recurring : []),
+                ...(Array.isArray(addons.oneTime) ? addons.oneTime : [])
+              ]
+              setSelectedAddons(activeAddons)
+            }
           } catch (e) {
             console.error('Error parsing addons:', e)
+            setSelectedAddons([])
           }
         }
       } else if (response.status === 401) {
@@ -252,7 +255,7 @@ export default function EditOrganizationPage({ params }: { params: Promise<{ id:
           <div className="text-right">
             <div className="text-sm text-gray-600">Forfait actuel</div>
             <div className="text-2xl font-bold" style={{ color: '#7c3aed' }}>{formData.plan}</div>
-            <div className="text-lg text-gray-700">{PLAN_PRICES[formData.plan as keyof typeof PLAN_PRICES]}€/mois</div>
+            <div className="text-lg text-gray-700">{PLAN_PRICES[formData.plan as keyof typeof PLAN_PRICES] ?? 0}€/mois</div>
           </div>
         </div>
       </div>

@@ -157,11 +157,11 @@ export default function OrganizationsPage() {
 
     // Filtre de configuration
     if (configFilter === 'NO_ADMIN') {
-      filtered = filtered.filter(org => !org.stats || org.stats.admins === 0)
+      filtered = filtered.filter(org => !org.stats || (org.stats?.admins === 0))
     } else if (configFilter === 'NO_CLIENTS') {
-      filtered = filtered.filter(org => !org.stats || org.stats.clients === 0)
+      filtered = filtered.filter(org => !org.stats || (org.stats?.clients === 0))
     } else if (configFilter === 'COMPLETE') {
-      filtered = filtered.filter(org => org.stats && org.stats.admins > 0 && org.stats.clients > 0)
+      filtered = filtered.filter(org => org.stats && (org.stats?.admins ?? 0) > 0 && (org.stats?.clients ?? 0) > 0)
     }
 
     if (newFilter) {
@@ -203,9 +203,9 @@ export default function OrganizationsPage() {
 
     if (userSearchTerm) {
       filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.organization?.name.toLowerCase().includes(userSearchTerm.toLowerCase())
+        (user.name?.toLowerCase() ?? '').includes(userSearchTerm.toLowerCase()) ||
+        (user.email?.toLowerCase() ?? '').includes(userSearchTerm.toLowerCase()) ||
+        (user.organization?.name?.toLowerCase() ?? '').includes(userSearchTerm.toLowerCase())
       )
     }
 
@@ -258,7 +258,7 @@ export default function OrganizationsPage() {
         org.slug,
         org.plan,
         org.status,
-        org.locations?.length || 0,
+        (Array.isArray(org.locations) ? org.locations.length : 0),
         new Date(org.createdAt).toLocaleDateString('fr-FR')
       ].join(','))
     ].join('\n')

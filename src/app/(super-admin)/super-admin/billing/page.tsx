@@ -340,14 +340,19 @@ export default function BillingPage() {
         fetchInvoices()
 
         // Télécharger le PDF de l'avoir
-        if (data.pdfBuffer) {
-          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `Avoir_${data.creditNote.invoiceNumber}.pdf`
-          a.click()
-          window.URL.revokeObjectURL(url)
+        if (data.pdfBuffer && typeof data.pdfBuffer === 'string') {
+          try {
+            const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Avoir_${data.creditNote.invoiceNumber}.pdf`
+            a.click()
+            window.URL.revokeObjectURL(url)
+          } catch (error) {
+            console.error('Error creating PDF blob:', error)
+            alert('❌ Erreur lors du téléchargement du PDF')
+          }
         }
       } else {
         const error = await response.json()
@@ -379,14 +384,19 @@ export default function BillingPage() {
         fetchInvoices()
 
         // Télécharger le PDF de la nouvelle facture
-        if (data.pdfBuffer) {
-          const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `Facture_${data.newInvoice.invoiceNumber}.pdf`
-          a.click()
-          window.URL.revokeObjectURL(url)
+        if (data.pdfBuffer && typeof data.pdfBuffer === 'string') {
+          try {
+            const blob = new Blob([Buffer.from(data.pdfBuffer, 'base64')], { type: 'application/pdf' })
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `Facture_${data.newInvoice.invoiceNumber}.pdf`
+            a.click()
+            window.URL.revokeObjectURL(url)
+          } catch (error) {
+            console.error('Error creating PDF blob:', error)
+            alert('❌ Erreur lors du téléchargement du PDF')
+          }
         }
       } else {
         const error = await response.json()
