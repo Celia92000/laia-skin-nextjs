@@ -336,10 +336,10 @@ export default function CRMPage() {
     if (searchFilters.search) {
       const search = searchFilters.search.toLowerCase()
       filtered = filtered.filter(lead =>
-        lead.institutName.toLowerCase().includes(search) ||
-        lead.contactName.toLowerCase().includes(search) ||
-        lead.contactEmail.toLowerCase().includes(search) ||
-        (lead.city && lead.city.toLowerCase().includes(search))
+        (lead.institutName?.toLowerCase() ?? '').includes(search) ||
+        (lead.contactName?.toLowerCase() ?? '').includes(search) ||
+        (lead.contactEmail?.toLowerCase() ?? '').includes(search) ||
+        (lead.city?.toLowerCase() ?? '').includes(search)
       )
     }
 
@@ -370,11 +370,15 @@ export default function CRMPage() {
     // Filtre par valeur estimée
     if (searchFilters.minValue) {
       const min = parseFloat(searchFilters.minValue)
-      filtered = filtered.filter(lead => lead.estimatedValue && lead.estimatedValue >= min)
+      if (!isNaN(min)) {
+        filtered = filtered.filter(lead => lead.estimatedValue && lead.estimatedValue >= min)
+      }
     }
     if (searchFilters.maxValue) {
       const max = parseFloat(searchFilters.maxValue)
-      filtered = filtered.filter(lead => lead.estimatedValue && lead.estimatedValue <= max)
+      if (!isNaN(max)) {
+        filtered = filtered.filter(lead => lead.estimatedValue && lead.estimatedValue <= max)
+      }
     }
 
     // Filtre par probabilité
@@ -1202,8 +1206,8 @@ export default function CRMPage() {
                             e.stopPropagation()
                             const params = new URLSearchParams({
                               institutName: lead.institutName,
-                              ownerFirstName: lead.contactName.split(' ')[0] || '',
-                              ownerLastName: lead.contactName.split(' ').slice(1).join(' ') || '',
+                              ownerFirstName: (lead.contactName ?? '').split(' ')[0] || '',
+                              ownerLastName: (lead.contactName ?? '').split(' ').slice(1).join(' ') || '',
                               ownerEmail: lead.contactEmail,
                               ownerPhone: lead.contactPhone || '',
                               city: lead.city || '',

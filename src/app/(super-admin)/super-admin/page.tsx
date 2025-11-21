@@ -95,10 +95,20 @@ export default function SuperAdminPage() {
       const orgsData = await orgsRes.json()
       const analyticsData = await analyticsRes.json()
 
+      // S'assurer que les données analytics ont une structure correcte
+      const safeAnalytics: AnalyticsData = {
+        revenue: analyticsData.revenue || { mrr: 0, arr: 0, byPlan: [] },
+        conversion: analyticsData.conversion || { trialToActive: 0, cancellationRate: 0, retentionRate: 0 },
+        trial: analyticsData.trial || { count: 0, potentialRevenue: 0, estimatedRevenue: 0, conversionRate: 0 },
+        topOrganizations: analyticsData.topOrganizations || { byRevenue: [], byReservations: [] },
+        growth: analyticsData.growth || { organizations: [], users: [], reservations: [] },
+        organizationsStats: analyticsData.organizationsStats || []
+      }
+
       setOrganizations(orgsData.organizations || [])
       setUser(orgsData.user)
       setStats(orgsData.stats)
-      setAnalytics(analyticsData)
+      setAnalytics(safeAnalytics)
     } catch (error) {
       console.error('Error loading dashboard:', error)
     } finally {
@@ -141,7 +151,7 @@ export default function SuperAdminPage() {
                 fontFamily: 'Playfair Display, serif',
                 color: '#7c3aed'
               }}>
-                👋 Bienvenue {user.name}
+                👋 Bienvenue {user?.name || 'Utilisateur'}
               </h2>
               <p className="text-gray-700 text-lg">
                 Vous êtes connecté en tant que <strong>{user.email}</strong>
@@ -198,8 +208,8 @@ export default function SuperAdminPage() {
               <div>
                 <p className="text-sm mb-1 text-amber-700">Revenu Moyen / Org</p>
                 <p className="text-3xl font-bold text-amber-800">
-                  {formatCurrency(analytics.revenue.byPlan.reduce((acc, p) => acc + p.revenue, 0) /
-                    Math.max(analytics.revenue.byPlan.reduce((acc, p) => acc + p.count, 0), 1))}
+                  {formatCurrency((analytics?.revenue?.byPlan || []).reduce((acc, p) => acc + p.revenue, 0) /
+                    Math.max((analytics?.revenue?.byPlan || []).reduce((acc, p) => acc + p.count, 0), 1))}
                 </p>
                 <p className="text-xs mt-2 text-amber-600">Cliquer pour voir les détails</p>
               </div>
@@ -225,18 +235,18 @@ export default function SuperAdminPage() {
               </div>
               <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-sm text-blue-600 mb-1">Revenus potentiels max</p>
-                <p className="text-3xl font-bold text-blue-900">{formatCurrency(analytics.trial.potentialRevenue)}</p>
+                <p className="text-3xl font-bold text-blue-900">{formatCurrency(analytics?.trial?.potentialRevenue || 0)}</p>
                 <p className="text-xs text-blue-500 mt-1">Si 100% convertissent</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow">
-                <p className="text-sm text-green-600 mb-1">Revenus estimés ({analytics.trial.conversionRate}%)</p>
-                <p className="text-3xl font-bold text-green-900">{formatCurrency(analytics.trial.estimatedRevenue)}</p>
+                <p className="text-sm text-green-600 mb-1">Revenus estimés ({analytics?.trial?.conversionRate || 0}%)</p>
+                <p className="text-3xl font-bold text-green-900">{formatCurrency(analytics?.trial?.estimatedRevenue || 0)}</p>
                 <p className="text-xs text-green-500 mt-1">Basé sur taux de conversion</p>
               </div>
               <div className="bg-gradient-to-br from-green-400 to-green-500 rounded-lg p-4 shadow text-white">
                 <p className="text-sm mb-1 opacity-90">Impact sur MRR</p>
                 <p className="text-3xl font-bold">
-                  +{analytics.revenue.mrr > 0 ? Math.round((analytics.trial.estimatedRevenue / analytics.revenue.mrr) * 100) : 0}%
+                  +{(analytics?.revenue?.mrr || 0) > 0 ? Math.round(((analytics?.trial?.estimatedRevenue || 0) / (analytics?.revenue?.mrr || 1)) * 100) : 0}%
                 </p>
                 <p className="text-xs mt-1 opacity-90">Augmentation potentielle</p>
               </div>
