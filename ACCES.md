@@ -13,7 +13,7 @@
 **Rôle** : SUPER_ADMIN
 **Organisation** : Laia Skin Institut
 **URL** : http://localhost:3001/super-admin
-**Mot de passe** : À réinitialiser via `npx tsx scripts/reset-simple-passwords.ts`
+**Mot de passe** : `SuperAdmin2024!` ✅
 
 **Accès** :
 - ✅ Toutes les organisations
@@ -31,7 +31,7 @@
 **Rôle** : ORG_ADMIN
 **Organisation** : Laia Skin Institut
 **URL** : http://localhost:3001/admin
-**Mot de passe** : À réinitialiser
+**Mot de passe** : `Admin2024!` ✅
 
 **Accès** : 23 onglets admin complets
 - Stats, Planning, Validation, Pending
@@ -50,6 +50,7 @@
 **Rôle** : ORG_ADMIN
 **Organisation** : Laia Skin Institut
 **URL** : http://localhost:3001/admin
+**Mot de passe** : `Admin2024!` ✅
 
 ---
 
@@ -59,6 +60,7 @@
 **Rôle** : ORG_ADMIN
 **Organisation** : Belle Peau Institut
 **URL** : http://localhost:3001/admin
+**Mot de passe** : `Admin2024!` ✅
 
 ---
 
@@ -67,6 +69,7 @@
 **Email** : `celia.ivorra95@hotmail.fr`
 **Rôle** : SUPER_ADMIN
 **Organisation** : Célia test
+**Mot de passe** : `SuperAdmin2024!` ✅
 
 ---
 
@@ -75,6 +78,7 @@
 **Email** : `celia.ivorra95@hotmail.fr`
 **Rôle** : SUPER_ADMIN
 **Organisation** : Célia IVORRA TEST
+**Mot de passe** : `SuperAdmin2024!` ✅
 
 ---
 

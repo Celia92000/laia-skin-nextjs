@@ -4,43 +4,80 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function resetSimplePasswords() {
-  console.log('🔐 Réinitialisation des mots de passe simples pour les tests\n');
-  
-  const users = [
-    { email: 'admin@laiaskin.com', password: 'admin123', name: 'Admin' },
-    { email: 'marie.dupont@email.com', password: 'client123', name: 'Marie Dupont' }
-  ];
-  
-  for (const userData of users) {
-    try {
-      // Hash du mot de passe (10 rounds, compatible avec l'ancien système)
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
-      // Mettre à jour ou créer l'utilisateur
-      const user = await prisma.user.upsert({
-        where: { email: userData.email },
-        update: { password: hashedPassword },
-        create: {
-          email: userData.email,
-          name: userData.name,
-          password: hashedPassword,
-          role: userData.email.includes('admin') ? 'ADMIN' : 'CLIENT'
-        }
-      });
-      
-      console.log(`✅ ${user.role} : ${userData.email} / ${userData.password}`);
-      
-    } catch (error) {
-      console.error(`❌ Erreur pour ${userData.email}:`, error);
+  console.log('🔐 Réinitialisation des mots de passe pour tous les comptes admin\n');
+
+  // Mots de passe simples pour le développement
+  const SUPER_ADMIN_PASSWORD = 'SuperAdmin2024!';
+  const ORG_ADMIN_PASSWORD = 'Admin2024!';
+
+  try {
+    // Récupérer tous les comptes admin de Célia
+    const admins = await prisma.user.findMany({
+      where: {
+        OR: [
+          { role: 'SUPER_ADMIN' },
+          { role: 'ORG_ADMIN' },
+        ],
+        email: {
+          contains: 'celia',
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        organization: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (admins.length === 0) {
+      console.log('❌ Aucun compte admin trouvé');
+      return;
     }
+
+    console.log(`🔍 ${admins.length} compte(s) trouvé(s)\n`);
+
+    // Réinitialiser les mots de passe
+    for (const admin of admins) {
+      const password = admin.role === 'SUPER_ADMIN' ? SUPER_ADMIN_PASSWORD : ORG_ADMIN_PASSWORD;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Utiliser une requête SQL brute pour éviter les problèmes de schéma
+      await prisma.$executeRaw`
+        UPDATE "User"
+        SET password = ${hashedPassword}
+        WHERE id = ${admin.id}
+      `;
+
+      console.log(`✅ ${admin.email}`);
+      console.log(`   🎭 Rôle: ${admin.role}`);
+      if (admin.organization) {
+        console.log(`   🏢 Organisation: ${admin.organization.name}`);
+      }
+      console.log(`   🔑 Mot de passe: ${password}`);
+      console.log('');
+    }
+
+    console.log('\n📝 Récapitulatif des mots de passe :');
+    console.log(`   SUPER_ADMIN : ${SUPER_ADMIN_PASSWORD}`);
+    console.log(`   ORG_ADMIN   : ${ORG_ADMIN_PASSWORD}`);
+
+    console.log('\n🌐 URLs d\'accès :');
+    console.log('   Super Admin : http://localhost:3001/super-admin');
+    console.log('   Admin       : http://localhost:3001/admin');
+    console.log('   Login       : http://localhost:3001/login');
+
+  } catch (error) {
+    console.error('❌ Erreur:', error);
+  } finally {
+    await prisma.$disconnect();
   }
-  
-  console.log('\n📝 Instructions :');
-  console.log('1. Ouvrez : http://localhost:3001/test-connexion.html');
-  console.log('2. Cliquez sur les boutons de test');
-  console.log('3. Une fois connecté, accédez à /admin ou /espace-client');
-  
-  await prisma.$disconnect();
 }
 
 resetSimplePasswords().catch(console.error);
