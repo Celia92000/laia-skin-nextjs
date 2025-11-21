@@ -7,6 +7,7 @@ import {
   BarChart3, Activity, Zap, Trophy, Coffee
 } from "lucide-react";
 import { formatDateLocal } from '@/lib/date-utils';
+import { safeLocalStorage } from '@/lib/safe-parse';
 
 interface EmployeeStatsViewProps {
   reservations: any[];
@@ -51,9 +52,9 @@ export default function EmployeeStatsView({
 
   useEffect(() => {
     // Charger les objectifs personnalisés
-    const savedObjectives = localStorage.getItem('businessObjectives');
+    const savedObjectives = safeLocalStorage('businessObjectives', null);
     if (savedObjectives) {
-      setObjectives(JSON.parse(savedObjectives));
+      setObjectives(savedObjectives);
     }
     calculateEmployeeStats();
   }, [reservations, viewMode, selectedDate]);

@@ -7,6 +7,7 @@ import {
   Maximize2, ZoomIn, Package, Star
 } from 'lucide-react';
 import { formatDateLocal } from '@/lib/date-utils';
+import { safeJsonParse, safeSetLocalStorage, safeLocalStorage, safeParseInt } from '@/lib/safe-parse';
 
 interface PhotoSession {
   id: string;
@@ -59,9 +60,9 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
   const loadSessions = async () => {
     try {
       // Charger depuis localStorage d'abord
-      const saved = localStorage.getItem(`photo_sessions_${clientId}`);
-      if (saved) {
-        setSessions(JSON.parse(saved));
+      const sessions = safeLocalStorage<PhotoSession[]>(`photo_sessions_${clientId}`, []);
+      if (sessions.length > 0) {
+        setSessions(sessions);
       }
 
       // Puis essayer l'API
@@ -71,11 +72,11 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
           'Authorization': token ? `Bearer ${token}` : ''
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setSessions(data);
-        localStorage.setItem(`photo_sessions_${clientId}`, JSON.stringify(data));
+        safeSetLocalStorage(`photo_sessions_${clientId}`, data);
       }
     } catch (error) {
       console.error('Erreur chargement sessions:', error);
@@ -92,7 +93,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
 
     const updatedSessions = [...sessions, sessionToSave];
     setSessions(updatedSessions);
-    localStorage.setItem(`photo_sessions_${clientId}`, JSON.stringify(updatedSessions));
+    safeSetLocalStorage(`photo_sessions_${clientId}`, updatedSessions);
 
     // Sauvegarder en base
     try {
@@ -122,7 +123,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
   const deleteSession = async (sessionId: string) => {
     const updatedSessions = sessions.filter(s => s.id !== sessionId);
     setSessions(updatedSessions);
-    localStorage.setItem(`photo_sessions_${clientId}`, JSON.stringify(updatedSessions));
+    safeSetLocalStorage(`photo_sessions_${clientId}`, updatedSessions);
   };
 
   const handleImageUpload = async (file: File, type: 'before' | 'after' | 'additional', label?: string) => {
@@ -704,7 +705,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              hydration: parseInt(e.target.value)
+                              hydration: safeParseInt(e.target.value, 0)
                             }
                           }))}
                           placeholder="0-100"
@@ -722,7 +723,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              elasticity: parseInt(e.target.value)
+                              elasticity: safeParseInt(e.target.value, 0)
                             }
                           }))}
                           placeholder="0-100"
@@ -740,7 +741,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              pigmentation: parseInt(e.target.value)
+                              pigmentation: safeParseInt(e.target.value, 0)
                             }
                           }))}
                           placeholder="0-100"
@@ -758,7 +759,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              wrinkles: parseInt(e.target.value)
+                              wrinkles: safeParseInt(e.target.value, 0)
                             }
                           }))}
                           placeholder="0-100"

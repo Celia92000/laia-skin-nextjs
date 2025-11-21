@@ -6,6 +6,7 @@ import {
   Clock, Euro, Tag, Search, Upload, ChevronUp, ChevronDown,
   AlertTriangle, Users, BookOpen, Award
 } from "lucide-react";
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface Formation {
   id: string;
@@ -61,17 +62,10 @@ export default function AdminFormationsTab() {
   // Load image editor settings when editing formation changes
   useEffect(() => {
     if (editingFormation?.imageSettings) {
-      try {
-        const settings = JSON.parse(editingFormation.imageSettings);
-        setObjectFit(settings.objectFit || 'cover');
-        setPosition(settings.position || { x: 50, y: 50 });
-        setZoom(settings.zoom || 100);
-      } catch {
-        // Reset to defaults if parsing fails
-        setObjectFit('cover');
-        setPosition({ x: 50, y: 50 });
-        setZoom(100);
-      }
+      const settings = safeJsonParse(editingFormation.imageSettings, { objectFit: 'cover', position: { x: 50, y: 50 }, zoom: 100 });
+      setObjectFit(settings.objectFit || 'cover');
+      setPosition(settings.position || { x: 50, y: 50 });
+      setZoom(settings.zoom || 100);
     } else {
       // Reset to defaults for new formations
       setObjectFit('cover');
@@ -799,8 +793,7 @@ export default function AdminFormationsTab() {
 
                 {/* Gallery Preview */}
                 {editingFormation.gallery && (() => {
-                  try {
-                    const urls = JSON.parse(editingFormation.gallery);
+                    const urls = safeJsonParse(editingFormation.gallery, []);
                     return Array.isArray(urls) && urls.length > 0 ? (
                       <div className="mt-3 grid grid-cols-2 gap-3">
                         {urls.map((url: string, index: number) => (
@@ -842,9 +835,6 @@ export default function AdminFormationsTab() {
                         ))}
                       </div>
                     ) : null;
-                  } catch {
-                    return null;
-                  }
                 })()}
               </div>
 
@@ -1020,16 +1010,14 @@ export default function AdminFormationsTab() {
                             alt={formation.name}
                             className="w-full h-full"
                             style={(() => {
-                              try {
-                                if (formation.imageSettings) {
-                                  const settings = JSON.parse(formation.imageSettings);
-                                  return {
-                                    objectFit: settings.objectFit || 'cover',
-                                    objectPosition: `${settings.position?.x || 50}% ${settings.position?.y || 50}%`,
-                                    transform: `scale(${(settings.zoom || 100) / 100})`
-                                  };
-                                }
-                              } catch {}
+                              if (formation.imageSettings) {
+                                const settings = safeJsonParse(formation.imageSettings, { objectFit: 'cover', objectPosition: 'center' });
+                                return {
+                                  objectFit: settings.objectFit || 'cover',
+                                  objectPosition: `${settings.position?.x || 50}% ${settings.position?.y || 50}%`,
+                                  transform: `scale(${(settings.zoom || 100) / 100})`
+                                };
+                              }
                               return { objectFit: 'cover' as const };
                             })()}
                           />

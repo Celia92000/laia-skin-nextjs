@@ -5,6 +5,7 @@ import { Clock, Star, ChevronRight, Calendar, ArrowRight, Shield, Sparkles, Awar
 import { useEffect, useState } from "react";
 import OtherServices from './OtherServices';
 import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, hasForfaitPromotion, getDiscountPercentage, getForfaitSavings, getMonthlyPrice } from '@/lib/price-utils';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface Service {
   id: string;
@@ -256,8 +257,8 @@ export default function ServicePageTemplate({ slug }: ServicePageTemplateProps) 
   const IconComponent = enrichment.icon;
   
   // Utiliser le protocole de la DB s'il existe, sinon générer automatiquement
-  const protocolSteps = service.protocol 
-    ? (typeof service.protocol === 'string' ? JSON.parse(service.protocol) : service.protocol)
+  const protocolSteps = service.protocol
+    ? (typeof service.protocol === 'string' ? safeJsonParse(service.protocol, generateProtocolSteps(service.name, service.duration)) : service.protocol)
     : generateProtocolSteps(service.name, service.duration);
   
   const faqs = generateFAQ(service.name, service.price);

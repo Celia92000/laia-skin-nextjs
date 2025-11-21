@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Star, Package, ShoppingCart } from 'lucide-react';
+import { safeJsonParse } from '@/lib/safe-parse';
 // import UniversalPaymentModal from './UniversalPaymentModal';
 
 interface ProductCardProps {
@@ -52,16 +53,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                   alt={product.name}
                   className="w-full h-full"
                   style={(() => {
-                    try {
-                      if (product.imageSettings) {
-                        const settings = JSON.parse(product.imageSettings);
-                        return {
-                          objectFit: settings.objectFit || 'cover',
-                          objectPosition: `${settings.position?.x || 50}% ${settings.position?.y || 50}%`,
-                          transform: `scale(${(settings.zoom || 100) / 100})`
-                        };
-                      }
-                    } catch {}
+                    if (product.imageSettings) {
+                      const settings = safeJsonParse(product.imageSettings, {});
+                      return {
+                        objectFit: (settings?.objectFit || 'cover') as 'cover',
+                        objectPosition: `${settings?.position?.x ?? 50}% ${settings?.position?.y ?? 50}%`,
+                        transform: `scale(${(settings?.zoom ?? 100) / 100})`
+                      };
+                    }
                     return { objectFit: 'cover' as const };
                   })()}
                 />

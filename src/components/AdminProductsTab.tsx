@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Plus, Edit2, Save, X, Trash2, Eye, EyeOff, Package, 
+import {
+  Plus, Edit2, Save, X, Trash2, Eye, EyeOff, Package,
   Clock, Euro, Tag, Search, Upload, ChevronUp, ChevronDown,
   AlertTriangle, Box, DollarSign, Hash, Archive
 } from "lucide-react";
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface Product {
   id: string;
@@ -57,17 +58,10 @@ export default function AdminProductsTab() {
   // Load image editor settings when editing product changes
   useEffect(() => {
     if (editingProduct?.imageSettings) {
-      try {
-        const settings = JSON.parse(editingProduct.imageSettings);
-        setObjectFit(settings.objectFit || 'cover');
-        setPosition(settings.position || { x: 50, y: 50 });
-        setZoom(settings.zoom || 100);
-      } catch {
-        // Reset to defaults if parsing fails
-        setObjectFit('cover');
-        setPosition({ x: 50, y: 50 });
-        setZoom(100);
-      }
+      const settings = safeJsonParse(editingProduct.imageSettings, { objectFit: 'cover', position: { x: 50, y: 50 }, zoom: 100 });
+      setObjectFit(settings.objectFit || 'cover');
+      setPosition(settings.position || { x: 50, y: 50 });
+      setZoom(settings.zoom || 100);
     } else {
       // Reset to defaults for new products
       setObjectFit('cover');
@@ -463,16 +457,14 @@ export default function AdminProductsTab() {
                         alt={product.name}
                         className="w-full h-full"
                         style={(() => {
-                          try {
                             if (product.imageSettings) {
-                              const settings = JSON.parse(product.imageSettings);
+                              const settings = safeJsonParse(product.imageSettings, { objectFit: 'cover', objectPosition: 'center' });
                               return {
                                 objectFit: settings.objectFit || 'cover',
                                 objectPosition: `${settings.position?.x || 50}% ${settings.position?.y || 50}%`,
                                 transform: `scale(${(settings.zoom || 100) / 100})`
                               };
                             }
-                          } catch {}
                           return { objectFit: 'cover' as const };
                         })()}
                       />

@@ -17,6 +17,7 @@ import WelcomeBanner from "@/components/WelcomeBanner";
 import SetupChecklist from "@/components/admin/SetupChecklist";
 import WelcomeSetupBanner from "@/components/admin/WelcomeSetupBanner";
 import SetupProgressBar from "@/components/admin/SetupProgressBar";
+import { safeJsonParse, safeParseNumber, safeArray, safeLocalStorage } from '@/lib/safe-parse';
 
 // Lazy load des composants lourds uniquement quand nécessaire
 const AdminCalendarEnhanced = dynamic(() => import("@/components/AdminCalendarEnhanced"), { ssr: false });
@@ -201,11 +202,10 @@ export default function AdminDashboard() {
         return;
       }
 
-      let userInfo;
-      try {
-        userInfo = JSON.parse(user);
-      } catch (error) {
-        console.error('Erreur parsing user data:', error);
+      const userInfo = safeJsonParse(user, null);
+
+      if (!userInfo) {
+        console.error('Erreur parsing user data');
         clearAuthData();
         router.push('/login');
         return;
@@ -213,13 +213,13 @@ export default function AdminDashboard() {
 
       // Autoriser tous les rôles admin et staff
       const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'STAFF'];
-      if (!adminRoles.includes(userInfo.role)) {
+      if (!userInfo?.role || !adminRoles.includes(userInfo.role)) {
         router.push('/espace-client');
         return;
       }
 
       // Stocker le rôle et les données utilisateur pour contrôler l'affichage
-      setUserRole(userInfo.role);
+      setUserRole(userInfo?.role ?? '');
       setUserData(userInfo);
 
       // Vérifier si un onglet est spécifié dans l'URL
@@ -272,16 +272,14 @@ export default function AdminDashboard() {
     if (showNewReservationModal) {
       const preselectedClientData = localStorage.getItem('preselectedClient');
       if (preselectedClientData) {
-        try {
-          const client = JSON.parse(preselectedClientData);
+        const client = safeJsonParse(preselectedClientData, null);
+        if (client) {
           setNewReservation(prev => ({
             ...prev,
-            client: client.name || '',
-            email: client.email || '',
-            phone: client.phone || ''
+            client: client?.name ?? '',
+            email: client?.email ?? '',
+            phone: client?.phone ?? ''
           }));
-        } catch (error) {
-          console.error('Erreur lors de la récupération du client:', error);
         }
       }
     }
@@ -294,11 +292,11 @@ export default function AdminDashboard() {
         const response = await fetch('/api/admin/config-completion');
         if (response.ok) {
           const data = await response.json();
-          setConfigCompletion(data.globalPercentage);
-          setWizardStats(data.wizardStats || null);
+          setConfigCompletion(data?.globalPercentage ?? 0);
+          setWizardStats(data?.wizardStats ?? null);
           // Mettre à jour le plan et les features si disponibles
-          if (data.plan) setOrgPlan(data.plan);
-          if (data.features) setOrgFeatures(data.features as OrgFeatures);
+          if (data?.plan) setOrgPlan(data.plan);
+          if (data?.features) setOrgFeatures(data.features as OrgFeatures);
         }
       } catch (error) {
         console.error('Erreur chargement taux de complétion:', error);
@@ -315,8 +313,8 @@ export default function AdminDashboard() {
       const cacheTime = localStorage.getItem('cachedServicesTime');
       const now = Date.now();
 
-      if (cachedServices && cacheTime && (now - parseInt(cacheTime) < 5 * 60 * 1000)) {
-        const data = JSON.parse(cachedServices);
+      if (cachedServices && cacheTime && (now - safeParseNumber(cacheTime, 0) < 5 * 60 * 1000)) {
+        const data = safeJsonParse(cachedServices, []);
         setDbServices(data);
         return;
       }
@@ -330,14 +328,14 @@ export default function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         // S'assurer que les données sont sérialisables
-        const cleanedData = data.map((s: any) => ({
-          id: s.id,
-          slug: s.slug,
-          name: String(s.name),
-          price: Number(s.price),
-          promoPrice: s.promoPrice ? Number(s.promoPrice) : null,
-          duration: Number(s.duration),
-          active: Boolean(s.active)
+        const cleanedData = safeArray(data).map((s: any) => ({
+          id: s?.id ?? '',
+          slug: s?.slug ?? '',
+          name: String(s?.name ?? ''),
+          price: safeParseNumber(s?.price, 0),
+          promoPrice: s?.promoPrice ? safeParseNumber(s.promoPrice, null) : null,
+          duration: safeParseNumber(s?.duration, 0),
+          active: Boolean(s?.active)
         }));
 
         // Mettre en cache
@@ -387,23 +385,23 @@ export default function AdminDashboard() {
         const org = await response.json();
         // Utiliser directement les features de la BDD (priorisées sur le plan)
         const features = {
-          featureCRM: org.featureCRM || false,
-          featureEmailing: org.featureEmailing || false,
-          featureWhatsApp: org.featureWhatsApp || false,
-          featureSMS: org.featureSMS || false,
-          featureShop: org.featureShop || false,
-          featureStock: org.featureStock || false,
-          featureSocialMedia: org.featureSocialMedia || false,
-          featureBlog: org.featureBlog || false,
-          featureMultiLocation: org.plan === 'TEAM' || org.plan === 'PREMIUM',
-          featureMultiUser: org.plan !== 'SOLO',
+          featureCRM: org?.featureCRM ?? false,
+          featureEmailing: org?.featureEmailing ?? false,
+          featureWhatsApp: org?.featureWhatsApp ?? false,
+          featureSMS: org?.featureSMS ?? false,
+          featureShop: org?.featureShop ?? false,
+          featureStock: org?.featureStock ?? false,
+          featureSocialMedia: org?.featureSocialMedia ?? false,
+          featureBlog: org?.featureBlog ?? false,
+          featureMultiLocation: org?.plan === 'TEAM' || org?.plan === 'PREMIUM',
+          featureMultiUser: org?.plan !== 'SOLO',
         };
         setOrgFeatures(features);
-        setOrgPlan(org.plan);
-        setIsOnboarded(org.isOnboarded !== false); // true par défaut si non défini
+        setOrgPlan(org?.plan ?? null);
+        setIsOnboarded(org?.isOnboarded !== false); // true par défaut si non défini
         // Crédits SMS
-        setSmsCredits(org.smsCredits || 0);
-        setHasPurchasedSMS((org.smsTotalPurchased || 0) > 0);
+        setSmsCredits(org?.smsCredits ?? 0);
+        setHasPurchasedSMS((org?.smsTotalPurchased ?? 0) > 0);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'organisation:', error);
@@ -439,12 +437,12 @@ export default function AdminDashboard() {
         setReservations(data);
 
         // Vérifier les nouvelles réservations en attente
-        const pendingReservations = data.filter((r: Reservation) => r.status === 'pending');
+        const pendingReservations = data.filter((r: Reservation) => r?.status === 'pending');
         const storedLastChecked = localStorage.getItem('lastCheckedReservations');
-        const lastChecked = storedLastChecked ? JSON.parse(storedLastChecked) : [];
-        
-        const newPendingReservations = pendingReservations.filter((r: Reservation) => 
-          !lastChecked.includes(r.id)
+        const lastChecked = safeArray(safeJsonParse(storedLastChecked, []));
+
+        const newPendingReservations = pendingReservations.filter((r: Reservation) =>
+          !lastChecked.includes(r?.id)
         );
         
         if (newPendingReservations.length > 0) {
@@ -979,8 +977,8 @@ export default function AdminDashboard() {
         paymentNotes = `Paiement mixte - ${methods.join(', ')}${paymentNotes ? ' | ' + paymentNotes : ''}`;
       } else {
         // Paiement simple
-        paymentAmount = parseFloat(amountInput?.value || '0');
-        paymentMethod = methodSelect?.value || 'cash';
+        paymentAmount = safeParseNumber(amountInput?.value, 0);
+        paymentMethod = methodSelect?.value ?? 'cash';
       }
       
       const response = await fetch(`/api/admin/reservations/${reservationId}/payment`, {
@@ -1022,44 +1020,45 @@ export default function AdminDashboard() {
       ];
       
       const rows = paidReservations
-        .sort((a, b) => new Date(a.paymentDate || a.date).getTime() - new Date(b.paymentDate || b.date).getTime())
+        .sort((a, b) => new Date(a?.paymentDate || a?.date).getTime() - new Date(b?.paymentDate || b?.date).getTime())
         .map(r => {
-          const servicesStr = (typeof r.services === 'string' ? JSON.parse(r.services) : r.services)
-            .map((s: string) => cleanServices[s as keyof typeof cleanServices] || s).join(', ');
-          const ht = (r.paymentAmount || r.totalPrice) / 1.2;
-          const tva = (r.paymentAmount || r.totalPrice) - ht;
+          const servicesData = typeof r?.services === 'string' ? safeJsonParse(r.services, []) : (r?.services ?? []);
+          const servicesStr = safeArray(servicesData)
+            .map((s: string) => cleanServices[s as keyof typeof cleanServices] ?? s).join(', ');
+          const ht = (r?.paymentAmount ?? r?.totalPrice ?? 0) / 1.2;
+          const tva = (r?.paymentAmount ?? r?.totalPrice ?? 0) - ht;
           
           let paymentMethodStr = '';
-          if (r.paymentMethod === 'mixed' && r.paymentNotes?.includes('Paiement mixte')) {
+          if (r?.paymentMethod === 'mixed' && r?.paymentNotes?.includes('Paiement mixte')) {
             paymentMethodStr = 'Mixte';
           } else {
-            paymentMethodStr = r.paymentMethod === 'cash' ? 'Espèces' : 
-                             r.paymentMethod === 'card' ? 'Carte bancaire' : 
-                             r.paymentMethod === 'transfer' ? 'Virement' : r.paymentMethod || '';
+            paymentMethodStr = r?.paymentMethod === 'cash' ? 'Espèces' :
+                             r?.paymentMethod === 'card' ? 'Carte bancaire' :
+                             r?.paymentMethod === 'transfer' ? 'Virement' : r?.paymentMethod ?? '';
           }
           
           return [
-            new Date(r.date).toLocaleDateString('fr-FR'),
-            r.time,
-            r.paymentDate ? new Date(r.paymentDate).toLocaleDateString('fr-FR') : '',
-            r.invoiceNumber || '',
-            r.userName || '',
-            r.userEmail || '',
-            r.phone || '',
+            new Date(r?.date ?? new Date()).toLocaleDateString('fr-FR'),
+            r?.time ?? '',
+            r?.paymentDate ? new Date(r.paymentDate).toLocaleDateString('fr-FR') : '',
+            r?.invoiceNumber ?? '',
+            r?.userName ?? '',
+            r?.userEmail ?? '',
+            r?.phone ?? '',
             servicesStr,
             ht.toFixed(2) + '€',
             tva.toFixed(2) + '€',
-            (r.paymentAmount || r.totalPrice) + '€',
+            (r?.paymentAmount ?? r?.totalPrice ?? 0) + '€',
             paymentMethodStr,
-            r.paymentNotes?.replace('Paiement mixte - ', '') || '',
-            r.notes || ''
+            r?.paymentNotes?.replace('Paiement mixte - ', '') ?? '',
+            r?.notes ?? ''
           ];
         });
-      
+
       // Ajouter une ligne de total à la fin
-      const totalHT = paidReservations.reduce((sum, r) => sum + ((r.paymentAmount || r.totalPrice) / 1.2), 0);
-      const totalTVA = paidReservations.reduce((sum, r) => sum + ((r.paymentAmount || r.totalPrice) - (r.paymentAmount || r.totalPrice) / 1.2), 0);
-      const totalTTC = paidReservations.reduce((sum, r) => sum + (r.paymentAmount || r.totalPrice), 0);
+      const totalHT = paidReservations.reduce((sum, r) => sum + ((r?.paymentAmount ?? r?.totalPrice ?? 0) / 1.2), 0);
+      const totalTVA = paidReservations.reduce((sum, r) => sum + ((r?.paymentAmount ?? r?.totalPrice ?? 0) - (r?.paymentAmount ?? r?.totalPrice ?? 0) / 1.2), 0);
+      const totalTTC = paidReservations.reduce((sum, r) => sum + (r?.paymentAmount ?? r?.totalPrice ?? 0), 0);
       
       rows.push([
         '', '', '', '',
@@ -1088,17 +1087,20 @@ export default function AdminDashboard() {
       // Export simple existant
       const headers = ['Date', 'Client', 'Services', 'Montant TTC', 'Méthode', 'Facture', 'Notes'];
       const rows = paidReservations
-        .map(r => [
-          new Date(r.paymentDate || '').toLocaleDateString('fr-FR'),
-          r.userName || '',
-          (typeof r.services === 'string' ? JSON.parse(r.services) : r.services).map((s: string) => cleanServices[s as keyof typeof cleanServices]).join(', '),
-          `${r.paymentAmount || r.totalPrice}€`,
-          r.paymentMethod === 'cash' ? 'Espèces' : 
-          r.paymentMethod === 'card' ? 'Carte' : 
-          r.paymentMethod === 'mixed' ? 'Mixte' : 'Virement',
-          r.invoiceNumber || '',
-          r.paymentNotes || ''
-        ]);
+        .map(r => {
+          const servicesData = typeof r?.services === 'string' ? safeJsonParse(r.services, []) : (r?.services ?? []);
+          return [
+            new Date(r?.paymentDate || '').toLocaleDateString('fr-FR'),
+            r?.userName ?? '',
+            safeArray(servicesData).map((s: string) => cleanServices[s as keyof typeof cleanServices] ?? s).join(', '),
+            `${r?.paymentAmount ?? r?.totalPrice ?? 0}€`,
+            r?.paymentMethod === 'cash' ? 'Espèces' :
+            r?.paymentMethod === 'card' ? 'Carte' :
+            r?.paymentMethod === 'mixed' ? 'Mixte' : 'Virement',
+            r?.invoiceNumber ?? '',
+            r?.paymentNotes ?? ''
+          ];
+        });
 
       const csvContent = '\uFEFF' + [headers, ...rows]
         .map(row => row.map(cell => `"${cell}"`).join(';'))
@@ -1842,11 +1844,11 @@ export default function AdminDashboard() {
                         ))}
 
                       {/* Commandes en attente (produits et formations sans date) */}
-                      {orders
-                        .filter(o => !o.scheduledDate)
+                      {safeArray(orders)
+                        .filter(o => !o?.scheduledDate)
                         .map((order) => {
-                          const items = JSON.parse(order.items || '[]');
-                          const orderType = items[0]?.type || 'commande';
+                          const items = safeArray(safeJsonParse(order?.items, '[]'));
+                          const orderType = items[0]?.type ?? 'commande';
                           const isProduct = orderType === 'product';
                           const isFormation = orderType === 'formation';
                           const isGiftCard = orderType === 'giftcard';
@@ -1863,9 +1865,9 @@ export default function AdminDashboard() {
                                     {isProduct ? <Package className="w-4 h-4 text-indigo-500" /> :
                                      isFormation ? <GraduationCap className="w-4 h-4 text-purple-500" /> :
                                      isGiftCard ? <Gift className="w-4 h-4 text-pink-500" /> : null}
-                                    {order.user?.name}
+                                    {order?.user?.name ?? 'Client'}
                                   </p>
-                                  <p className="text-sm text-[#2c3e50]/60">{order.user?.email}</p>
+                                  <p className="text-sm text-[#2c3e50]/60">{order?.user?.email ?? ''}</p>
                                 </div>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                   isProduct ? 'bg-indigo-100 text-indigo-700' :
@@ -1877,14 +1879,14 @@ export default function AdminDashboard() {
                               </div>
                               <div className="text-sm text-[#2c3e50]/70 mb-2">
                                 <p className="text-xs text-gray-500">
-                                  Commandé le {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                                  Commandé le {new Date(order?.createdAt ?? new Date()).toLocaleDateString('fr-FR')}
                                 </p>
                               </div>
                               <p className="text-sm mt-2 font-medium text-[#d4b5a0]">
-                                {items.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}
+                                {items.map((item: any) => `${item?.quantity ?? 0}x ${item?.name ?? ''}`).join(', ')}
                               </p>
                               <p className="text-sm font-bold text-green-600 mt-1">
-                                Total: {order.totalAmount}€
+                                Total: {order?.totalAmount ?? 0}€
                               </p>
                               <div className="flex gap-2 mt-3">
                                 <button
@@ -1927,22 +1929,22 @@ export default function AdminDashboard() {
                   {(() => {
                     try {
                       // Convertir les commandes planifiées en format "réservation" pour l'affichage calendrier
-                      const scheduledOrders = orders
-                        .filter(o => o.scheduledDate && o.status === 'confirmed')
+                      const scheduledOrders = safeArray(orders)
+                        .filter(o => o?.scheduledDate && o?.status === 'confirmed')
                         .map(o => {
-                          const items = JSON.parse(o.items || '[]');
-                          const orderType = items[0]?.type || 'commande';
+                          const items = safeArray(safeJsonParse(o?.items, '[]'));
+                          const orderType = items[0]?.type ?? 'commande';
                           return {
-                            id: o.id,
-                            date: formatDateLocal(new Date(o.scheduledDate)),
-                            time: o.scheduledTime || '09:00',
-                            userName: o.user?.name || 'Client',
-                            userEmail: o.user?.email || '',
+                            id: o?.id ?? '',
+                            date: formatDateLocal(new Date(o?.scheduledDate ?? new Date())),
+                            time: o?.scheduledTime ?? '09:00',
+                            userName: o?.user?.name ?? 'Client',
+                            userEmail: o?.user?.email ?? '',
                             services: [`${orderType}-order`], // Marqueur pour identifier que c'est une commande
-                            serviceName: items.map((item: any) => `${item.quantity}x ${item.name}`).join(', '),
+                            serviceName: items.map((item: any) => `${item?.quantity ?? 0}x ${item?.name ?? ''}`).join(', '),
                             serviceDuration: 30, // Durée fixe pour les commandes
                             status: 'confirmed',
-                            totalPrice: o.totalAmount,
+                            totalPrice: o?.totalAmount ?? 0,
                             isOrder: true, // Marqueur pour distinguer les commandes des réservations
                             orderType // product ou formation
                           };
@@ -2350,48 +2352,40 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-3 mb-2">
                           <Calendar className="w-5 h-5 text-[#d4b5a0]" />
                           <span className="font-semibold text-[#2c3e50]">
-                            {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                            {new Date(reservation?.date ?? new Date()).toLocaleDateString('fr-FR')}
                           </span>
-                          <span className="text-[#2c3e50]/60">à {reservation.time}</span>
+                          <span className="text-[#2c3e50]/60">à {reservation?.time ?? ''}</span>
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <User className="w-4 h-4 text-[#2c3e50]/60" />
-                          <span className="text-[#2c3e50] font-medium">{reservation.userName || 'Client'}</span>
+                          <span className="text-[#2c3e50] font-medium">{reservation?.userName ?? 'Client'}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <span className="text-sm text-[#2c3e50]/70">
                             Services: {(() => {
-                              try {
-                                // Essayer de parser si c'est du JSON
-                                const servicesList = typeof reservation.services === 'string' 
-                                  ? JSON.parse(reservation.services) 
-                                  : reservation.services;
-                                
-                                if (Array.isArray(servicesList)) {
-                                  return servicesList.map((s: string) => 
-                                    cleanServices[s as keyof typeof cleanServices] || s
-                                  ).join(', ');
-                                } else {
-                                  return reservation.services || 'Service non spécifié';
-                                }
-                              } catch {
-                                // Si ce n'est pas du JSON, c'est probablement une chaîne simple
-                                if (typeof reservation.services === 'string' && reservation.services in cleanServices) {
-                                  return cleanServices[reservation.services as keyof typeof cleanServices];
-                                }
-                                return reservation.services || 'Service non spécifié';
+                              const servicesList = typeof reservation?.services === 'string'
+                                ? safeJsonParse(reservation.services, reservation.services)
+                                : (reservation?.services ?? []);
+
+                              if (Array.isArray(servicesList)) {
+                                return safeArray(servicesList).map((s: string) =>
+                                  cleanServices[s as keyof typeof cleanServices] ?? s
+                                ).join(', ') || 'Service non spécifié';
+                              } else if (typeof servicesList === 'string' && servicesList in cleanServices) {
+                                return cleanServices[servicesList as keyof typeof cleanServices];
                               }
+                              return servicesList || 'Service non spécifié';
                             })()}
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                        <span className="text-xl font-bold text-[#d4b5a0]">{reservation?.totalPrice ?? 0}€</span>
                       </div>
                     </div>
 
                     <div className="flex gap-2">
-                      {reservation.status === 'confirmed' && (
+                      {reservation?.status === 'confirmed' && (
                         <>
                           <button
                             onClick={() => {
@@ -2453,44 +2447,41 @@ export default function AdminDashboard() {
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {orders
-                            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                            .sort((a, b) => new Date(b?.createdAt).getTime() - new Date(a?.createdAt).getTime())
                             .map((order) => {
-                              let items = [];
-                              try {
-                                items = JSON.parse(order.items || '[]');
-                              } catch (e) {}
+                              const items = safeArray(safeJsonParse(order?.items, '[]'));
 
                               return (
-                                <tr key={order.id} className="hover:bg-gray-50">
+                                <tr key={order?.id} className="hover:bg-gray-50">
                                   <td className="px-4 py-3 text-sm text-gray-900">
-                                    {new Date(order.createdAt).toLocaleDateString('fr-FR')}
+                                    {new Date(order?.createdAt ?? new Date()).toLocaleDateString('fr-FR')}
                                   </td>
                                   <td className="px-4 py-3">
-                                    <div className="text-sm font-medium text-gray-900">{order.user?.name}</div>
-                                    <div className="text-sm text-gray-500">{order.user?.email}</div>
+                                    <div className="text-sm font-medium text-gray-900">{order?.user?.name ?? 'Client'}</div>
+                                    <div className="text-sm text-gray-500">{order?.user?.email ?? ''}</div>
                                   </td>
                                   <td className="px-4 py-3">
                                     <div className="text-sm text-gray-900">
                                       {items.map((item: any, idx: number) => (
                                         <div key={idx} className="flex items-center gap-2">
-                                          {item.type === 'product' ? (
+                                          {item?.type === 'product' ? (
                                             <Package className="w-3 h-3 text-purple-500" />
                                           ) : (
                                             <GraduationCap className="w-3 h-3 text-purple-500" />
                                           )}
-                                          <span>{item.name} x{item.quantity}</span>
+                                          <span>{item?.name ?? ''} x{item?.quantity ?? 0}</span>
                                         </div>
                                       ))}
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                    {order.totalAmount}€
+                                    {order?.totalAmount ?? 0}€
                                   </td>
                                   <td className="px-4 py-3 text-sm text-gray-500">
-                                    {order.paymentMethod === 'cash' ? 'Espèces' :
-                                     order.paymentMethod === 'card' ? 'Carte' :
-                                     order.paymentMethod === 'transfer' ? 'Virement' :
-                                     order.paymentMethod}
+                                    {order?.paymentMethod === 'cash' ? 'Espèces' :
+                                     order?.paymentMethod === 'card' ? 'Carte' :
+                                     order?.paymentMethod === 'transfer' ? 'Virement' :
+                                     order?.paymentMethod ?? ''}
                                   </td>
                                   <td className="px-4 py-3">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -2539,47 +2530,41 @@ export default function AdminDashboard() {
                                   ? 'bg-orange-100 text-orange-600'
                                   : 'bg-red-100 text-red-600'
                               }`}>
-                                {reservation.paymentStatus === 'paid' ? '✓ Payé' : 
-                                 reservation.paymentStatus === 'partial' ? '⚠ Acompte' :
-                                 reservation.paymentStatus === 'no_show' ? '⚠ Absent' : 
+                                {reservation?.paymentStatus === 'paid' ? '✓ Payé' :
+                                 reservation?.paymentStatus === 'partial' ? '⚠ Acompte' :
+                                 reservation?.paymentStatus === 'no_show' ? '⚠ Absent' :
                                  'Non payé'}
                               </span>
                             </div>
                             <p className="text-sm text-[#2c3e50]/60 mb-1">
-                              {new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}
+                              {new Date(reservation?.date ?? new Date()).toLocaleDateString('fr-FR')} à {reservation?.time ?? ''}
                             </p>
                             <p className="text-sm text-[#2c3e50]/70">
                               Services: {(() => {
-                                try {
-                                  const servicesList = typeof reservation.services === 'string' 
-                                    ? JSON.parse(reservation.services) 
-                                    : reservation.services;
-                                  
-                                  if (Array.isArray(servicesList)) {
-                                    return servicesList.map((s: string) => 
-                                      cleanServices[s as keyof typeof cleanServices] || s
-                                    ).join(', ');
-                                  } else {
-                                    return reservation.services || 'Service non spécifié';
-                                  }
-                                } catch {
-                                  if (typeof reservation.services === 'string' && reservation.services in cleanServices) {
-                                    return cleanServices[reservation.services as keyof typeof cleanServices];
-                                  }
-                                  return reservation.services || 'Service non spécifié';
+                                const servicesList = typeof reservation?.services === 'string'
+                                  ? safeJsonParse(reservation.services, reservation.services)
+                                  : (reservation?.services ?? []);
+
+                                if (Array.isArray(servicesList)) {
+                                  return safeArray(servicesList).map((s: string) =>
+                                    cleanServices[s as keyof typeof cleanServices] ?? s
+                                  ).join(', ') || 'Service non spécifié';
+                                } else if (typeof servicesList === 'string' && servicesList in cleanServices) {
+                                  return cleanServices[servicesList as keyof typeof cleanServices];
                                 }
+                                return servicesList || 'Service non spécifié';
                               })()}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
-                            {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
-                              <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                            <p className="text-2xl font-bold text-[#d4b5a0]">{reservation?.totalPrice ?? 0}€</p>
+                            {reservation?.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                              <p className="text-sm text-[#2c3e50]/60">Payé: {reservation?.paymentAmount ?? 0}€</p>
                             )}
                           </div>
                         </div>
-                        
-                        {reservation.paymentStatus !== 'paid' && reservation.paymentStatus !== 'no_show' && reservation.paymentStatus !== 'partial' && (
+
+                        {reservation?.paymentStatus !== 'paid' && reservation?.paymentStatus !== 'no_show' && reservation?.paymentStatus !== 'partial' && (
                           <PaymentSectionEnhanced
                             reservation={reservation}
                             loyaltyProfiles={loyaltyProfiles}
@@ -2903,27 +2888,26 @@ export default function AdminDashboard() {
                               ? 'bg-green-100 text-green-600'
                               : 'bg-red-100 text-red-600'
                           }`}>
-                            {reservation.paymentStatus === 'paid' ? '✓ Payé' : 'Non payé'}
+                            {reservation?.paymentStatus === 'paid' ? '✓ Payé' : 'Non payé'}
                           </span>
                         </div>
                         <p className="text-sm text-[#2c3e50]/60 mb-1">
-                          {new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}
+                          {new Date(reservation?.date ?? new Date()).toLocaleDateString('fr-FR')} à {reservation?.time ?? ''}
                         </p>
                         <p className="text-sm text-[#2c3e50]/70">
                           Services: {(() => {
-                            try {
-                              // Essayer de parser si c'est du JSON
-                              const servicesList = typeof reservation.services === 'string' ? JSON.parse(reservation.services) : reservation.services;
-                              return Array.isArray(servicesList) 
-                                ? servicesList.map((s: string) => cleanServices[s as keyof typeof cleanServices] || s).join(', ')
-                                : reservation.services;
-                            } catch {
-                              // Si ce n'est pas du JSON, c'est probablement une chaîne simple
-                              if (typeof reservation.services === 'string' && reservation.services in cleanServices) {
-                                return cleanServices[reservation.services as keyof typeof cleanServices];
-                              }
-                              return reservation.services;
+                            const servicesList = typeof reservation?.services === 'string'
+                              ? safeJsonParse(reservation.services, reservation.services)
+                              : (reservation?.services ?? []);
+
+                            if (Array.isArray(servicesList)) {
+                              return safeArray(servicesList).map((s: string) =>
+                                cleanServices[s as keyof typeof cleanServices] ?? s
+                              ).join(', ') || 'Service non spécifié';
+                            } else if (typeof servicesList === 'string' && servicesList in cleanServices) {
+                              return cleanServices[servicesList as keyof typeof cleanServices];
                             }
+                            return servicesList || 'Service non spécifié';
                           })()}
                         </p>
                         {reservation.invoiceNumber && (
@@ -2933,14 +2917,14 @@ export default function AdminDashboard() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</p>
-                        {reservation.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
-                          <p className="text-sm text-[#2c3e50]/60">Payé: {reservation.paymentAmount}€</p>
+                        <p className="text-2xl font-bold text-[#d4b5a0]">{reservation?.totalPrice ?? 0}€</p>
+                        {reservation?.paymentAmount && reservation.paymentAmount !== reservation.totalPrice && (
+                          <p className="text-sm text-[#2c3e50]/60">Payé: {reservation?.paymentAmount ?? 0}€</p>
                         )}
                       </div>
                     </div>
-                    
-                    {reservation.paymentStatus !== 'paid' && (
+
+                    {reservation?.paymentStatus !== 'paid' && (
                       <PaymentSectionEnhanced
                         reservation={reservation}
                         loyaltyProfiles={loyaltyProfiles}
@@ -3216,27 +3200,23 @@ export default function AdminDashboard() {
                   
                   // Compter séparément les soins individuels et les forfaits
                   const individualSessions = clientReservations.filter(r => {
-                    try {
-                      const services = typeof r.services === 'string' ? JSON.parse(r.services || '[]') : r.services || [];
-                      return !services.some((s: any) => 
-                        typeof s === 'string' ? s.toLowerCase().includes('forfait') : 
-                        s.name?.toLowerCase().includes('forfait')
-                      );
-                    } catch {
-                      return true; // Compter comme session individuelle en cas d'erreur
-                    }
+                    const services = typeof r?.services === 'string'
+                      ? safeArray(safeJsonParse(r.services, '[]'))
+                      : safeArray(r?.services ?? []);
+                    return !services.some((s: any) =>
+                      typeof s === 'string' ? s.toLowerCase().includes('forfait') :
+                      s?.name?.toLowerCase().includes('forfait')
+                    );
                   }).length;
-                  
+
                   const packages = clientReservations.filter(r => {
-                    try {
-                      const services = typeof r.services === 'string' ? JSON.parse(r.services || '[]') : r.services || [];
-                      return services.some((s: any) => 
-                        typeof s === 'string' ? s.toLowerCase().includes('forfait') : 
-                        s.name?.toLowerCase().includes('forfait')
-                      );
-                    } catch {
-                      return false; // Ne pas compter comme forfait en cas d'erreur
-                    }
+                    const services = typeof r?.services === 'string'
+                      ? safeArray(safeJsonParse(r.services, '[]'))
+                      : safeArray(r?.services ?? []);
+                    return services.some((s: any) =>
+                      typeof s === 'string' ? s.toLowerCase().includes('forfait') :
+                      s?.name?.toLowerCase().includes('forfait')
+                    );
                   }).length;
                   
                   const progressTo6 = individualSessions % 6;
@@ -4190,8 +4170,12 @@ export default function AdminDashboard() {
                           <p className="font-semibold text-[#2c3e50]">{reservation.userName}</p>
                           <p className="text-sm text-gray-600">{new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}</p>
                           <p className="text-sm text-gray-500">
-                            {(typeof reservation.services === 'string' ? JSON.parse(reservation.services) : reservation.services)
-                              .map((s: string) => cleanServices[s as keyof typeof cleanServices] || s).join(', ')}
+                            {(() => {
+                              const services = typeof reservation?.services === 'string'
+                                ? safeArray(safeJsonParse(reservation.services, []))
+                                : safeArray(reservation?.services ?? []);
+                              return services.map((s: string) => cleanServices[s as keyof typeof cleanServices] ?? s).join(', ');
+                            })()}
                           </p>
                         </div>
                         <div className="text-right">
@@ -4223,8 +4207,12 @@ export default function AdminDashboard() {
                           <p className="font-semibold text-[#2c3e50]">{reservation.userName}</p>
                           <p className="text-sm text-gray-600">{new Date(reservation.date).toLocaleDateString('fr-FR')} à {reservation.time}</p>
                           <p className="text-sm text-gray-500">
-                            {(typeof reservation.services === 'string' ? JSON.parse(reservation.services) : reservation.services)
-                              .map((s: string) => cleanServices[s as keyof typeof cleanServices] || s).join(', ')}
+                            {(() => {
+                              const services = typeof reservation?.services === 'string'
+                                ? safeArray(safeJsonParse(reservation.services, []))
+                                : safeArray(reservation?.services ?? []);
+                              return services.map((s: string) => cleanServices[s as keyof typeof cleanServices] ?? s).join(', ');
+                            })()}
                           </p>
                           <p className="text-sm text-gray-500 mt-1">📱 {reservation.phone}</p>
                         </div>
@@ -4260,8 +4248,12 @@ export default function AdminDashboard() {
                           <p className="font-semibold text-[#2c3e50]">{reservation.userName}</p>
                           <p className="text-sm text-gray-600">Terminé à {reservation.time}</p>
                           <p className="text-sm text-gray-500">
-                            {(typeof reservation.services === 'string' ? JSON.parse(reservation.services) : reservation.services)
-                              .map((s: string) => cleanServices[s as keyof typeof cleanServices] || s).join(', ')}
+                            {(() => {
+                              const services = typeof reservation?.services === 'string'
+                                ? safeArray(safeJsonParse(reservation.services, []))
+                                : safeArray(reservation?.services ?? []);
+                              return services.map((s: string) => cleanServices[s as keyof typeof cleanServices] ?? s).join(', ');
+                            })()}
                           </p>
                         </div>
                         <div className="text-right">
@@ -4405,13 +4397,15 @@ export default function AdminDashboard() {
                     <div className="space-y-2">
                       {(() => {
                         const serviceRevenues: {[key: string]: number} = {};
-                        reservations
-                          .filter(r => r.paymentStatus === 'paid')
+                        safeArray(reservations)
+                          .filter(r => r?.paymentStatus === 'paid')
                           .forEach(r => {
-                            const servicesList = typeof r.services === 'string' ? JSON.parse(r.services) : r.services;
+                            const servicesList = typeof r?.services === 'string'
+                              ? safeArray(safeJsonParse(r.services, []))
+                              : safeArray(r?.services ?? []);
                             servicesList.forEach((s: string) => {
-                              const serviceName = cleanServices[s as keyof typeof cleanServices] || s;
-                              serviceRevenues[serviceName] = (serviceRevenues[serviceName] || 0) + (r.totalPrice / servicesList.length);
+                              const serviceName = cleanServices[s as keyof typeof cleanServices] ?? s;
+                              serviceRevenues[serviceName] = (serviceRevenues[serviceName] ?? 0) + ((r?.totalPrice ?? 0) / Math.max(servicesList.length, 1));
                             });
                           });
                         
@@ -4570,8 +4564,8 @@ export default function AdminDashboard() {
                 <strong>Commande:</strong>
               </p>
               <ul className="text-sm text-gray-700 ml-4 list-disc">
-                {JSON.parse(orderToSchedule.items || '[]').map((item: any, idx: number) => (
-                  <li key={idx}>{item.quantity}x {item.name} - {item.price}€</li>
+                {safeArray(safeJsonParse(orderToSchedule?.items, '[]')).map((item: any, idx: number) => (
+                  <li key={idx}>{item?.quantity}x {item?.name} - {item?.price}€</li>
                 ))}
               </ul>
               <p className="text-sm font-bold text-green-600 mt-2">

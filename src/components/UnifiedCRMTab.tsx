@@ -15,6 +15,7 @@ import ClientPhotoEvolution from "@/components/ClientPhotoEvolution";
 import ClientSegmentsTab from "@/components/ClientSegmentsTab";
 import ClientAdvancedFilters, { ClientFilterCriteria } from "@/components/ClientAdvancedFilters";
 import { formatDateLocal } from "@/lib/date-utils";
+import { safeJsonParse, safeParseNumber, safeParseInt, safeArray, safeMap, safeFilter, safeGet } from '@/lib/safe-parse';
 
 export interface Client {
   id: string;
@@ -163,9 +164,9 @@ export default function UnifiedCRMTab({
     const currentYear = new Date().getFullYear();
     
     // Filtrer les réservations du client pour le mois en cours
-    const clientReservations = reservations.filter(r => 
-      r.userId === clientId && 
-      r.isSubscription === true
+    const clientReservations = safeArray(reservations).filter(r =>
+      r?.userId === clientId &&
+      r?.isSubscription === true
     );
     
     // Vérifier s'il y a une réservation d'abonnement ce mois
@@ -189,16 +190,16 @@ export default function UnifiedCRMTab({
       hasSubscription: clientReservations.length > 0,
       monthlyUsed: monthlySubscriptionUsed,
       upcoming: upcomingSubscription,
-      lastSubscriptionDate: clientReservations.length > 0 ? 
-        new Date(Math.max(...clientReservations.map(r => new Date(r.date).getTime()))) : null
+      lastSubscriptionDate: clientReservations.length > 0 ?
+        new Date(Math.max(...safeArray(clientReservations).map(r => new Date(r?.date ?? new Date()).getTime()))) : null
     };
   };
 
   // Fonction pour calculer les anniversaires du mois
   const getBirthdayClients = () => {
     const currentMonth = new Date().getMonth();
-    return clients.filter(client => {
-      if (!client.birthDate) return false;
+    return safeArray(clients).filter(client => {
+      if (!client?.birthDate) return false;
       const birthMonth = new Date(client.birthDate).getMonth();
       return birthMonth === currentMonth;
     });
@@ -206,39 +207,39 @@ export default function UnifiedCRMTab({
 
   // Filtrage et tri des clients avec filtres avancés
   const filteredClients = (() => {
-    let filtered = [...clients];
+    let filtered = [...safeArray(clients)];
 
     // Filtres avancés
     if (advancedFilters.search) {
       const search = advancedFilters.search.toLowerCase();
       filtered = filtered.filter(client =>
-        client.name.toLowerCase().includes(search) ||
-        client.email.toLowerCase().includes(search) ||
-        (client.phone && client.phone.includes(search))
+        client?.name?.toLowerCase().includes(search) ||
+        client?.email?.toLowerCase().includes(search) ||
+        (client?.phone && client.phone.includes(search))
       );
     }
 
     if (advancedFilters.minPoints) {
-      filtered = filtered.filter(c => c.loyaltyPoints >= advancedFilters.minPoints!);
+      filtered = filtered.filter(c => (c?.loyaltyPoints ?? 0) >= advancedFilters.minPoints!);
     }
     if (advancedFilters.maxPoints) {
-      filtered = filtered.filter(c => c.loyaltyPoints <= advancedFilters.maxPoints!);
+      filtered = filtered.filter(c => (c?.loyaltyPoints ?? 0) <= advancedFilters.maxPoints!);
     }
 
     if (advancedFilters.minSpent) {
-      filtered = filtered.filter(c => c.totalSpent >= advancedFilters.minSpent!);
+      filtered = filtered.filter(c => (c?.totalSpent ?? 0) >= advancedFilters.minSpent!);
     }
     if (advancedFilters.maxSpent) {
-      filtered = filtered.filter(c => c.totalSpent <= advancedFilters.maxSpent!);
+      filtered = filtered.filter(c => (c?.totalSpent ?? 0) <= advancedFilters.maxSpent!);
     }
 
     if (advancedFilters.skinType) {
-      filtered = filtered.filter(c => c.skinType === advancedFilters.skinType);
+      filtered = filtered.filter(c => c?.skinType === advancedFilters.skinType);
     }
 
     if (advancedFilters.birthdayMonth !== undefined) {
       filtered = filtered.filter(c => {
-        if (!c.birthDate) return false;
+        if (!c?.birthDate) return false;
         return new Date(c.birthDate).getMonth() === advancedFilters.birthdayMonth;
       });
     }
@@ -249,19 +250,19 @@ export default function UnifiedCRMTab({
       const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
       filtered = filtered.filter(c => {
-        const clientReservations = reservations.filter(r =>
-          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        const clientReservations = safeArray(reservations).filter(r =>
+          r?.userEmail === c?.email || r?.userId === c?.id || (r?.user && r.user.email === c?.email)
         );
         const lastVisit = clientReservations
-          .filter(r => r.status === 'completed')
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+          .filter(r => r?.status === 'completed')
+          .sort((a, b) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime())[0];
 
         if (advancedFilters.status === 'new') {
-          return clientReservations.length > 0 && new Date(c.createdAt || 0) >= oneMonthAgo;
+          return clientReservations.length > 0 && new Date(c?.createdAt ?? 0) >= oneMonthAgo;
         } else if (advancedFilters.status === 'active') {
-          return lastVisit && new Date(lastVisit.date) >= threeMonthsAgo;
+          return lastVisit && new Date(lastVisit?.date ?? 0) >= threeMonthsAgo;
         } else if (advancedFilters.status === 'inactive') {
-          return !lastVisit || new Date(lastVisit.date) < threeMonthsAgo;
+          return !lastVisit || new Date(lastVisit?.date ?? 0) < threeMonthsAgo;
         }
         return true;
       });
@@ -271,24 +272,24 @@ export default function UnifiedCRMTab({
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - advancedFilters.lastVisitDays);
       filtered = filtered.filter(c => {
-        const clientReservations = reservations.filter(r =>
-          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        const clientReservations = safeArray(reservations).filter(r =>
+          r?.userEmail === c?.email || r?.userId === c?.id || (r?.user && r.user.email === c?.email)
         );
         const lastVisit = clientReservations
-          .filter(r => r.status === 'completed')
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+          .filter(r => r?.status === 'completed')
+          .sort((a, b) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime())[0];
 
         if (!lastVisit) return true;
-        return new Date(lastVisit.date) <= daysAgo;
+        return new Date(lastVisit?.date ?? 0) <= daysAgo;
       });
     }
 
     if (advancedFilters.minVisits || advancedFilters.maxVisits) {
       filtered = filtered.filter(c => {
-        const clientReservations = reservations.filter(r =>
-          r.userEmail === c.email || r.userId === c.id || (r.user && r.user.email === c.email)
+        const clientReservations = safeArray(reservations).filter(r =>
+          r?.userEmail === c?.email || r?.userId === c?.id || (r?.user && r.user.email === c?.email)
         );
-        const visitCount = clientReservations.filter(r => r.status === 'completed').length;
+        const visitCount = clientReservations.filter(r => r?.status === 'completed').length;
 
         if (advancedFilters.minVisits && visitCount < advancedFilters.minVisits) return false;
         if (advancedFilters.maxVisits && visitCount > advancedFilters.maxVisits) return false;
@@ -300,42 +301,42 @@ export default function UnifiedCRMTab({
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(client =>
-        client.name.toLowerCase().includes(search) ||
-        client.email.toLowerCase().includes(search) ||
-        (client.phone && client.phone.includes(search))
+        client?.name?.toLowerCase().includes(search) ||
+        client?.email?.toLowerCase().includes(search) ||
+        (client?.phone && client.phone.includes(search))
       );
     }
 
     // Filtre par niveau
     if (filterLevel !== "all") {
       filtered = filtered.filter(client => {
-        const clientReservations = reservations.filter(r => {
-          return r.userEmail === client.email ||
-                 r.userId === client.id ||
-                 (r.user && r.user.email === client.email);
+        const clientReservations = safeArray(reservations).filter(r => {
+          return r?.userEmail === client?.email ||
+                 r?.userId === client?.id ||
+                 (r?.user && r.user.email === client?.email);
         });
         const level = getLoyaltyLevel(clientReservations);
-        return level.level === parseInt(filterLevel);
+        return level.level === safeParseInt(filterLevel, 0);
       });
     }
-    
+
     // Ajouter des données pour le tri
     const clientsWithData = filtered.map(client => {
-      const clientReservations = reservations.filter(r => {
-        return r.userEmail === client.email || 
-               r.userId === client.id ||
-               (r.user && r.user.email === client.email);
+      const clientReservations = safeArray(reservations).filter(r => {
+        return r?.userEmail === client?.email ||
+               r?.userId === client?.id ||
+               (r?.user && r.user.email === client?.email);
       });
-      const noShowCount = clientReservations.filter(r => r.status === 'no_show').length;
+      const noShowCount = clientReservations.filter(r => r?.status === 'no_show').length;
       const lastVisit = clientReservations
-        .filter(r => r.status === 'completed')
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-      
+        .filter(r => r?.status === 'completed')
+        .sort((a, b) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime())[0];
+
       return {
         ...client,
         reservationCount: clientReservations.length,
         noShowCount,
-        totalSpent: client.totalSpent || 0,
+        totalSpent: client?.totalSpent ?? 0,
         lastVisit: lastVisit ? lastVisit.date : null
       };
     });
@@ -343,11 +344,11 @@ export default function UnifiedCRMTab({
     // Appliquer les filtres spéciaux depuis le select
     const filterValue = (document.querySelector('select[onChange*="noshow"]') as HTMLSelectElement)?.value;
     if (filterValue === 'noshow') {
-      filtered = clientsWithData.filter(c => c.noShowCount > 0);
+      filtered = clientsWithData.filter(c => (c?.noShowCount ?? 0) > 0);
     } else if (filterValue === 'active') {
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      filtered = clientsWithData.filter(c => c.lastVisit && new Date(c.lastVisit) > threeMonthsAgo);
+      filtered = clientsWithData.filter(c => c?.lastVisit && new Date(c.lastVisit) > threeMonthsAgo);
     } else if (filterValue === 'inactive') {
       const threeMonthsAgo = new Date();
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -388,14 +389,14 @@ export default function UnifiedCRMTab({
 
   // Statistiques globales
   const stats = {
-    totalClients: clients.length,
-    vipClients: clients.filter(c => {
-      const clientReservations = reservations.filter(r => r.userEmail === c.email);
+    totalClients: safeArray(clients).length,
+    vipClients: safeArray(clients).filter(c => {
+      const clientReservations = safeArray(reservations).filter(r => r?.userEmail === c?.email);
       return getLoyaltyLevel(clientReservations).level === 3;
     }).length,
     birthdaysThisMonth: getBirthdayClients().length,
-    totalRevenue: clients.reduce((sum, c) => sum + c.totalSpent, 0),
-    totalReservations: reservations.filter(r => r.status !== 'cancelled').length
+    totalRevenue: safeArray(clients).reduce((sum, c) => sum + (c?.totalSpent ?? 0), 0),
+    totalReservations: safeArray(reservations).filter(r => r?.status !== 'cancelled').length
   };
 
   // Sauvegarder les modifications client avec auto-save
@@ -416,7 +417,7 @@ export default function UnifiedCRMTab({
 
       if (response.ok) {
         const updatedClient = await response.json();
-        setClients(clients.map(c => c.id === clientId ? { ...c, ...dataToSave } : c));
+        setClients(safeArray(clients).map(c => c?.id === clientId ? { ...c, ...dataToSave } : c));
         setSavingStatus(prev => ({ ...prev, [clientId]: 'saved' }));
         
         // Effacer le statut après 2 secondes
@@ -450,8 +451,8 @@ export default function UnifiedCRMTab({
     }));
     
     // Mettre à jour le client dans la liste immédiatement pour un feedback visuel
-    setClients(clients.map(c =>
-      c.id === clientId ? { ...c, [field]: value } : c
+    setClients(safeArray(clients).map(c =>
+      c?.id === clientId ? { ...c, [field]: value } : c
     ));
     
     // Annuler le timeout précédent s'il existe
@@ -469,14 +470,14 @@ export default function UnifiedCRMTab({
   const exportClientsData = () => {
     const csvContent = [
       ['Nom', 'Email', 'Téléphone', 'Points', 'Total dépensé', 'Niveau', 'Dernière visite'],
-      ...clients.map(c => [
-        c.name,
-        c.email,
-        c.phone || '',
-        c.loyaltyPoints,
-        c.totalSpent,
-        getLoyaltyLevel(c.reservations || []).name,
-        c.lastVisit || ''
+      ...safeArray(clients).map(c => [
+        c?.name ?? '',
+        c?.email ?? '',
+        c?.phone ?? '',
+        c?.loyaltyPoints ?? 0,
+        c?.totalSpent ?? 0,
+        getLoyaltyLevel(safeArray(c?.reservations)).name,
+        c?.lastVisit ?? ''
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -519,7 +520,7 @@ export default function UnifiedCRMTab({
     try {
       // D'abord charger depuis localStorage
       const storageKey = `evolutions_${clientId}`;
-      const localEvolutions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const localEvolutions = safeJsonParse(localStorage.getItem(storageKey), []);
       
       if (localEvolutions.length > 0) {
         setClientEvolutions(prev => ({ ...prev, [clientId]: localEvolutions }));
@@ -591,9 +592,9 @@ export default function UnifiedCRMTab({
 
         // Vérifier les nouveaux leads
         const storedLastChecked = localStorage.getItem('lastCheckedLeads');
-        const lastCheckedLeadIds = storedLastChecked ? JSON.parse(storedLastChecked) : [];
+        const lastCheckedLeadIds = safeJsonParse(storedLastChecked, []);
 
-        const newLeads = data.leads.filter((lead: Lead) =>
+        const newLeads = safeArray(data?.leads).filter((lead: Lead) =>
           !lastCheckedLeadIds.includes(lead.id)
         );
 
@@ -689,8 +690,8 @@ export default function UnifiedCRMTab({
           onClick={() => {
             setActiveTab('leads');
             // Marquer tous les leads comme vus
-            if (leads.length > 0) {
-              localStorage.setItem('lastCheckedLeads', JSON.stringify(leads.map(l => l.id)));
+            if (safeArray(leads).length > 0) {
+              localStorage.setItem('lastCheckedLeads', JSON.stringify(safeArray(leads).map(l => l?.id)));
               setNewLeadsCount(0);
             }
           }}
@@ -795,7 +796,7 @@ export default function UnifiedCRMTab({
                 setClientTypeFilter(e.target.value as any);
                 // Si on sélectionne leads, vérifier les nouveaux
                 if (e.target.value === 'lead') {
-                  const newLeads = clients.filter(c => c.clientType === 'lead' && c.leadStatus === 'new');
+                  const newLeads = safeArray(clients).filter(c => c?.clientType === 'lead' && c?.leadStatus === 'new');
                   if (newLeads.length > 0) {
                     setNewLeadsCount(newLeads.length);
                     setShowLeadNotification(true);
@@ -805,13 +806,13 @@ export default function UnifiedCRMTab({
               className="px-4 py-2 border border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none bg-purple-50"
             >
               <option value="all">🌐 Tous</option>
-              <option value="client">👥 Clients ({clients.filter(c => !c.clientType || c.clientType === 'client').length})</option>
+              <option value="client">👥 Clients ({safeArray(clients).filter(c => !c?.clientType || c.clientType === 'client').length})</option>
               <option value="lead">
-                🎯 Leads ({clients.filter(c => c.clientType === 'lead').length})
-                {clients.filter(c => c.clientType === 'lead' && c.leadStatus === 'new').length > 0 && 
-                  ` • ${clients.filter(c => c.clientType === 'lead' && c.leadStatus === 'new').length} nouveau(x)`}
+                🎯 Leads ({safeArray(clients).filter(c => c?.clientType === 'lead').length})
+                {safeArray(clients).filter(c => c?.clientType === 'lead' && c?.leadStatus === 'new').length > 0 &&
+                  ` • ${safeArray(clients).filter(c => c?.clientType === 'lead' && c?.leadStatus === 'new').length} nouveau(x)`}
               </option>
-              <option value="prospect">🔍 Prospects ({clients.filter(c => c.clientType === 'prospect').length})</option>
+              <option value="prospect">🔍 Prospects ({safeArray(clients).filter(c => c?.clientType === 'prospect').length})</option>
             </select>
             
             {/* Filtre par statut lead */}
@@ -945,12 +946,12 @@ export default function UnifiedCRMTab({
             <h3 className="font-semibold text-[#2c3e50]">Anniversaires ce mois 🎉</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {getBirthdayClients().map(client => (
-              <div key={client.id} className="bg-white rounded-lg p-3 flex justify-between items-center">
+            {safeArray(getBirthdayClients()).map(client => (
+              <div key={client?.id} className="bg-white rounded-lg p-3 flex justify-between items-center">
                 <div>
-                  <p className="font-medium text-[#2c3e50]">{client.name}</p>
+                  <p className="font-medium text-[#2c3e50]">{client?.name ?? 'Unknown'}</p>
                   <p className="text-sm text-[#2c3e50]/60">
-                    {client.birthDate && new Date(client.birthDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                    {client?.birthDate && new Date(client.birthDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
                   </p>
                 </div>
                 <button className="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-sm hover:bg-pink-200 transition-colors">
@@ -985,15 +986,15 @@ export default function UnifiedCRMTab({
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client) => {
-                const clientReservations = reservations.filter(r => {
-          return r.userEmail === client.email || 
-                 r.userId === client.id ||
-                 (r.user && r.user.email === client.email);
+              {safeArray(filteredClients).map((client) => {
+                const clientReservations = safeArray(reservations).filter(r => {
+          return r?.userEmail === client?.email ||
+                 r?.userId === client?.id ||
+                 (r?.user && r.user.email === client?.email);
         });
                 const level = getLoyaltyLevel(clientReservations);
-                const isExpanded = expandedClient === client.id;
-                const isEditing = editingClient === client.id;
+                const isExpanded = expandedClient === client?.id;
+                const isEditing = editingClient === client?.id;
                 
                 return (
                   <React.Fragment key={client.id}>
@@ -1454,29 +1455,29 @@ export default function UnifiedCRMTab({
                                 </button>
                                 
                                 {/* Galerie d'évolutions */}
-                                {clientEvolutions[client.id] && clientEvolutions[client.id].length > 0 ? (
+                                {clientEvolutions[client?.id] && safeArray(clientEvolutions[client?.id]).length > 0 ? (
                                   <div className="space-y-3">
-                                    {clientEvolutions[client.id].map((evolution, idx) => (
+                                    {safeArray(clientEvolutions[client?.id]).map((evolution, idx) => (
                                       <div key={idx} className="bg-white rounded-lg border border-[#d4b5a0]/20 overflow-hidden hover:shadow-lg transition-all">
                                         {/* Header */}
                                         <div className="bg-gradient-to-r from-[#d4b5a0]/10 to-[#c9a084]/10 px-3 py-2 flex items-center justify-between">
                                           <div className="flex items-center gap-2">
                                             <span className="bg-[#d4b5a0] text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                                              Séance #{evolution.sessionNumber}
+                                              Séance #{evolution?.sessionNumber ?? 0}
                                             </span>
                                             <span className="text-sm font-semibold text-[#2c3e50]">
-                                              {evolution.serviceName || 'Service'}
+                                              {evolution?.serviceName ?? 'Service'}
                                             </span>
                                           </div>
                                           <div className="flex items-center gap-2">
                                             <span className="text-xs text-[#2c3e50]/60">
-                                              {new Date(evolution.sessionDate).toLocaleDateString('fr-FR')}
+                                              {new Date(evolution?.sessionDate ?? new Date()).toLocaleDateString('fr-FR')}
                                             </span>
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (confirm('Supprimer cette évolution ?')) {
-                                                  const updated = clientEvolutions[client.id].filter((_, i) => i !== idx);
+                                                  const updated = safeArray(clientEvolutions[client?.id]).filter((_, i) => i !== idx);
                                                   setClientEvolutions(prev => ({
                                                     ...prev,
                                                     [client.id]: updated
@@ -1602,17 +1603,17 @@ export default function UnifiedCRMTab({
                                 Historique récent
                               </h4>
                               <div className="space-y-2">
-                                {reservations
+                                {safeArray(reservations)
                                   .filter(r => {
                                     // Vérifier plusieurs formats possibles
-                                    return r.userEmail === client.email || 
-                                           r.userId === client.id ||
-                                           (r.user && r.user.email === client.email);
+                                    return r?.userEmail === client?.email ||
+                                           r?.userId === client?.id ||
+                                           (r?.user && r.user.email === client?.email);
                                   })
                                   .slice(0, 5)
                                   .map((reservation, idx) => {
                                     // Mapper les IDs de services aux noms
-                                    const serviceNames = reservation.services.map((serviceId: string) => {
+                                    const serviceNames = safeArray(reservation?.services).map((serviceId: string) => {
                                       const serviceMap: any = {
                                         'hydro-naissance': "Hydro'Naissance",
                                         'hydro-cleaning': "Hydro'Cleaning",
@@ -1620,7 +1621,7 @@ export default function UnifiedCRMTab({
                                         'bb-glow': 'BB Glow',
                                         'led-therapie': 'LED Thérapie'
                                       };
-                                      return serviceMap[serviceId] || serviceId;
+                                      return serviceMap[serviceId] ?? serviceId;
                                     });
                                     
                                     return (
@@ -1667,10 +1668,10 @@ export default function UnifiedCRMTab({
                                       </div>
                                     );
                                   })}
-                                {reservations.filter(r => {
-                                  return r.userEmail === client.email || 
-                                         r.userId === client.id ||
-                                         (r.user && r.user.email === client.email);
+                                {safeArray(reservations).filter(r => {
+                                  return r?.userEmail === client?.email ||
+                                         r?.userId === client?.id ||
+                                         (r?.user && r.user.email === client?.email);
                                 }).length === 0 && (
                                   <p className="text-sm text-[#2c3e50]/60">Aucune réservation</p>
                                 )}
@@ -1701,29 +1702,29 @@ export default function UnifiedCRMTab({
                                 <Calendar className="w-4 h-4" />
                                 Prendre RDV
                               </button>
-                              <button 
+                              <button
                                 onClick={() => {
                                   // Afficher l'historique complet des réservations
-                                  const clientReservations = reservations.filter(r => {
-                                    return r.userEmail === client.email || 
-                                           r.userId === client.id ||
-                                           (r.user && r.user.email === client.email);
+                                  const clientReservations = safeArray(reservations).filter(r => {
+                                    return r?.userEmail === client?.email ||
+                                           r?.userId === client?.id ||
+                                           (r?.user && r.user.email === client?.email);
                                   });
-                                  
+
                                   if (clientReservations.length > 0) {
                                     const history = clientReservations
-                                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                      .sort((a, b) => new Date(b?.date ?? 0).getTime() - new Date(a?.date ?? 0).getTime())
                                       .map(r => {
-                                        const date = new Date(r.date).toLocaleDateString('fr-FR');
-                                        const services = r.services.join(', ');
-                                        const status = r.status === 'completed' ? '✓' : 
-                                                       r.status === 'cancelled' ? '✗' : 
-                                                       r.status === 'confirmed' ? '●' : '○';
-                                        return `${status} ${date} - ${services} - ${r.totalPrice}€`;
+                                        const date = new Date(r?.date ?? new Date()).toLocaleDateString('fr-FR');
+                                        const services = safeArray(r?.services).join(', ');
+                                        const status = r?.status === 'completed' ? '✓' :
+                                                       r?.status === 'cancelled' ? '✗' :
+                                                       r?.status === 'confirmed' ? '●' : '○';
+                                        return `${status} ${date} - ${services} - ${r?.totalPrice ?? 0}€`;
                                       })
                                       .join('\n');
-                                    
-                                    alert(`Historique complet de ${client.name}:\n\n${history}\n\nTotal: ${clientReservations.length} réservation(s)`);
+
+                                    alert(`Historique complet de ${client?.name ?? 'Client'}:\n\n${history}\n\nTotal: ${clientReservations.length} réservation(s)`);
                                   } else {
                                     alert(`Aucun historique de réservation pour ${client.name}`);
                                   }
@@ -2077,18 +2078,18 @@ export default function UnifiedCRMTab({
                       const newEvolution = {
                         id: Date.now().toString(),
                         userId: selectedClientForEvolution,
-                        sessionNumber: parseInt(evolutionForm.sessionNumber),
-                        serviceName: evolutionForm.serviceName,
-                        sessionDate: evolutionForm.sessionDate,
-                        beforePhoto: beforePhotoPreview,
-                        afterPhoto: afterPhotoPreview,
-                        videoUrl: videoPreview,
-                        improvements: evolutionForm.improvements,
-                        clientFeedback: evolutionForm.clientFeedback,
-                        hydrationLevel: evolutionForm.hydrationLevel ? parseInt(evolutionForm.hydrationLevel) : null,
-                        elasticity: evolutionForm.elasticity ? parseInt(evolutionForm.elasticity) : null,
-                        pigmentation: evolutionForm.pigmentation ? parseInt(evolutionForm.pigmentation) : null,
-                        wrinkleDepth: evolutionForm.wrinkleDepth ? parseInt(evolutionForm.wrinkleDepth) : null
+                        sessionNumber: safeParseInt(evolutionForm.sessionNumber, 0),
+                        serviceName: evolutionForm.serviceName ?? '',
+                        sessionDate: evolutionForm.sessionDate ?? '',
+                        beforePhoto: beforePhotoPreview ?? '',
+                        afterPhoto: afterPhotoPreview ?? '',
+                        videoUrl: videoPreview ?? '',
+                        improvements: evolutionForm.improvements ?? '',
+                        clientFeedback: evolutionForm.clientFeedback ?? '',
+                        hydrationLevel: evolutionForm.hydrationLevel ? safeParseInt(evolutionForm.hydrationLevel, 0) : null,
+                        elasticity: evolutionForm.elasticity ? safeParseInt(evolutionForm.elasticity, 0) : null,
+                        pigmentation: evolutionForm.pigmentation ? safeParseInt(evolutionForm.pigmentation, 0) : null,
+                        wrinkleDepth: evolutionForm.wrinkleDepth ? safeParseInt(evolutionForm.wrinkleDepth, 0) : null
                       };
 
                       // Ajouter l'évolution au state local
@@ -2102,7 +2103,7 @@ export default function UnifiedCRMTab({
 
                       // Stocker dans localStorage temporairement
                       const storageKey = `evolutions_${selectedClientForEvolution}`;
-                      const existingEvolutions = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                      const existingEvolutions = safeJsonParse(localStorage.getItem(storageKey), []);
                       localStorage.setItem(storageKey, JSON.stringify([...existingEvolutions, newEvolution]));
 
                       // Réinitialiser le formulaire
@@ -2307,8 +2308,8 @@ export default function UnifiedCRMTab({
           }}
           onEdit={(clientId, data) => {
             // Mettre à jour le client
-            const updatedClients = clients.map(c => 
-              c.id === clientId ? { ...c, ...data } : c
+            const updatedClients = safeArray(clients).map(c =>
+              c?.id === clientId ? { ...c, ...data } : c
             );
             setClients(updatedClients);
             // Sauvegarder en base
@@ -2402,16 +2403,16 @@ export default function UnifiedCRMTab({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {leads.map((lead) => (
-                    <tr 
-                      key={lead.id}
+                  {safeArray(leads).map((lead) => (
+                    <tr
+                      key={lead?.id}
                       className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => setSelectedLead(lead)}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-[#2c3e50]">{lead.name}</div>
-                          {lead.subject && (
+                          <div className="text-sm font-medium text-[#2c3e50]">{lead?.name ?? 'Unknown'}</div>
+                          {lead?.subject && (
                             <div className="text-xs text-gray-500">{lead.subject}</div>
                           )}
                         </div>

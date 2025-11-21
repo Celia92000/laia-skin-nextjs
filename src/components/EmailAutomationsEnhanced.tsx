@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Mail, Settings, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, CheckCircle, AlertCircle, Edit2, Save, X, RefreshCw, Send, Users, MessageSquare, Info } from 'lucide-react';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface Automation {
   id: string;
@@ -134,8 +135,8 @@ export default function EmailAutomationsEnhanced() {
         const data = await response.json();
         setAutomations(data.map((auto: any) => ({
           ...auto,
-          timing: auto.timing ? JSON.parse(auto.timing) : null,
-          conditions: auto.conditions ? JSON.parse(auto.conditions) : null,
+          timing: auto.timing ? safeJsonParse(auto.timing, null) : null,
+          conditions: auto.conditions ? safeJsonParse(auto.conditions, null) : null,
           description: getAutomationDescription(auto)
         })));
       }
@@ -147,7 +148,7 @@ export default function EmailAutomationsEnhanced() {
   };
 
   const getAutomationDescription = (automation: any) => {
-    const timing = automation.timing ? (typeof automation.timing === 'string' ? JSON.parse(automation.timing) : automation.timing) : {};
+    const timing = automation.timing ? (typeof automation.timing === 'string' ? safeJsonParse(automation.timing, {}) : automation.timing) : {};
     let desc = `EmailJS: ${automation.template}`;
     
     if (timing.immediate) {

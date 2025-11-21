@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { isTimeSlotAvailable, getTotalDuration } from "@/lib/time-utils";
 import { formatDateLocal } from "@/lib/date-utils";
+import { safeLocalStorage } from '@/lib/safe-parse';
 
 interface Reservation {
   id: string;
@@ -290,8 +291,8 @@ export default function PlanningCalendar({ reservations, services, dbServices, o
     const dateStr = `${year}-${month}-${day}`;
     
     // Récupérer les réservations à jour depuis le localStorage
-    const storedReservations = JSON.parse(localStorage.getItem('admin_reservations') || '[]');
-    const allReservations = [...reservations, ...storedReservations.filter((sr: any) => 
+    const storedReservations = safeLocalStorage<any[]>('admin_reservations', []);
+    const allReservations = [...reservations, ...storedReservations.filter((sr: any) =>
       !reservations.some(r => r.id === sr.id)
     )];
     

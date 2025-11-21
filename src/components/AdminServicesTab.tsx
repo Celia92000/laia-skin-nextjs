@@ -12,6 +12,7 @@ import AdminProductsTab from "./AdminProductsTab";
 import AdminFormationsTab from "./AdminFormationsTab";
 import ServiceStockLinkManager from "./ServiceStockLinkManager";
 import AdminCategoriesManager from "./AdminCategoriesManager";
+import { safeJsonParse, safeParseNumber, safeParseInt, safeArray, safeMap, safeFilter, safeGet } from '@/lib/safe-parse';
 
 interface Service {
   id: string;
@@ -81,7 +82,7 @@ export default function AdminServicesTab() {
       if (response.ok) {
         const data = await response.json();
         // Trier les services par ordre d'affichage
-        const sortedData = data.sort((a: Service, b: Service) => a.order - b.order);
+        const sortedData = safeArray(data).sort((a: Service, b: Service) => (a?.order ?? 0) - (b?.order ?? 0));
         setServices(sortedData);
         setServicesCount(sortedData.length);
       }
@@ -192,12 +193,7 @@ export default function AdminServicesTab() {
   };
 
   const parseJsonField = (field: string | null | undefined): string[] => {
-    if (!field) return [];
-    try {
-      return JSON.parse(field);
-    } catch {
-      return [];
-    }
+    return safeJsonParse(field, []);
   };
 
   const ServiceForm = ({ service, onClose }: { service: Service | null, onClose: () => void }) => {
@@ -215,18 +211,18 @@ export default function AdminServicesTab() {
       canBeOption: false
     } as Service);
 
-    const [benefits, setBenefits] = useState<string[]>(parseJsonField(formData.benefits));
-    const [processSteps, setProcessSteps] = useState<string[]>(parseJsonField(formData.process));
+    const [benefits, setBenefits] = useState<string[]>(parseJsonField(formData?.benefits));
+    const [processSteps, setProcessSteps] = useState<string[]>(parseJsonField(formData?.process));
     const [protocol, setProtocol] = useState<{title: string, duration: string, desc: string}[]>(
-      formData.protocol ? (typeof formData.protocol === 'string' ? JSON.parse(formData.protocol) : formData.protocol) : []
+      safeJsonParse(formData?.protocol, [])
     );
-    const [gallery, setGallery] = useState<string[]>(parseJsonField(formData.gallery));
+    const [gallery, setGallery] = useState<string[]>(parseJsonField(formData?.gallery));
     const [imageObjectFit, setImageObjectFit] = useState<'cover' | 'contain' | 'fill'>(
-      (formData.imageObjectFit as 'cover' | 'contain' | 'fill') || 'cover'
+      (formData?.imageObjectFit as 'cover' | 'contain' | 'fill') ?? 'cover'
     );
     const [imagePosition, setImagePosition] = useState({
-      x: formData.imagePositionX ?? 50,
-      y: formData.imagePositionY ?? 50
+      x: formData?.imagePositionX ?? 50,
+      y: formData?.imagePositionY ?? 50
     });
 
     // États pour les catégories et sous-catégories
@@ -243,7 +239,7 @@ export default function AdminServicesTab() {
           });
           if (response.ok) {
             const data = await response.json();
-            setCategories(data.filter((c: any) => c.active));
+            setCategories(safeArray(data).filter((c: any) => c?.active));
           }
         } catch (error) {
           console.error('Erreur lors du chargement des catégories:', error);
@@ -254,10 +250,10 @@ export default function AdminServicesTab() {
 
     // Charger les sous-catégories quand une catégorie est sélectionnée
     useEffect(() => {
-      if (formData.categoryId) {
-        const selectedCategory = categories.find(c => c.id === formData.categoryId);
+      if (formData?.categoryId) {
+        const selectedCategory = categories.find(c => c?.id === formData.categoryId);
         if (selectedCategory?.subcategories) {
-          setSubcategories(selectedCategory.subcategories.filter((s: any) => s.active));
+          setSubcategories(safeArray(selectedCategory.subcategories).filter((s: any) => s?.active));
         }
       } else {
         setSubcategories([]);
@@ -269,7 +265,7 @@ export default function AdminServicesTab() {
       e.preventDefault();
       
       // Générer le slug automatiquement si vide
-      if (!formData.slug && formData.name) {
+      if (!formData?.slug && formData?.name) {
         formData.slug = formData.name.toLowerCase()
           .replace(/[àáäâ]/g, 'a')
           .replace(/[èéêë]/g, 'e')
@@ -283,13 +279,13 @@ export default function AdminServicesTab() {
 
       const dataToSave = {
         ...formData,
-        benefits: JSON.stringify(benefits.filter(b => typeof b === 'string' && b.trim())),
-        process: JSON.stringify(processSteps.filter(p => typeof p === 'string' && p.trim())),
-        protocol: JSON.stringify(protocol.filter(p => p.title?.trim() || p.desc?.trim())),
-        gallery: JSON.stringify(gallery.filter(g => typeof g === 'string' && g.trim())),
-        imagePositionX: imagePosition.x,
-        imagePositionY: imagePosition.y,
-        imageObjectFit: imageObjectFit
+        benefits: JSON.stringify(safeArray(benefits).filter(b => typeof b === 'string' && b.trim())),
+        process: JSON.stringify(safeArray(processSteps).filter(p => typeof p === 'string' && p.trim())),
+        protocol: JSON.stringify(safeArray(protocol).filter(p => p?.title?.trim() || p?.desc?.trim())),
+        gallery: JSON.stringify(safeArray(gallery).filter(g => typeof g === 'string' && g.trim())),
+        imagePositionX: imagePosition?.x ?? 50,
+        imagePositionY: imagePosition?.y ?? 50,
+        imageObjectFit: imageObjectFit ?? 'cover'
       };
 
       handleSaveService(dataToSave);
@@ -458,8 +454,8 @@ export default function AdminServicesTab() {
                         required
                         min="0"
                         step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
+                        value={formData?.price ?? 0}
+                        onChange={(e) => setFormData({...formData, price: safeParseNumber(e.target.value, 0)})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -472,8 +468,8 @@ export default function AdminServicesTab() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={formData.promoPrice || ''}
-                        onChange={(e) => setFormData({...formData, promoPrice: e.target.value ? parseFloat(e.target.value) : undefined})}
+                        value={formData?.promoPrice ?? ''}
+                        onChange={(e) => setFormData({...formData, promoPrice: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -486,8 +482,8 @@ export default function AdminServicesTab() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={formData.forfaitPrice || ''}
-                        onChange={(e) => setFormData({...formData, forfaitPrice: e.target.value ? parseFloat(e.target.value) : undefined})}
+                        value={formData?.forfaitPrice ?? ''}
+                        onChange={(e) => setFormData({...formData, forfaitPrice: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -500,8 +496,8 @@ export default function AdminServicesTab() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={formData.forfaitPromo || ''}
-                        onChange={(e) => setFormData({...formData, forfaitPromo: e.target.value ? parseFloat(e.target.value) : undefined})}
+                        value={formData?.forfaitPromo ?? ''}
+                        onChange={(e) => setFormData({...formData, forfaitPromo: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -518,8 +514,8 @@ export default function AdminServicesTab() {
                       required
                       min="15"
                       step="15"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
+                      value={formData?.duration ?? 60}
+                      onChange={(e) => setFormData({...formData, duration: safeParseInt(e.target.value, 60)})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
@@ -586,8 +582,8 @@ export default function AdminServicesTab() {
                     <input
                       type="number"
                       min="0"
-                      value={formData.order}
-                      onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})}
+                      value={formData?.order ?? 0}
+                      onChange={(e) => setFormData({...formData, order: safeParseInt(e.target.value, 0)})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
@@ -845,8 +841,8 @@ export default function AdminServicesTab() {
                                   type="range"
                                   min="0"
                                   max="100"
-                                  value={imagePosition.x}
-                                  onChange={(e) => setImagePosition(prev => ({ ...prev, x: parseInt(e.target.value) }))}
+                                  value={imagePosition?.x ?? 50}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, x: safeParseInt(e.target.value, 50) }))}
                                   className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                                 />
                               </div>
@@ -859,8 +855,8 @@ export default function AdminServicesTab() {
                                   type="range"
                                   min="0"
                                   max="100"
-                                  value={imagePosition.y}
-                                  onChange={(e) => setImagePosition(prev => ({ ...prev, y: parseInt(e.target.value) }))}
+                                  value={imagePosition?.y ?? 50}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, y: safeParseInt(e.target.value, 50) }))}
                                   className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                                 />
                               </div>
@@ -884,8 +880,8 @@ export default function AdminServicesTab() {
                                         setImagePosition({ x: 50, y: 50 });
                                       } else {
                                         setImagePosition({
-                                          x: Math.max(0, Math.min(100, imagePosition.x + dx)),
-                                          y: Math.max(0, Math.min(100, imagePosition.y + dy))
+                                          x: Math.max(0, Math.min(100, (imagePosition?.x ?? 50) + dx)),
+                                          y: Math.max(0, Math.min(100, (imagePosition?.y ?? 50) + dy))
                                         });
                                       }
                                     }}
@@ -921,8 +917,8 @@ export default function AdminServicesTab() {
                                 type="range"
                                 min="50"
                                 max="200"
-                                value={imageZoom}
-                                onChange={(e) => setImageZoom(parseInt(e.target.value))}
+                                value={imageZoom ?? 100}
+                                onChange={(e) => setImageZoom(safeParseInt(e.target.value, 100))}
                                 className="flex-1 h-2 bg-gradient-to-r from-blue-200 via-[#d4b5a0] to-pink-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                               />
                               <button
@@ -985,7 +981,7 @@ export default function AdminServicesTab() {
                   </p>
 
                   <div className="space-y-4">
-                    {gallery.map((url, index) => (
+                    {safeArray(gallery).map((url, index) => (
                       <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <div className="flex gap-2 mb-3">
                           <input
@@ -1097,7 +1093,7 @@ export default function AdminServicesTab() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Bénéfices du soin
                   </label>
-                  {benefits.map((benefit, index) => (
+                  {safeArray(benefits).map((benefit, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <input
                         type="text"
@@ -1129,7 +1125,7 @@ export default function AdminServicesTab() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Étapes du protocole
                   </label>
-                  {processSteps.map((step, index) => (
+                  {safeArray(processSteps).map((step, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <span className="flex-shrink-0 w-8 h-8 bg-[#d4b5a0] text-white rounded-full flex items-center justify-center text-sm font-bold">
                         {index + 1}
@@ -1351,7 +1347,7 @@ export default function AdminServicesTab() {
 
       {/* Services List */}
       <div className="space-y-4">
-        {services.map(service => (
+        {safeArray(services).map(service => (
           <div key={service.id} className="bg-white rounded-xl shadow-sm border border-[#d4b5a0]/10 hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex justify-between items-start">
@@ -1383,29 +1379,29 @@ export default function AdminServicesTab() {
                     <div className="flex items-center gap-1">
                       <Euro className="w-4 h-4 text-[#d4b5a0]" />
                       <span className="text-[#2c3e50]">
-                        {service.promoPrice ? (
+                        {service?.promoPrice ? (
                           <>
-                            <span className="line-through text-[#2c3e50]/50">{service.price}€</span>
+                            <span className="line-through text-[#2c3e50]/50">{service?.price ?? 0}€</span>
                             {' '}
-                            <span className="font-semibold text-[#d4b5a0]">{service.promoPrice}€</span>
+                            <span className="font-semibold text-[#d4b5a0]">{service?.promoPrice ?? 0}€</span>
                           </>
                         ) : (
-                          <span className="font-semibold">{service.price}€</span>
+                          <span className="font-semibold">{service?.price ?? 0}€</span>
                         )}
                       </span>
                     </div>
-                    
-                    {service.forfaitPrice && (
+
+                    {service?.forfaitPrice && (
                       <div className="flex items-center gap-1">
                         <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
-                          Forfait: {service.forfaitPromo || service.forfaitPrice}€
+                          Forfait: {service?.forfaitPromo ?? service?.forfaitPrice ?? 0}€
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4 text-[#d4b5a0]" />
-                      <span className="text-[#2c3e50]">{service.duration} min</span>
+                      <span className="text-[#2c3e50]">{service?.duration ?? 0} min</span>
                     </div>
                     
                     {service.category && (
@@ -1478,29 +1474,29 @@ export default function AdminServicesTab() {
                       <div>
                         <span className="text-xs text-[#2c3e50]/60">Séance unique</span>
                         <p className="font-semibold text-lg text-[#2c3e50]">
-                          {service.promoPrice ? (
+                          {service?.promoPrice ? (
                             <>
-                              <span className="line-through text-sm text-[#2c3e50]/40">{service.price}€</span>
+                              <span className="line-through text-sm text-[#2c3e50]/40">{service?.price ?? 0}€</span>
                               {' '}
-                              <span className="text-[#d4b5a0]">{service.promoPrice}€</span>
+                              <span className="text-[#d4b5a0]">{service?.promoPrice ?? 0}€</span>
                             </>
                           ) : (
-                            `${service.price}€`
+                            `${service?.price ?? 0}€`
                           )}
                         </p>
                       </div>
-                      {service.forfaitPrice && (
+                      {service?.forfaitPrice && (
                         <div>
                           <span className="text-xs text-[#2c3e50]/60">Forfait 4 séances</span>
                           <p className="font-semibold text-lg text-green-600">
-                            {service.forfaitPromo ? (
+                            {service?.forfaitPromo ? (
                               <>
-                                <span className="line-through text-sm text-[#2c3e50]/40">{service.forfaitPrice}€</span>
+                                <span className="line-through text-sm text-[#2c3e50]/40">{service?.forfaitPrice ?? 0}€</span>
                                 {' '}
-                                {service.forfaitPromo}€
+                                {service?.forfaitPromo ?? 0}€
                               </>
                             ) : (
-                              `${service.forfaitPrice}€`
+                              `${service?.forfaitPrice ?? 0}€`
                             )}
                           </p>
                         </div>
@@ -1513,7 +1509,7 @@ export default function AdminServicesTab() {
                     <p className="text-sm text-[#2c3e50]/70 whitespace-pre-line">{service.description}</p>
                   </div>
                   
-                  {service.benefits && parseJsonField(service.benefits).length > 0 && (
+                  {service?.benefits && parseJsonField(service.benefits).length > 0 && (
                     <div>
                       <h4 className="font-medium text-[#2c3e50] mb-2">Bénéfices</h4>
                       <ul className="list-disc list-inside text-sm text-[#2c3e50]/70 space-y-1">
@@ -1523,8 +1519,8 @@ export default function AdminServicesTab() {
                       </ul>
                     </div>
                   )}
-                  
-                  {service.process && parseJsonField(service.process).length > 0 && (
+
+                  {service?.process && parseJsonField(service.process).length > 0 && (
                     <div>
                       <h4 className="font-medium text-[#2c3e50] mb-2">Protocole</h4>
                       <ol className="list-decimal list-inside text-sm text-[#2c3e50]/70 space-y-1">

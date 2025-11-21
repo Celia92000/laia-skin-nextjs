@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Shield, User, LogOut, Calculator } from "lucide-react";
 import { logout } from "@/lib/auth-client";
 import { useConfig } from "@/hooks/useConfig";
+import { safeJsonParse } from "@/lib/safe-parse";
 
 // Composant NavItem séparé pour gérer le hover state
 function NavItem({ item, pathname, primaryColor, secondaryColor, accentColor }: {
@@ -76,11 +77,8 @@ export default function Header({ organizationData }: HeaderProps = {}) {
     const checkUser = () => {
       const userStr = localStorage.getItem('user');
       if (userStr) {
-        try {
-          setUser(JSON.parse(userStr));
-        } catch {
-          setUser(null);
-        }
+        const parsedUser = safeJsonParse(userStr, null);
+        setUser(parsedUser);
       }
     };
 

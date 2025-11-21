@@ -9,6 +9,7 @@ import ClientSpaceWrapper from "./ClientSpaceWrapper";
 import Modal from "@/components/Modal";
 import { logout } from "@/lib/auth-client";
 import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-utils';
+import { safeJsonParse, safeParseNumber, safeArray } from '@/lib/safe-parse';
 
 // Lazy load des composants lourds
 const ClientDashboard = dynamic(() => import("@/components/ClientDashboard"), {
@@ -95,47 +96,52 @@ function EspaceClientContent() {
   const getSubscriptionStatus = () => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    
+
     // Filtrer les réservations d'abonnement
-    const subscriptionReservations = reservations.filter(r => r.isSubscription === true);
-    
+    const subscriptionReservations = safeArray(reservations).filter(r => r?.isSubscription === true);
+
     if (subscriptionReservations.length === 0) {
       return { hasSubscription: false };
     }
-    
+
     // Vérifier si l'abonnement du mois a été utilisé
     const monthlyUsed = subscriptionReservations.some(r => {
+      if (!r?.date) return false;
       const resDate = new Date(r.date);
-      return resDate.getMonth() === currentMonth && 
+      return resDate.getMonth() === currentMonth &&
              resDate.getFullYear() === currentYear &&
-             (r.status === 'confirmed' || r.status === 'completed');
+             (r?.status === 'confirmed' || r?.status === 'completed');
     });
-    
+
     // Vérifier s'il y a un RDV d'abonnement à venir
     const upcoming = subscriptionReservations.find(r => {
+      if (!r?.date) return false;
       const resDate = new Date(r.date);
-      return resDate.getMonth() === currentMonth && 
+      return resDate.getMonth() === currentMonth &&
              resDate.getFullYear() === currentYear &&
-             r.status === 'pending' &&
+             r?.status === 'pending' &&
              resDate >= new Date();
     });
-    
+
     // Trouver le dernier service utilisé en abonnement
     const lastSubscription = subscriptionReservations
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-    
-    const lastService = lastSubscription ? lastSubscription.services[0] : null;
-    
-    return { 
-      hasSubscription: true, 
-      monthlyUsed, 
+      .sort((a, b) => {
+        if (!a?.date || !b?.date) return 0;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      })[0];
+
+    const lastService = lastSubscription ? safeArray(lastSubscription.services, [])[0] : null;
+
+    return {
+      hasSubscription: true,
+      monthlyUsed,
       upcoming,
-      lastService 
+      lastService
     };
   };
 
   // Créer un map des services de la BDD
-  const services = Object.fromEntries(dbServices.map(s => [s.slug, s.name]));
+  const services = Object.fromEntries(safeArray(dbServices).map(s => [s?.slug || '', s?.name || '']));
 
   useEffect(() => {
     // Vérifier si un onglet spécifique est demandé dans l'URL
@@ -153,15 +159,15 @@ function EspaceClientContent() {
         return;
       }
 
-      const userInfo = JSON.parse(user);
+      const userInfo = safeJsonParse(user, {});
       // Utiliser le nom de l'utilisateur tel quel, sans distinction pour l'admin
-      let displayName = userInfo.name || 'Cliente';
-      
+      let displayName = userInfo?.name || 'Cliente';
+
       setUserData({
         name: displayName,
-        email: userInfo.email,
-        loyaltyPoints: userInfo.loyaltyPoints || 0,
-        totalSpent: userInfo.totalSpent || 0
+        email: userInfo?.email || '',
+        loyaltyPoints: safeParseNumber(userInfo?.loyaltyPoints, 0),
+        totalSpent: safeParseNumber(userInfo?.totalSpent, 0)
       });
 
       fetchUserData();
@@ -294,8 +300,9 @@ function EspaceClientContent() {
       if (response.ok) {
         const data = await response.json();
         // Enrichir chaque réservation avec les noms des services
+        const reservationsArray = safeArray(data);
         const enrichedReservations = await Promise.all(
-          data.map(async (reservation: any) => {
+          reservationsArray.map(async (reservation: any) => {
             return await getReservationWithServiceNames(reservation);
           })
         );
@@ -383,10 +390,11 @@ function EspaceClientContent() {
 
   const handleRebook = (reservation: Reservation) => {
     // Stocker les détails de la réservation dans le localStorage
-    localStorage.setItem('rebookData', JSON.stringify({
-      services: reservation.services,
-      packages: reservation.packages
-    }));
+    const rebookData = {
+      services: safeArray(reservation?.services, []),
+      packages: reservation?.packages || {}
+    };
+    localStorage.setItem('rebookData', JSON.stringify(rebookData));
     router.push('/reservation');
   };
 
@@ -429,7 +437,8 @@ function EspaceClientContent() {
   };
 
   // Ne compter que les réservations terminées pour le statut de fidélité
-  const completedReservationsCount = reservations.filter(r => r.status === 'completed').length;
+  const completedReservations = safeArray(reservations).filter(r => r?.status === 'completed');
+  const completedReservationsCount = completedReservations.length;
   const loyalty = getLoyaltyLevel(completedReservationsCount);
 
   if (loading) {
@@ -633,17 +642,22 @@ function EspaceClientContent() {
         {/* Content */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {activeTab === "dashboard" && userData && (
-            <ClientDashboard 
+            <ClientDashboard
               userData={{
                 name: userData.name,
                 loyaltyPoints: userData.loyaltyPoints,
                 totalSpent: userData.totalSpent,
-                nextAppointment: reservations.find(r => r.status === 'confirmed' || r.status === 'pending'),
-                lastVisit: reservations.filter(r => r.status === 'completed').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.date
+                nextAppointment: safeArray(reservations).find(r => r?.status === 'confirmed' || r?.status === 'pending'),
+                lastVisit: safeArray(reservations)
+                  .filter(r => r?.status === 'completed')
+                  .sort((a, b) => {
+                    if (!a?.date || !b?.date) return 0;
+                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                  })[0]?.date
               }}
               reservations={reservations}
               stats={{
-                totalVisits: reservations.filter(r => r.status === 'completed').length,
+                totalVisits: safeArray(reservations).filter(r => r?.status === 'completed').length,
                 favoriteService: 'HydraFacial',
                 memberSince: '2023'
               }}
@@ -664,7 +678,7 @@ function EspaceClientContent() {
                 </Link>
               </div>
 
-              {reservations.length === 0 ? (
+              {safeArray(reservations).length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="w-16 h-16 text-[#d4b5a0]/30 mx-auto mb-4" />
                   <p className="text-[#2c3e50]/70 mb-4">Vous n'avez pas encore de réservation</p>
@@ -677,39 +691,39 @@ function EspaceClientContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {reservations.map((reservation) => (
+                  {safeArray(reservations).map((reservation) => (
                     <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6 hover:shadow-lg transition-all">
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <Calendar className="w-5 h-5 text-[#d4b5a0]" />
                             <span className="font-semibold text-[#2c3e50]">
-                              {new Date(reservation.date).toLocaleDateString('fr-FR', {
+                              {reservation?.date ? new Date(reservation.date).toLocaleDateString('fr-FR', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
-                              })}
+                              }) : 'Date inconnue'}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mb-3">
                             <Clock className="w-5 h-5 text-[#d4b5a0]" />
-                            <span className="text-[#2c3e50]/70">{reservation.time}</span>
+                            <span className="text-[#2c3e50]/70">{reservation?.time || 'Heure inconnue'}</span>
                           </div>
                         </div>
                         <div className="text-right">
                           <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                            reservation.status === 'completed' 
+                            reservation?.status === 'completed'
                               ? 'bg-green-100 text-green-600'
-                              : reservation.status === 'confirmed'
+                              : reservation?.status === 'confirmed'
                               ? 'bg-blue-100 text-blue-600'
-                              : reservation.status === 'cancelled'
+                              : reservation?.status === 'cancelled'
                               ? 'bg-red-100 text-red-600'
                               : 'bg-yellow-100 text-yellow-600'
                           }`}>
-                            {reservation.status === 'completed' ? 'Terminé' :
-                             reservation.status === 'confirmed' ? 'Confirmé' :
-                             reservation.status === 'cancelled' ? 'Annulé' : 'En attente'}
+                            {reservation?.status === 'completed' ? 'Terminé' :
+                             reservation?.status === 'confirmed' ? 'Confirmé' :
+                             reservation?.status === 'cancelled' ? 'Annulé' : 'En attente'}
                           </span>
                         </div>
                       </div>
@@ -717,8 +731,8 @@ function EspaceClientContent() {
                       <div className="mb-4">
                         <h4 className="font-medium text-[#2c3e50] mb-2">Soins réservés :</h4>
                         <div className="flex flex-wrap gap-2">
-                          {reservation.services?.map((serviceId: string) => {
-                            const packageType = (reservation.packages as any)?.[serviceId];
+                          {safeArray(reservation?.services, []).map((serviceId: string) => {
+                            const packageType = (reservation?.packages as any)?.[serviceId];
                             return (
                               <span key={serviceId} className="px-3 py-1 bg-[#d4b5a0]/10 rounded-full text-sm">
                                 {serviceId}
@@ -730,11 +744,11 @@ function EspaceClientContent() {
                       </div>
 
                       <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                        <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
+                        <span className="text-xl font-bold text-[#d4b5a0]">{safeParseNumber(reservation?.totalPrice, 0)}€</span>
                         
                         {/* Actions selon le statut */}
                         <div className="flex gap-2">
-                          {reservation.status === 'confirmed' && (
+                          {reservation?.status === 'confirmed' && (
                             <>
                               <button
                                 onClick={() => {
@@ -750,7 +764,7 @@ function EspaceClientContent() {
                                 Annuler
                               </button>
                               <Link
-                                href={`/reservation?reschedule=${reservation.id}`}
+                                href={`/reservation?reschedule=${reservation?.id || ''}`}
                                 className="flex items-center gap-1 px-3 py-2 border border-[#d4b5a0] text-[#d4b5a0] rounded-lg text-sm hover:bg-[#d4b5a0]/10 transition-all"
                               >
                                 <Edit2 className="w-4 h-4" />
@@ -758,11 +772,11 @@ function EspaceClientContent() {
                               </Link>
                             </>
                           )}
-                          
-                          {reservation.status === 'pending' && (
+
+                          {reservation?.status === 'pending' && (
                             <>
                               <Link
-                                href={`/reservation?reschedule=${reservation.id}`}
+                                href={`/reservation?reschedule=${reservation?.id || ''}`}
                                 className="flex items-center gap-1 px-3 py-2 bg-[#d4b5a0] text-white rounded-lg text-sm hover:bg-[#c9a084] transition-all"
                               >
                                 <Edit className="w-4 h-4" />
@@ -783,8 +797,8 @@ function EspaceClientContent() {
                               </button>
                             </>
                           )}
-                          
-                          {reservation.status === 'completed' && (
+
+                          {reservation?.status === 'completed' && (
                             <>
                               <button
                                 onClick={() => {
@@ -920,14 +934,14 @@ function EspaceClientContent() {
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <h3 className="text-lg font-bold text-[#2c3e50] mb-4">Vos derniers soins</h3>
                 <div className="space-y-3">
-                  {reservations.filter(r => r.status === 'completed').slice(0, 3).map((reservation) => (
-                    <div key={reservation.id} className="flex justify-between items-center py-3 border-b border-gray-100">
+                  {safeArray(reservations).filter(r => r?.status === 'completed').slice(0, 3).map((reservation) => (
+                    <div key={reservation?.id} className="flex justify-between items-center py-3 border-b border-gray-100">
                       <div>
                         <p className="font-medium text-[#2c3e50]">
-                          {reservation.services?.join(', ') || 'Service inconnu'}
+                          {safeArray(reservation?.services, []).join(', ') || 'Service inconnu'}
                         </p>
                         <p className="text-sm text-[#2c3e50]/60">
-                          {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                          {reservation?.date ? new Date(reservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
                         </p>
                       </div>
                       <div className="text-right">
@@ -938,7 +952,7 @@ function EspaceClientContent() {
                     </div>
                   ))}
                 </div>
-                {reservations.filter(r => r.status === 'completed').length === 0 && (
+                {safeArray(reservations).filter(r => r?.status === 'completed').length === 0 && (
                   <p className="text-center text-[#2c3e50]/60 py-4">
                     Commencez votre carte de fidélité dès votre premier soin !
                   </p>
@@ -1102,10 +1116,10 @@ function EspaceClientContent() {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Soins en attente d'évaluation</h3>
                 {(() => {
-                  const reviewedReservationIds = userReviews.map(r => r.reservationId);
-                  const unreviewedReservations = reservations
-                    .filter(r => r.status === 'completed' && !reviewedReservationIds.includes(r.id));
-                  
+                  const reviewedReservationIds = safeArray(userReviews).map(r => r?.reservationId);
+                  const unreviewedReservations = safeArray(reservations)
+                    .filter(r => r?.status === 'completed' && !reviewedReservationIds.includes(r?.id));
+
                   if (unreviewedReservations.length === 0) {
                     return (
                       <p className="text-[#2c3e50]/60 text-center py-8 bg-gray-50 rounded-xl">
@@ -1113,16 +1127,16 @@ function EspaceClientContent() {
                       </p>
                     );
                   }
-                  
+
                   return unreviewedReservations.slice(0, 3).map(reservation => (
-                    <div key={reservation.id} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-3">
+                    <div key={reservation?.id} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-3">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-[#2c3e50]">
-                            {reservation.services?.join(', ') || 'Service inconnu'}
+                            {safeArray(reservation?.services, []).join(', ') || 'Service inconnu'}
                           </p>
                           <p className="text-sm text-[#2c3e50]/60">
-                            Effectué le {new Date(reservation.date).toLocaleDateString('fr-FR')}
+                            Effectué le {reservation?.date ? new Date(reservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
                           </p>
                         </div>
                         <button
@@ -1145,18 +1159,18 @@ function EspaceClientContent() {
               <div>
                 <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Mes avis précédents</h3>
                 <div className="space-y-4">
-                  {userReviews.length === 0 ? (
+                  {safeArray(userReviews).length === 0 ? (
                     <p className="text-[#2c3e50]/60 text-center py-8 bg-gray-50 rounded-xl">
                       Vous n'avez pas encore laissé d'avis. Partagez votre expérience !
                     </p>
                   ) : (
-                    userReviews.map((review) => (
-                      <div key={review.id} className="border border-[#d4b5a0]/20 rounded-xl p-4">
+                    safeArray(userReviews).map((review) => (
+                      <div key={review?.id} className="border border-[#d4b5a0]/20 rounded-xl p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <p className="font-medium text-[#2c3e50]">{review.serviceName}</p>
+                            <p className="font-medium text-[#2c3e50]">{review?.serviceName || 'Service inconnu'}</p>
                             <p className="text-sm text-[#2c3e50]/60">
-                              Évalué le {new Date(review.createdAt).toLocaleDateString('fr-FR')}
+                              Évalué le {review?.createdAt ? new Date(review.createdAt).toLocaleDateString('fr-FR') : 'Date inconnue'}
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
@@ -1164,47 +1178,50 @@ function EspaceClientContent() {
                               <Star
                                 key={star}
                                 className={`w-4 h-4 ${
-                                  star <= review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                                  star <= safeParseNumber(review?.rating, 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
                                 }`}
                               />
                             ))}
                           </div>
                         </div>
-                        {review.comment && (
+                        {review?.comment && (
                           <p className="text-[#2c3e50]/80 italic mb-3">"{review.comment}"</p>
                         )}
-                        
+
                         {/* Photos de l'avis */}
-                        {review.photos && JSON.parse(review.photos).length > 0 && (
-                          <div className="flex gap-2 mb-3">
-                            {JSON.parse(review.photos).slice(0, 3).map((photo: string, idx: number) => (
-                              <img 
-                                key={idx}
-                                src={photo} 
-                                alt={`Photo ${idx + 1}`}
-                                className="w-20 h-20 object-cover rounded-lg"
-                              />
-                            ))}
-                          </div>
-                        )}
+                        {review?.photos && (() => {
+                          const photos = safeJsonParse(review.photos, []);
+                          return safeArray(photos).length > 0 && (
+                            <div className="flex gap-2 mb-3">
+                              {safeArray(photos).slice(0, 3).map((photo: string, idx: number) => (
+                                <img
+                                  key={idx}
+                                  src={photo}
+                                  alt={`Photo ${idx + 1}`}
+                                  className="w-20 h-20 object-cover rounded-lg"
+                                />
+                              ))}
+                            </div>
+                          );
+                        })()}
                         
                         <div className="mt-3 flex items-center justify-between text-sm">
                           <div className="flex items-center gap-4 text-[#2c3e50]/60">
                             <span>
-                              Satisfaction : {['😞', '😐', '🙂', '😊', '😍'][review.satisfaction - 1] || '😊'}
+                              Satisfaction : {['😞', '😐', '🙂', '😊', '😍'][safeParseNumber(review?.satisfaction, 5) - 1] || '😊'}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              review.approved 
-                                ? 'bg-green-100 text-green-600' 
+                              review?.approved
+                                ? 'bg-green-100 text-green-600'
                                 : 'bg-yellow-100 text-yellow-600'
                             }`}>
-                              {review.approved ? 'Publié' : 'En attente de validation'}
+                              {review?.approved ? 'Publié' : 'En attente de validation'}
                             </span>
                           </div>
                         </div>
-                        
+
                         {/* Réponse de l'institut */}
-                        {review.response && (
+                        {review?.response && (
                           <div className="mt-3 pt-3 border-t border-gray-100">
                             <p className="text-sm font-medium text-[#d4b5a0] mb-1">Réponse de l'institut :</p>
                             <p className="text-sm text-[#2c3e50]/70">{review.response}</p>
@@ -1312,7 +1329,7 @@ function EspaceClientContent() {
       <Modal
         isOpen={showReviewModal && selectedReservation !== null}
         onClose={() => {
-          if (reviewText || rating !== 5 || reviewPhotos.length > 0) {
+          if (reviewText || rating !== 5 || safeArray(reviewPhotos).length > 0) {
             if (window.confirm('Voulez-vous vraiment fermer ? Votre avis ne sera pas sauvegardé.')) {
               setShowReviewModal(false);
               setSelectedReservation(null);
@@ -1329,16 +1346,16 @@ function EspaceClientContent() {
         }}
         title="Évaluer votre soin"
         size="md"
-        preventCloseOnClickOutside={reviewText.length > 0 || reviewPhotos.length > 0}
+        preventCloseOnClickOutside={reviewText.length > 0 || safeArray(reviewPhotos).length > 0}
       >
         {selectedReservation && (
           <div className="p-6">
             <div className="mb-4">
               <p className="font-medium text-[#2c3e50]">
-                {selectedReservation.services?.join(', ') || 'Service inconnu'}
+                {safeArray(selectedReservation?.services, []).join(', ') || 'Service inconnu'}
               </p>
               <p className="text-sm text-[#2c3e50]/60">
-                Effectué le {new Date(selectedReservation.date).toLocaleDateString('fr-FR')}
+                Effectué le {selectedReservation?.date ? new Date(selectedReservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
               </p>
             </div>
 
@@ -1436,19 +1453,19 @@ function EspaceClientContent() {
               </label>
               
               {/* Photos uploadées */}
-              {reviewPhotos.length > 0 && (
+              {safeArray(reviewPhotos).length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                  {reviewPhotos.map((photo, index) => (
+                  {safeArray(reviewPhotos).map((photo, index) => (
                     <div key={index} className="relative group">
-                      <img 
-                        src={photo} 
+                      <img
+                        src={photo}
                         alt={`Photo ${index + 1}`}
                         className="w-full h-24 object-cover rounded-lg"
                       />
                       <button
                         onClick={() => {
-                          setReviewPhotos(reviewPhotos.filter((_, i) => i !== index));
-                          setUploadedPhotos(uploadedPhotos.filter((_, i) => i !== index));
+                          setReviewPhotos(safeArray(reviewPhotos).filter((_, i) => i !== index));
+                          setUploadedPhotos(safeArray(uploadedPhotos).filter((_, i) => i !== index));
                         }}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -1458,8 +1475,8 @@ function EspaceClientContent() {
                   ))}
                 </div>
               )}
-              
-              {reviewPhotos.length < 3 && (
+
+              {safeArray(reviewPhotos).length < 3 && (
                 <label className="relative">
                   <input
                     type="file"
@@ -1468,24 +1485,24 @@ function EspaceClientContent() {
                     className="hidden"
                     onChange={(e) => {
                       const files = Array.from(e.target.files || []);
-                      const remainingSlots = 3 - reviewPhotos.length;
+                      const remainingSlots = 3 - safeArray(reviewPhotos).length;
                       const filesToAdd = files.slice(0, remainingSlots);
-                      
+
                       filesToAdd.forEach(file => {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setReviewPhotos(prev => [...prev, reader.result as string]);
+                          setReviewPhotos(prev => [...safeArray(prev), reader.result as string]);
                         };
                         reader.readAsDataURL(file);
                       });
-                      
-                      setUploadedPhotos(prev => [...prev, ...filesToAdd]);
+
+                      setUploadedPhotos(prev => [...safeArray(prev), ...filesToAdd]);
                     }}
                   />
                   <div className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] transition-colors flex items-center gap-2 w-full justify-center cursor-pointer">
                     <Camera className="w-5 h-5 text-gray-400" />
                     <span className="text-gray-600">
-                      Ajouter {reviewPhotos.length > 0 ? 'd\'autres photos' : 'des photos'} ({3 - reviewPhotos.length} restantes)
+                      Ajouter {safeArray(reviewPhotos).length > 0 ? 'd\'autres photos' : 'des photos'} ({3 - safeArray(reviewPhotos).length} restantes)
                     </span>
                   </div>
                 </label>
@@ -1523,7 +1540,7 @@ function EspaceClientContent() {
                       },
                       body: JSON.stringify({
                         reservationId: selectedReservation?.id,
-                        serviceName: selectedReservation?.services?.join(', ') || 'Service inconnu',
+                        serviceName: safeArray(selectedReservation?.services, []).join(', ') || 'Service inconnu',
                         rating,
                         comment: reviewText,
                         satisfaction,
@@ -1532,9 +1549,9 @@ function EspaceClientContent() {
                     });
                     
                     const data = await response.json();
-                    
+
                     if (response.ok) {
-                      alert(`Merci pour votre avis ! ${reviewPhotos.length > 0 ? `\n${reviewPhotos.length} photo(s) ajoutée(s)` : ''}\nIl sera publié après validation.`);
+                      alert(`Merci pour votre avis ! ${safeArray(reviewPhotos).length > 0 ? `\n${safeArray(reviewPhotos).length} photo(s) ajoutée(s)` : ''}\nIl sera publié après validation.`);
                       
                       // Si 5 étoiles, proposer de laisser un avis Google
                       if (rating === 5 && data.googleUrl) {

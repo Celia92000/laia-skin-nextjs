@@ -12,6 +12,7 @@ import {
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
 import { formatDateLocal } from '@/lib/date-utils';
 import LaiaInvoicesSection from './LaiaInvoicesSection';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface AdminComptabiliteTabProps {
   reservations: any[];
@@ -1857,12 +1858,7 @@ Pour toute question: contact@laia-skin-institut.com`;
 
                       return matchesSearch && matchesStatus;
                     }).slice(0, 10).map(order => {
-                      let items = [];
-                      try {
-                        items = JSON.parse(order.items || '[]');
-                      } catch (e) {
-                        console.error('Erreur parsing items:', e);
-                      }
+                      const items = safeJsonParse(order.items, []);
 
                       return (
                         <tr key={order.id} className="hover:bg-gray-50">

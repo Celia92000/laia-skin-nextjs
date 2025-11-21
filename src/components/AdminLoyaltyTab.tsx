@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Gift, Star, Award, TrendingUp, Calendar, User, CheckCircle, Euro, Cake, Heart, Users, AlertCircle, Download, Plus, Edit2, X, Settings, Save, FileText, Search, Filter, ArrowUpDown, Eye, RotateCcw, Check, Percent } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 const AdminGiftCardsTab = dynamic(() => import('./AdminGiftCardsTab'), { ssr: false });
 
@@ -1447,12 +1448,7 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
                       {selectedClientOrders
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                         .map(order => {
-                          let items = [];
-                          try {
-                            items = JSON.parse(order.items || '[]');
-                          } catch (e) {
-                            console.error('Erreur parsing items:', e);
-                          }
+                          const items = safeJsonParse(order.items, []);
 
                           return (
                             <div

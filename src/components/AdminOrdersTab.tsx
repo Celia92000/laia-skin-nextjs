@@ -6,6 +6,7 @@ import { formatDateLocal } from '@/lib/date-utils';
 import { downloadGiftCardPDF, downloadMultipleGiftCardsPDF } from '@/lib/pdf-gift-card';
 import { downloadGiftCardsCSV, downloadGiftCardsExcel, downloadGiftCardsStatsCSV } from '@/lib/export-gift-cards-csv';
 import GiftCardStatistics from './GiftCardStatistics';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface GiftCard {
   id: string;
@@ -1157,10 +1158,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
               ) : (
                 <div className="space-y-4">
                   {displayedOrders.map((order) => {
-                    let items = [];
-                    try {
-                      items = JSON.parse(order.items || '[]');
-                    } catch (e) {}
+                    const items = safeJsonParse(order.items, []);
 
                     return (
                       <div key={order.id} className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-5 border-2 border-purple-200 shadow-sm hover:shadow-md transition-shadow">
@@ -1847,10 +1845,7 @@ export default function AdminOrdersTab({ filterType }: { filterType?: 'giftcard'
               </div>
 
               {(() => {
-                let items = [];
-                try {
-                  items = JSON.parse(selectedOrder.items || '[]');
-                } catch (e) {}
+                const items = safeJsonParse(selectedOrder.items, []);
 
                 return (
                   <div>

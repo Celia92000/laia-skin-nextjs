@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Star, GraduationCap, Clock, Users } from 'lucide-react';
+import { safeJsonParse } from '@/lib/safe-parse';
 // import UniversalPaymentModal from './UniversalPaymentModal';
 
 interface FormationCardProps {
@@ -55,16 +56,14 @@ export default function FormationCard({ formation }: FormationCardProps) {
                   alt={formation.name}
                   className="w-full h-full"
                   style={(() => {
-                    try {
-                      if (formation.imageSettings) {
-                        const settings = JSON.parse(formation.imageSettings);
-                        return {
-                          objectFit: settings.objectFit || 'cover',
-                          objectPosition: `${settings.position?.x || 50}% ${settings.position?.y || 50}%`,
-                          transform: `scale(${(settings.zoom || 100) / 100})`
-                        };
-                      }
-                    } catch {}
+                    if (formation.imageSettings) {
+                      const settings = safeJsonParse(formation.imageSettings, {});
+                      return {
+                        objectFit: (settings?.objectFit || 'cover') as 'cover',
+                        objectPosition: `${settings?.position?.x ?? 50}% ${settings?.position?.y ?? 50}%`,
+                        transform: `scale(${(settings?.zoom ?? 100) / 100})`
+                      };
+                    }
                     return { objectFit: 'cover' as const };
                   })()}
                 />

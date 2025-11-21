@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, Filter, X, Calendar, User, Mail, Phone, 
+import {
+  Search, Filter, X, Calendar, User, Mail, Phone,
   Package, CreditCard, Clock, MapPin, Star, TrendingUp,
   Save, History, ChevronDown, ChevronUp, Loader, AlertCircle
 } from 'lucide-react';
+import { safeJsonParse, safeSetLocalStorage, safeLocalStorage } from '@/lib/safe-parse';
 
 interface SearchFilter {
   type: string;
@@ -123,10 +124,8 @@ export default function AdvancedSearch({ onResultSelect, onClose }: AdvancedSear
 
   useEffect(() => {
     // Charger les recherches sauvegardées
-    const saved = localStorage.getItem('savedSearches');
-    if (saved) {
-      setSavedSearches(JSON.parse(saved));
-    }
+    const searches = safeLocalStorage<SavedSearch[]>('savedSearches', []);
+    setSavedSearches(searches);
   }, []);
 
   useEffect(() => {
@@ -243,7 +242,7 @@ export default function AdvancedSearch({ onResultSelect, onClose }: AdvancedSear
       };
       const updated = [...savedSearches, newSearch];
       setSavedSearches(updated);
-      localStorage.setItem('savedSearches', JSON.stringify(updated));
+      safeSetLocalStorage('savedSearches', updated);
     }
   };
 
@@ -255,7 +254,7 @@ export default function AdvancedSearch({ onResultSelect, onClose }: AdvancedSear
   const deleteSearch = (id: string) => {
     const updated = savedSearches.filter(s => s.id !== id);
     setSavedSearches(updated);
-    localStorage.setItem('savedSearches', JSON.stringify(updated));
+    safeSetLocalStorage('savedSearches', updated);
   };
 
   const getIcon = (type: string) => {

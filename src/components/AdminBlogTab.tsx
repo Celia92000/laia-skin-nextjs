@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { formatDateLocal } from '@/lib/date-utils';
-import { 
-  Plus, Edit2, Save, X, Eye, EyeOff, 
+import { safeJsonParse, safeParseNumber, safeParseInt, safeArray, safeMap, safeFilter, safeGet } from '@/lib/safe-parse';
+import {
+  Plus, Edit2, Save, X, Eye, EyeOff,
   Clock, Calendar, Tag, Search, ChevronUp, ChevronDown,
   Globe, FileText, Star, AlertCircle, CheckCircle, Image, Trash2
 } from "lucide-react";
@@ -124,18 +125,18 @@ export default function AdminBlogTab() {
     } as BlogPost);
 
     const [gallery, setGallery] = useState<string[]>(
-      formData.gallery ? JSON.parse(formData.gallery) : []
+      safeJsonParse<string[]>(formData?.gallery, [])
     );
 
     const [tags, setTags] = useState<string[]>(
-      formData.tags ? JSON.parse(formData.tags) : []
+      safeJsonParse<string[]>(formData?.tags, [])
     );
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      
+
       // Générer le slug automatiquement si vide
-      if (!formData.slug && formData.title) {
+      if (!formData?.slug && formData?.title) {
         formData.slug = formData.title.toLowerCase()
           .replace(/[àáäâ]/g, 'a')
           .replace(/[èéêë]/g, 'e')
@@ -149,25 +150,25 @@ export default function AdminBlogTab() {
 
       const dataToSave = {
         ...formData,
-        gallery: JSON.stringify(gallery.filter(g => g.trim())),
-        tags: JSON.stringify(tags.filter(t => t.trim()))
+        gallery: JSON.stringify(safeFilter(gallery, (g: string) => g?.trim?.() !== '', [])),
+        tags: JSON.stringify(safeFilter(tags, (t: string) => t?.trim?.() !== '', []))
       };
 
       handleSavePost(dataToSave);
     };
 
     const addListItem = (list: string[], setList: (items: string[]) => void) => {
-      setList([...list, '']);
+      setList([...safeArray(list), '']);
     };
 
     const updateListItem = (list: string[], setList: (items: string[]) => void, index: number, value: string) => {
-      const newList = [...list];
+      const newList = [...safeArray(list)];
       newList[index] = value;
       setList(newList);
     };
 
     const removeListItem = (list: string[], setList: (items: string[]) => void, index: number) => {
-      setList(list.filter((_, i) => i !== index));
+      setList(safeFilter(list, (_: string, i: number) => i !== index, []));
     };
 
     return (
@@ -175,7 +176,7 @@ export default function AdminBlogTab() {
         <div className="bg-white rounded-2xl max-w-5xl w-full my-8">
           <div className="sticky top-0 bg-white border-b border-[#d4b5a0]/20 p-6 flex justify-between items-center rounded-t-2xl">
             <h2 className="text-2xl font-bold text-[#2c3e50]">
-              {formData.id === 'new' ? '✨ Nouvel Article' : `📝 Modifier ${formData.title}`}
+              {formData?.id === 'new' ? '✨ Nouvel Article' : `📝 Modifier ${formData?.title ?? ''}`}
             </h2>
             <button onClick={onClose} className="p-2 hover:bg-[#d4b5a0]/10 rounded-lg">
               <X className="w-5 h-5" />
@@ -215,7 +216,7 @@ export default function AdminBlogTab() {
                     <input
                       type="text"
                       required
-                      value={formData.title}
+                      value={formData?.title ?? ''}
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
                       placeholder="Ex: Les secrets d'une peau éclatante"
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
@@ -229,12 +230,12 @@ export default function AdminBlogTab() {
                     </label>
                     <input
                       type="text"
-                      value={formData.slug}
+                      value={formData?.slug ?? ''}
                       onChange={(e) => setFormData({...formData, slug: e.target.value})}
                       placeholder="secrets-peau-eclatante"
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
-                    {formData.slug && (
+                    {formData?.slug && (
                       <p className="text-xs text-[#2c3e50]/60 mt-1">
                         URL: /blog/{formData.slug}
                       </p>
@@ -250,7 +251,7 @@ export default function AdminBlogTab() {
                   <textarea
                     required
                     rows={3}
-                    value={formData.excerpt}
+                    value={formData?.excerpt ?? ''}
                     onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
                     placeholder="Résumé accrocheur de l'article..."
                     className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
@@ -263,7 +264,7 @@ export default function AdminBlogTab() {
                       Catégorie
                     </label>
                     <select
-                      value={formData.category}
+                      value={formData?.category ?? 'Conseils'}
                       onChange={(e) => setFormData({...formData, category: e.target.value})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     >
@@ -275,39 +276,39 @@ export default function AdminBlogTab() {
                       <option value="Actualités">Actualités</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                       Temps de lecture
                     </label>
                     <input
                       type="text"
-                      value={formData.readTime}
+                      value={formData?.readTime ?? ''}
                       onChange={(e) => setFormData({...formData, readTime: e.target.value})}
                       placeholder="5 min"
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                       Auteur
                     </label>
                     <input
                       type="text"
-                      value={formData.author}
+                      value={formData?.author ?? ''}
                       onChange={(e) => setFormData({...formData, author: e.target.value})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                       Date de publication
                     </label>
                     <input
                       type="date"
-                      value={formData.publishedAt ? formatDateLocal(formData.publishedAt) : ''}
+                      value={formData?.publishedAt ? formatDateLocal(formData.publishedAt) : ''}
                       onChange={(e) => setFormData({...formData, publishedAt: new Date(e.target.value).toISOString()})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
@@ -318,17 +319,17 @@ export default function AdminBlogTab() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.published}
+                      checked={formData?.published ?? true}
                       onChange={(e) => setFormData({...formData, published: e.target.checked})}
                       className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
                     />
                     <span className="text-sm text-[#2c3e50]">Article publié</span>
                   </label>
-                  
+
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.featured}
+                      checked={formData?.featured ?? false}
                       onChange={(e) => setFormData({...formData, featured: e.target.checked})}
                       className="w-4 h-4 text-[#d4b5a0] border-[#d4b5a0]/20 rounded focus:ring-[#d4b5a0]"
                     />
@@ -341,11 +342,11 @@ export default function AdminBlogTab() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Tags
                   </label>
-                  {tags.map((tag, index) => (
+                  {safeArray(tags).map((tag, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <input
                         type="text"
-                        value={tag}
+                        value={tag ?? ''}
                         onChange={(e) => updateListItem(tags, setTags, index, e.target.value)}
                         placeholder="Ex: soin visage"
                         className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
@@ -387,7 +388,7 @@ export default function AdminBlogTab() {
                   <textarea
                     required
                     rows={20}
-                    value={formData.content}
+                    value={formData?.content ?? ''}
                     onChange={(e) => setFormData({...formData, content: e.target.value})}
                     placeholder="<h2>Titre de section</h2>&#10;<p>Votre contenu ici...</p>"
                     className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono text-sm"
@@ -412,13 +413,13 @@ export default function AdminBlogTab() {
                   </label>
                   <input
                     type="text"
-                    value={formData.metaTitle || ''}
+                    value={formData?.metaTitle ?? ''}
                     onChange={(e) => setFormData({...formData, metaTitle: e.target.value})}
                     placeholder="Ex: Conseils beauté : Les secrets d'une peau éclatante | LAIA SKIN"
                     className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                   />
-                  {formData.metaTitle && (
-                    <p className={`text-xs mt-1 ${formData.metaTitle.length > 60 ? 'text-red-600' : 'text-green-600'}`}>
+                  {formData?.metaTitle && (
+                    <p className={`text-xs mt-1 ${(formData.metaTitle?.length ?? 0) > 60 ? 'text-red-600' : 'text-green-600'}`}>
                       {formData.metaTitle.length} / 60 caractères
                     </p>
                   )}
@@ -431,13 +432,13 @@ export default function AdminBlogTab() {
                   </label>
                   <textarea
                     rows={3}
-                    value={formData.metaDescription || ''}
+                    value={formData?.metaDescription ?? ''}
                     onChange={(e) => setFormData({...formData, metaDescription: e.target.value})}
                     placeholder="Description concise et attractive pour les résultats de recherche..."
                     className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                   />
-                  {formData.metaDescription && (
-                    <p className={`text-xs mt-1 ${formData.metaDescription.length > 160 ? 'text-red-600' : 'text-green-600'}`}>
+                  {formData?.metaDescription && (
+                    <p className={`text-xs mt-1 ${(formData.metaDescription?.length ?? 0) > 160 ? 'text-red-600' : 'text-green-600'}`}>
                       {formData.metaDescription.length} / 160 caractères
                     </p>
                   )}
@@ -460,17 +461,17 @@ export default function AdminBlogTab() {
                   </label>
                   <input
                     type="text"
-                    value={formData.mainImage || ''}
+                    value={formData?.mainImage ?? ''}
                     onChange={(e) => setFormData({...formData, mainImage: e.target.value})}
                     placeholder="https://exemple.com/image.jpg ou /images/mon-image.jpg"
                     className="w-full px-4 py-3 text-lg border-2 border-[#d4b5a0]/30 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-[#d4b5a0] transition-all"
                   />
-                  {formData.mainImage && (
+                  {formData?.mainImage && (
                     <div className="mt-4 p-2 bg-gray-50 rounded-lg">
                       <p className="text-sm font-medium text-gray-700 mb-2">Aperçu :</p>
-                      <img 
-                        src={formData.mainImage} 
-                        alt="Aperçu" 
+                      <img
+                        src={formData.mainImage}
+                        alt="Aperçu"
                         className="w-full max-w-md h-64 object-cover rounded-lg shadow-md"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
@@ -485,11 +486,11 @@ export default function AdminBlogTab() {
                   <label className="block text-lg font-semibold text-[#2c3e50] mb-3">
                     🖼️ Galerie d'images
                   </label>
-                  {gallery.map((url, index) => (
+                  {safeArray(gallery).map((url, index) => (
                     <div key={index} className="flex gap-2 mb-2">
                       <input
                         type="text"
-                        value={url}
+                        value={url ?? ''}
                         onChange={(e) => updateListItem(gallery, setGallery, index, e.target.value)}
                         placeholder="URL de l'image"
                         className="flex-1 px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
@@ -594,74 +595,74 @@ export default function AdminBlogTab() {
 
       {/* Posts List */}
       <div className="space-y-4">
-        {posts.map(post => (
-          <div key={post.id} className="bg-white rounded-xl shadow-sm border border-[#d4b5a0]/10 hover:shadow-md transition-shadow">
+        {safeArray(posts).map(post => (
+          <div key={post?.id ?? ''} className="bg-white rounded-xl shadow-sm border border-[#d4b5a0]/10 hover:shadow-md transition-shadow">
             <div className="p-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-[#2c3e50]">{post.title}</h3>
-                    {post.featured && (
+                    <h3 className="text-lg font-semibold text-[#2c3e50]">{post?.title ?? ''}</h3>
+                    {post?.featured && (
                       <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full flex items-center gap-1">
                         <Star className="w-3 h-3" />
                         Vedette
                       </span>
                     )}
-                    {!post.published && (
+                    {!post?.published && (
                       <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full flex items-center gap-1">
                         <EyeOff className="w-3 h-3" />
                         Brouillon
                       </span>
                     )}
                   </div>
-                  
-                  <p className="text-sm text-[#2c3e50]/70 mb-3">{post.excerpt}</p>
-                  
+
+                  <p className="text-sm text-[#2c3e50]/70 mb-3">{post?.excerpt ?? ''}</p>
+
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <Tag className="w-4 h-4 text-[#d4b5a0]" />
-                      <span className="text-[#2c3e50]">{post.category}</span>
+                      <span className="text-[#2c3e50]">{post?.category ?? ''}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4 text-[#d4b5a0]" />
-                      <span className="text-[#2c3e50]">{post.readTime}</span>
+                      <span className="text-[#2c3e50]">{post?.readTime ?? ''}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4 text-[#d4b5a0]" />
                       <span className="text-[#2c3e50]">
-                        {new Date(post.publishedAt).toLocaleDateString('fr-FR')}
+                        {post?.publishedAt ? new Date(post.publishedAt).toLocaleDateString('fr-FR') : ''}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <Globe className="w-4 h-4 text-[#d4b5a0]" />
-                      <a 
-                        href={`/blog/${post.slug}`} 
-                        target="_blank" 
+                      <a
+                        href={`/blog/${post?.slug ?? ''}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#d4b5a0] hover:underline"
                       >
-                        /blog/{post.slug}
+                        /blog/{post?.slug ?? ''}
                       </a>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => togglePostExpansion(post.id)}
+                    onClick={() => togglePostExpansion(post?.id ?? '')}
                     className="p-2 hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
                     title="Voir plus de détails"
                   >
-                    {expandedPosts.has(post.id) ? (
+                    {expandedPosts.has(post?.id ?? '') ? (
                       <ChevronUp className="w-5 h-5 text-[#2c3e50]" />
                     ) : (
                       <ChevronDown className="w-5 h-5 text-[#2c3e50]" />
                     )}
                   </button>
-                  
+
                   <button
                     onClick={() => setEditingPost(post)}
                     className="p-2 hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
@@ -669,9 +670,9 @@ export default function AdminBlogTab() {
                   >
                     <Edit2 className="w-5 h-5 text-[#2c3e50]" />
                   </button>
-                  
+
                   <button
-                    onClick={() => window.open(`/blog/${post.slug}`, '_blank')}
+                    onClick={() => window.open(`/blog/${post?.slug ?? ''}`, '_blank')}
                     className="p-2 hover:bg-[#d4b5a0]/10 rounded-lg transition-colors"
                     title="Voir l'article"
                   >
@@ -679,34 +680,34 @@ export default function AdminBlogTab() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Expanded Details */}
-              {expandedPosts.has(post.id) && (
+              {expandedPosts.has(post?.id ?? '') && (
                 <div className="mt-6 pt-6 border-t border-[#d4b5a0]/10 space-y-4">
                   <div>
                     <h4 className="font-medium text-[#2c3e50] mb-2">Auteur</h4>
-                    <p className="text-sm text-[#2c3e50]/70">{post.author}</p>
+                    <p className="text-sm text-[#2c3e50]/70">{post?.author ?? ''}</p>
                   </div>
-                  
-                  {post.tags && JSON.parse(post.tags).length > 0 && (
+
+                  {post?.tags && safeJsonParse<string[]>(post.tags, []).length > 0 && (
                     <div>
                       <h4 className="font-medium text-[#2c3e50] mb-2">Tags</h4>
                       <div className="flex flex-wrap gap-2">
-                        {JSON.parse(post.tags).map((tag: string, i: number) => (
+                        {safeArray(safeJsonParse<string[]>(post.tags, [])).map((tag: string, i: number) => (
                           <span key={i} className="px-2 py-1 bg-[#d4b5a0]/10 text-[#2c3e50] text-xs rounded-full">
-                            {tag}
+                            {tag ?? ''}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
-                  
-                  {post.metaTitle && (
+
+                  {post?.metaTitle && (
                     <div>
                       <h4 className="font-medium text-[#2c3e50] mb-2">SEO</h4>
                       <div className="bg-[#d4b5a0]/5 p-3 rounded-lg text-sm space-y-1">
                         <p><span className="font-medium">Titre:</span> {post.metaTitle}</p>
-                        {post.metaDescription && (
+                        {post?.metaDescription && (
                           <p><span className="font-medium">Description:</span> {post.metaDescription}</p>
                         )}
                       </div>

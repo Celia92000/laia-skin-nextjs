@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Calendar, Clock, User, Phone, Mail, ChevronLeft, ChevronRight, Sparkles, CheckCircle, MapPin, Shield, AlertCircle, Lock, Eye, EyeOff, Gift } from "lucide-react";
 import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, getDiscountPercentage } from '@/lib/price-utils';
 import { formatDateLocal } from "@/lib/date-utils";
+import { safeJsonParse, safeParseNumber, safeArray, safeGet } from '@/lib/safe-parse';
 
 function ReservationContent() {
   const searchParams = useSearchParams();
@@ -77,19 +78,20 @@ function ReservationContent() {
     fetch('/api/services')
       .then(res => res.json())
       .then(data => {
-        const formattedServices = data
-          .filter((service: any) => service.active && service.category !== 'forfaits')
+        const dataArray = safeArray<any>(data, []);
+        const formattedServices = dataArray
+          .filter((service: any) => service?.active && service?.category !== 'forfaits')
           .map((service: any) => ({
             id: service.id,
             slug: service.slug,
-            name: service.name,
-            description: service.shortDescription || service.description,
-            duration: `${service.duration} min`,
-            price: service.price,
-            promoPrice: service.promoPrice,
-            forfaitPrice: service.forfaitPrice,
-            forfaitPromo: service.forfaitPromo,
-            forfait: service.forfaitPrice && service.forfaitPrice > 0, // Ajouter le champ forfait
+            name: service.name || 'Service',
+            description: service.shortDescription || service.description || '',
+            duration: `${safeParseNumber(service.duration, 60)} min`,
+            price: safeParseNumber(service.price, 0),
+            promoPrice: safeParseNumber(service.promoPrice, 0),
+            forfaitPrice: safeParseNumber(service.forfaitPrice, 0),
+            forfaitPromo: safeParseNumber(service.forfaitPromo, 0),
+            forfait: service.forfaitPrice && safeParseNumber(service.forfaitPrice, 0) > 0, // Ajouter le champ forfait
             displayPrice: getDisplayPrice(service),
             forfaitDisplayPrice: getForfaitDisplayPrice(service),
             hasPromo: hasPromotion(service),
@@ -99,7 +101,7 @@ function ReservationContent() {
                   service.slug === 'renaissance' ? "✨" :
                   service.slug === 'bb-glow' ? "🌟" : "💡",
             recommended: service.featured || false,
-            order: service.order || 999
+            order: safeParseNumber(service.order, 999)
           }))
           .sort((a: any, b: any) => {
             // D'abord trier par featured (recommandé)
@@ -122,7 +124,8 @@ function ReservationContent() {
     fetch('/api/public/employees')
       .then(res => res.json())
       .then(data => {
-        setEmployees(data);
+        const employeesArray = safeArray<any>(data, []);
+        setEmployees(employeesArray);
       })
       .catch(err => {
         console.error('Erreur lors du chargement des employés:', err);
@@ -143,20 +146,21 @@ function ReservationContent() {
           });
           if (response.ok) {
             const reservation = await response.json();
-            // Préfiller les services sélectionnés
-            if (reservation.services) {
+            // Préfiller les services sélectionnés de manière sécurisée
+            if (reservation?.services) {
               const serviceList = typeof reservation.services === 'string'
-                ? JSON.parse(reservation.services)
-                : reservation.services;
+                ? safeJsonParse<string[]>(reservation.services, [])
+                : safeArray<string>(reservation.services, []);
               setSelectedServices(serviceList);
             }
             // Préfiller les informations du client si connecté
-            if (reservation.user) {
+            const user = safeGet(reservation, 'user');
+            if (user) {
               setFormData(prev => ({
                 ...prev,
-                name: reservation.user.name || '',
-                email: reservation.user.email || '',
-                phone: reservation.user.phone || ''
+                name: safeGet(user, 'name', '') as string,
+                email: safeGet(user, 'email', '') as string,
+                phone: safeGet(user, 'phone', '') as string
               }));
             }
           }
@@ -175,23 +179,27 @@ function ReservationContent() {
         const currentDate = new Date();
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
-        
+
         // Récupérer les dates bloquées pour le mois courant et le suivant
         const currentMonth = await fetch(`/api/public/availability?action=blocked&year=${year}&month=${month}`);
         const nextMonth = await fetch(`/api/public/availability?action=blocked&year=${year}&month=${month + 1}`);
-        
+
         const [currentData, nextData] = await Promise.all([
           currentMonth.json(),
           nextMonth.json()
         ]);
-        
-        const allBlockedDates = [...(currentData.blockedDates || []), ...(nextData.blockedDates || [])];
+
+        // Parser les dates bloquées de manière sécurisée
+        const currentBlocked = safeArray<string>(currentData?.blockedDates, []);
+        const nextBlocked = safeArray<string>(nextData?.blockedDates, []);
+        const allBlockedDates = [...currentBlocked, ...nextBlocked];
         setBlockedDates(allBlockedDates);
       } catch (error) {
         console.error('Erreur lors du chargement des dates bloquées:', error);
+        setBlockedDates([]);
       }
     };
-    
+
     fetchBlockedDates();
   }, []);
 
@@ -230,30 +238,34 @@ function ReservationContent() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    
+
     if (token && user) {
-      const userInfo = JSON.parse(user);
+      const userInfo = safeJsonParse<{name?: string; email?: string; phone?: string}>(user, {});
       setIsLoggedIn(true);
       setFormData(prev => ({
         ...prev,
-        name: userInfo.name || '',
-        email: userInfo.email || '',
-        phone: userInfo.phone || ''
+        name: safeGet(userInfo, 'name', '') as string,
+        email: safeGet(userInfo, 'email', '') as string,
+        phone: safeGet(userInfo, 'phone', '') as string
       }));
     } else {
       // Charger les identifiants sauvegardés si "Se souvenir de moi" était coché
       const savedEmail = localStorage.getItem('rememberEmail');
       const savedPassword = localStorage.getItem('rememberPassword');
       const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
-      
+
       if (savedEmail && savedPassword && savedRememberMe) {
-        setFormData(prev => ({
-          ...prev,
-          email: savedEmail,
-          password: atob(savedPassword) // Décodage
-        }));
-        setRememberMe(true);
-        setHasAccount(true); // Basculer automatiquement sur "J'ai déjà un compte"
+        try {
+          setFormData(prev => ({
+            ...prev,
+            email: savedEmail,
+            password: atob(savedPassword) // Décodage
+          }));
+          setRememberMe(true);
+          setHasAccount(true); // Basculer automatiquement sur "J'ai déjà un compte"
+        } catch (error) {
+          console.error('❌ Erreur lors du décodage du mot de passe:', error);
+        }
       }
     }
   }, []);
@@ -294,14 +306,16 @@ function ReservationContent() {
 
   const fetchAvailableSlots = async () => {
     try {
-      // Calculer la durée totale des services sélectionnés
+      // Calculer la durée totale des services sélectionnés de manière sécurisée
       let totalDuration = 0;
-      if (selectedServices.length > 0) {
-        selectedServices.forEach(serviceId => {
+      const servicesArray = safeArray<string>(selectedServices, []);
+
+      if (servicesArray.length > 0) {
+        servicesArray.forEach(serviceId => {
           const service = services.find(s => s.id === serviceId);
           if (service) {
-            // Extraire la durée du service (ex: "60 min" -> 60)
-            const duration = parseInt(service.duration) || 60;
+            // Extraire la durée du service (ex: "60 min" -> 60) de manière sécurisée
+            const duration = safeParseNumber(service.duration, 60);
             totalDuration += duration;
           }
         });
@@ -315,7 +329,8 @@ function ReservationContent() {
       const response = await fetch(`/api/public/availability?action=slots&date=${selectedDate}&duration=${totalDuration}`);
       if (response.ok) {
         const data = await response.json();
-        setAvailableSlots(data.slots || []);
+        const slots = safeArray<{time: string, available: boolean}>(data?.slots, []);
+        setAvailableSlots(slots);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des créneaux:', error);
@@ -339,13 +354,15 @@ function ReservationContent() {
         fetch(`/api/public/availability?action=blocked&year=${year}&month=${month}`),
         fetch(`/api/public/availability?action=blocked&year=${year}&month=${month + 1}`)
       ]);
-      
+
       const data = await Promise.all(responses.map(r => r.json()));
-      const allBlockedDates = data.flatMap(d => d.blockedDates || []);
-      
+      // Utiliser safeArray pour parser chaque réponse de manière sécurisée
+      const allBlockedDates = data.flatMap(d => safeArray<string>(d?.blockedDates, []));
+
       setBlockedDates(allBlockedDates);
     } catch (error) {
       console.error('Erreur lors du chargement des dates bloquées:', error);
+      setBlockedDates([]);
     }
   };
 
@@ -581,45 +598,61 @@ function ReservationContent() {
   const calculateTotal = () => {
     let total = 0;
 
-    // Calculer le prix des services sélectionnés
-    selectedServices.forEach(serviceId => {
+    // Calculer le prix des services sélectionnés de manière sécurisée
+    const servicesArray = safeArray<string>(selectedServices, []);
+
+    servicesArray.forEach(serviceId => {
       const service = services.find(s => s.id === serviceId);
       if (service) {
         const packageType = selectedPackages[serviceId] || 'single';
 
-        // Convertir tous les prix en nombres
+        // Convertir tous les prix en nombres de manière sécurisée - CRITIQUE
         let priceToAdd = 0;
 
         if (packageType === 'forfait') {
-          priceToAdd = Number(service.forfaitDisplayPrice) || Number(service.forfaitPrice) || 0;
+          // Essayer forfaitDisplayPrice puis forfaitPrice, fallback sur 0
+          const forfaitDisplay = safeParseNumber(service.forfaitDisplayPrice, 0);
+          const forfaitPrice = safeParseNumber(service.forfaitPrice, 0);
+          priceToAdd = forfaitDisplay > 0 ? forfaitDisplay : forfaitPrice;
         } else {
-          // Séance individuelle (single)
-          priceToAdd = Number(service.displayPrice) || Number(service.price) || 0;
+          // Séance individuelle (single) - essayer displayPrice puis price
+          const displayPrice = safeParseNumber(service.displayPrice, 0);
+          const price = safeParseNumber(service.price, 0);
+          priceToAdd = displayPrice > 0 ? displayPrice : price;
         }
+
+        // S'assurer que priceToAdd est un nombre valide
+        priceToAdd = safeParseNumber(priceToAdd, 0);
 
         console.log(`Service ${service.name} (${packageType}): ${priceToAdd}€`);
         total = total + priceToAdd;
       }
     });
 
-    // Ajouter le prix des options (50€ chacune)
-    if (selectedOptions && selectedOptions.length > 0) {
-      selectedOptions.forEach(optionId => {
+    // Ajouter le prix des options (50€ chacune) de manière sécurisée
+    const optionsArray = safeArray<string>(selectedOptions, []);
+    if (optionsArray.length > 0) {
+      optionsArray.forEach(optionId => {
         if (optionId === "bb-glow" || optionId === "led-therapie") {
           total = total + 50;
         }
       });
     }
 
-    return Math.round(total);
+    // S'assurer que le total final est un nombre valide et arrondi
+    const finalTotal = safeParseNumber(total, 0);
+    return Math.round(finalTotal);
   };
 
   // Calculer le montant restant après déduction de la carte cadeau
   const calculateAmountToPay = () => {
     const total = calculateTotal();
-    if (giftCardData && giftCardData.balance > 0) {
-      const amountAfterGiftCard = total - giftCardData.balance;
-      return amountAfterGiftCard > 0 ? amountAfterGiftCard : 0;
+    if (giftCardData) {
+      const balance = safeParseNumber(giftCardData.balance, 0);
+      if (balance > 0) {
+        const amountAfterGiftCard = total - balance;
+        return amountAfterGiftCard > 0 ? amountAfterGiftCard : 0;
+      }
     }
     return total;
   };
@@ -627,8 +660,11 @@ function ReservationContent() {
   // Calculer le montant utilisé de la carte cadeau
   const getGiftCardUsedAmount = () => {
     const total = calculateTotal();
-    if (giftCardData && giftCardData.balance > 0) {
-      return Math.min(giftCardData.balance, total);
+    if (giftCardData) {
+      const balance = safeParseNumber(giftCardData.balance, 0);
+      if (balance > 0) {
+        return Math.min(balance, total);
+      }
     }
     return 0;
   };
@@ -1039,19 +1075,23 @@ function ReservationContent() {
                     </label>
                     
                     {/* Alerte si peu de créneaux disponibles */}
-                    {availableSlots.length > 0 && availableSlots.filter(s => s.available).length < 3 && (
-                      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-yellow-800">
-                            Attention : Peu de créneaux disponibles ce jour
-                          </p>
-                          <p className="text-xs text-yellow-700 mt-1">
-                            Réservez vite ou choisissez une autre date pour plus d'options
-                          </p>
+                    {(() => {
+                      const slots = safeArray<{time: string, available: boolean}>(availableSlots, []);
+                      const availableCount = slots.filter(s => s?.available === true).length;
+                      return slots.length > 0 && availableCount < 3 && (
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-yellow-800">
+                              Attention : Peu de créneaux disponibles ce jour
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Réservez vite ou choisissez une autre date pour plus d'options
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {timeSlots.map((time) => {
@@ -1248,8 +1288,10 @@ function ReservationContent() {
                       className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#d4b5a0] focus:outline-none transition-colors text-lg bg-white"
                     >
                       <option value="">Indifférent (toute esthéticienne disponible)</option>
-                      {employees.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      {safeArray<any>(employees, []).map(emp => (
+                        <option key={emp?.id || Math.random()} value={emp?.id || ''}>
+                          {safeGet(emp, 'name', 'Employé')}
+                        </option>
                       ))}
                     </select>
                     <p className="text-sm text-[#2c3e50]/60 mt-2">
@@ -1390,12 +1432,14 @@ function ReservationContent() {
                     <div className="flex justify-between items-start">
                       <span className="font-medium text-[#2c3e50]">Soins sélectionnés :</span>
                       <div className="text-right">
-                        {selectedServices.map(id => {
+                        {safeArray<string>(selectedServices, []).map(id => {
                           const service = services.find(s => s.id === id);
                           const isPackage = selectedPackages[id] === "forfait";
+                          const serviceName = safeGet(service, 'name', 'Service inconnu');
+                          const serviceIcon = safeGet(service, 'icon', '');
                           return (
                             <div key={id} className="text-[#d4b5a0] font-semibold">
-                              {service?.name} {service?.icon}
+                              {serviceName} {serviceIcon}
                               {isPackage && (
                                 <span className="text-xs ml-1 text-[#c9a084]">(forfait)</span>
                               )}
@@ -1415,12 +1459,13 @@ function ReservationContent() {
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-[#2c3e50]">Durée totale :</span>
                       <span className="text-[#d4b5a0] font-semibold">
-                        {selectedServices.reduce((total, id) => {
+                        {safeArray<string>(selectedServices, []).reduce((total, id) => {
                           const service = services.find(s => s.id === id);
                           if (!service) return total;
-                          const match = service.duration.match(/(\d+)\s*(h|min)/);
+                          const durationStr = safeGet(service, 'duration', '60 min') as string;
+                          const match = durationStr.match(/(\d+)\s*(h|min)/);
                           if (!match) return total;
-                          const value = parseInt(match[1]);
+                          const value = safeParseNumber(match[1], 0);
                           const unit = match[2];
                           return total + (unit === 'h' ? value * 60 : value);
                         }, 0)} min

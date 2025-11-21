@@ -1,6 +1,7 @@
 'use client'
 
 import { Gift, Star } from 'lucide-react'
+import { safeJsonParse } from '@/lib/safe-parse'
 
 interface LoyaltyCardsProps {
   reservations: any[]
@@ -13,12 +14,10 @@ export default function LoyaltyCards({ reservations }: LoyaltyCardsProps) {
 
   const forfaitCount = reservations.filter(r => {
     if (r.status !== 'completed') return false
-    try {
-      const packages = r.packages ? JSON.parse(typeof r.packages === 'string' ? r.packages : JSON.stringify(r.packages)) : {}
-      return Object.values(packages).some(p => p === 'forfait')
-    } catch {
-      return false
-    }
+    const packages = r.packages
+      ? (typeof r.packages === 'string' ? safeJsonParse(r.packages, {}) : r.packages)
+      : {}
+    return Object.values(packages).some(p => p === 'forfait')
   }).length
 
   const forfaitEffectiveCount = forfaitCount % 4

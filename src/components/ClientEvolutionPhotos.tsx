@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { formatDateLocal } from '@/lib/date-utils';
 import { Camera, Upload, X, Calendar, Trash2, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface Evolution {
   id: string;
@@ -275,8 +276,8 @@ export default function ClientEvolutionPhotos({
               {evolution.improvements && (
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {(() => {
-                    const improvements = typeof evolution.improvements === 'string' 
-                      ? JSON.parse(evolution.improvements) 
+                    const improvements = typeof evolution.improvements === 'string'
+                      ? safeJsonParse(evolution.improvements, {})
                       : evolution.improvements;
                     return (
                       <>

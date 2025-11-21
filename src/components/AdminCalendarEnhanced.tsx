@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { formatDateLocal } from '@/lib/date-utils';
 import { ChevronLeft, ChevronRight, Clock, User, Euro, Calendar, Grid3x3, List, CalendarDays, Mail, Phone } from "lucide-react";
 import ReservationPaymentButton from './ReservationPaymentButton';
+import { safeJsonParse, safeParseNumber, safeParseInt, safeArray, safeMap, safeFilter, safeGet } from '@/lib/safe-parse';
 // import { servicePricing, formatPriceDetails } from "@/lib/pricing";
 
 interface Reservation {
@@ -56,12 +57,12 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
   const getReservationsForDay = (date: Date | null) => {
     if (!date) return [];
     const dateStr = formatDateLocal(date);
-    return reservations.filter(r => r.date.startsWith(dateStr));
+    return safeFilter(reservations, (r: Reservation) => r?.date?.startsWith(dateStr) ?? false);
   };
 
   const getTotalRevenueForDay = (date: Date | null) => {
     const dayReservations = getReservationsForDay(date);
-    return dayReservations.reduce((sum, r) => sum + r.totalPrice, 0);
+    return dayReservations.reduce((sum, r) => sum + safeParseNumber(r?.totalPrice, 0), 0);
   };
 
   // Navigation
@@ -130,14 +131,14 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
 
   // Obtenir les statistiques du mois pour la vue année
   const getMonthStats = (month: number) => {
-    const monthReservations = reservations.filter(r => {
-      const date = new Date(r.date);
+    const monthReservations = safeFilter(reservations, (r: Reservation) => {
+      const date = new Date(r?.date ?? '');
       return date.getFullYear() === currentDate.getFullYear() && date.getMonth() === month;
     });
-    
+
     return {
       count: monthReservations.length,
-      revenue: monthReservations.reduce((sum, r) => sum + r.totalPrice, 0)
+      revenue: monthReservations.reduce((sum, r) => sum + safeParseNumber(r?.totalPrice, 0), 0)
     };
   };
 
@@ -266,34 +267,32 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
             ) : (
               <div className="space-y-3">
                 {getReservationsForDay(currentDate)
-                  .sort((a, b) => a.time.localeCompare(b.time))
+                  .sort((a, b) => (a?.time ?? '').localeCompare(b?.time ?? ''))
                   .map(reservation => {
                     // S'assurer que services est un tableau
-                    const servicesList = reservation.services && Array.isArray(reservation.services) 
-                      ? reservation.services 
-                      : [];
-                    
+                    const servicesList = safeArray(reservation?.services, []);
+
                     // Si pas de services dans le tableau mais qu'il y a serviceName, l'utiliser
-                    const serviceDetails = servicesList.length > 0 
-                      ? servicesList.map(serviceId => {
-                          const packageType = reservation.packages?.[serviceId] || 'single';
+                    const serviceDetails = servicesList.length > 0
+                      ? safeMap(servicesList, (serviceId: string) => {
+                          const packageType = safeGet(reservation, `packages.${serviceId}`, 'single');
                           // const serviceInfo = servicePricing[serviceId as keyof typeof servicePricing];
                           // if (!serviceInfo) return null;
-                          
+
                           let price = 70; // Prix par défaut
                           let label = '';
-                          
+
                           return {
-                            name: services[serviceId as keyof typeof services] || serviceId,
+                            name: services[serviceId as keyof typeof services] ?? serviceId,
                             price,
                             label,
                             packageType
                           };
                         }).filter(Boolean)
-                      : (reservation as any).serviceName 
+                      : reservation?.serviceName
                         ? [{
-                            name: (reservation as any).serviceName,
-                            price: reservation.totalPrice,
+                            name: reservation.serviceName,
+                            price: safeParseNumber(reservation?.totalPrice, 0),
                             label: '',
                             packageType: 'single'
                           }]
@@ -314,43 +313,43 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                       'cancelled': 'Annulé',
                       'no_show': 'Absent'
                     };
-                    
+
                     return (
-                      <div key={reservation.id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-[#d4b5a0]/10">
+                      <div key={reservation?.id ?? Math.random()} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-[#d4b5a0]/10">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex items-center gap-3">
                             <div className="bg-[#d4b5a0]/10 p-2 rounded-lg">
                               <Clock className="w-5 h-5 text-[#d4b5a0]" />
                             </div>
                             <div>
-                              <span className="font-bold text-lg text-[#2c3e50]">{reservation.time}</span>
-                              <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${statusColors[reservation.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-700'}`}>
-                                {statusLabels[reservation.status as keyof typeof statusLabels] || reservation.status}
+                              <span className="font-bold text-lg text-[#2c3e50]">{reservation?.time ?? 'N/A'}</span>
+                              <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${statusColors[reservation?.status as keyof typeof statusColors] ?? 'bg-gray-100 text-gray-700'}`}>
+                                {statusLabels[reservation?.status as keyof typeof statusLabels] ?? reservation?.status ?? 'Inconnu'}
                               </span>
                             </div>
                           </div>
                           <div className="text-right">
-                            <span className="text-xl font-bold text-[#d4b5a0]">{reservation.totalPrice}€</span>
-                            {reservation.paymentStatus === 'paid' && (
+                            <span className="text-xl font-bold text-[#d4b5a0]">{safeParseNumber(reservation?.totalPrice, 0)}€</span>
+                            {reservation?.paymentStatus === 'paid' && (
                               <div className="text-xs text-green-600 font-medium mt-1">✓ Payé</div>
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2 mb-3">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-[#2c3e50]/60" />
-                            <span className="font-medium text-[#2c3e50]">{reservation.userName || 'Client'}</span>
+                            <span className="font-medium text-[#2c3e50]">{reservation?.userName ?? 'Client'}</span>
                           </div>
-                          
-                          {reservation.userEmail && (
+
+                          {reservation?.userEmail && (
                             <div className="flex items-center gap-2">
                               <Mail className="w-4 h-4 text-[#2c3e50]/60" />
                               <span className="text-sm text-[#2c3e50]/80">{reservation.userEmail}</span>
                             </div>
                           )}
-                          
-                          {reservation.phone && (
+
+                          {reservation?.phone && (
                             <div className="flex items-center gap-2">
                               <Phone className="w-4 h-4 text-[#2c3e50]/60" />
                               <span className="text-sm text-[#2c3e50]/80">{reservation.phone}</span>
@@ -364,25 +363,25 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                             {serviceDetails.map((detail, idx) => detail && (
                               <div key={idx} className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-[#2c3e50]">{detail.name}</span>
-                                  {detail.packageType === 'forfait' && (
+                                  <span className="text-sm text-[#2c3e50]">{detail?.name ?? 'Service'}</span>
+                                  {detail?.packageType === 'forfait' && (
                                     <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">
                                       Forfait
                                     </span>
                                   )}
-                                  {reservation.isSubscription && (
+                                  {reservation?.isSubscription && (
                                     <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                                       Abo
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-sm font-medium text-[#d4b5a0]">{detail.price}€</span>
+                                <span className="text-sm font-medium text-[#d4b5a0]">{safeParseNumber(detail?.price, 0)}€</span>
                               </div>
                             ))}
                           </div>
                         </div>
-                        
-                        {reservation.notes && (
+
+                        {reservation?.notes && (
                           <div className="mt-3 p-2 bg-gray-50 rounded-lg">
                             <div className="text-xs text-gray-600 font-medium mb-1">Notes :</div>
                             <div className="text-xs text-gray-700">{reservation.notes}</div>
@@ -391,11 +390,11 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
 
                         <div className="mt-3 pt-3 border-t border-[#d4b5a0]/10">
                           <ReservationPaymentButton
-                            reservationId={reservation.id}
-                            amount={reservation.totalPrice}
-                            serviceName={reservation.serviceName || reservation.services[0] || 'Prestation'}
-                            paymentStatus={reservation.paymentStatus || 'unpaid'}
-                            paymentMethod={reservation.paymentMethod}
+                            reservationId={reservation?.id ?? ''}
+                            amount={safeParseNumber(reservation?.totalPrice, 0)}
+                            serviceName={reservation?.serviceName ?? safeArray(reservation?.services, [])[0] ?? 'Prestation'}
+                            paymentStatus={reservation?.paymentStatus ?? 'unpaid'}
+                            paymentMethod={reservation?.paymentMethod}
                             onPaymentInitiated={() => {
                               // Rafraîchir les réservations après paiement
                               window.location.reload();
@@ -407,7 +406,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                   })}
               </div>
             )}
-            
+
             <div className="mt-4 pt-4 border-t border-[#d4b5a0]/20">
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-[#2c3e50]">Total du jour</span>
@@ -425,11 +424,11 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
         <div className="overflow-x-auto">
           <div className="grid grid-cols-7 gap-2 min-w-[800px]">
             {getWeekDays().map((date, index) => {
-              const isToday = date.toDateString() === new Date().toDateString();
-              const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+              const isToday = date?.toDateString() === new Date().toDateString();
+              const isSelected = selectedDate && date?.toDateString() === selectedDate?.toDateString();
               const dayReservations = getReservationsForDay(date);
               const revenue = getTotalRevenueForDay(date);
-              
+
               return (
                 <div
                   key={index}
@@ -442,12 +441,12 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                   `}
                 >
                   <div className="text-center mb-2">
-                    <div className="text-xs text-[#2c3e50]/60">{dayNames[index]}</div>
+                    <div className="text-xs text-[#2c3e50]/60">{dayNames[index] ?? ''}</div>
                     <div className={`text-lg font-bold ${isToday ? 'text-[#d4b5a0]' : 'text-[#2c3e50]'}`}>
-                      {date.getDate()}
+                      {date?.getDate() ?? 0}
                     </div>
                   </div>
-                  
+
                   {dayReservations.length > 0 && (
                     <>
                       <div className="text-xs text-[#2c3e50]/70 mb-1">
@@ -475,22 +474,22 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
               </div>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-7 gap-2">
             {getMonthDays().map((date, index) => {
               if (!date) {
                 return <div key={`empty-${index}`} className="h-24" />;
               }
-              
-              const isToday = date.toDateString() === new Date().toDateString();
-              const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+
+              const isToday = date?.toDateString() === new Date().toDateString();
+              const isSelected = selectedDate && date?.toDateString() === selectedDate?.toDateString();
               const dayReservations = getReservationsForDay(date);
               const revenue = getTotalRevenueForDay(date);
               const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-              
+
               return (
                 <div
-                  key={date.toISOString()}
+                  key={date?.toISOString() ?? `day-${index}`}
                   onClick={() => handleDateClick(date)}
                   className={`
                     h-24 border rounded-lg p-2 cursor-pointer transition-all
@@ -501,9 +500,9 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                   `}
                 >
                   <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-[#d4b5a0]' : 'text-[#2c3e50]'}`}>
-                    {date.getDate()}
+                    {date?.getDate() ?? 0}
                   </div>
-                  
+
                   {dayReservations.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-xs bg-[#d4b5a0]/10 rounded px-1 py-0.5">
@@ -526,9 +525,9 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
         <div className="grid grid-cols-3 gap-4">
           {monthNames.map((month, index) => {
             const stats = getMonthStats(index);
-            const isCurrentMonth = new Date().getMonth() === index && 
+            const isCurrentMonth = new Date().getMonth() === index &&
                                    new Date().getFullYear() === currentDate.getFullYear();
-            
+
             return (
               <div
                 key={month}
@@ -545,14 +544,14 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                 <h3 className={`font-bold mb-2 ${isCurrentMonth ? 'text-[#d4b5a0]' : 'text-[#2c3e50]'}`}>
                   {month}
                 </h3>
-                
-                {stats.count > 0 ? (
+
+                {stats?.count > 0 ? (
                   <div className="space-y-1">
                     <div className="text-sm text-[#2c3e50]/70">
                       {stats.count} réservations
                     </div>
                     <div className="text-lg font-bold text-[#d4b5a0]">
-                      {stats.revenue.toLocaleString('fr-FR')}€
+                      {safeParseNumber(stats?.revenue, 0).toLocaleString('fr-FR')}€
                     </div>
                   </div>
                 ) : (
@@ -592,51 +591,51 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
             ) : (
               <div className="space-y-4">
                 {getReservationsForDay(selectedDate)
-                  .sort((a, b) => a.time.localeCompare(b.time))
+                  .sort((a, b) => (a?.time ?? '').localeCompare(b?.time ?? ''))
                   .map(reservation => (
-                    <div key={reservation.id} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all">
+                    <div key={reservation?.id ?? Math.random()} className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-all">
                       <div className="flex justify-between items-start mb-3">
                         {/* Heure et statut */}
                         <div className="flex items-start gap-4">
                           <div className="text-center bg-[#d4b5a0]/10 px-3 py-2 rounded-lg">
                             <Clock className="w-5 h-5 text-[#d4b5a0] mx-auto mb-1" />
-                            <span className="text-lg font-bold text-[#2c3e50]">{reservation.time}</span>
+                            <span className="text-lg font-bold text-[#2c3e50]">{reservation?.time ?? 'N/A'}</span>
                           </div>
-                          
+
                           {/* Informations client */}
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <User className="w-4 h-4 text-[#d4b5a0]" />
                               <span className="font-semibold text-[#2c3e50] text-lg">
-                                {reservation.userName || 'Client'}
+                                {reservation?.userName ?? 'Client'}
                               </span>
-                              {reservation.status === 'completed' && (
+                              {reservation?.status === 'completed' && (
                                 <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded-full">
                                   ✓ Effectué
                                 </span>
                               )}
-                              {reservation.status === 'confirmed' && (
+                              {reservation?.status === 'confirmed' && (
                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
                                   Confirmé
                                 </span>
                               )}
-                              {reservation.status === 'cancelled' && (
+                              {reservation?.status === 'cancelled' && (
                                 <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs rounded-full">
                                   Annulé
                                 </span>
                               )}
                             </div>
-                            
+
                             {/* Contact */}
-                            {(reservation.userEmail || reservation.phone) && (
+                            {(reservation?.userEmail || reservation?.phone) && (
                               <div className="flex flex-wrap gap-3 mb-2 text-sm text-[#2c3e50]/70">
-                                {reservation.userEmail && (
+                                {reservation?.userEmail && (
                                   <div className="flex items-center gap-1">
                                     <Mail className="w-3 h-3" />
                                     <span>{reservation.userEmail}</span>
                                   </div>
                                 )}
-                                {reservation.phone && (
+                                {reservation?.phone && (
                                   <div className="flex items-center gap-1">
                                     <Phone className="w-3 h-3" />
                                     <span>{reservation.phone}</span>
@@ -644,9 +643,9 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                                 )}
                               </div>
                             )}
-                            
+
                             {/* Badge abonnement si applicable */}
-                            {reservation.isSubscription && (
+                            {reservation?.isSubscription && (
                               <div className="mb-3 bg-gradient-to-r from-purple-100 to-purple-50 border border-purple-200 rounded-lg px-3 py-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-purple-600">🔔</span>
@@ -654,17 +653,17 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                                 </div>
                               </div>
                             )}
-                            
+
                             {/* Services détaillés */}
                             <div className="mb-2">
                               <div className="text-xs text-[#2c3e50]/60 mb-1">Prestations</div>
                               <div className="flex flex-wrap gap-2">
-                                {reservation.services && reservation.services.length > 0 ? (
-                                  reservation.services.map(serviceId => (
+                                {safeArray(reservation?.services, []).length > 0 ? (
+                                  safeArray(reservation?.services, []).map(serviceId => (
                                     <div key={serviceId} className="bg-[#d4b5a0]/10 px-3 py-1.5 rounded-lg">
                                       <span className="text-sm font-medium text-[#2c3e50]">
-                                        {services[serviceId as keyof typeof services] || serviceId}
-                                        {reservation.packages && reservation.packages[serviceId] === 'abonnement' && (
+                                        {services[serviceId as keyof typeof services] ?? serviceId}
+                                        {safeGet(reservation, `packages.${serviceId}`) === 'abonnement' && (
                                           <span className="ml-2 text-xs text-purple-600 font-medium">(Abo)</span>
                                         )}
                                       </span>
@@ -673,7 +672,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                                       )} */}
                                     </div>
                                   ))
-                                ) : reservation.serviceName ? (
+                                ) : reservation?.serviceName ? (
                                   <div className="bg-[#d4b5a0]/10 px-3 py-1.5 rounded-lg">
                                     <span className="text-sm font-medium text-[#2c3e50]">
                                       {reservation.serviceName}
@@ -684,9 +683,9 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Notes */}
-                            {reservation.notes && (
+                            {reservation?.notes && (
                               <div className="bg-yellow-50 p-2 rounded-lg mt-2">
                                 <div className="text-xs text-[#2c3e50]/60 mb-0.5">Notes</div>
                                 <p className="text-sm text-[#2c3e50]">{reservation.notes}</p>
@@ -694,18 +693,18 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Prix et actions */}
                         <div className="text-right space-y-2">
                           <div className="text-2xl font-bold text-[#d4b5a0] mb-2">
-                            {reservation.totalPrice}€
+                            {safeParseNumber(reservation?.totalPrice, 0)}€
                           </div>
                           <ReservationPaymentButton
-                            reservationId={reservation.id}
-                            amount={reservation.totalPrice}
-                            serviceName={reservation.serviceName || reservation.services[0] || 'Prestation'}
-                            paymentStatus={reservation.paymentStatus || 'unpaid'}
-                            paymentMethod={reservation.paymentMethod}
+                            reservationId={reservation?.id ?? ''}
+                            amount={safeParseNumber(reservation?.totalPrice, 0)}
+                            serviceName={reservation?.serviceName ?? safeArray(reservation?.services, [])[0] ?? 'Prestation'}
+                            paymentStatus={reservation?.paymentStatus ?? 'unpaid'}
+                            paymentMethod={reservation?.paymentMethod}
                             onPaymentInitiated={() => {
                               // Rafraîchir les réservations après paiement
                               window.location.reload();

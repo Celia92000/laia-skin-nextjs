@@ -177,7 +177,7 @@ export default function OnboardingV2() {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/onboarding/checkout', {
+      const response = await fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

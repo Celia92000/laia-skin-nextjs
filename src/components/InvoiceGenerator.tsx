@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { safeJsonParse } from '@/lib/safe-parse';
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -339,15 +340,13 @@ export function InvoiceButton({ reservation }: { reservation: any }) {
         phone: reservation.phone,
       },
       services: (() => {
-        try {
-          const servicesList = JSON.parse(reservation.services);
-          if (Array.isArray(servicesList)) {
-            return servicesList.map(s => ({
-              name: s,
-              price: reservation.totalPrice / servicesList.length
-            }));
-          }
-        } catch {}
+        const servicesList = safeJsonParse(reservation.services, null);
+        if (Array.isArray(servicesList) && servicesList.length > 0) {
+          return servicesList.map(s => ({
+            name: s,
+            price: reservation.totalPrice / servicesList.length
+          }));
+        }
         return [{
           name: reservation.services,
           price: reservation.totalPrice

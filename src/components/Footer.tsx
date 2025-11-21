@@ -6,6 +6,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Phone, Mail, MapPin, Clock, Instagram, Facebook, Sparkles, CheckCircle } from "lucide-react";
 import { useConfig } from "@/hooks/useConfig";
+import { safeJsonParse } from "@/lib/safe-parse";
 
 interface FooterProps {
   organizationData?: any;
@@ -220,17 +221,13 @@ export default function Footer({ organizationData }: FooterProps) {
                   <Clock size={16} className="text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-base text-white/95">
                     {(() => {
-                      try {
-                        const hours = JSON.parse(config.businessHours);
-                        return Object.entries(hours).slice(0, 2).map(([day, time], i) => (
-                          <span key={day}>
-                            {i > 0 && <br />}
-                            {day}: {time as string}
-                          </span>
-                        ));
-                      } catch {
-                        return 'Lun-Ven: 14h-20h';
-                      }
+                      const hours = safeJsonParse(config.businessHours, { 'Lun-Ven': '14h-20h' });
+                      return Object.entries(hours).slice(0, 2).map(([day, time], i) => (
+                        <span key={day}>
+                          {i > 0 && <br />}
+                          {day}: {time as string}
+                        </span>
+                      ));
                     })()}
                   </span>
                 </li>
