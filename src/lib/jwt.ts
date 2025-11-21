@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('❌ ERREUR CRITIQUE: La variable d\'environnement JWT_SECRET est obligatoire. Définissez-la dans votre fichier .env.local');
+}
 
 export interface JWTPayload {
   userId: string;
