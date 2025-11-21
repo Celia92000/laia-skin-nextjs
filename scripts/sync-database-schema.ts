@@ -10,6 +10,8 @@ async function syncDatabaseSchema() {
     const queries = [
       // User table
       `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "image" TEXT;`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "deletionRequestedAt" TIMESTAMP;`,
+      `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "scheduledDeletionAt" TIMESTAMP;`,
 
       // Organization table - Features
       `ALTER TABLE "Organization" ADD COLUMN IF NOT EXISTS "featureEmailing" BOOLEAN DEFAULT true;`,
