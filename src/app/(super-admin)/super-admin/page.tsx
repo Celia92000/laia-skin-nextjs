@@ -151,10 +151,10 @@ export default function SuperAdminPage() {
                 fontFamily: 'Playfair Display, serif',
                 color: '#7c3aed'
               }}>
-                👋 Bienvenue {user?.name || 'Utilisateur'}
+                👋 Bienvenue {user?.name ?? 'Utilisateur'}
               </h2>
               <p className="text-gray-700 text-lg">
-                Vous êtes connecté en tant que <strong>{user.email}</strong>
+                Vous êtes connecté en tant que <strong>{user?.email ?? 'Non renseigné'}</strong>
               </p>
               <p className="text-gray-600 mt-2">
                 Gérez toutes les organisations de la plateforme LAIA depuis ce tableau de bord.
@@ -299,8 +299,8 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Utilisateurs</p>
-                <p className="text-3xl font-bold" style={{ color: '#e8b4b8' }}>{stats.totalUsers}</p>
-                <p className="text-xs mt-2 text-gray-500">Moyenne: {organizations.length > 0 ? Math.round(stats.totalUsers / organizations.length) : 0} par org</p>
+                <p className="text-3xl font-bold" style={{ color: '#e8b4b8' }}>{stats?.totalUsers ?? 0}</p>
+                <p className="text-xs mt-2 text-gray-500">Moyenne: {organizations.length > 0 ? Math.round((stats?.totalUsers ?? 0) / organizations.length) : 0} par org</p>
               </div>
               <div className="text-5xl opacity-20">👥</div>
             </div>
@@ -313,7 +313,7 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Réservations</p>
-                <p className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{stats.totalReservations}</p>
+                <p className="text-3xl font-bold" style={{ color: '#7c3aed' }}>{stats?.totalReservations ?? 0}</p>
                 <p className="text-xs mt-2 text-gray-500">Cliquer pour voir les détails</p>
               </div>
               <div className="text-5xl opacity-20">📅</div>
@@ -327,7 +327,7 @@ export default function SuperAdminPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm mb-1 text-gray-600">Services</p>
-                <p className="text-3xl font-bold text-teal-600">{stats.totalServices}</p>
+                <p className="text-3xl font-bold text-teal-600">{stats?.totalServices ?? 0}</p>
                 <p className="text-xs mt-2 text-gray-500">Cliquer pour voir les détails</p>
               </div>
               <div className="text-5xl opacity-20">💆</div>
@@ -797,7 +797,7 @@ export default function SuperAdminPage() {
                     <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
                   </div>
                   <div className="mb-6">
-                    <div className="text-4xl font-bold mb-2" style={{ color: '#7c3aed' }}>{stats.totalReservations}</div>
+                    <div className="text-4xl font-bold mb-2" style={{ color: '#7c3aed' }}>{stats?.totalReservations ?? 0}</div>
                     <p className="text-gray-600">Réservations totales sur la plateforme</p>
                   </div>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -844,7 +844,7 @@ export default function SuperAdminPage() {
                     <button onClick={() => setOpenModal(null)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
                   </div>
                   <div className="mb-6">
-                    <div className="text-4xl font-bold text-teal-600 mb-2">{stats.totalServices}</div>
+                    <div className="text-4xl font-bold text-teal-600 mb-2">{stats?.totalServices ?? 0}</div>
                     <p className="text-gray-600">Services disponibles au total</p>
                   </div>
                   <div className="space-y-3 max-h-96 overflow-y-auto">

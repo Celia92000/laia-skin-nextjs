@@ -260,7 +260,7 @@ export default function OrganizationDetailPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Propriétaire</p>
-                    <p className="font-medium">{owner?.name || 'Non renseigné'}</p>
+                    <p className="font-medium">{owner?.name ?? 'Non renseigné'}</p>
                   </div>
                   {generatedPassword && (
                     <div>
@@ -337,7 +337,7 @@ export default function OrganizationDetailPage() {
                         <div className="flex items-center gap-3">
                           <FileText size={18} className="text-green-600" />
                           <div>
-                            <p className="font-medium text-green-900">{organization.contractNumber}</p>
+                            <p className="font-medium text-green-900">{organization.contractNumber ?? 'N/A'}</p>
                             <p className="text-sm text-gray-600">
                               Signé le {organization.contractSignedAt ? new Date(organization.contractSignedAt).toLocaleDateString('fr-FR') : 'N/A'}
                             </p>

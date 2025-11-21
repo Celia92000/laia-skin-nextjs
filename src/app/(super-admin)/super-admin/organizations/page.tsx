@@ -141,9 +141,9 @@ export default function OrganizationsPage() {
 
     if (orgSearchTerm) {
       filtered = filtered.filter(org =>
-        org.name.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-        org.slug.toLowerCase().includes(orgSearchTerm.toLowerCase()) ||
-        org.subdomain.toLowerCase().includes(orgSearchTerm.toLowerCase())
+        (org.name?.toLowerCase() ?? '').includes(orgSearchTerm.toLowerCase()) ||
+        (org.slug?.toLowerCase() ?? '').includes(orgSearchTerm.toLowerCase()) ||
+        (org.subdomain?.toLowerCase() ?? '').includes(orgSearchTerm.toLowerCase())
       )
     }
 

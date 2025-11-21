@@ -363,7 +363,7 @@ export default function CRMPage() {
     // Filtre par ville
     if (searchFilters.city) {
       filtered = filtered.filter(lead =>
-        lead.city && lead.city.toLowerCase().includes(searchFilters.city.toLowerCase())
+        lead.city && (lead.city?.toLowerCase() ?? '').includes(searchFilters.city.toLowerCase())
       )
     }
 
@@ -448,10 +448,10 @@ export default function CRMPage() {
 
     const search = searchFilters.search.toLowerCase()
     const matchingLeads = leads.filter(lead =>
-      lead.institutName.toLowerCase().includes(search) ||
-      lead.contactName.toLowerCase().includes(search) ||
-      lead.contactEmail.toLowerCase().includes(search) ||
-      (lead.city && lead.city.toLowerCase().includes(search))
+      (lead.institutName?.toLowerCase() ?? '').includes(search) ||
+      (lead.contactName?.toLowerCase() ?? '').includes(search) ||
+      (lead.contactEmail?.toLowerCase() ?? '').includes(search) ||
+      (lead.city?.toLowerCase() ?? '').includes(search)
     ).slice(0, 8) // Limite à 8 suggestions
 
     return matchingLeads

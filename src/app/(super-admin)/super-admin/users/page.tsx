@@ -81,9 +81,9 @@ export default function GlobalUsersPage() {
     // Recherche
     if (searchTerm) {
       filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.organization?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+        (user.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase()) ||
+        (user.organization?.name?.toLowerCase() ?? '').includes(searchTerm.toLowerCase())
       )
     }
 
@@ -115,8 +115,8 @@ export default function GlobalUsersPage() {
       }
 
       if (sortBy === 'organization') {
-        aVal = a.organization?.name || ''
-        bVal = b.organization?.name || ''
+        aVal = a.organization?.name ?? ''
+        bVal = b.organization?.name ?? ''
       }
 
       if (sortOrder === 'asc') {
@@ -137,7 +137,7 @@ export default function GlobalUsersPage() {
         user.name,
         user.email,
         user.role,
-        user.organization?.name || 'N/A',
+        user.organization?.name ?? 'N/A',
         user.isActive ? 'Actif' : 'Inactif',
         new Date(user.createdAt).toLocaleDateString('fr-FR'),
         user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString('fr-FR') : 'Jamais'
