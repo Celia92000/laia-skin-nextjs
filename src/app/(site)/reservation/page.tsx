@@ -315,7 +315,7 @@ function ReservationContent() {
           const service = services.find(s => s.id === serviceId);
           if (service) {
             // Extraire la durée du service (ex: "60 min" -> 60) de manière sécurisée
-            const duration = safeParseNumber(service.duration, 60);
+            const duration = safeParseNumber(service.duration, 60) || 60;
             totalDuration += duration;
           }
         });
@@ -611,18 +611,18 @@ function ReservationContent() {
 
         if (packageType === 'forfait') {
           // Essayer forfaitDisplayPrice puis forfaitPrice, fallback sur 0
-          const forfaitDisplay = safeParseNumber(service.forfaitDisplayPrice, 0);
-          const forfaitPrice = safeParseNumber(service.forfaitPrice, 0);
+          const forfaitDisplay = safeParseNumber(service.forfaitDisplayPrice, 0) || 0;
+          const forfaitPrice = safeParseNumber(service.forfaitPrice, 0) || 0;
           priceToAdd = forfaitDisplay > 0 ? forfaitDisplay : forfaitPrice;
         } else {
           // Séance individuelle (single) - essayer displayPrice puis price
-          const displayPrice = safeParseNumber(service.displayPrice, 0);
-          const price = safeParseNumber(service.price, 0);
+          const displayPrice = safeParseNumber(service.displayPrice, 0) || 0;
+          const price = safeParseNumber(service.price, 0) || 0;
           priceToAdd = displayPrice > 0 ? displayPrice : price;
         }
 
         // S'assurer que priceToAdd est un nombre valide
-        priceToAdd = safeParseNumber(priceToAdd, 0);
+        priceToAdd = safeParseNumber(priceToAdd, 0) || 0;
 
         console.log(`Service ${service.name} (${packageType}): ${priceToAdd}€`);
         total = total + priceToAdd;
@@ -640,7 +640,7 @@ function ReservationContent() {
     }
 
     // S'assurer que le total final est un nombre valide et arrondi
-    const finalTotal = safeParseNumber(total, 0);
+    const finalTotal = safeParseNumber(total, 0) || 0;
     return Math.round(finalTotal);
   };
 
@@ -648,7 +648,7 @@ function ReservationContent() {
   const calculateAmountToPay = () => {
     const total = calculateTotal();
     if (giftCardData) {
-      const balance = safeParseNumber(giftCardData.balance, 0);
+      const balance = safeParseNumber(giftCardData.balance, 0) || 0;
       if (balance > 0) {
         const amountAfterGiftCard = total - balance;
         return amountAfterGiftCard > 0 ? amountAfterGiftCard : 0;
@@ -661,7 +661,7 @@ function ReservationContent() {
   const getGiftCardUsedAmount = () => {
     const total = calculateTotal();
     if (giftCardData) {
-      const balance = safeParseNumber(giftCardData.balance, 0);
+      const balance = safeParseNumber(giftCardData.balance, 0) || 0;
       if (balance > 0) {
         return Math.min(balance, total);
       }
@@ -1465,7 +1465,7 @@ function ReservationContent() {
                           const durationStr = safeGet(service, 'duration', '60 min') as string;
                           const match = durationStr.match(/(\d+)\s*(h|min)/);
                           if (!match) return total;
-                          const value = safeParseNumber(match[1], 0);
+                          const value = safeParseNumber(match[1], 0) || 0;
                           const unit = match[2];
                           return total + (unit === 'h' ? value * 60 : value);
                         }, 0)} min
