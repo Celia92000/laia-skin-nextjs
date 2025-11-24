@@ -202,7 +202,12 @@ export default function AdminDashboard() {
         return;
       }
 
-      const userInfo = safeJsonParse(user, null);
+      let userInfo: any = null;
+      try {
+        userInfo = user ? JSON.parse(user) : null;
+      } catch {
+        userInfo = null;
+      }
 
       if (!userInfo) {
         console.error('Erreur parsing user data');
@@ -211,8 +216,8 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Autoriser tous les rôles admin et staff
-      const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'STAFF'];
+      // Autoriser tous les rôles admin et staff (enlever le doublon 'STAFF')
+      const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'];
       if (!userInfo?.role || !adminRoles.includes(userInfo.role)) {
         router.push('/espace-client');
         return;
@@ -272,7 +277,12 @@ export default function AdminDashboard() {
     if (showNewReservationModal) {
       const preselectedClientData = localStorage.getItem('preselectedClient');
       if (preselectedClientData) {
-        const client = safeJsonParse(preselectedClientData, null);
+        let client: any = null;
+        try {
+          client = JSON.parse(preselectedClientData);
+        } catch {
+          client = null;
+        }
         if (client) {
           setNewReservation(prev => ({
             ...prev,
