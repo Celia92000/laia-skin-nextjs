@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
 
 export type AutomationTrigger =
   | 'ORGANIZATION_CREATED'
@@ -39,14 +41,20 @@ export interface EmailAutomation {
  */
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
 
-    if (!session?.user?.email) {
+    if (!token) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { id: decoded.userId }
     })
 
     if (user?.role !== 'SUPER_ADMIN') {
@@ -279,14 +287,20 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
 
-    if (!session?.user?.email) {
+    if (!token) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { id: decoded.userId }
     })
 
     if (user?.role !== 'SUPER_ADMIN') {

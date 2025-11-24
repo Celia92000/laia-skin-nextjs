@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import { generateToken } from '@/lib/auth';
+import { generateToken, verifyToken } from '@/lib/auth';
 import { headers } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { log } from '@/lib/logger';
