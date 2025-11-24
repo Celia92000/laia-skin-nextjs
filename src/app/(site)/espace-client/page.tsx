@@ -98,7 +98,7 @@ function EspaceClientContent() {
     const currentYear = new Date().getFullYear();
 
     // Filtrer les réservations d'abonnement
-    const subscriptionReservations = safeArray(reservations).filter(r => r?.isSubscription === true);
+    const subscriptionReservations = (reservations || []).filter(r => r?.isSubscription === true);
 
     if (subscriptionReservations.length === 0) {
       return { hasSubscription: false };
@@ -437,7 +437,7 @@ function EspaceClientContent() {
   };
 
   // Ne compter que les réservations terminées pour le statut de fidélité
-  const completedReservations = safeArray(reservations).filter(r => r?.status === 'completed');
+  const completedReservations = (reservations || []).filter(r => r?.status === 'completed');
   const completedReservationsCount = completedReservations.length;
   const loyalty = getLoyaltyLevel(completedReservationsCount);
 
@@ -647,8 +647,8 @@ function EspaceClientContent() {
                 name: userData.name,
                 loyaltyPoints: userData.loyaltyPoints,
                 totalSpent: userData.totalSpent,
-                nextAppointment: safeArray(reservations).find(r => r?.status === 'confirmed' || r?.status === 'pending'),
-                lastVisit: safeArray(reservations)
+                nextAppointment: (reservations || []).find(r => r?.status === 'confirmed' || r?.status === 'pending'),
+                lastVisit: (reservations || [])
                   .filter(r => r?.status === 'completed')
                   .sort((a, b) => {
                     if (!a?.date || !b?.date) return 0;
@@ -657,7 +657,7 @@ function EspaceClientContent() {
               }}
               reservations={reservations}
               stats={{
-                totalVisits: safeArray(reservations).filter(r => r?.status === 'completed').length,
+                totalVisits: (reservations || []).filter(r => r?.status === 'completed').length,
                 favoriteService: 'HydraFacial',
                 memberSince: '2023'
               }}
@@ -678,7 +678,7 @@ function EspaceClientContent() {
                 </Link>
               </div>
 
-              {safeArray(reservations).length === 0 ? (
+              {(reservations || []).length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="w-16 h-16 text-[#d4b5a0]/30 mx-auto mb-4" />
                   <p className="text-[#2c3e50]/70 mb-4">Vous n'avez pas encore de réservation</p>
@@ -691,7 +691,7 @@ function EspaceClientContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {safeArray(reservations).map((reservation) => (
+                  {(reservations || []).map((reservation) => (
                     <div key={reservation.id} className="border border-[#d4b5a0]/20 rounded-xl p-6 hover:shadow-lg transition-all">
                       <div className="flex justify-between items-start mb-4">
                         <div>
@@ -934,7 +934,7 @@ function EspaceClientContent() {
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <h3 className="text-lg font-bold text-[#2c3e50] mb-4">Vos derniers soins</h3>
                 <div className="space-y-3">
-                  {safeArray(reservations).filter(r => r?.status === 'completed').slice(0, 3).map((reservation) => (
+                  {(reservations || []).filter(r => r?.status === 'completed').slice(0, 3).map((reservation) => (
                     <div key={reservation?.id} className="flex justify-between items-center py-3 border-b border-gray-100">
                       <div>
                         <p className="font-medium text-[#2c3e50]">
@@ -952,7 +952,7 @@ function EspaceClientContent() {
                     </div>
                   ))}
                 </div>
-                {safeArray(reservations).filter(r => r?.status === 'completed').length === 0 && (
+                {(reservations || []).filter(r => r?.status === 'completed').length === 0 && (
                   <p className="text-center text-[#2c3e50]/60 py-4">
                     Commencez votre carte de fidélité dès votre premier soin !
                   </p>
@@ -1117,7 +1117,7 @@ function EspaceClientContent() {
                 <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Soins en attente d'évaluation</h3>
                 {(() => {
                   const reviewedReservationIds = safeArray(userReviews).map(r => r?.reservationId);
-                  const unreviewedReservations = safeArray(reservations)
+                  const unreviewedReservations = (reservations || [])
                     .filter(r => r?.status === 'completed' && !reviewedReservationIds.includes(r?.id));
 
                   if (unreviewedReservations.length === 0) {
