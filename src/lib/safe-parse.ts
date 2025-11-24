@@ -12,7 +12,7 @@
 export function safeJsonParse<T = any>(
   json: string | null | undefined,
   defaultValue: T
-): T {
+): any {
   if (!json || typeof json !== 'string') {
     return defaultValue;
   }
@@ -68,10 +68,10 @@ export function safeParseInt(
  * @param fallback - Tableau par défaut (défaut: [])
  * @returns Tableau validé ou fallback
  */
-export function safeArray<T>(
+export function safeArray<T = any>(
   value: any,
   fallback: T[] = []
-): T[] {
+): any[] {
   return Array.isArray(value) ? value : fallback;
 }
 
@@ -82,11 +82,11 @@ export function safeArray<T>(
  * @param fallback - Valeur de fallback si erreur
  * @returns Tableau transformé ou fallback
  */
-export function safeMap<T, R>(
+export function safeMap<T = any, R = any>(
   arr: unknown,
   callback: (item: T, index: number) => R,
-  fallback: R[] = []
-): R[] {
+  fallback: any[] = []
+): any[] {
   if (!Array.isArray(arr)) {
     return fallback;
   }
@@ -106,11 +106,11 @@ export function safeMap<T, R>(
  * @param fallback - Valeur de fallback
  * @returns Tableau filtré ou fallback
  */
-export function safeFilter<T>(
+export function safeFilter<T = any>(
   arr: unknown,
   predicate: (item: T, index: number) => boolean,
-  fallback: T[] = []
-): T[] {
+  fallback: any[] = []
+): any[] {
   if (!Array.isArray(arr)) {
     return fallback;
   }
@@ -158,10 +158,10 @@ export function safeGet<T = any>(
  * @param defaultValue - Valeur par défaut
  * @returns Valeur parsée ou defaultValue
  */
-export function safeLocalStorage<T>(
+export function safeLocalStorage<T = any>(
   key: string,
   defaultValue: T
-): T {
+): any {
   if (typeof window === 'undefined') {
     return defaultValue;
   }
