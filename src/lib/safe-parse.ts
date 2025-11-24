@@ -34,8 +34,8 @@ export function safeJsonParse<T = any>(
  */
 export function safeParseNumber(
   value: string | number | null | undefined,
-  defaultValue: number = 0
-): number {
+  defaultValue: number | null = 0
+): number | null {
   if (value === null || value === undefined || value === '') {
     return defaultValue;
   }
@@ -52,8 +52,8 @@ export function safeParseNumber(
  */
 export function safeParseInt(
   value: string | number | null | undefined,
-  defaultValue: number = 0
-): number {
+  defaultValue: number | null = 0
+): number | null {
   if (value === null || value === undefined || value === '') {
     return defaultValue;
   }
