@@ -141,7 +141,7 @@ function EspaceClientContent() {
   };
 
   // Créer un map des services de la BDD
-  const services = Object.fromEntries(safeArray(dbServices).map(s => [s?.slug || '', s?.name || '']));
+  const services = Object.fromEntries((dbServices || []).map(s => [s?.slug || '', s?.name || '']));
 
   useEffect(() => {
     // Vérifier si un onglet spécifique est demandé dans l'URL
@@ -300,7 +300,7 @@ function EspaceClientContent() {
       if (response.ok) {
         const data = await response.json();
         // Enrichir chaque réservation avec les noms des services
-        const reservationsArray = safeArray(data);
+        const reservationsArray = Array.isArray(data) ? data : [];
         const enrichedReservations = await Promise.all(
           reservationsArray.map(async (reservation: any) => {
             return await getReservationWithServiceNames(reservation);
@@ -1116,7 +1116,7 @@ function EspaceClientContent() {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Soins en attente d'évaluation</h3>
                 {(() => {
-                  const reviewedReservationIds = safeArray(userReviews).map(r => r?.reservationId);
+                  const reviewedReservationIds = (userReviews || []).map(r => r?.reservationId);
                   const unreviewedReservations = (reservations || [])
                     .filter(r => r?.status === 'completed' && !reviewedReservationIds.includes(r?.id));
 
@@ -1159,12 +1159,12 @@ function EspaceClientContent() {
               <div>
                 <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Mes avis précédents</h3>
                 <div className="space-y-4">
-                  {safeArray(userReviews).length === 0 ? (
+                  {(userReviews || []).length === 0 ? (
                     <p className="text-[#2c3e50]/60 text-center py-8 bg-gray-50 rounded-xl">
                       Vous n'avez pas encore laissé d'avis. Partagez votre expérience !
                     </p>
                   ) : (
-                    safeArray(userReviews).map((review) => (
+                    (userReviews || []).map((review) => (
                       <div key={review?.id} className="border border-[#d4b5a0]/20 rounded-xl p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -1191,9 +1191,9 @@ function EspaceClientContent() {
                         {/* Photos de l'avis */}
                         {review?.photos && (() => {
                           const photos = safeJsonParse(review.photos, []);
-                          return safeArray(photos).length > 0 && (
+                          return (photos || []).length > 0 && (
                             <div className="flex gap-2 mb-3">
-                              {safeArray(photos).slice(0, 3).map((photo: string, idx: number) => (
+                              {(photos || []).slice(0, 3).map((photo: string, idx: number) => (
                                 <img
                                   key={idx}
                                   src={photo}
