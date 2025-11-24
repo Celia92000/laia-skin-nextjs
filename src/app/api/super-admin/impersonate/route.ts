@@ -104,7 +104,6 @@ export async function POST(request: Request) {
     // Déterminer la redirection selon le rôle
     const roleRedirects: { [key: string]: string } = {
       'ORG_ADMIN': '/admin',
-      'ORG_ADMIN': '/admin',
       'LOCATION_MANAGER': '/admin',
       'STAFF': '/admin',
       'RECEPTIONIST': '/admin',
