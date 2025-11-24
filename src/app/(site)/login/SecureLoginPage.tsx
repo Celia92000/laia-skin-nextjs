@@ -312,7 +312,6 @@ export default function SecureLoginPage() {
       'ADMIN': '/admin',
       'admin': '/admin',
       'COMPTABLE': '/admin/finances',
-      'STAFF': '/admin/planning',
       'STAGIAIRE': '/admin/planning',
       'CLIENT': '/espace-client',
       'client': '/espace-client'
