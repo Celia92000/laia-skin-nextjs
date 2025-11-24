@@ -91,7 +91,7 @@ function ReservationContent() {
             promoPrice: safeParseNumber(service.promoPrice, 0),
             forfaitPrice: safeParseNumber(service.forfaitPrice, 0),
             forfaitPromo: safeParseNumber(service.forfaitPromo, 0),
-            forfait: service.forfaitPrice && safeParseNumber(service.forfaitPrice, 0) > 0, // Ajouter le champ forfait
+            forfait: service.forfaitPrice && (safeParseNumber(service.forfaitPrice, 0) || 0) > 0, // Ajouter le champ forfait
             displayPrice: getDisplayPrice(service),
             forfaitDisplayPrice: getForfaitDisplayPrice(service),
             hasPromo: hasPromotion(service),
