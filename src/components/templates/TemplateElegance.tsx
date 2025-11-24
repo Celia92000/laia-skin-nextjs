@@ -1,9 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { BaseTemplateContent } from '@/types/template-content';
 import { Sparkles, Clock, ArrowRight, Heart, Zap, Star, Circle } from 'lucide-react';
-import { useState } from 'react';
+import MobileMenu from './shared/MobileMenu';
+import FloatingCallButton from './shared/FloatingCallButton';
+import FloatingWhatsAppButton from './shared/FloatingWhatsAppButton';
+import ScrollToTopButton from './shared/ScrollToTopButton';
+import TemplateFooter from './shared/TemplateFooter';
+import HeroMedia from './shared/HeroMedia';
 
 interface TemplateProps {
   organization: {
@@ -11,6 +17,50 @@ interface TemplateProps {
     description?: string;
     primaryColor: string;
     secondaryColor: string;
+    accentColor?: string;
+
+    // Images
+    logoUrl?: string;
+    heroImage?: string;
+    heroVideo?: string;
+    faviconUrl?: string;
+
+    // Contact
+    email?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    googleMapsUrl?: string;
+
+    // Social Media
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    youtube?: string;
+
+    // Business Hours
+    businessHours?: any;
+
+    // Founder
+    founderName?: string;
+    founderTitle?: string;
+    founderQuote?: string;
+    founderImage?: string;
+
+    // Legal
+    siret?: string;
+    termsAndConditions?: string;
+    privacyPolicy?: string;
+    legalNotice?: string;
+
+    // SEO
+    metaTitle?: string;
+    metaDescription?: string;
   };
   services: Array<{
     id: string;
@@ -29,8 +79,6 @@ interface TemplateProps {
 }
 
 export default function TemplateElegance({ organization, services, team, content }: TemplateProps) {
-  const [hoveredService, setHoveredService] = useState<string | null>(null);
-
   const defaultContent: BaseTemplateContent = {
     hero: {
       title: 'Élégance Intemporelle',
@@ -54,21 +102,27 @@ export default function TemplateElegance({ organization, services, team, content
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-purple-50">
-      {/* HEADER SOPHISTIQUÉ flottant */}
+      {/* HEADER SOPHISTIQUÉ flottant - Optimized blur */}
       <header className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
-        <div className="bg-white/70 backdrop-blur-2xl border border-white/60 shadow-2xl shadow-purple-200/50 rounded-full px-8 py-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/60 shadow-2xl shadow-purple-200/50 rounded-full px-8 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-60 animate-pulse" />
-                <Sparkles className="w-8 h-8 relative z-10" style={{ color: organization.primaryColor }} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-serif font-bold" style={{ color: organization.secondaryColor }}>
-                  {organization.name}
-                </h1>
-                <p className="text-xs text-gray-500">Élégance & Raffinement</p>
-              </div>
+              {organization.logoUrl ? (
+                <Image src={organization.logoUrl} alt={organization.name} width={120} height={48} className="h-12 w-auto" priority />
+              ) : (
+                <>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 blur-xl opacity-60 animate-pulse" />
+                    <Sparkles className="w-8 h-8 relative z-10" style={{ color: organization.primaryColor }} />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-serif font-bold" style={{ color: organization.secondaryColor }}>
+                      {organization.name}
+                    </h1>
+                    <p className="text-xs text-gray-500">Élégance & Raffinement</p>
+                  </div>
+                </>
+              )}
             </div>
             <nav className="hidden md:flex items-center gap-8">
               <a href="#services" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-all relative group">
@@ -94,18 +148,43 @@ export default function TemplateElegance({ organization, services, team, content
                 <span className="relative">Réserver</span>
               </Link>
             </nav>
+
+            {/* Mobile Menu */}
+            <MobileMenu
+              organization={organization}
+              menuItems={[
+                { label: 'Services', href: '#services' },
+                { label: 'Signature', href: '#signature' },
+                { label: 'Équipe', href: '#equipe' }
+              ]}
+              ctaLabel="Réserver"
+              ctaHref="/booking"
+              theme="light"
+            />
           </div>
         </div>
       </header>
 
       {/* HERO avec particules flottantes */}
       <section className="pt-40 pb-32 px-6 relative overflow-hidden min-h-screen flex items-center">
-        {/* Particules flottantes animées */}
+        {/* Background media (video or image) */}
+        {(organization.heroVideo || organization.heroImage) && (
+          <HeroMedia
+            videoUrl={organization.heroVideo}
+            imageUrl={organization.heroImage}
+            alt={`${organization.name} hero`}
+            priority
+            overlay
+            overlayOpacity={0.4}
+          />
+        )}
+
+        {/* Particules flottantes animées - Optimized to 8 particles */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(20)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 rounded-full animate-float"
+              className="absolute w-2 h-2 rounded-full animate-float will-change-transform"
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 100}%`,
@@ -118,16 +197,16 @@ export default function TemplateElegance({ organization, services, team, content
           ))}
         </div>
 
-        {/* Cercles décoratifs en arrière-plan */}
+        {/* Cercles décoratifs en arrière-plan - Optimized blur */}
         <div className="absolute inset-0">
           <div
-            className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-30 animate-pulse"
+            className="absolute top-20 right-20 w-96 h-96 rounded-full blur-2xl opacity-30 animate-pulse"
             style={{
               background: `radial-gradient(circle, ${organization.primaryColor}40, transparent)`
             }}
           />
           <div
-            className="absolute bottom-20 left-20 w-80 h-80 rounded-full blur-3xl opacity-20 animate-pulse delay-1000"
+            className="absolute bottom-20 left-20 w-80 h-80 rounded-full blur-2xl opacity-20 animate-pulse delay-1000"
             style={{
               background: `radial-gradient(circle, ${organization.secondaryColor}40, transparent)`
             }}
@@ -164,7 +243,7 @@ export default function TemplateElegance({ organization, services, team, content
               <div className="flex flex-wrap gap-4">
                 <Link
                   href="/booking"
-                  className="group px-10 py-5 rounded-full font-bold text-lg text-white shadow-2xl hover:shadow-3xl transition-all hover:scale-105 relative overflow-hidden"
+                  className="group px-10 py-5 rounded-full font-bold text-lg text-white shadow-2xl hover:shadow-3xl transition-transform hover:scale-105 relative overflow-hidden"
                   style={{
                     background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
                   }}
@@ -177,7 +256,7 @@ export default function TemplateElegance({ organization, services, team, content
                 </Link>
                 <Link
                   href="#services"
-                  className="px-10 py-5 rounded-full font-semibold text-lg bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xl transition-all hover:scale-105"
+                  className="px-10 py-5 rounded-full font-semibold text-lg bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:shadow-xl transition-transform hover:scale-105"
                 >
                   Découvrir
                 </Link>
@@ -187,15 +266,15 @@ export default function TemplateElegance({ organization, services, team, content
             {/* Image/Visuel décoratif */}
             <div className="relative">
               <div className="relative aspect-square">
-                {/* Cercles concentriques animés */}
+                {/* Cercles concentriques animés - Optimized with will-change */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full h-full border-2 border-dashed rounded-full animate-[spin_30s_linear_infinite]" style={{ borderColor: `${organization.primaryColor}30` }} />
-                  <div className="absolute inset-0 w-[80%] h-[80%] m-auto border-2 border-dashed rounded-full animate-[spin_20s_linear_infinite_reverse]" style={{ borderColor: `${organization.secondaryColor}30` }} />
-                  <div className="absolute inset-0 w-[60%] h-[60%] m-auto border-2 border-dashed rounded-full animate-[spin_15s_linear_infinite]" style={{ borderColor: `${organization.primaryColor}30` }} />
+                  <div className="w-full h-full border-2 border-dashed rounded-full animate-[spin_30s_linear_infinite] will-change-transform" style={{ borderColor: `${organization.primaryColor}30` }} />
+                  <div className="absolute inset-0 w-[80%] h-[80%] m-auto border-2 border-dashed rounded-full animate-[spin_20s_linear_infinite_reverse] will-change-transform" style={{ borderColor: `${organization.secondaryColor}30` }} />
+                  <div className="absolute inset-0 w-[60%] h-[60%] m-auto border-2 border-dashed rounded-full animate-[spin_15s_linear_infinite] will-change-transform" style={{ borderColor: `${organization.primaryColor}30` }} />
                 </div>
 
-                {/* Centre avec effet glassmorphism */}
-                <div className="absolute inset-0 w-[40%] h-[40%] m-auto bg-white/60 backdrop-blur-2xl rounded-full shadow-2xl flex items-center justify-center border border-white">
+                {/* Centre avec effet glassmorphism - Optimized blur */}
+                <div className="absolute inset-0 w-[40%] h-[40%] m-auto bg-white/60 backdrop-blur-xl rounded-full shadow-2xl flex items-center justify-center border border-white">
                   <Sparkles className="w-20 h-20" style={{ color: organization.primaryColor }} />
                 </div>
               </div>
@@ -280,16 +359,9 @@ export default function TemplateElegance({ organization, services, team, content
               <Link
                 key={service.id}
                 href={`/booking?service=${service.id}`}
-                onMouseEnter={() => setHoveredService(service.id)}
-                onMouseLeave={() => setHoveredService(null)}
                 className="group relative"
               >
-                <div
-                  className="relative bg-white rounded-3xl p-8 shadow-lg hover:shadow-3xl transition-all duration-500 border border-gray-100 hover:border-gray-200 overflow-hidden"
-                  style={{
-                    transform: hoveredService === service.id ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)'
-                  }}
-                >
+                <div className="relative bg-white rounded-3xl p-8 shadow-lg hover:shadow-3xl transition-transform duration-500 border border-gray-100 hover:border-gray-200 overflow-hidden hover:-translate-y-2 hover:scale-[1.02]">
                   {/* Effet de brillance au hover */}
                   <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-transparent group-hover:via-white/40 transition-all duration-500" />
 
@@ -362,9 +434,9 @@ export default function TemplateElegance({ organization, services, team, content
               {team.slice(0, 3).map((member) => (
                 <div key={member.id} className="group">
                   <div className="relative mb-6 overflow-hidden rounded-3xl shadow-xl">
-                    {/* Image avec effet zoom */}
+                    {/* Image avec effet zoom - Optimized */}
                     <div
-                      className="aspect-[3/4] transition-transform duration-700 group-hover:scale-110"
+                      className="aspect-[3/4] transition-transform duration-700 group-hover:scale-110 will-change-transform"
                       style={{
                         background: member.imageUrl
                           ? `url(${member.imageUrl}) center/cover`
@@ -433,7 +505,7 @@ export default function TemplateElegance({ organization, services, team, content
 
           <Link
             href="/booking"
-            className="group inline-flex items-center gap-4 px-14 py-6 rounded-full font-bold text-xl text-white shadow-2xl hover:shadow-3xl transition-all hover:scale-110 relative overflow-hidden"
+            className="group inline-flex items-center gap-4 px-14 py-6 rounded-full font-bold text-xl text-white shadow-2xl hover:shadow-3xl transition-transform hover:scale-110 relative overflow-hidden"
             style={{
               background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
             }}
@@ -445,26 +517,72 @@ export default function TemplateElegance({ organization, services, team, content
         </div>
       </section>
 
-      {/* FOOTER élégant */}
-      <footer className="border-t border-gray-200 py-16 px-6 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-6 h-6" style={{ color: organization.primaryColor }} />
-              <div>
-                <div className="text-xl font-serif text-gray-900">{organization.name}</div>
-                <div className="text-xs text-gray-500">Excellence & Raffinement</div>
+      {/* Founder Section */}
+      {organization.founderName && (
+        <section className="py-32 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-16 items-center">
+              {organization.founderImage && (
+                <div className="relative">
+                  <div
+                    className="absolute inset-0 blur-2xl opacity-20"
+                    style={{
+                      background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
+                    }}
+                  />
+                  <Image
+                    src={organization.founderImage}
+                    alt={organization.founderName}
+                    width={600}
+                    height={800}
+                    className="rounded-3xl w-full h-auto object-cover relative z-10"
+                  />
+                </div>
+              )}
+              <div className={organization.founderImage ? '' : 'md:col-span-2 text-center'}>
+                <h2 className="text-5xl md:text-6xl font-serif mb-6" style={{ color: organization.secondaryColor }}>
+                  {organization.founderName}
+                </h2>
+                {organization.founderTitle && (
+                  <p className="text-2xl mb-8 opacity-70" style={{ color: organization.secondaryColor }}>
+                    {organization.founderTitle}
+                  </p>
+                )}
+                {organization.founderQuote && (
+                  <blockquote className="text-2xl italic leading-relaxed text-gray-700">
+                    "{organization.founderQuote}"
+                  </blockquote>
+                )}
               </div>
             </div>
-            <p className="text-gray-600 text-sm">
-              © 2024 {organization.name}. Tous droits réservés.
-            </p>
-            <p className="text-gray-400 text-xs">
-              Propulsé par LAIA Connect
-            </p>
           </div>
-        </div>
-      </footer>
+        </section>
+      )}
+
+      {/* Footer */}
+      <TemplateFooter
+        organization={organization}
+        theme="light"
+      />
+
+      {/* Floating Action Buttons */}
+      {organization.phone && (
+        <FloatingCallButton
+          phone={organization.phone}
+          primaryColor={organization.primaryColor}
+        />
+      )}
+
+      {organization.whatsapp && (
+        <FloatingWhatsAppButton
+          whatsapp={organization.whatsapp}
+          message="Bonjour, je souhaite prendre rendez-vous"
+        />
+      )}
+
+      <ScrollToTopButton
+        primaryColor={organization.primaryColor}
+      />
 
       <style jsx>{`
         @keyframes float {

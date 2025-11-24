@@ -41,43 +41,43 @@ enum OrgPlan {
 
 // Formules d'abonnement configurables depuis le super-admin
 model SubscriptionPlan {
-  id            String   @id @default(cuid())
-  planKey       OrgPlan  @unique // SOLO, DUO, TEAM, PREMIUM
+  id      String  @id @default(cuid())
+  planKey OrgPlan @unique // SOLO, DUO, TEAM, PREMIUM
 
   // Informations principales
-  name          String   // "Solo", "Duo", "Team", "Premium"
-  displayName   String   // "Formule Solo" (affiché dans l'interface)
-  description   String   @db.Text // "Parfait pour un institut indépendant..."
+  name        String // "Solo", "Duo", "Team", "Premium"
+  displayName String // "Formule Solo" (affiché dans l'interface)
+  description String @db.Text // "Parfait pour un institut indépendant..."
 
   // Tarification
-  priceMonthly  Int      // Prix en euros (49, 69, 119, 179)
-  priceYearly   Int?     // Prix annuel (si différent du mensuel x12)
+  priceMonthly Int // Prix en euros (49, 69, 119, 179)
+  priceYearly  Int? // Prix annuel (si différent du mensuel x12)
 
   // Limites
-  maxLocations  Int      @default(1) // Nombre d'emplacements max
-  maxUsers      Int      @default(1) // Nombre d'utilisateurs max
-  maxStorage    Int      @default(5) // Stockage en GB
+  maxLocations Int @default(1) // Nombre d'emplacements max
+  maxUsers     Int @default(1) // Nombre d'utilisateurs max
+  maxStorage   Int @default(5) // Stockage en GB
 
   // Features principales (JSON pour flexibilité)
-  features      String   @db.Text @default("[]") // JSON array des features activées
+  features String @default("[]") @db.Text // JSON array des features activées
 
   // Highlights pour affichage marketing
-  highlights    String   @db.Text @default("[]") // JSON array: ["CRM complet", "Blog SEO", ...]
+  highlights String @default("[]") @db.Text // JSON array: ["CRM complet", "Blog SEO", ...]
 
   // Affichage
-  isPopular     Boolean  @default(false) // Badge "Populaire"
-  isRecommended Boolean  @default(false) // Badge "Recommandé"
-  displayOrder  Int      @default(0)     // Ordre d'affichage (1, 2, 3, 4)
+  isPopular     Boolean @default(false) // Badge "Populaire"
+  isRecommended Boolean @default(false) // Badge "Recommandé"
+  displayOrder  Int     @default(0) // Ordre d'affichage (1, 2, 3, 4)
 
   // Stripe
-  stripePriceId String?  // ID du prix Stripe associé
+  stripePriceId String? // ID du prix Stripe associé
 
   // Statut
-  isActive      Boolean  @default(true) // Si false, plan non disponible à la souscription
+  isActive Boolean @default(true) // Si false, plan non disponible à la souscription
 
   // Métadonnées
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([planKey])
   @@index([isActive])
@@ -135,9 +135,9 @@ model Organization {
   subscriptionId String? // ID d'abonnement Stripe
 
   // CRM & Tracking
-  leadSource   LeadSource? @default(WEBSITE) // Origine du prospect/client
-  activatedAt  DateTime? // Date d'activation manuelle par le super-admin
-  convertedAt  DateTime? // Date de conversion prospect → client (paiement)
+  leadSource  LeadSource? @default(WEBSITE) // Origine du prospect/client
+  activatedAt DateTime? // Date d'activation manuelle par le super-admin
+  convertedAt DateTime? // Date de conversion prospect → client (paiement)
 
   // Limites du plan
   maxLocations Int @default(1)
@@ -145,8 +145,8 @@ model Organization {
   maxStorage   Int @default(5) // En GB
 
   // Customisation des features (override par le super-admin)
-  customFeaturesEnabled  String? @db.Text @default("[]") // JSON array des features ajoutées manuellement
-  customFeaturesDisabled String? @db.Text @default("[]") // JSON array des features retirées manuellement
+  customFeaturesEnabled  String? @default("[]") @db.Text // JSON array des features ajoutées manuellement
+  customFeaturesDisabled String? @default("[]") @db.Text // JSON array des features retirées manuellement
 
   // Contact principal
   ownerFirstName String? // Prénom du propriétaire
@@ -164,8 +164,8 @@ model Organization {
   billingCountry    String? @default("France") // Pays
 
   // Paiement géré par Stripe - Plus besoin de stocker les données bancaires
-  sepaMandateRef    String? // Référence unique du mandat (RUM) - pour affichage uniquement
-  sepaMandateDate   DateTime? // Date de signature du mandat
+  sepaMandateRef  String? // Référence unique du mandat (RUM) - pour affichage uniquement
+  sepaMandateDate DateTime? // Date de signature du mandat
 
   // Prochaine facturation
   nextBillingDate DateTime? // Date du prochain prélèvement
@@ -174,8 +174,8 @@ model Organization {
   monthlyAmount   Float? // Montant mensuel de l'abonnement
 
   // Stripe - Facturation de l'abonnement LAIA (compte Stripe de LAIA Platform)
-  stripeCustomerId      String? @unique // ID du client Stripe pour facturer l'abonnement
-  stripeSubscriptionId  String? @unique // ID de l'abonnement Stripe actif
+  stripeCustomerId     String? @unique // ID du client Stripe pour facturer l'abonnement
+  stripeSubscriptionId String? @unique // ID de l'abonnement Stripe actif
 
   // Stripe Connect - Paiements des clientes de l'institut (compte Stripe de l'institut)
   stripeConnectedAccountId String? @unique // ID du compte Stripe Connect de l'institut
@@ -184,65 +184,65 @@ model Organization {
   stripePayoutsEnabled     Boolean @default(false) // Peut recevoir des virements
 
   // Contrat d'abonnement
-  contractNumber    String? // Numéro du contrat (ex: CONTRAT-LAIA-20250106-123456)
-  contractPdfPath   String? // Chemin vers le PDF du contrat (uploads/documents/contracts/...)
-  contractSignedAt  DateTime? // Date de signature électronique du contrat
+  contractNumber   String? // Numéro du contrat (ex: CONTRAT-LAIA-20250106-123456)
+  contractPdfPath  String? // Chemin vers le PDF du contrat (uploads/documents/contracts/...)
+  contractSignedAt DateTime? // Date de signature électronique du contrat
 
   // Planity - Intégration OAuth pour réservations
-  planityConnected      Boolean   @default(false) // Connecté à Planity
-  planityAccessToken    String? // Token d'accès (chiffré)
-  planityRefreshToken   String? // Token de rafraîchissement (chiffré)
-  planityTokenExpiry    DateTime? // Date d'expiration du token
-  planityBusinessId     String? // ID du salon sur Planity
-  planityBusinessName   String? // Nom du salon sur Planity
+  planityConnected    Boolean   @default(false) // Connecté à Planity
+  planityAccessToken  String? // Token d'accès (chiffré)
+  planityRefreshToken String? // Token de rafraîchissement (chiffré)
+  planityTokenExpiry  DateTime? // Date d'expiration du token
+  planityBusinessId   String? // ID du salon sur Planity
+  planityBusinessName String? // Nom du salon sur Planity
 
   // Treatwell - Intégration OAuth pour réservations
-  treatwellConnected     Boolean   @default(false) // Connecté à Treatwell
-  treatwellAccessToken   String? // Token d'accès (chiffré)
-  treatwellRefreshToken  String? // Token de rafraîchissement (chiffré)
-  treatwellTokenExpiry   DateTime? // Date d'expiration du token
-  treatwellVenueId       String? // ID du salon sur Treatwell
-  treatwellVenueName     String? // Nom du salon sur Treatwell
+  treatwellConnected    Boolean   @default(false) // Connecté à Treatwell
+  treatwellAccessToken  String? // Token d'accès (chiffré)
+  treatwellRefreshToken String? // Token de rafraîchissement (chiffré)
+  treatwellTokenExpiry  DateTime? // Date d'expiration du token
+  treatwellVenueId      String? // ID du salon sur Treatwell
+  treatwellVenueName    String? // Nom du salon sur Treatwell
 
   // PayPal - Intégration OAuth pour paiements
-  paypalConnected        Boolean   @default(false) // Connecté à PayPal
-  paypalAccessToken      String? // Token d'accès (chiffré)
-  paypalRefreshToken     String? // Token de rafraîchissement (chiffré)
-  paypalTokenExpiry      DateTime? // Date d'expiration du token
-  paypalMerchantId       String? // ID du compte marchand PayPal
-  paypalEmail            String? // Email du compte PayPal
+  paypalConnected    Boolean   @default(false) // Connecté à PayPal
+  paypalAccessToken  String? // Token d'accès (chiffré)
+  paypalRefreshToken String? // Token de rafraîchissement (chiffré)
+  paypalTokenExpiry  DateTime? // Date d'expiration du token
+  paypalMerchantId   String? // ID du compte marchand PayPal
+  paypalEmail        String? // Email du compte PayPal
 
   // SumUp - Intégration OAuth pour paiements
-  sumupConnected         Boolean   @default(false) // Connecté à SumUp
-  sumupAccessToken       String? // Token d'accès (chiffré)
-  sumupRefreshToken      String? // Token de rafraîchissement (chiffré)
-  sumupTokenExpiry       DateTime? // Date d'expiration du token
-  sumupMerchantCode      String? // Code marchand SumUp
-  sumupCurrency          String? // Devise par défaut
+  sumupConnected    Boolean   @default(false) // Connecté à SumUp
+  sumupAccessToken  String? // Token d'accès (chiffré)
+  sumupRefreshToken String? // Token de rafraîchissement (chiffré)
+  sumupTokenExpiry  DateTime? // Date d'expiration du token
+  sumupMerchantCode String? // Code marchand SumUp
+  sumupCurrency     String? // Devise par défaut
 
   // Google Calendar - Intégration OAuth pour synchronisation
-  googleCalendarConnected Boolean   @default(false) // Connecté à Google Calendar
-  googleCalendarAccessToken String? // Token d'accès (chiffré)
+  googleCalendarConnected    Boolean   @default(false) // Connecté à Google Calendar
+  googleCalendarAccessToken  String? // Token d'accès (chiffré)
   googleCalendarRefreshToken String? // Token de rafraîchissement (chiffré)
-  googleCalendarTokenExpiry DateTime? // Date d'expiration du token
-  googleCalendarId       String? // ID du calendrier principal
-  googleCalendarEmail    String? // Email du compte Google
+  googleCalendarTokenExpiry  DateTime? // Date d'expiration du token
+  googleCalendarId           String? // ID du calendrier principal
+  googleCalendarEmail        String? // Email du compte Google
 
   // Template et versioning (pour modèle centralisé LAIA)
   templateVersion    String    @default("1.0.0") // Version du template utilisée
   lastTemplateUpdate DateTime? // Dernière mise à jour du template
 
   // Features activées selon le forfait (LAIA Connect)
-  featureBlog       Boolean @default(false) // Blog (TEAM+)
-  featureProducts   Boolean @default(false) // Boutique produits (TEAM+)
-  featureCRM        Boolean @default(false) // CRM & Leads (DUO+)
-  featureEmailing   Boolean @default(false) // Email Marketing (DUO+)
-  featureWhatsApp   Boolean @default(false) // WhatsApp Marketing (TEAM+)
-  featureSMS        Boolean @default(false) // SMS Marketing (TEAM+)
+  featureBlog        Boolean @default(false) // Blog (TEAM+)
+  featureProducts    Boolean @default(false) // Boutique produits (TEAM+)
+  featureCRM         Boolean @default(false) // CRM & Leads (DUO+)
+  featureEmailing    Boolean @default(false) // Email Marketing (DUO+)
+  featureWhatsApp    Boolean @default(false) // WhatsApp Marketing (TEAM+)
+  featureSMS         Boolean @default(false) // SMS Marketing (TEAM+)
   featureSocialMedia Boolean @default(false) // Réseaux sociaux (TEAM+)
-  featureStock      Boolean @default(false) // Gestion de stock avancé (PREMIUM)
-  featureFormations Boolean @default(false) // Vente de formations (TEAM+)
-  featureShop       Boolean @default(false) // E-commerce complet (TEAM+)
+  featureStock       Boolean @default(false) // Gestion de stock avancé (PREMIUM)
+  featureFormations  Boolean @default(false) // Vente de formations (TEAM+)
+  featureShop        Boolean @default(false) // E-commerce complet (TEAM+)
 
   // Options supplémentaires payantes (add-ons)
   addons String? @default("{}") @db.Text // JSON stockant les addons actifs et historique
@@ -282,19 +282,29 @@ model Organization {
   emailTemplates EmailTemplate[] // Templates email de l'organisation
 
   // SMS Marketing (TEAM + PREMIUM)
-  smsCredits           Int       @default(0) // Crédits SMS restants (1 crédit = 1 SMS)
-  smsTotalPurchased    Int       @default(0) // Total de SMS achetés (historique)
-  smsLastPurchaseDate  DateTime? // Date du dernier achat de crédits SMS
-  smsCampaigns SMSCampaign[] // Campagnes SMS
-  smsTemplates SMSTemplate[] // Templates SMS
-  smsLogs      SMSLog[]      // Historique SMS
+  smsCredits          Int           @default(0) // Crédits SMS restants (1 crédit = 1 SMS)
+  smsTotalPurchased   Int           @default(0) // Total de SMS achetés (historique)
+  smsLastPurchaseDate DateTime? // Date du dernier achat de crédits SMS
+  smsCampaigns        SMSCampaign[] // Campagnes SMS
+  smsTemplates        SMSTemplate[] // Templates SMS
+  smsLogs             SMSLog[] // Historique SMS
+
+  // Programme de parrainage - Configuration
+  referralEnabled         Boolean @default(true) // Programme de parrainage activé
+  referralRewardType      String  @default("FIXED") // Type de récompense: "FIXED" (€) ou "PERCENTAGE" (%)
+  referralRewardAmount    Float   @default(20.0) // Montant de la récompense (20€ ou 20%)
+  referralMinimumPurchase Float   @default(0.0) // Montant minimum d'achat pour débloquer la récompense
+  referralReferrerReward  Float   @default(20.0) // Récompense pour le parrain
+  referralReferredReward  Float   @default(10.0) // Récompense pour le filleul
+  referralTermsUrl        String? // URL vers les CGU du parrainage
+  referralEmailTemplate   String? @db.Text // Template email d'invitation personnalisé
 
   // Template de site web
   websiteTemplateId String?
   websiteTemplate   WebsiteTemplate? @relation("OrganizationWebsiteTemplate", fields: [websiteTemplateId], references: [id])
 
   // Onboarding
-  isOnboarded Boolean @default(false) // Configuration initiale terminée
+  isOnboarded       Boolean @default(false) // Configuration initiale terminée
   temporaryPassword String? // Mot de passe temporaire initial (chiffré) - effacé une fois que l'admin change son mot de passe
 
   createdAt DateTime @default(now())
@@ -365,6 +375,7 @@ model OrganizationConfig {
   heroTitle    String?
   heroSubtitle String?
   heroImage    String?
+  heroVideo    String? // URL vidéo pour hero (prioritaire sur heroImage si présent)
   aboutText    String?
 
   // Fondateur/Fondatrice
@@ -389,6 +400,7 @@ model OrganizationConfig {
   welcomeEmailText String? @db.Text
 
   // Informations légales
+  legalName String? // Nom légal de l'entreprise (ex: SARL Mon Institut)
   siret     String?
   siren     String?
   tvaNumber String?
@@ -448,9 +460,9 @@ model OrganizationConfig {
   customizedFields String? @default("{}") @db.Text
 
   // Google My Business - Configuration par organisation
-  googlePlaceId         String?   // ID unique de l'établissement Google (ex: ChIJxxx...)
-  googleBusinessUrl     String?   // URL Google Maps/Business profile
-  googleApiKey          String?   // Clé API (chiffrée) - optionnel
+  googlePlaceId         String? // ID unique de l'établissement Google (ex: ChIJxxx...)
+  googleBusinessUrl     String? // URL Google Maps/Business profile
+  googleApiKey          String? // Clé API (chiffrée) - optionnel
   lastGoogleSync        DateTime? // Dernière synchronisation Google Reviews
   autoSyncGoogleReviews Boolean   @default(false) // Activer sync automatique quotidienne
 
@@ -615,13 +627,13 @@ model BookingSettings {
 
 // Utilisateur (client ou staff)
 model User {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String? // null pour SUPER_ADMIN
   email          String
   password       String? // Nullable pour les connexions OAuth (Google, etc.)
   name           String
   phone          String?
-  role           UserRole @default(CLIENT)
+  role           UserRole  @default(CLIENT)
   emailVerified  DateTime? // NextAuth - Date de vérification de l'email
   image          String? // NextAuth - Photo de profil (Google, etc.)
 
@@ -667,8 +679,8 @@ model User {
   discounts         Discount[]
 
   // NextAuth Relations
-  accounts          Account[] // Connexions OAuth (Google, etc.)
-  sessions          Session[] // Sessions NextAuth
+  accounts Account[] // Connexions OAuth (Google, etc.)
+  sessions Session[] // Sessions NextAuth
 
   // CRM Relations
   assignedLeads    Lead[]
@@ -777,15 +789,15 @@ model Reservation {
 // Blocages récurrents du calendrier (ex: fermé tous les dimanches)
 model RecurringBlock {
   id             String   @id @default(cuid())
-  organizationId String   // 🔒 CRITIQUE : Isolation multi-tenant
-  type           String   // 'daily' | 'weekly' | 'monthly'
-  dayOfWeek      Int?     // 0-6 pour weekly (0=dimanche, 1=lundi, etc.)
-  dayOfMonth     Int?     // 1-31 pour monthly
-  timeSlots      String?  // JSON array de créneaux horaires spécifiques
+  organizationId String // 🔒 CRITIQUE : Isolation multi-tenant
+  type           String // 'daily' | 'weekly' | 'monthly'
+  dayOfWeek      Int? // 0-6 pour weekly (0=dimanche, 1=lundi, etc.)
+  dayOfMonth     Int? // 1-31 pour monthly
+  timeSlots      String? // JSON array de créneaux horaires spécifiques
   allDay         Boolean  @default(false)
-  startTime      String?  // Format HH:mm
-  endTime        String?  // Format HH:mm
-  reason         String?  // Raison du blocage (ex: "Fermé", "Congés", etc.)
+  startTime      String? // Format HH:mm
+  endTime        String? // Format HH:mm
+  reason         String? // Raison du blocage (ex: "Fermé", "Congés", etc.)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -958,31 +970,31 @@ model ClientEvolution {
 }
 
 model Review {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
   userId         String
-  reservationId  String?      @unique
-  orderId        String?      @unique // Pour avis sur produits/formations
+  reservationId  String?       @unique
+  orderId        String?       @unique // Pour avis sur produits/formations
   serviceName    String?
   itemType       String? // "service", "product", "formation"
   itemId         String? // ID du service/produit/formation
   itemName       String? // Nom du service/produit/formation
   rating         Int
   comment        String
-  satisfaction   Int          @default(5)
-  photos         String       @default("[]") // JSON array of photo URLs
+  satisfaction   Int           @default(5)
+  photos         String        @default("[]") // JSON array of photo URLs
   response       String?
-  approved       Boolean      @default(false)
-  featured       Boolean      @default(false)
-  source         String       @default("site") // site, email, whatsapp, google
-  googleReview   Boolean      @default(false)
+  approved       Boolean       @default(false)
+  featured       Boolean       @default(false)
+  source         String        @default("site") // site, email, whatsapp, google
+  googleReview   Boolean       @default(false)
   googleUrl      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   organization   Organization? @relation("OrganizationReviews", fields: [organizationId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  reservation    Reservation? @relation(fields: [reservationId], references: [id])
-  order          Order?       @relation(fields: [orderId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
+  reservation    Reservation?  @relation(fields: [reservationId], references: [id])
+  order          Order?        @relation(fields: [orderId], references: [id])
 
   @@index([organizationId])
 }
@@ -1036,15 +1048,19 @@ model WorkingHours {
 }
 
 model Package {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  services    String // JSON array of service IDs
-  price       Float
-  validDays   Int      @default(90)
-  maxUses     Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
+  name           String
+  description    String
+  services       String // JSON array of service IDs
+  price          Float
+  validDays      Int      @default(90)
+  maxUses        Int?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 // Lead - Modèle basique de capture formulaire (conservé pour compatibilité)
@@ -1067,7 +1083,7 @@ model ContactFormLead {
 
 model SiteConfig {
   id             String  @id @default(cuid())
-  organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
+  organizationId String? // Organisation (multi-tenant)
 
   // Informations générales
   siteName        String  @default("Mon Institut de Beauté")
@@ -1115,6 +1131,7 @@ model SiteConfig {
   heroTitle    String?
   heroSubtitle String?
   heroImage    String?
+  heroVideo    String? // URL vidéo pour hero (prioritaire sur heroImage si présent)
   aboutText    String?
 
   // Fondateur/Fondatrice
@@ -1210,20 +1227,20 @@ model EmailHistory {
 }
 
 model EmailCampaign {
-  id             String         @id @default(cuid())
+  id             String            @id @default(cuid())
   name           String
   subject        String
   content        String
   template       String?
   recipients     String // JSON array des destinataires
-  recipientCount Int            @default(0)
-  status         String         @default("draft") // draft, scheduled, sent, cancelled
+  recipientCount Int               @default(0)
+  status         String            @default("draft") // draft, scheduled, sent, cancelled
   scheduledAt    DateTime?
   sentAt         DateTime?
-  openRate       Float          @default(0)
-  clickRate      Float          @default(0)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  openRate       Float             @default(0)
+  clickRate      Float             @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   emails         EmailHistory[]
   segments       CampaignSegment[]
 }
@@ -1248,19 +1265,23 @@ model Discount {
 }
 
 model PromoCode {
-  id         String    @id @default(cuid())
-  code       String    @unique
-  discount   Float // Montant de la réduction
-  type       String // birthday, referral, special
-  validFrom  DateTime  @default(now())
-  validUntil DateTime?
-  maxUses    Int? // Nombre max d'utilisations
-  usedCount  Int       @default(0)
-  userId     String? // Si le code est spécifique à un utilisateur
-  conditions String? // Conditions d'utilisation (JSON)
-  active     Boolean   @default(true)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  organizationId String? // Organisation (multi-tenant)
+  code           String    @unique
+  discount       Float // Montant de la réduction
+  type           String // birthday, referral, special, percentage, fixed
+  validFrom      DateTime  @default(now())
+  validUntil     DateTime?
+  maxUses        Int? // Nombre max d'utilisations
+  usedCount      Int       @default(0)
+  userId         String? // Si le code est spécifique à un utilisateur
+  conditions     String? // Conditions d'utilisation (JSON)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([code])
 }
 
 model EmailAutomation {
@@ -1279,7 +1300,7 @@ model EmailAutomation {
 
 model GoogleReview {
   id             String       @id @default(cuid())
-  organizationId String       // Lien vers l'organisation
+  organizationId String // Lien vers l'organisation
   authorName     String
   authorPhoto    String?
   rating         Int
@@ -1613,7 +1634,7 @@ model MagicLink {
 
 model GiftCard {
   id             String    @id @default(cuid())
-  organizationId String // Organisation - OBLIGATOIRE (multi-tenant)
+  organizationId String? // Organisation (multi-tenant)
   code           String    @unique // Code unique de la carte cadeau (ex: GIFT-XXXX-XXXX)
   amount         Float // Montant de la carte cadeau
   initialAmount  Float // Montant initial (pour historique)
@@ -1664,25 +1685,25 @@ model GiftCardSettings {
 }
 
 model EmailTemplate {
-  id             String        @id @default(cuid())
-  slug           String // Identifiant unique (ex: "onboarding-welcome", "payment-confirmation")
-  name           String // Nom du template (ex: "Email de bienvenue onboarding")
-  description    String?       @db.Text // Description du template pour documentation
-  subject        String // Sujet de l'email
-  content        String        @db.Text // Contenu HTML de l'email
-  textContent    String?       @db.Text // Version texte brut (fallback)
+  id                 String   @id @default(cuid())
+  slug               String // Identifiant unique (ex: "onboarding-welcome", "payment-confirmation")
+  name               String // Nom du template (ex: "Email de bienvenue onboarding")
+  description        String?  @db.Text // Description du template pour documentation
+  subject            String // Sujet de l'email
+  content            String   @db.Text // Contenu HTML de l'email
+  textContent        String?  @db.Text // Version texte brut (fallback)
   availableVariables Json? // Liste des variables disponibles (ex: {firstName, organizationName, ...})
-  category       String?       @default("general") // general, onboarding, promo, rappel, transactionnel
-  isActive       Boolean       @default(true)
-  isSystem       Boolean       @default(false) // Templates système non modifiables/supprimables
-  fromName       String? // Nom expéditeur (override si besoin)
-  fromEmail      String? // Email expéditeur (override si besoin)
-  language       String        @default("fr") // Langue du template (fr, en, es, ...)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  category           String?  @default("general") // general, onboarding, promo, rappel, transactionnel
+  isActive           Boolean  @default(true)
+  isSystem           Boolean  @default(false) // Templates système non modifiables/supprimables
+  fromName           String? // Nom expéditeur (override si besoin)
+  fromEmail          String? // Email expéditeur (override si besoin)
+  language           String   @default("fr") // Langue du template (fr, en, es, ...)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Multi-tenant: isolation par organisation (null = template global LAIA Connect)
-  organizationId String // OBLIGATOIRE
+  organizationId String? // Organization (nullable for global templates)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([slug, organizationId]) // Un slug unique par organisation
@@ -1870,18 +1891,18 @@ model ServiceSubcategory {
 
 // Historique des paiements (tous types confondus)
 model Payment {
-  id            String  @id @default(cuid())
-  type          String // "reservation", "order", "giftcard"
-  reservationId String?
-  orderId       String?
-  giftCardId    String?
-  userId        String
+  id             String       @id @default(cuid())
+  type           String // "reservation", "order", "giftcard"
+  reservationId  String?
+  orderId        String?
+  giftCardId     String?
+  userId         String
   organizationId String // OBLIGATOIRE - Organisation qui reçoit le paiement
   organization   Organization @relation(fields: [organizationId], references: [id])
-  amount        Float
-  currency      String  @default("eur")
-  status        String // "pending", "succeeded", "failed", "refunded"
-  paymentMethod String // "stripe", "cash", "transfer", "check"
+  amount         Float
+  currency       String       @default("eur")
+  status         String // "pending", "succeeded", "failed", "refunded"
+  paymentMethod  String // "stripe", "cash", "transfer", "check"
 
   // Stripe specific
   stripePaymentId  String? @unique // payment_intent_xxx
@@ -2060,16 +2081,16 @@ model InvoiceSettings {
   id String @id @default(cuid())
 
   // Statut juridique
-  isCompany     Boolean @default(false) // false = auto-entrepreneur, true = société
-  legalStatus   String  @default("Auto-Entrepreneur") // "Auto-Entrepreneur", "SAS", "SARL", "SASU", etc.
+  isCompany   Boolean @default(false) // false = auto-entrepreneur, true = société
+  legalStatus String  @default("Auto-Entrepreneur") // "Auto-Entrepreneur", "SAS", "SARL", "SASU", etc.
 
   // Informations émetteur (LAIA)
-  companyName   String @default("LAIA Connect")
-  address       String @default("[Votre adresse]")
-  postalCode    String @default("[Code postal]")
-  city          String @default("[Ville]")
-  country       String @default("France")
-  siret         String @default("[Votre SIRET]")
+  companyName   String  @default("LAIA Connect")
+  address       String  @default("[Votre adresse]")
+  postalCode    String  @default("[Code postal]")
+  city          String  @default("[Ville]")
+  country       String  @default("France")
+  siret         String  @default("[Votre SIRET]")
   tvaNumber     String? @default("") // Vide si auto-entrepreneur en franchise
   capitalSocial String? @default("") // Vide si auto-entrepreneur
   rcs           String? @default("") // Vide si auto-entrepreneur
@@ -2095,10 +2116,10 @@ model InvoiceSettings {
   footerText   String? @default("Dispensé d'immatriculation au RCS et au RM")
 
   // Templates de contrat (articles modifiables)
-  contractArticle1 String @db.Text @default("Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.")
-  contractArticle3 String @db.Text @default("Le Client bénéficie d'une période d'essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra à l'issue de cette période.")
-  contractArticle4 String @db.Text @default("Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.")
-  contractArticle6 String @db.Text @default("Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l'adresse : https://www.laiaconnect.fr/cgv-laia-connect\n\nLe Client déclare avoir pris connaissance des CGV et les accepter sans réserve.")
+  contractArticle1 String @default("Le présent contrat a pour objet de définir les conditions dans lesquelles le Prestataire met à disposition du Client sa solution SaaS LAIA Connect, comprenant un site web personnalisable, un système de réservation en ligne, et diverses fonctionnalités de gestion pour instituts de beauté.") @db.Text
+  contractArticle3 String @default("Le Client bénéficie d'une période d'essai gratuite de 30 jours à compter de la date de souscription. Le premier prélèvement interviendra à l'issue de cette période.") @db.Text
+  contractArticle4 String @default("Le contrat est conclu pour une durée indéterminée. Il se renouvelle automatiquement chaque mois par tacite reconduction. Le Client peut résilier à tout moment avec un préavis de 30 jours.") @db.Text
+  contractArticle6 String @default("Le présent contrat est régi par les Conditions Générales de Vente (CGV) de LAIA Connect, accessibles en ligne à l'adresse : https://www.laiaconnect.fr/cgv-laia-connect\n\nLe Client déclare avoir pris connaissance des CGV et les accepter sans réserve.") @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2108,7 +2129,7 @@ model InvoiceSettings {
 model ContractClause {
   id        String   @id @default(cuid())
   key       String   @unique // article_1, article_2, etc.
-  title     String   // "ARTICLE 1 - OBJET DU CONTRAT"
+  title     String // "ARTICLE 1 - OBJET DU CONTRAT"
   content   String   @db.Text // Contenu de l'article (supporte {variables})
   order     Int      @default(0) // Ordre d'affichage dans le contrat
   isDefault Boolean  @default(true) // Clause par défaut ou personnalisée
@@ -2229,14 +2250,14 @@ model SupportTicket {
   closedAt       DateTime?
 
   // SLA Tracking
-  firstResponseAt     DateTime? // Timestamp de la première réponse
-  slaResponseDeadline DateTime? // Deadline pour la première réponse (calculé selon la priorité)
-  slaResponseBreach   Boolean   @default(false) // Violation du SLA de réponse
+  firstResponseAt       DateTime? // Timestamp de la première réponse
+  slaResponseDeadline   DateTime? // Deadline pour la première réponse (calculé selon la priorité)
+  slaResponseBreach     Boolean   @default(false) // Violation du SLA de réponse
   slaResolutionDeadline DateTime? // Deadline pour la résolution (calculé selon la priorité)
-  slaResolutionBreach Boolean   @default(false) // Violation du SLA de résolution
+  slaResolutionBreach   Boolean   @default(false) // Violation du SLA de résolution
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User            @relation("TicketCreator", fields: [createdById], references: [id])
@@ -2448,12 +2469,12 @@ model Lead {
   painPoints        String[] // Points de douleur
 
   // Pipeline
-  status         LeadStatus          @default(NEW)
+  status         LeadStatus         @default(NEW)
   qualification  LeadQualification? // Qualification du lead (froid/moyen/chaud)
   source         LeadSource
-  score          Int                 @default(0) // Score de qualité 0-100
-  probability    Int                 @default(0) // Probabilité de conversion 0-100%
-  estimatedValue Decimal?            @db.Decimal(10, 2)
+  score          Int                @default(0) // Score de qualité 0-100
+  probability    Int                @default(0) // Probabilité de conversion 0-100%
+  estimatedValue Decimal?           @db.Decimal(10, 2)
 
   // Suivi commercial
   assignedToUserId  String?
@@ -2625,7 +2646,7 @@ model PlatformNews {
 
 // Analyse IA du feed social media
 model ContentAnalysis {
-  id             String  @id @default(cuid())
+  id             String @id @default(cuid())
   organizationId String // OBLIGATOIRE
   platform       String // "instagram", "facebook"
 
@@ -2648,7 +2669,7 @@ model ContentAnalysis {
 
 // Suggestions de contenu générées par IA
 model AISuggestion {
-  id             String  @id @default(cuid())
+  id             String @id @default(cuid())
   organizationId String // OBLIGATOIRE
   category       String // "conseils", "avant-apres", etc.
   contentType    String // "post", "story", "reel"
@@ -2693,27 +2714,27 @@ model ActivityLog {
 
 // Templates de sites web pour les organisations
 model WebsiteTemplate {
-  id               String   @id @default(cuid())
-  name             String // Nom du template (ex: "Élégance Rose", "Minimaliste Zen")
-  description      String   @db.Text // Description du template
-  previewImageUrl  String? // URL de l'image de prévisualisation
+  id              String  @id @default(cuid())
+  name            String // Nom du template (ex: "Élégance Rose", "Minimaliste Zen")
+  description     String  @db.Text // Description du template
+  previewImageUrl String? // URL de l'image de prévisualisation
 
   // Configuration du template (couleurs, polices, layout, etc.)
-  config           Json // { colors: { primary, secondary, accent }, fonts: { heading, body }, layout: "classic" | "modern" }
+  config Json // { colors: { primary, secondary, accent }, fonts: { heading, body }, layout: "classic" | "modern" }
 
   // Tier d'accès
-  minTier          String   @default("DUO") // Tier minimum requis: SOLO, DUO, TEAM, ENTERPRISE
+  minTier String @default("DUO") // Tier minimum requis: SOLO, DUO, TEAM, ENTERPRISE
 
   // Métadonnées
-  category         String   @default("beauty") // beauty, spa, salon, barbershop, wellness
-  isActive         Boolean  @default(true)
-  displayOrder     Int      @default(0)
+  category     String  @default("beauty") // beauty, spa, salon, barbershop, wellness
+  isActive     Boolean @default(true)
+  displayOrder Int     @default(0)
 
   // Relations
-  organizations    Organization[] @relation("OrganizationWebsiteTemplate")
+  organizations Organization[] @relation("OrganizationWebsiteTemplate")
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([minTier])
   @@index([category])
@@ -2740,7 +2761,7 @@ model ClientSegment {
   criteria Json // {totalSpent: {min: 500}, lastVisit: {daysAgo: {max: 30}}, etc.}
 
   // Statistiques
-  clientCount Int @default(0)
+  clientCount Int      @default(0)
   totalValue  Decimal? @db.Decimal(10, 2)
 
   // Automatisation
@@ -2775,12 +2796,12 @@ model CampaignSegment {
 // ============================================================================
 
 enum FunnelStage {
-  AWARENESS      // Prise de conscience
-  INTEREST       // Intérêt
-  CONSIDERATION  // Considération  
-  INTENT         // Intention
-  EVALUATION     // Évaluation
-  PURCHASE       // Achat
+  AWARENESS // Prise de conscience
+  INTEREST // Intérêt
+  CONSIDERATION // Considération  
+  INTENT // Intention
+  EVALUATION // Évaluation
+  PURCHASE // Achat
 }
 
 model ConversionFunnel {
@@ -2823,20 +2844,20 @@ model FunnelEntry {
 
   // Étape actuelle
   currentStage FunnelStage @default(AWARENESS)
-  
+
   // Progression
   stages Json // [{stage: "AWARENESS", enteredAt: "...", exitedAt: "..."}]
 
   // Conversion
-  isConverted   Boolean   @default(false)
-  convertedAt   DateTime?
-  conversionValue Decimal? @db.Decimal(10, 2)
+  isConverted     Boolean   @default(false)
+  convertedAt     DateTime?
+  conversionValue Decimal?  @db.Decimal(10, 2)
 
   // Métadonnées
-  source String? // Google Ads, Réseaux sociaux, Référence, etc.
-  utmSource     String?
-  utmMedium     String?
-  utmCampaign   String?
+  source      String? // Google Ads, Réseaux sociaux, Référence, etc.
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
 
   @@index([funnelId])
   @@index([leadId])
@@ -2851,18 +2872,18 @@ model FunnelEntry {
 // ============================================================================
 
 model SavedReport {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  name            String
-  metrics         Json     // Array of metric IDs
-  period          String   // 7d, 30d, 90d, 1y, custom
-  autoSend        Boolean  @default(false)
-  emailSchedule   String?  // daily, weekly, monthly
-  lastSent        DateTime?
+  name          String
+  metrics       Json // Array of metric IDs
+  period        String // 7d, 30d, 90d, 1y, custom
+  autoSend      Boolean   @default(false)
+  emailSchedule String? // daily, weekly, monthly
+  lastSent      DateTime?
 
   @@index([organizationId])
   @@index([autoSend])
@@ -2890,79 +2911,79 @@ enum SegmentCriteriaType {
 // ============================================================================
 
 enum WorkflowTrigger {
-  ONBOARDING_DAY_1      // J+1 après inscription
-  ONBOARDING_DAY_7      // J+7 après inscription
-  ONBOARDING_DAY_15     // J+15 après inscription
-  ONBOARDING_DAY_25     // J+25 (5 jours avant fin d'essai)
-  TRIAL_ENDING_SOON     // 5 jours avant fin d'essai
-  TRIAL_ENDED           // Fin de période d'essai
-  NO_LOGIN_7_DAYS       // Pas de connexion depuis 7 jours
-  NO_BOOKINGS_15_DAYS   // 0 rendez-vous créé après 15 jours
+  ONBOARDING_DAY_1 // J+1 après inscription
+  ONBOARDING_DAY_7 // J+7 après inscription
+  ONBOARDING_DAY_15 // J+15 après inscription
+  ONBOARDING_DAY_25 // J+25 (5 jours avant fin d'essai)
+  TRIAL_ENDING_SOON // 5 jours avant fin d'essai
+  TRIAL_ENDED // Fin de période d'essai
+  NO_LOGIN_7_DAYS // Pas de connexion depuis 7 jours
+  NO_BOOKINGS_15_DAYS // 0 rendez-vous créé après 15 jours
   SUBSCRIPTION_ACTIVE_60_DAYS // Après 60 jours d'utilisation
-  PAYMENT_FAILED        // Échec de paiement
+  PAYMENT_FAILED // Échec de paiement
   SUBSCRIPTION_CANCELLED // Abonnement annulé
-  HIGH_USAGE            // Utilisation élevée (upgrade suggéré)
-  LOW_USAGE             // Faible utilisation (risque churn)
+  HIGH_USAGE // Utilisation élevée (upgrade suggéré)
+  LOW_USAGE // Faible utilisation (risque churn)
 }
 
 enum WorkflowStatus {
-  ACTIVE     // Workflow actif
-  PAUSED     // Workflow en pause
-  ARCHIVED   // Workflow archivé
+  ACTIVE // Workflow actif
+  PAUSED // Workflow en pause
+  ARCHIVED // Workflow archivé
 }
 
 // Template de workflow automatique
 model WorkflowTemplate {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Informations
-  name            String   // "Onboarding J+1", "Relance inactif 7j"
-  description     String?  @db.Text
-  trigger         WorkflowTrigger
-  status          WorkflowStatus @default(ACTIVE)
+  name        String // "Onboarding J+1", "Relance inactif 7j"
+  description String?         @db.Text
+  trigger     WorkflowTrigger
+  status      WorkflowStatus  @default(ACTIVE)
 
   // Conditions d'exécution
-  delayDays       Int      @default(0) // Délai en jours avant exécution
-  
+  delayDays Int @default(0) // Délai en jours avant exécution
+
   // Email settings
-  subject         String
-  emailTemplate   String   @db.Text // Template HTML de l'email
-  
+  subject       String
+  emailTemplate String @db.Text // Template HTML de l'email
+
   // Statistiques
-  sentCount       Int      @default(0)
-  openRate        Float    @default(0)
-  clickRate       Float    @default(0)
-  
+  sentCount Int   @default(0)
+  openRate  Float @default(0)
+  clickRate Float @default(0)
+
   // Relations
-  executions      WorkflowExecution[]
-  
+  executions WorkflowExecution[]
+
   @@index([trigger])
   @@index([status])
 }
 
 // Exécution d'un workflow pour une organisation
 model WorkflowExecution {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  executedAt        DateTime?
-  
-  workflowId        String
-  workflow          WorkflowTemplate @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  
-  organizationId    String
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  executedAt DateTime?
+
+  workflowId String
+  workflow   WorkflowTemplate @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   // Statut
-  status            String   // pending, sent, failed, opened, clicked
-  error             String?  @db.Text
-  
+  status String // pending, sent, failed, opened, clicked
+  error  String? @db.Text
+
   // Tracking email
-  emailSentAt       DateTime?
-  emailOpenedAt     DateTime?
-  emailClickedAt    DateTime?
-  
+  emailSentAt    DateTime?
+  emailOpenedAt  DateTime?
+  emailClickedAt DateTime?
+
   @@index([workflowId])
   @@index([organizationId])
   @@index([status])
@@ -2970,64 +2991,64 @@ model WorkflowExecution {
 
 // Métriques de churn et rétention
 model ChurnMetric {
-  id              String   @id @default(cuid())
-  date            DateTime @default(now()) // Date du calcul
-  
+  id   String   @id @default(cuid())
+  date DateTime @default(now()) // Date du calcul
+
   // Métriques MRR
-  totalMRR        Float    // MRR total
-  newMRR          Float    // MRR des nouveaux clients
-  expansionMRR    Float    // MRR des upgrades
-  contractionMRR  Float    // MRR des downgrades
-  churnedMRR      Float    // MRR perdu
-  
+  totalMRR       Float // MRR total
+  newMRR         Float // MRR des nouveaux clients
+  expansionMRR   Float // MRR des upgrades
+  contractionMRR Float // MRR des downgrades
+  churnedMRR     Float // MRR perdu
+
   // Métriques clients
-  totalCustomers      Int
-  newCustomers        Int
-  churnedCustomers    Int
-  activeTrials        Int
-  
+  totalCustomers   Int
+  newCustomers     Int
+  churnedCustomers Int
+  activeTrials     Int
+
   // Taux (en %)
-  churnRate           Float  // Taux de churn mensuel
-  retentionRate       Float  // Taux de rétention
-  
+  churnRate     Float // Taux de churn mensuel
+  retentionRate Float // Taux de rétention
+
   // LTV moyen
-  averageLTV          Float  // Lifetime Value moyen
-  
+  averageLTV Float // Lifetime Value moyen
+
   @@index([date])
 }
 
 // Clients à risque de churn
 model ChurnRiskProfile {
-  id                  String   @id @default(cuid())
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  
-  organizationId      String   @unique
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   // Score de risque (0-100)
-  riskScore           Int      // 0 = aucun risque, 100 = churn imminent
-  
+  riskScore Int // 0 = aucun risque, 100 = churn imminent
+
   // Facteurs de risque
-  daysWithoutLogin    Int      @default(0)
-  daysWithoutBooking  Int      @default(0)
-  bookingsCount       Int      @default(0)
-  usageLevel          String   // low, medium, high
-  
+  daysWithoutLogin   Int    @default(0)
+  daysWithoutBooking Int    @default(0)
+  bookingsCount      Int    @default(0)
+  usageLevel         String // low, medium, high
+
   // Support tickets
-  supportTicketsCount Int      @default(0)
+  supportTicketsCount Int       @default(0)
   lastSupportDate     DateTime?
-  
+
   // Actions prises
-  contactAttempts     Int      @default(0)
-  lastContactDate     DateTime?
-  
+  contactAttempts Int       @default(0)
+  lastContactDate DateTime?
+
   // Statut
-  isAtRisk            Boolean  @default(false)
-  churned             Boolean  @default(false)
-  churnedAt           DateTime?
-  churnReason         String?  @db.Text
-  
+  isAtRisk    Boolean   @default(false)
+  churned     Boolean   @default(false)
+  churnedAt   DateTime?
+  churnReason String?   @db.Text
+
   @@index([riskScore])
   @@index([isAtRisk])
   @@index([churned])
@@ -3035,25 +3056,25 @@ model ChurnRiskProfile {
 
 // Raisons d'annulation (post-churn survey)
 model CancellationFeedback {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  
-  organizationId    String
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   // Raison principale
-  reason            String   // price, features, complexity, competition, other
-  detailedReason    String?  @db.Text
-  
+  reason         String // price, features, complexity, competition, other
+  detailedReason String? @db.Text
+
   // Feedback
-  wouldRecommend    Boolean?
-  rating            Int?     // 1-5
-  suggestions       String?  @db.Text
-  
+  wouldRecommend Boolean?
+  rating         Int? // 1-5
+  suggestions    String?  @db.Text
+
   // Context
-  plan              String
-  monthsSubscribed  Int
-  
+  plan             String
+  monthsSubscribed Int
+
   @@index([organizationId])
   @@index([reason])
 }
@@ -3063,57 +3084,57 @@ model CancellationFeedback {
 // ============================================
 
 enum SMSStatus {
-  DRAFT       // Brouillon
-  SCHEDULED   // Programmé
-  SENDING     // En cours d'envoi
-  SENT        // Envoyé
-  FAILED      // Échec
+  DRAFT // Brouillon
+  SCHEDULED // Programmé
+  SENDING // En cours d'envoi
+  SENT // Envoyé
+  FAILED // Échec
 }
 
 enum SMSTemplateType {
-  BIRTHDAY         // Anniversaire
-  APPOINTMENT      // Rappel RDV
-  CONFIRMATION     // Confirmation RDV
-  PROMOTION        // Promotion
-  LOYALTY          // Fidélité
-  FOLLOW_UP        // Suivi après soin
-  CUSTOM           // Personnalisé
+  BIRTHDAY // Anniversaire
+  APPOINTMENT // Rappel RDV
+  CONFIRMATION // Confirmation RDV
+  PROMOTION // Promotion
+  LOYALTY // Fidélité
+  FOLLOW_UP // Suivi après soin
+  CUSTOM // Personnalisé
 }
 
 // Campagnes SMS
 model SMSCampaign {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Informations de la campagne
-  name           String
-  message        String    @db.Text
+  name    String
+  message String @db.Text
 
   // Destinataires
-  segmentId      String?   // null = tous les clients
-  recipientCount Int       @default(0)
+  segmentId      String? // null = tous les clients
+  recipientCount Int     @default(0)
 
   // Statut
-  status         SMSStatus @default(DRAFT)
+  status SMSStatus @default(DRAFT)
 
   // Planification
-  scheduledAt    DateTime?
-  sentAt         DateTime?
+  scheduledAt DateTime?
+  sentAt      DateTime?
 
   // Statistiques
-  sentCount      Int       @default(0)
-  deliveredCount Int       @default(0)
-  failedCount    Int       @default(0)
-  clickedCount   Int       @default(0) // Si lien dans le SMS
+  sentCount      Int @default(0)
+  deliveredCount Int @default(0)
+  failedCount    Int @default(0)
+  clickedCount   Int @default(0) // Si lien dans le SMS
 
   // Coût
-  totalCost      Float?    // Coût total de la campagne
+  totalCost Float? // Coût total de la campagne
 
   // Métadonnées
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  createdBy      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
 
   @@index([organizationId])
   @@index([status])
@@ -3123,24 +3144,24 @@ model SMSCampaign {
 
 // Templates SMS pré-configurés
 model SMSTemplate {
-  id             String          @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Informations du template
-  name           String
-  type           SMSTemplateType
-  message        String          @db.Text
+  name    String
+  type    SMSTemplateType
+  message String          @db.Text
 
   // Variables disponibles
   // {{prenom}}, {{nom}}, {{dateRDV}}, {{heureRDV}}, {{service}}, {{institut}}
 
   // État
-  active         Boolean         @default(true)
+  active Boolean @default(true)
 
   // Métadonnées
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([organizationId])
   @@index([type])
@@ -3149,31 +3170,31 @@ model SMSTemplate {
 
 // Historique des SMS envoyés (pour tracking individuel)
 model SMSLog {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Campagne associée (optionnel)
-  campaignId     String?
+  campaignId String?
 
   // Destinataire
-  clientId       String?
-  clientName     String
-  phoneNumber    String
+  clientId    String?
+  clientName  String
+  phoneNumber String
 
   // Contenu
-  message        String    @db.Text
+  message String @db.Text
 
   // Statut
-  status         String    // sent, delivered, failed, clicked
-  errorMessage   String?   @db.Text
+  status       String // sent, delivered, failed, clicked
+  errorMessage String? @db.Text
 
   // Coût
-  cost           Float?
+  cost Float?
 
   // Métadonnées
-  sentAt         DateTime  @default(now())
-  deliveredAt    DateTime?
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
 
   @@index([organizationId])
   @@index([campaignId])
@@ -3187,18 +3208,18 @@ model SMSLog {
 // ============================================
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -3223,4 +3244,3 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
-

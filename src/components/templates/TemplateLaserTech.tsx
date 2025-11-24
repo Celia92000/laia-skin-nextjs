@@ -2,6 +2,12 @@
 
 import Link from 'next/link';
 import { Clock, Phone, MapPin } from 'lucide-react';
+import MobileMenu from './shared/MobileMenu';
+import FloatingCallButton from './shared/FloatingCallButton';
+import FloatingWhatsAppButton from './shared/FloatingWhatsAppButton';
+import ScrollToTopButton from './shared/ScrollToTopButton';
+import TemplateFooter from './shared/TemplateFooter';
+import HeroMedia from './shared/HeroMedia';
 
 interface TemplateContent {
   hero: {
@@ -50,6 +56,50 @@ interface TemplateProps {
     description?: string;
     primaryColor: string;
     secondaryColor: string;
+    accentColor?: string;
+
+    // Images
+    logoUrl?: string;
+    heroImage?: string;
+    heroVideo?: string;
+    faviconUrl?: string;
+
+    // Contact
+    email?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    googleMapsUrl?: string;
+
+    // Social Media
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    youtube?: string;
+
+    // Business Hours
+    businessHours?: any;
+
+    // Founder
+    founderName?: string;
+    founderTitle?: string;
+    founderQuote?: string;
+    founderImage?: string;
+
+    // Legal
+    siret?: string;
+    termsAndConditions?: string;
+    privacyPolicy?: string;
+    legalNotice?: string;
+
+    // SEO
+    metaTitle?: string;
+    metaDescription?: string;
   };
   services: Array<{
     id: string;
@@ -117,6 +167,13 @@ export default function TemplateLaserTech({ organization, services, team, conten
 
   const c = content || defaultContent;
 
+  const menuItems = [
+    { label: 'Services', href: '#services' },
+    { label: 'Équipe', href: '#equipe' },
+    ...(organization.founderName ? [{ label: 'Fondatrice', href: '#founder' }] : []),
+    { label: 'Contact', href: '#contact' }
+  ];
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header - SUBTILITÉ: ligne horizontale très fine */}
@@ -150,8 +207,20 @@ export default function TemplateLaserTech({ organization, services, team, conten
       </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-24 px-8">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="pt-32 pb-24 px-8 relative overflow-hidden">
+        {/* Background media (video or image) */}
+        {(organization.heroVideo || organization.heroImage) && (
+          <HeroMedia
+            videoUrl={organization.heroVideo}
+            imageUrl={organization.heroImage}
+            alt={`${organization.name} hero`}
+            priority
+            overlay
+            overlayOpacity={0.4}
+          />
+        )}
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-6xl md:text-7xl font-light mb-8 tracking-tight" style={{ color: secondaryColor }}>
             {c.hero.title}
           </h2>
@@ -309,53 +378,57 @@ export default function TemplateLaserTech({ organization, services, team, conten
           )}
         </div>
       </section>
+      {/* Founder Section */}
+      {organization.founderName && (
+        <section id="founder" className="py-20 px-6 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {organization.founderImage && (
+                <div className="relative">
+                  <img
+                    src={organization.founderImage}
+                    alt={organization.founderName}
+                    className="rounded-3xl w-full h-auto object-cover shadow-2xl"
+                  />
+                </div>
+              )}
+              <div className={!organization.founderImage ? 'md:col-span-2 text-center' : ''}>
+                <h3 className="text-3xl md:text-4xl font-light tracking-tight text-gray-800 mb-4">
+                  {organization.founderName}
+                </h3>
+                {organization.founderTitle && (
+                  <p className="text-lg mb-6" style={{ color: primaryColor }}>
+                    {organization.founderTitle}
+                  </p>
+                )}
+                {organization.founderQuote && (
+                  <blockquote className="text-xl text-gray-600 italic leading-relaxed">
+                    "{organization.founderQuote}"
+                  </blockquote>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+
+
+      {/* Floating Buttons */}
+      {organization.phone && (
+        <FloatingCallButton phone={organization.phone} primaryColor={primaryColor} />
+      )}
+      {organization.whatsapp && (
+        <FloatingWhatsAppButton whatsapp={organization.whatsapp} />
+      )}
+      <ScrollToTopButton primaryColor={primaryColor} />
 
       {/* Footer avec ligne horizontale au-dessus */}
       <div className="max-w-7xl mx-auto px-8">
         <div className="h-px" style={{ backgroundColor: `${primaryColor}20` }} />
       </div>
 
-      <footer className="py-12 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="text-sm font-light tracking-[0.3em] uppercase mb-4" style={{ color: secondaryColor }}>
-                {organization.name}
-              </h4>
-              {c.footer.tagline && (
-                <p className="text-xs font-light text-gray-500">
-                  {c.footer.tagline}
-                </p>
-              )}
-            </div>
-            <div>
-              <h4 className="text-xs font-light tracking-[0.2em] uppercase mb-4 text-gray-600">Contact</h4>
-              <p className="text-xs font-light text-gray-500 mb-2 flex items-center gap-2">
-                <Phone className="w-3 h-3" />
-                {c.footer.contact.phone}
-              </p>
-              {c.footer.contact.address && (
-                <p className="text-xs font-light text-gray-500 flex items-center gap-2">
-                  <MapPin className="w-3 h-3" />
-                  {c.footer.contact.address}
-                </p>
-              )}
-            </div>
-            {c.footer.hours && (
-              <div>
-                <h4 className="text-xs font-light tracking-[0.2em] uppercase mb-4 text-gray-600">Horaires</h4>
-                <p className="text-xs font-light text-gray-500">{c.footer.hours}</p>
-              </div>
-            )}
-          </div>
-          <div className="h-px mb-8" style={{ backgroundColor: `${primaryColor}10` }} />
-          <div className="text-center">
-            <p className="text-xs font-light text-gray-400">
-              © 2024 {organization.name}
-            </p>
-          </div>
-        </div>
-      </footer>
+      <TemplateFooter organization={organization} theme="dark" />
     </div>
   );
 }

@@ -1,0 +1,5 @@
+code,type,value,startDate,endDate,maxUses,currentUses,minPurchase,services,active
+BIENVENUE10,percentage,10,2024-01-01,2024-12-31,100,45,0,,true
+NOEL20,fixed,20,2024-12-01,2024-12-25,50,12,50,,true
+FIDELITE15,percentage,15,2024-01-01,2024-12-31,unlimited,234,0,,true
+MASSAGE50,percentage,50,2024-06-01,2024-06-30,30,8,0,Massage relaxant;Massage du dos,true

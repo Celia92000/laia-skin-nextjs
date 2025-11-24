@@ -1,0 +1,5 @@
+name,description,price,duration,level,maxParticipants,certification,prerequisites,active
+Formation Maquillage Semi-Permanent,Formation complète en maquillage semi-permanent des sourcils et lèvres,1200,16,Débutant,8,Certificat LAIA Maquillage Semi-Permanent,Aucun prérequis,true
+Perfectionnement Extensions de Cils,Maîtrisez toutes les techniques avancées d'extensions de cils,890,12,Intermédiaire,6,Certificat LAIA Extensions Avancées,Formation extensions de base requise,true
+Modelage Corps & Visage,Techniques de modelage professionnel corps et visage,750,10,Débutant,10,Certificat LAIA Modelage,Aucun prérequis,true
+Master Class Dermopigmentation,Formation avancée en dermopigmentation et camouflage,1500,20,Avancé,4,Diplôme LAIA Dermopigmentation,3 ans d'expérience en esthétique,true

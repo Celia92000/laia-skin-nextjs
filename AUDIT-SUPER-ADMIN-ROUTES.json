@@ -1,0 +1,730 @@
+{
+  "date": "2025-11-24T02:16:01.600Z",
+  "total": 85,
+  "withAuth": 85,
+  "withoutAuth": 0,
+  "routes": [
+    {
+      "file": "/src/app/api/super-admin/all-users/[userId]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/all-users/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/analytics/ltv/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/analytics/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/billing/extend-trial/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/billing/invoices/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/billing/invoices/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/blog/[id]/publish/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/blog/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/blog/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/churn/at-risk/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/churn/metrics/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/communications/emails/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/communications/whatsapp/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/contract-clauses/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/contracts/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/create-payment-link/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/crm/automations/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/crm/automations/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/crm/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/crm/scoring/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demo-bookings/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demo-bookings/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demo-slots/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demo-slots/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demos/[id]/mark-viewed/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/demos/count-new/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/download-document/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/email-campaigns/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/email-templates/[key]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/email-templates/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/email-templates-prospecting/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/email-templates-prospecting/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/funnel/laia-connect/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/impersonate/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/impersonate/status/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoice-settings/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/[id]/credit-note/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/[id]/regenerate/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/[id]/resend/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/generate/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/invoices/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/knowledge-base/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/[id]/convert/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/[id]/interactions/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/[id]/mark-viewed/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/count-new/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/leads/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/logs/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/metrics/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/notifications/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/onboarding-stats/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/onboarding-templates/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/onboarding-templates/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/activate/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/features/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/invoices/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/locations/[locationId]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/locations/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/reset-password/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/settings/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/subscription/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/update-admin-email/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/users/[userId]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PUT",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/[id]/users/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/organizations-list/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/plans/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/plans/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/preview-email/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/send-campaign/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/send-onboarding-email/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/settings/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/subscription/manage/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/sync-template/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/templates/[id]/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "PUT",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/templates/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/tickets/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/upload/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/workflows/auto-execute/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/workflows/execute/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "POST"
+      ]
+    },
+    {
+      "file": "/src/app/api/super-admin/workflows/route.ts",
+      "hasAuth": true,
+      "authType": "verifyToken",
+      "functions": [
+        "GET",
+        "POST",
+        "DELETE"
+      ]
+    }
+  ]
+}

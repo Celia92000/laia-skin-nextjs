@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import Stripe from 'stripe'
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const prisma = new PrismaClient()
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {

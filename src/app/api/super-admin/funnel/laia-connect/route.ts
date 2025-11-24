@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 // GET - Obtenir les stats du funnel LAIA Connect
 export async function GET(request: NextRequest) {
   try {
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const period = searchParams.get('period') || '30d';
 
@@ -179,6 +193,19 @@ export async function GET(request: NextRequest) {
 // POST - Créer ou mettre à jour une entrée dans le funnel
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { leadId, stage, source, utmSource, utmMedium, utmCampaign, conversionValue } = body;
 

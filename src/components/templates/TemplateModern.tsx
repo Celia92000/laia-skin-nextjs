@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import Image from 'next/image';
 import { BaseTemplateContent } from '@/types/template-content';
+import HeroMedia from './shared/HeroMedia';
 
 interface TemplateProps {
   organization: {
@@ -10,6 +11,50 @@ interface TemplateProps {
     description?: string;
     primaryColor: string;
     secondaryColor: string;
+    accentColor?: string;
+
+    // Images
+    logoUrl?: string;
+    heroImage?: string;
+    heroVideo?: string;
+    faviconUrl?: string;
+
+    // Contact
+    email?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    googleMapsUrl?: string;
+
+    // Social Media
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    youtube?: string;
+
+    // Business Hours
+    businessHours?: any;
+
+    // Founder
+    founderName?: string;
+    founderTitle?: string;
+    founderQuote?: string;
+    founderImage?: string;
+
+    // Legal
+    siret?: string;
+    termsAndConditions?: string;
+    privacyPolicy?: string;
+    legalNotice?: string;
+
+    // SEO
+    metaTitle?: string;
+    metaDescription?: string;
   };
   services: Array<{
     id: string;
@@ -28,7 +73,6 @@ interface TemplateProps {
 }
 
 export default function TemplateModern({ organization, services, team, content }: TemplateProps) {
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const defaultContent: BaseTemplateContent = {
     hero: {
@@ -62,18 +106,36 @@ export default function TemplateModern({ organization, services, team, content }
       <header className="fixed w-full top-0 z-50 backdrop-blur-2xl bg-black/30 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-black tracking-tighter relative">
-              <span className="relative z-10 text-white">{organization.name}</span>
-              <div
-                className="absolute inset-0 blur-2xl opacity-50"
-                style={{
-                  background: `linear-gradient(90deg, ${organization.primaryColor}, ${organization.secondaryColor})`,
-                  transform: 'scale(1.5)'
-                }}
-              />
-            </h1>
+            {/* Logo ou Nom */}
+            {organization.logoUrl ? (
+              <div className="flex items-center gap-4">
+                <Image
+                  src={organization.logoUrl}
+                  alt={organization.name}
+                  width={120}
+                  height={48}
+                  className="h-12 w-auto object-contain"
+                  priority
+                />
+                <h1 className="text-2xl font-black tracking-tighter text-white">
+                  {organization.name}
+                </h1>
+              </div>
+            ) : (
+              <h1 className="text-3xl font-black tracking-tighter relative">
+                <span className="relative z-10 text-white">{organization.name}</span>
+                <div
+                  className="absolute inset-0 blur-2xl opacity-50"
+                  style={{
+                    background: `linear-gradient(90deg, ${organization.primaryColor}, ${organization.secondaryColor})`,
+                    transform: 'scale(1.5)'
+                  }}
+                />
+              </h1>
+            )}
+
             <nav className="hidden md:flex gap-8 items-center">
-              {['Services', 'Team', 'Contact'].map((item) => (
+              {['Services', organization.founderName && 'About', 'Contact'].filter(Boolean).map((item) => (
                 <a
                   key={item}
                   href={`#${item.toLowerCase()}`}
@@ -104,7 +166,19 @@ export default function TemplateModern({ organization, services, team, content }
 
       {/* HERO FULL-SCREEN ultra moderne */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background animé avec grille */}
+        {/* Background media (video or image) */}
+        {(organization.heroVideo || organization.heroImage) && (
+          <HeroMedia
+            videoUrl={organization.heroVideo}
+            imageUrl={organization.heroImage}
+            alt={`${organization.name} hero`}
+            priority
+            overlay
+            overlayOpacity={0.6}
+          />
+        )}
+
+        {/* Background avec grille statique (optimisé) */}
         <div className="absolute inset-0">
           <div className="absolute inset-0" style={{
             backgroundImage: `
@@ -115,19 +189,19 @@ export default function TemplateModern({ organization, services, team, content }
             maskImage: 'radial-gradient(ellipse at center, black, transparent 80%)'
           }} />
 
-          {/* Gradient circles animés */}
+          {/* Gradient circles avec animation optimisée (2D seulement) */}
           <div
-            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse"
+            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20"
             style={{
               background: `radial-gradient(circle, ${organization.primaryColor}, transparent)`,
-              animation: 'float 8s ease-in-out infinite'
+              animation: 'floatOptimized 8s ease-in-out infinite'
             }}
           />
           <div
-            className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse"
+            className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20"
             style={{
               background: `radial-gradient(circle, ${organization.secondaryColor}, transparent)`,
-              animation: 'float 8s ease-in-out infinite reverse',
+              animation: 'floatOptimized 8s ease-in-out infinite reverse',
               animationDelay: '2s'
             }}
           />
@@ -206,10 +280,10 @@ export default function TemplateModern({ organization, services, team, content }
         </div>
 
         <style jsx>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px) translateX(0px); }
-            33% { transform: translateY(-30px) translateX(20px); }
-            66% { transform: translateY(30px) translateX(-20px); }
+          @keyframes floatOptimized {
+            0%, 100% { transform: translate(0, 0); }
+            33% { transform: translate(20px, -30px); }
+            66% { transform: translate(-20px, 30px); }
           }
         `}</style>
       </section>
@@ -236,33 +310,34 @@ export default function TemplateModern({ organization, services, team, content }
               <div
                 key={service.id}
                 className="group relative"
-                onMouseEnter={() => setHoveredCard(service.id)}
-                onMouseLeave={() => setHoveredCard(null)}
                 style={{
-                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s both`,
-                  perspective: '1000px'
+                  animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s both`
                 }}
               >
                 <div
-                  className="relative h-full p-8 rounded-2xl backdrop-blur-xl transition-all duration-500"
+                  className="relative h-full p-8 rounded-2xl backdrop-blur-xl transition-all duration-500 hover:-translate-y-2"
                   style={{
-                    background: hoveredCard === service.id
-                      ? `linear-gradient(135deg, ${organization.primaryColor}20, ${organization.secondaryColor}20)`
-                      : 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${hoveredCard === service.id ? organization.primaryColor + '60' : 'rgba(255, 255, 255, 0.1)'}`,
-                    boxShadow: hoveredCard === service.id ? `0 20px 60px ${organization.primaryColor}30` : 'none',
-                    transform: hoveredCard === service.id ? 'translateY(-10px) rotateX(5deg)' : 'translateY(0) rotateX(0deg)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
                   }}
                 >
-                  {/* Glow effect */}
-                  {hoveredCard === service.id && (
-                    <div
-                      className="absolute inset-0 rounded-2xl blur-xl opacity-50"
-                      style={{
-                        background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
-                      }}
-                    />
-                  )}
+                  {/* Gradient background on hover - CSS only */}
+                  <div
+                    className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{
+                      background: `linear-gradient(135deg, ${organization.primaryColor}20, ${organization.secondaryColor}20)`,
+                      border: `1px solid ${organization.primaryColor}60`,
+                      boxShadow: `0 20px 60px ${organization.primaryColor}30`
+                    }}
+                  />
+
+                  {/* Glow effect on hover - CSS only */}
+                  <div
+                    className="absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 -z-10"
+                    style={{
+                      background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
+                    }}
+                  />
 
                   <div className="relative">
                     {/* Icône avec effet néon */}
@@ -284,10 +359,7 @@ export default function TemplateModern({ organization, services, team, content }
                         <div className="text-sm text-white/40 uppercase tracking-wider">{service.duration} min</div>
                       </div>
                       <div
-                        className="w-16 h-16 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl transition-transform duration-300"
-                        style={{
-                          transform: hoveredCard === service.id ? 'scale(1.2) rotate(45deg)' : 'scale(1) rotate(0deg)'
-                        }}
+                        className="w-16 h-16 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-45"
                       >
                         →
                       </div>
@@ -324,6 +396,67 @@ export default function TemplateModern({ organization, services, team, content }
           }
         `}</style>
       </section>
+
+      {/* Section Fondateur - Si données présentes */}
+      {organization.founderName && (
+        <section id="about" className="py-32 px-6 relative">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-16 items-center">
+              {/* Image Fondateur */}
+              {organization.founderImage && (
+                <div className="relative group">
+                  <div className="relative rounded-3xl overflow-hidden">
+                    <Image
+                      src={organization.founderImage}
+                      alt={organization.founderName}
+                      width={600}
+                      height={800}
+                      className="w-full h-auto object-cover"
+                    />
+                    {/* Overlay gradient */}
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500"
+                      style={{
+                        background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
+                      }}
+                    />
+                  </div>
+                  {/* Glow effect */}
+                  <div
+                    className="absolute -inset-4 rounded-3xl blur-3xl opacity-20"
+                    style={{
+                      background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor})`
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Contenu */}
+              <div className={organization.founderImage ? '' : 'md:col-span-2 text-center'}>
+                <div className="inline-block px-4 py-2 rounded-full backdrop-blur-xl bg-white/5 border border-white/10 mb-6">
+                  <span className="text-sm font-bold uppercase tracking-wider" style={{ color: organization.primaryColor }}>
+                    {organization.founderTitle || 'Founder'}
+                  </span>
+                </div>
+
+                <h2 className="text-5xl md:text-6xl font-black mb-8 tracking-tighter">
+                  {organization.founderName}
+                </h2>
+
+                {organization.founderQuote && (
+                  <blockquote className="relative mb-8">
+                    <div className="text-6xl mb-4 opacity-20" style={{ color: organization.primaryColor }}>"</div>
+                    <p className="text-2xl text-white/80 italic leading-relaxed mb-4">
+                      {organization.founderQuote}
+                    </p>
+                    <div className="text-6xl text-right opacity-20" style={{ color: organization.primaryColor }}>"</div>
+                  </blockquote>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Team - Cards horizontales modernes */}
       {team && team.length > 0 && (
@@ -426,39 +559,239 @@ export default function TemplateModern({ organization, services, team, content }
             </Link>
 
             <div className="grid md:grid-cols-3 gap-12 pt-16 border-t border-white/10">
-              {[
-                { icon: '📍', title: 'Location', info: 'Nanterre Université, 92000' },
-                { icon: '📞', title: 'Phone', info: '+33 6 31 10 75 31' },
-                { icon: '⏰', title: 'Hours', info: 'Mon-Sat: 9AM-7PM' }
-              ].map((item, idx) => (
-                <div key={idx}>
-                  <div className="text-5xl mb-4">{item.icon}</div>
-                  <div className="text-sm text-white/40 uppercase tracking-wider mb-2">{item.title}</div>
-                  <div className="text-white font-semibold">{item.info}</div>
+              {/* Localisation */}
+              {(organization.address || organization.city) && (
+                <div>
+                  <div className="text-5xl mb-4">📍</div>
+                  <div className="text-sm text-white/40 uppercase tracking-wider mb-2">Location</div>
+                  <div className="text-white font-semibold">
+                    {organization.address && <div>{organization.address}</div>}
+                    {(organization.postalCode || organization.city) && (
+                      <div>{organization.postalCode} {organization.city}</div>
+                    )}
+                    {organization.googleMapsUrl && (
+                      <a
+                        href={organization.googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm mt-2 inline-block hover:underline"
+                        style={{ color: organization.primaryColor }}
+                      >
+                        Voir sur Google Maps →
+                      </a>
+                    )}
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Téléphone */}
+              {organization.phone && (
+                <div>
+                  <div className="text-5xl mb-4">📞</div>
+                  <div className="text-sm text-white/40 uppercase tracking-wider mb-2">Phone</div>
+                  <a
+                    href={`tel:${organization.phone}`}
+                    className="text-white font-semibold hover:underline"
+                  >
+                    {organization.phone}
+                  </a>
+                </div>
+              )}
+
+              {/* Horaires */}
+              {organization.businessHours && (
+                <div>
+                  <div className="text-5xl mb-4">⏰</div>
+                  <div className="text-sm text-white/40 uppercase tracking-wider mb-2">Hours</div>
+                  <div className="text-white font-semibold text-sm">
+                    {Object.entries(organization.businessHours).slice(0, 2).map(([day, hours]) => (
+                      <div key={day}>{hours as string}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer dark */}
+      {/* Footer dark - VERSION COMPLÈTE */}
       <footer className="border-t border-white/10 py-16 px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+          {/* Footer Grid */}
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            {/* Colonne 1 - Informations */}
             <div>
-              <h3 className="text-3xl font-black mb-2">{organization.name}</h3>
-              <p className="text-white/60">The Future of Beauty</p>
+              {organization.logoUrl ? (
+                <Image
+                  src={organization.logoUrl}
+                  alt={organization.name}
+                  width={120}
+                  height={40}
+                  className="h-10 w-auto object-contain mb-4"
+                />
+              ) : (
+                <h3 className="text-2xl font-black mb-2" style={{ color: organization.primaryColor }}>
+                  {organization.name}
+                </h3>
+              )}
+              <p className="text-white/60 text-sm mb-4">
+                {organization.description || 'Institut de beauté'}
+              </p>
+              {organization.siret && (
+                <p className="text-white/40 text-xs">SIRET: {organization.siret}</p>
+              )}
             </div>
-            <div className="flex gap-8">
-              <a href="#" className="text-white/60 hover:text-white transition-colors uppercase text-sm font-bold tracking-wider">Facebook</a>
-              <a href="#" className="text-white/60 hover:text-white transition-colors uppercase text-sm font-bold tracking-wider">Instagram</a>
-              <a href="#" className="text-white/60 hover:text-white transition-colors uppercase text-sm font-bold tracking-wider">TikTok</a>
+
+            {/* Colonne 2 - Contact */}
+            <div>
+              <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: organization.primaryColor }}>
+                Contact
+              </h4>
+              <div className="space-y-2 text-sm text-white/70">
+                {organization.phone && (
+                  <div>
+                    <a href={`tel:${organization.phone}`} className="hover:text-white transition-colors">
+                      {organization.phone}
+                    </a>
+                  </div>
+                )}
+                {(organization.email || organization.contactEmail) && (
+                  <div>
+                    <a
+                      href={`mailto:${organization.email || organization.contactEmail}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      {organization.email || organization.contactEmail}
+                    </a>
+                  </div>
+                )}
+                {organization.address && (
+                  <div className="mt-4">
+                    <div>{organization.address}</div>
+                    <div>{organization.postalCode} {organization.city}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Colonne 3 - Horaires */}
+            {organization.businessHours && (
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: organization.primaryColor }}>
+                  Horaires
+                </h4>
+                <div className="space-y-1 text-sm text-white/70">
+                  {Object.entries(organization.businessHours).map(([day, hours]) => (
+                    <div key={day} className="flex justify-between gap-4">
+                      <span className="capitalize">{day}</span>
+                      <span className="text-white/50">{hours as string}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Colonne 4 - Réseaux sociaux */}
+            <div>
+              <h4 className="text-sm font-bold uppercase tracking-wider mb-4" style={{ color: organization.primaryColor }}>
+                Suivez-nous
+              </h4>
+              <div className="flex flex-col gap-3">
+                {organization.facebook && (
+                  <a
+                    href={organization.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-lg">📘</span> Facebook
+                  </a>
+                )}
+                {organization.instagram && (
+                  <a
+                    href={organization.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-lg">📸</span> Instagram
+                  </a>
+                )}
+                {organization.tiktok && (
+                  <a
+                    href={organization.tiktok}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-lg">🎵</span> TikTok
+                  </a>
+                )}
+                {organization.linkedin && (
+                  <a
+                    href={organization.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-lg">💼</span> LinkedIn
+                  </a>
+                )}
+                {organization.whatsapp && (
+                  <a
+                    href={`https://wa.me/${organization.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <span className="text-lg">💬</span> WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-          <div className="border-t border-white/10 mt-12 pt-8 text-center">
-            <p className="text-white/40 text-sm">© 2024 {organization.name}. All rights reserved.</p>
-            <p className="text-white/20 text-xs mt-2">Powered by LAIA Connect</p>
+
+          {/* Footer Bottom */}
+          <div className="border-t border-white/10 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              {/* Mentions légales */}
+              <div className="flex flex-wrap gap-4 text-sm text-white/40">
+                {organization.legalNotice && (
+                  <a href="/mentions-legales" className="hover:text-white transition-colors">
+                    Mentions légales
+                  </a>
+                )}
+                {organization.privacyPolicy && (
+                  <a href="/politique-confidentialite" className="hover:text-white transition-colors">
+                    Politique de confidentialité
+                  </a>
+                )}
+                {organization.termsAndConditions && (
+                  <a href="/cgv" className="hover:text-white transition-colors">
+                    CGV
+                  </a>
+                )}
+              </div>
+
+              {/* Copyright */}
+              <div className="text-center md:text-right">
+                <p className="text-white/40 text-sm">
+                  © {new Date().getFullYear()} {organization.name}. All rights reserved.
+                </p>
+                <p className="text-white/20 text-xs mt-1">
+                  Powered by{' '}
+                  <a
+                    href="https://laiaconnect.fr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white/40 transition-colors"
+                  >
+                    LAIA Connect
+                  </a>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

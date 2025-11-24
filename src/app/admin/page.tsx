@@ -12,7 +12,7 @@ import { getCurrentPrice, calculateTotalPrice } from "@/lib/pricing";
 import { generateInvoiceNumber, calculateInvoiceTotals, formatInvoiceHTML, generateCSVExport, downloadFile } from '@/lib/invoice-generator';
 import type { Client } from "@/components/UnifiedCRMTab";
 import { getActiveFeatures, type OrgFeatures } from "@/lib/features-simple";
-import OnboardingWizard from "@/components/OnboardingWizard";
+import CompleteOnboardingWizard from "@/components/CompleteOnboardingWizard";
 import WelcomeBanner from "@/components/WelcomeBanner";
 import SetupChecklist from "@/components/admin/SetupChecklist";
 import WelcomeSetupBanner from "@/components/admin/WelcomeSetupBanner";
@@ -1163,7 +1163,7 @@ export default function AdminDashboard() {
   // Afficher le wizard d'onboarding si non complété
   if (!isOnboarded) {
     return (
-      <OnboardingWizard
+      <CompleteOnboardingWizard
         onComplete={() => {
           setIsOnboarded(true);
           fetchOrganizationFeatures(); // Recharger les données
@@ -1247,33 +1247,8 @@ export default function AdminDashboard() {
                 </button>
               )}
               <button
-                onClick={() => {
-                  // Scroller vers la checklist de configuration
-                  const checklist = document.querySelector('[data-setup-checklist]')
-                  if (checklist) {
-                    checklist.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                  }
-                }}
-                className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#d4b5a0] rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-semibold relative"
-              >
-                <Sparkles className="w-4 h-4" />
-                Configurer mon site
-                {configCompletion > 0 && configCompletion < 70 && (
-                  <span className={`ml-1 px-2 py-0.5 text-xs font-bold rounded-full ${
-                    configCompletion < 30 ? 'bg-red-500' :
-                    configCompletion < 50 ? 'bg-orange-400' :
-                    'bg-yellow-400'
-                  } text-white`}>
-                    {configCompletion}%
-                  </span>
-                )}
-                {configCompletion >= 70 && (
-                  <CheckCircle className="w-4 h-4 text-green-300" />
-                )}
-              </button>
-              <button
                 onClick={() => router.push('/admin/settings')}
-                className="px-4 py-2 text-sm bg-[#d4b5a0] text-white hover:bg-[#c9a084] rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
               >
                 <Settings className="w-4 h-4" />
                 Paramètres
@@ -1466,31 +1441,6 @@ export default function AdminDashboard() {
               </button>
             </>
           )}
-          {/* Comptabilité - Finances */}
-          {['SUPER_ADMIN', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
-            <button
-              onClick={() => setActiveTab("comptabilite")}
-              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-                activeTab === "comptabilite"
-                  ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg"
-                  : "bg-white text-[#2c3e50] hover:shadow-md"
-              }`}
-            >
-              <Euro className="w-4 h-4 inline mr-2" />
-              Finances
-            </button>
-          )}
-          <button
-            onClick={() => setActiveTab("reviews")}
-            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
-              activeTab === "reviews"
-                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
-                : "bg-white text-[#2c3e50] hover:shadow-md"
-            }`}
-          >
-            <Star className="w-4 h-4 inline mr-2" />
-            Avis & Photos
-          </button>
           {/* Marketing & Communications */}
           {orgFeatures?.featureCRM && (
             <button
@@ -1574,6 +1524,31 @@ export default function AdminDashboard() {
               Blog
             </button>
           )}
+          {/* Comptabilité - Finances */}
+          {['SUPER_ADMIN', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
+            <button
+              onClick={() => setActiveTab("comptabilite")}
+              className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+                activeTab === "comptabilite"
+                  ? "bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg"
+                  : "bg-white text-[#2c3e50] hover:shadow-md"
+              }`}
+            >
+              <Euro className="w-4 h-4 inline mr-2" />
+              Finances
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`px-3 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-all whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${
+              activeTab === "reviews"
+                ? "bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white shadow-lg"
+                : "bg-white text-[#2c3e50] hover:shadow-md"
+            }`}
+          >
+            <Star className="w-4 h-4 inline mr-2" />
+            Avis & Photos
+          </button>
           </div>
         </div>
 

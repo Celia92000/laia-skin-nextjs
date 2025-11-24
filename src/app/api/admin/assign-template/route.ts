@@ -1,12 +1,32 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 /**
  * POST /api/admin/assign-template
  * Assigne un template à une organisation
  */
 export async function POST(request: Request) {
+  // 🔒 Vérification Admin obligatoire
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || !decoded.userId) {
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur a un rôle admin
+  const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT'];
+  if (!allowedRoles.includes(decoded.role)) {
+    return NextResponse.json({ error: 'Accès refusé - Rôle admin requis' }, { status: 403 });
+  }
+
   try {
     const body = await request.json()
     const { organizationId, organizationSlug, templateId } = body

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 // Configuration Cloudinary
 cloudinary.config({
@@ -10,6 +11,25 @@ cloudinary.config({
 });
 
 export async function POST(req: NextRequest) {
+  // 🔒 Vérification Admin obligatoire
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || !decoded.userId) {
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur a un rôle admin
+  const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT'];
+  if (!allowedRoles.includes(decoded.role)) {
+    return NextResponse.json({ error: 'Accès refusé - Rôle admin requis' }, { status: 403 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -104,6 +124,25 @@ export async function POST(req: NextRequest) {
 
 // DELETE endpoint pour supprimer un média
 export async function DELETE(req: NextRequest) {
+  // 🔒 Vérification Admin obligatoire
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || !decoded.userId) {
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur a un rôle admin
+  const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT'];
+  if (!allowedRoles.includes(decoded.role)) {
+    return NextResponse.json({ error: 'Accès refusé - Rôle admin requis' }, { status: 403 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const publicId = searchParams.get('publicId');

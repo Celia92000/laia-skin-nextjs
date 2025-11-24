@@ -1,0 +1,5 @@
+code,initialAmount,remainingAmount,purchaseDate,expirationDate,buyerEmail,recipientName,recipientEmail,status,notes
+NOEL2024-001,100,100,2024-12-01,2025-12-01,marie.dupont@test.com,Sophie Martin,sophie.martin@test.com,active,Cadeau de Noël pour Sophie
+FETE-MERES-042,50,25,2024-05-15,2025-05-15,julie.bernard@test.com,Maman,julie.bernard@test.com,active,Déjà utilisée pour 25€
+ANNIV-2024-078,75,75,2024-09-20,2025-09-20,laura.petit@test.com,Emma Rousseau,emma.r@test.com,active,Anniversaire Emma
+NOEL2024-002,150,0,2023-12-10,2024-12-10,claire.dubois@test.com,Marie Blanc,,used,Entièrement utilisée

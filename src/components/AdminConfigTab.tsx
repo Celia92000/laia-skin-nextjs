@@ -16,7 +16,8 @@ import AdminSMSConfigTab from './AdminSMSConfigTab';
 import AdminEmailConfigTab from './AdminEmailConfigTab';
 import AdminWhatsAppConfigTab from './AdminWhatsAppConfigTab';
 import ConfigurationChecklist from './ConfigurationChecklist';
-import { websiteTemplates } from '@/lib/website-templates';
+import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates';
+import LiveTemplatePreview from './LiveTemplatePreview';
 
 interface SiteConfig {
   id?: string;
@@ -99,6 +100,7 @@ interface SiteConfig {
   // Configuration technique
   baseUrl?: string;
   websiteTemplateId?: string;
+  websiteTemplate?: string; // ID du template sélectionné
 
   // Tracking & Analytics
   googleAnalyticsId?: string;
@@ -134,6 +136,7 @@ export default function AdminConfigTab() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api' | 'google' | 'sms' | 'email' | 'whatsapp'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [organizationPlan, setOrganizationPlan] = useState<string>('SOLO');
 
   useEffect(() => {
     fetchConfig();
@@ -145,6 +148,15 @@ export default function AdminConfigTab() {
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
+
+        // Récupérer le plan de l'organisation
+        if (data.organizationId) {
+          const orgResponse = await fetch('/api/organization/current');
+          if (orgResponse.ok) {
+            const orgData = await orgResponse.json();
+            setOrganizationPlan(orgData.plan || 'SOLO');
+          }
+        }
       }
     } catch (error) {
       console.error('Erreur lors du chargement de la configuration:', error);
@@ -925,82 +937,178 @@ export default function AdminConfigTab() {
         )}
 
         {activeTab === 'template' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#2c3e50] mb-4">Choix du template de site web</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Sélectionnez le template qui correspond le mieux au style de votre institut.
-              Les couleurs et contenus seront automatiquement appliqués selon votre configuration.
-            </p>
+          <div className="flex gap-6">
+            {/* Colonne Gauche - Sélection Template (60%) */}
+            <div className="w-3/5 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-[#2c3e50] mb-2">
+                  Choix du template de site web
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Sélectionnez le design qui correspond le mieux à votre style.
+                </p>
+                {organizationPlan !== 'PREMIUM' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm text-amber-800">
+                      💎 <strong>Plan {organizationPlan}</strong> : Certains templates premium nécessitent un upgrade.
+                    </p>
+                  </div>
+                )}
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {websiteTemplates.map((template) => (
-                <div
-                  key={template.id}
-                  className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                    config.websiteTemplateId === template.id
-                      ? 'border-[#d4b5a0] bg-[#d4b5a0]/5 shadow-lg'
-                      : 'border-gray-200 hover:border-[#d4b5a0]/50 hover:shadow-md'
-                  }`}
-                  onClick={() => setConfig({ ...config, websiteTemplateId: template.id })}
-                >
-                  {config.websiteTemplateId === template.id && (
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#d4b5a0] rounded-full flex items-center justify-center text-white">
-                      ✓
-                    </div>
-                  )}
+              {/* Grille Templates */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                {websiteTemplates.map((template) => {
+                  const isAvailable = getTemplatesForPlan(organizationPlan).some(t => t.id === template.id);
+                  const isPremium = template.minTier === 'PREMIUM';
 
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      template.minTier === 'PREMIUM'
-                        ? 'bg-gradient-to-r from-yellow-400 to-orange-400'
-                        : 'bg-gradient-to-r from-[#d4b5a0] to-[#c9a084]'
-                    }`}>
-                      <Layout className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{template.name}</h4>
-                      {template.minTier === 'PREMIUM' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Premium
-                        </span>
+                  return (
+                    <div
+                      key={template.id}
+                      className={`relative border-2 rounded-xl p-4 transition-all ${
+                        !isAvailable
+                          ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                          : config.websiteTemplate === template.id
+                            ? 'border-[#d4b5a0] bg-[#d4b5a0]/5 shadow-lg cursor-pointer'
+                            : 'border-gray-200 hover:border-[#d4b5a0]/50 hover:shadow-md cursor-pointer'
+                      }`}
+                      onClick={() => isAvailable && setConfig({ ...config, websiteTemplate: template.id })}
+                    >
+                      {/* Badge Premium */}
+                      {isPremium && (
+                        <div className="absolute -top-2 -left-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1">
+                          💎 PREMIUM
+                        </div>
+                      )}
+
+                      {/* Checkmark sélection */}
+                      {config.websiteTemplate === template.id && isAvailable && (
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#d4b5a0] rounded-full flex items-center justify-center text-white">
+                          ✓
+                        </div>
+                      )}
+
+                      {/* Preview Thumbnail */}
+                      <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
+                        <span className="text-xl font-bold text-gray-400">{template.name}</span>
+                        {!isAvailable && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="bg-white rounded-lg px-3 py-2 text-sm font-semibold">
+                              🔒 Upgrade requis
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Infos */}
+                      <h4 className="font-bold text-base mb-1">{template.name}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{template.description}</p>
+
+                      {/* Features */}
+                      {template.features.length > 0 && (
+                        <div className="flex gap-1 flex-wrap mt-2">
+                          {template.features.slice(0, 2).map((feature, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded"
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Section Couleurs */}
+              <div className="border-t pt-6 mt-6">
+                <h4 className="font-semibold text-gray-900 mb-4">Personnalisation des couleurs</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Couleur primaire
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={config.primaryColor || '#d4b5a0'}
+                        onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                        className="w-16 h-16 rounded border-2 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={config.primaryColor || '#d4b5a0'}
+                        onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
+                        className="flex-1 px-3 py-2 border rounded text-sm font-mono"
+                      />
+                    </div>
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-
-                  <div className="space-y-2">
-                    {template.features.slice(0, 3).map((feature, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-xs text-gray-600">
-                        <span className="text-[#d4b5a0] mt-0.5">✓</span>
-                        <span>{feature}</span>
-                      </div>
-                    ))}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Couleur secondaire
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={config.secondaryColor || '#2c3e50'}
+                        onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
+                        className="w-16 h-16 rounded border-2 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={config.secondaryColor || '#2c3e50'}
+                        onChange={(e) => setConfig({ ...config, secondaryColor: e.target.value })}
+                        className="flex-1 px-3 py-2 border rounded text-sm font-mono"
+                      />
+                    </div>
                   </div>
 
-                  <a
-                    href={`/super-admin/templates/${template.id}/preview`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Aperçu
-                  </a>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Couleur accent
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={config.accentColor || '#20b2aa'}
+                        onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                        className="w-16 h-16 rounded border-2 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={config.accentColor || '#20b2aa'}
+                        onChange={(e) => setConfig({ ...config, accentColor: e.target.value })}
+                        className="flex-1 px-3 py-2 border rounded text-sm font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
 
-            {config.websiteTemplateId && (
-              <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-green-800">
-                  ✓ Template sélectionné : <strong>{websiteTemplates.find(t => t.id === config.websiteTemplateId)?.name}</strong>
-                  <br />
-                  Les couleurs et contenus de ce template seront automatiquement synchronisés avec votre configuration.
-                </p>
-              </div>
-            )}
+            {/* Colonne Droite - Preview Live (40%) */}
+            <div className="w-2/5 sticky top-4 h-[calc(100vh-200px)]">
+              <LiveTemplatePreview
+                templateId={config.websiteTemplate || 'modern'}
+                organizationName={config.siteName || 'Votre Institut'}
+                description={config.siteDescription}
+                siteTagline={config.siteTagline}
+                primaryColor={config.primaryColor || '#d4b5a0'}
+                secondaryColor={config.secondaryColor || '#2c3e50'}
+                accentColor={config.accentColor || '#20b2aa'}
+                logoUrl={config.logoUrl}
+                heroImage={config.heroImage}
+                heroTitle={config.heroTitle}
+                heroSubtitle={config.heroSubtitle}
+                phone={config.phone}
+                email={config.email}
+                contactEmail={config.email}
+                address={config.address}
+              />
+            </div>
           </div>
         )}
 

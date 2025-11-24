@@ -24,19 +24,6 @@ export default function SetupProgressBar({ completionPercentage, stats }: SetupP
 
   const remainingPercentage = 100 - completionPercentage
 
-  // Déterminer la première étape non complétée
-  const getNextStep = () => {
-    if (!stats) return '/admin?tab=config&section=template'
-
-    if (!stats.hasTemplate) return '/admin?tab=config&section=template'
-    if (!stats.hasCustomColors) return '/admin?tab=config&section=appearance'
-    if (!stats.hasLogo) return '/admin?tab=config&section=general'
-    if (!stats.hasServices) return '/admin?tab=services'
-    if (!stats.hasBusinessHours) return '/admin?tab=config&section=hours'
-
-    return '/admin?tab=config&section=template' // Fallback
-  }
-
   return (
     <div className="sticky top-0 z-40 bg-gradient-to-r from-[#d4b5a0] via-[#c9a084] to-[#d4b5a0] shadow-xl border-b-2 border-[#c9a084]/30">
       <div className="max-w-7xl mx-auto">
@@ -72,7 +59,7 @@ export default function SetupProgressBar({ completionPercentage, stats }: SetupP
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => {
-                  window.location.href = getNextStep()
+                  window.location.href = '/admin/site-setup'
                 }}
                 className="px-4 py-1.5 bg-[#2c3e50] text-white rounded-lg font-semibold text-sm hover:bg-[#3d5a80] hover:shadow-lg hover:scale-105 transition-all"
               >
@@ -124,16 +111,16 @@ export default function SetupProgressBar({ completionPercentage, stats }: SetupP
               {/* Étapes à compléter */}
               <div className="grid grid-cols-5 gap-2 text-xs mb-3">
                 {[
-                  { emoji: '🎨', label: 'Template', time: '2min', link: '/admin?tab=config&section=template' },
-                  { emoji: '🌈', label: 'Couleurs', time: '1min', link: '/admin?tab=config&section=appearance' },
-                  { emoji: '🖼️', label: 'Logo', time: '1min', link: '/admin?tab=config&section=general' },
-                  { emoji: '💆', label: 'Services', time: '2min', link: '/admin?tab=services' },
-                  { emoji: '🕐', label: 'Horaires', time: '2min', link: '/admin?tab=config&section=hours' },
+                  { emoji: '🎨', label: 'Template', time: '2min' },
+                  { emoji: '🌈', label: 'Couleurs', time: '1min' },
+                  { emoji: '🖼️', label: 'Logo', time: '1min' },
+                  { emoji: '💆', label: 'Services', time: '2min' },
+                  { emoji: '🕐', label: 'Horaires', time: '2min' },
                 ].map((step, index) => (
                   <button
                     key={index}
                     onClick={() => {
-                      window.location.href = step.link
+                      window.location.href = '/admin/site-setup'
                     }}
                     className="bg-white/50 backdrop-blur-sm rounded-lg p-2 text-center border border-white/80 shadow-sm hover:bg-white/70 hover:border-[#2c3e50]/30 hover:shadow-md transition-all cursor-pointer"
                   >

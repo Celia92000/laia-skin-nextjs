@@ -51,7 +51,12 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
 
   const loadExistingConfig = async () => {
     try {
-      const response = await fetch('/api/admin/config');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/config', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const config = await response.json();
         setData({
@@ -89,10 +94,16 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
   const handleSaveAndContinue = async () => {
     setSaving(true);
     try {
+      // Récupérer le token
+      const token = localStorage.getItem('token');
+
       // Sauvegarder la configuration
       const response = await fetch('/api/admin/config', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           websiteTemplate: data.selectedTemplate,
           primaryColor: data.primaryColor,
@@ -112,11 +123,13 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
       if (response.ok) {
         handleNext();
       } else {
-        alert('Erreur lors de la sauvegarde');
+        const errorData = await response.json();
+        console.error('Erreur sauvegarde:', errorData);
+        alert('Erreur lors de la sauvegarde: ' + (errorData.error || 'Erreur inconnue'));
       }
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la sauvegarde');
+      alert('Erreur lors de la sauvegarde: ' + error);
     } finally {
       setSaving(false);
     }
@@ -125,19 +138,26 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
   const handleCompleteOnboarding = async () => {
     setSaving(true);
     try {
+      const token = localStorage.getItem('token');
+
       // Marquer l'onboarding comme terminé
       const response = await fetch('/api/admin/onboarding/complete', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (response.ok) {
         onComplete();
       } else {
-        alert('Erreur lors de la finalisation');
+        const errorData = await response.json();
+        console.error('Erreur finalisation:', errorData);
+        alert('Erreur lors de la finalisation: ' + (errorData.error || 'Erreur inconnue'));
       }
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la finalisation');
+      alert('Erreur lors de la finalisation: ' + error);
     } finally {
       setSaving(false);
     }
@@ -219,28 +239,48 @@ export default function OnboardingWizard({ onComplete }: { onComplete: () => voi
                 {websiteTemplates.map((template) => (
                   <div
                     key={template.id}
-                    onClick={() => setData({ ...data, selectedTemplate: template.id })}
-                    className={`cursor-pointer border-2 rounded-xl p-4 transition hover:shadow-lg ${
+                    className={`border-2 rounded-xl p-4 transition hover:shadow-lg ${
                       data.selectedTemplate === template.id
-                        ? 'border-purple-600 bg-purple-50'
+                        ? 'border-purple-600 bg-purple-50 ring-2 ring-purple-200'
                         : 'border-gray-200 hover:border-purple-300'
                     }`}
                   >
-                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-gray-400">{template.name}</span>
+                    <div
+                      onClick={() => setData({ ...data, selectedTemplate: template.id })}
+                      className="cursor-pointer aspect-video bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-3 flex items-center justify-center relative group overflow-hidden shadow-inner"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-700 relative z-10 drop-shadow-sm">{template.name}</span>
+                      </div>
+                      {data.selectedTemplate === template.id && (
+                        <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1.5 shadow-lg">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
                     </div>
-                    <h3 className="font-bold text-lg mb-1">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                    <div className="flex gap-1 flex-wrap">
-                      {template.features.slice(0, 2).map((feature, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded"
-                        >
-                          {feature}
-                        </span>
-                      ))}
+                    <div
+                      onClick={() => setData({ ...data, selectedTemplate: template.id })}
+                      className="cursor-pointer mb-3"
+                    >
+                      <h3 className="font-bold text-lg mb-1">{template.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{template.description}</p>
                     </div>
+                    {template.previewUrl && (
+                      <a
+                        href={template.previewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Voir l'aperçu
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

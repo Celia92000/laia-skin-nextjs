@@ -1,0 +1,5 @@
+clientEmail,serviceName,date,time,status,notes
+sophie.martin@example.com,Soin du visage,2024-01-15,10:00,completed,RDV effectué sans problème
+jean.dupont@example.com,Manucure classique,2024-01-20,14:30,completed,Client satisfait
+marie.dubois@example.com,Massage relaxant,2024-02-05,16:00,completed,
+sophie.martin@example.com,Pédicure complète,2024-02-12,11:00,completed,Cliente fidèle

@@ -64,28 +64,12 @@ export const websiteTemplates: WebsiteTemplate[] = [
     features: []
   },
   {
-    id: 'laia-skin',
-    name: 'Rose Poudré',
-    description: 'La délicatesse incarnée dans chaque détail',
-    minTier: 'PREMIUM',
-    previewUrl: '/super-admin/templates/laia-skin/preview',
-    features: []
-  },
-  {
-    id: 'luxe',
-    name: 'Noir',
-    description: 'Le raffinement absolu dans l\'obscurité',
-    minTier: 'SOLO',
-    previewUrl: '/super-admin/templates/luxe/preview',
-    features: []
-  },
-  {
-    id: 'elegance',
-    name: 'Élégant',
-    description: 'La grâce et la sophistication réunies',
-    minTier: 'SOLO',
-    previewUrl: '/super-admin/templates/elegance/preview',
-    features: []
+    id: 'laia',
+    name: 'LAIA Signature',
+    description: 'L\'élégance rose gold, signature LAIA',
+    minTier: 'TEAM',
+    previewUrl: '/super-admin/templates/laia/preview',
+    features: ['Rose gold design', 'Élégance premium', 'Signature LAIA']
   },
   {
     id: 'zen',
@@ -96,30 +80,46 @@ export const websiteTemplates: WebsiteTemplate[] = [
     features: []
   },
 
-  // Templates premium (PREMIUM uniquement)
+  // Templates premium (TEAM & PREMIUM)
+  {
+    id: 'luxe',
+    name: 'Luxe Noir',
+    description: 'Le raffinement absolu dans l\'obscurité dorée',
+    minTier: 'TEAM',
+    previewUrl: '/super-admin/templates/luxe/preview',
+    features: ['Design dark luxury', 'Accents or', 'Glassmorphisme', 'Animations premium']
+  },
+  {
+    id: 'elegance',
+    name: 'Élégance Raffinée',
+    description: 'La grâce et la sophistication avec particules flottantes',
+    minTier: 'TEAM',
+    previewUrl: '/super-admin/templates/elegance/preview',
+    features: ['Particules animées', 'Design raffiné', 'Effets premium']
+  },
   {
     id: 'medical',
     name: 'Médical Raffiné',
     description: 'L\'excellence médicale avec prestance',
-    minTier: 'PREMIUM',
+    minTier: 'TEAM',
     previewUrl: '/super-admin/templates/medical/preview',
-    features: []
+    features: ['Design clinique', 'Minimalisme professionnel']
   },
   {
     id: 'spa-luxe',
     name: 'Harmonie Spa',
     description: 'L\'art du bien-être dans un écrin de luxe',
-    minTier: 'PREMIUM',
+    minTier: 'TEAM',
     previewUrl: '/super-admin/templates/spa-luxe/preview',
-    features: []
+    features: ['Parallax immersif', 'Full-screen sections', 'Design magazine']
   },
   {
     id: 'laser-tech',
     name: 'Précision Laser',
     description: 'La précision technologique sublimée',
-    minTier: 'PREMIUM',
+    minTier: 'TEAM',
     previewUrl: '/super-admin/templates/laser-tech/preview',
-    features: []
+    features: ['Design technique', 'Minimalisme high-tech']
   }
 ]
 

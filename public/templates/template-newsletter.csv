@@ -1,0 +1,5 @@
+email,firstName,lastName,subscriptionDate,source,status,tags,phone
+marie.dupont@test.com,Marie,Dupont,2024-06-15,site-web,active,VIP;Soins-visage,0612345678
+julie.martin@test.com,Julie,Martin,2024-03-20,instagram,active,Massages,0623456789
+sophie.bernard@test.com,Sophie,Bernard,2024-01-10,en-institut,unsubscribed,Épilation,
+laura.petit@test.com,Laura,Petit,2024-08-05,facebook,active,Manucure;Pédicure,0634567890

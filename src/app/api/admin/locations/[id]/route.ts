@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

@@ -1,0 +1,4 @@
+firstName,lastName,email,phone,address,city,zipCode,notes
+Sophie,Martin,sophie.martin@example.com,0612345678,"10 rue de la Paix",Paris,75001,Cliente VIP
+Jean,Dupont,jean.dupont@example.com,0623456789,"5 avenue des Champs",Lyon,69001,Préfère les RDV le matin
+Marie,Dubois,marie.dubois@example.com,0634567890,"8 boulevard Victor Hugo",Marseille,13001,

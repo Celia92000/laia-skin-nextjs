@@ -48,3 +48,4 @@ scripts/security/*.json
 *.tsbuildinfo
 next-env.d.ts
 .env.local.REAL
+/public/uploads/*

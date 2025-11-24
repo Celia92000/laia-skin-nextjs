@@ -27,7 +27,7 @@ export default function WelcomeBanner() {
   const handleConfigureClick = () => {
     localStorage.setItem('welcome-banner-dismissed', 'true')
     setIsVisible(false)
-    router.push('/admin/settings?tab=site')
+    router.push('/admin/site-setup')
   }
 
   if (!isVisible) return null

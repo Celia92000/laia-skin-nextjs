@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { safeJsonParse } from '@/lib/safe-parse';
 
 const AdminGiftCardsTab = dynamic(() => import('./AdminGiftCardsTab'), { ssr: false });
+const AdminReferralSettingsTab = dynamic(() => import('./AdminReferralSettingsTab'), { ssr: false });
 
 interface LoyaltyProfile {
   id: string;
@@ -68,7 +69,7 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Onglets de navigation
-  const [activeTab, setActiveTab] = useState<'program' | 'giftcards'>('program');
+  const [activeTab, setActiveTab] = useState<'program' | 'giftcards' | 'referral'>('program');
 
   // Charger les paramètres de fidélité au montage
   useEffect(() => {
@@ -519,12 +520,25 @@ export default function AdminLoyaltyTab({ clients, reservations, loyaltyProfiles
             <Gift className="w-4 h-4" />
             Cartes Cadeaux
           </button>
+          <button
+            onClick={() => setActiveTab('referral')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'referral'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Parrainage
+          </button>
         </div>
       </div>
 
       {/* Contenu selon l'onglet */}
       {activeTab === 'giftcards' ? (
         <AdminGiftCardsTab />
+      ) : activeTab === 'referral' ? (
+        <AdminReferralSettingsTab />
       ) : (
         <div>
 

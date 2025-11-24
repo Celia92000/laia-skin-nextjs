@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 interface SearchFilter {
   type: string;
@@ -19,11 +20,13 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    // Note: Il faudrait importer verifyToken ou jwt.verify ici
-    // Pour l'instant, on suppose que le token est valide si présent
+    const decoded = verifyToken(token);
+
+    if (!decoded || !decoded.userId) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
     // 🔒 Récupérer l'utilisateur avec son organizationId
-    const decoded: any = { userId: 'temp' }; // TODO: Remplacer par verifyToken(token)
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
       select: { organizationId: true, role: true }
@@ -331,8 +334,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split(' ')[1];
-    // Note: Utiliser verifyToken ici (TODO: importer verifyToken)
-    const decoded: any = { userId: 'temp' }; // TODO: Remplacer par verifyToken(token)
+    const decoded = verifyToken(token);
+
+    if (!decoded || !decoded.userId) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
     // 🔒 Récupérer l'utilisateur avec son organizationId
     const user = await prisma.user.findFirst({

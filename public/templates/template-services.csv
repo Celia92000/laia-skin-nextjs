@@ -1,0 +1,6 @@
+name,description,duration,price,category,active
+Soin du visage,"Soin complet du visage avec nettoyage et masque",60,75,Soins du visage,true
+Manucure classique,Manucure avec vernis classique,45,35,Ongles,true
+Épilation sourcils,Épilation des sourcils à la cire,15,15,Épilation,true
+Massage relaxant,Massage du dos et des épaules,30,45,Massages,true
+Pédicure complète,"Pédicure avec gommage, soin et vernis",60,55,Ongles,true

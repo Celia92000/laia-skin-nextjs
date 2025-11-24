@@ -1,0 +1,10 @@
+-- Add referral configuration columns to Organization table
+ALTER TABLE "Organization"
+ADD COLUMN IF NOT EXISTS "referralEnabled" BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS "referralRewardType" TEXT DEFAULT 'FIXED',
+ADD COLUMN IF NOT EXISTS "referralRewardAmount" DOUBLE PRECISION DEFAULT 20.0,
+ADD COLUMN IF NOT EXISTS "referralMinimumPurchase" DOUBLE PRECISION DEFAULT 0.0,
+ADD COLUMN IF NOT EXISTS "referralReferrerReward" DOUBLE PRECISION DEFAULT 20.0,
+ADD COLUMN IF NOT EXISTS "referralReferredReward" DOUBLE PRECISION DEFAULT 10.0,
+ADD COLUMN IF NOT EXISTS "referralTermsUrl" TEXT,
+ADD COLUMN IF NOT EXISTS "referralEmailTemplate" TEXT;

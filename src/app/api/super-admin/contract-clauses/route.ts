@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const prisma = new PrismaClient()
 
@@ -10,8 +11,18 @@ const prisma = new PrismaClient()
  */
 export async function GET(req: NextRequest) {
   try {
-    // Vérifier l'authentification super-admin
-    // TODO: Ajouter vérification du rôle SUPER_ADMIN via session
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
 
     const clauses = await prisma.contractClause.findMany({
       orderBy: {
@@ -44,8 +55,18 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    // Vérifier l'authentification super-admin
-    // TODO: Ajouter vérification du rôle SUPER_ADMIN via session
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
 
     const clauses = await req.json()
 

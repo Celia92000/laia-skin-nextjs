@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const prisma = new PrismaClient()
 

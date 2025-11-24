@@ -1,0 +1,5 @@
+clientName,clientEmail,rating,comment,date,service,validated,published,response
+Sophie Martin,sophie.martin@test.com,5,Excellent soin du visage ! Je recommande vivement cet institut.,2024-11-01,Soin du visage,true,true,Merci Sophie pour votre confiance ! À très bientôt.
+Julie Dupont,julie.dupont@test.com,4,Très bon accueil et prestation de qualité. Petit bémol sur l'attente.,2024-10-15,Manucure,true,true,Merci Julie ! Nous travaillons à améliorer nos délais.
+Marie Blanc,,5,Ambiance très agréable et résultat au top !,2024-09-20,Massage relaxant,true,true,
+Laura Petit,laura.petit@test.com,3,Correct mais sans plus. Service un peu rapide.,2024-08-10,Épilation,true,false,

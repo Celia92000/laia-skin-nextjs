@@ -1,0 +1,5 @@
+name,description,price,services,sessionsCount,validityDays,active
+Cure Minceur 5 séances,5 séances de palper-rouler + 1 enveloppement corporel offert,350,Palper-rouler;Enveloppement corporel,5,90,true
+Forfait Visage Éclat,3 soins du visage au choix parmi notre sélection anti-âge,180,Soin visage anti-âge;Soin visage hydratant;Peeling doux,3,60,true
+Pack Détente,2 massages relaxants 1h + 1 soin du dos,120,Massage relaxant;Soin du dos,3,45,true
+Forfait Épilation Intégrale,6 séances d'épilation jambes complètes avec réduction,240,Épilation jambes,6,120,true

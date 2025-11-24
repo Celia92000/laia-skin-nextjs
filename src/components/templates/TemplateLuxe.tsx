@@ -1,8 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { BaseTemplateContent } from '@/types/template-content';
 import { Crown, Clock, Star, Sparkles, Award, Shield } from 'lucide-react';
+import MobileMenu from './shared/MobileMenu';
+import FloatingCallButton from './shared/FloatingCallButton';
+import FloatingWhatsAppButton from './shared/FloatingWhatsAppButton';
+import ScrollToTopButton from './shared/ScrollToTopButton';
+import TemplateFooter from './shared/TemplateFooter';
+import HeroMedia from './shared/HeroMedia';
 
 interface TemplateProps {
   organization: {
@@ -10,6 +17,50 @@ interface TemplateProps {
     description?: string;
     primaryColor: string;
     secondaryColor: string;
+    accentColor?: string;
+
+    // Images
+    logoUrl?: string;
+    heroImage?: string;
+    heroVideo?: string;
+    faviconUrl?: string;
+
+    // Contact
+    email?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    googleMapsUrl?: string;
+
+    // Social Media
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    youtube?: string;
+
+    // Business Hours
+    businessHours?: any;
+
+    // Founder
+    founderName?: string;
+    founderTitle?: string;
+    founderQuote?: string;
+    founderImage?: string;
+
+    // Legal
+    siret?: string;
+    termsAndConditions?: string;
+    privacyPolicy?: string;
+    legalNotice?: string;
+
+    // SEO
+    metaTitle?: string;
+    metaDescription?: string;
   };
   services: Array<{
     id: string;
@@ -53,19 +104,37 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
   const c = content || defaultContent;
 
+  const menuItems = [
+    { label: 'Services', href: '#services' },
+    { label: 'Équipe', href: '#equipe' },
+    ...(organization.founderName ? [{ label: 'Fondatrice', href: '#founder' }] : []),
+    { label: 'Contact', href: '#contact' }
+  ];
+
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* NAVBAR LUXE avec effet glass morphism premium */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-2xl bg-gradient-to-b from-black/80 to-black/40 border-b" style={{ borderColor: `${primaryColor}20` }}>
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-lg bg-gradient-to-b from-black/80 to-black/40 border-b" style={{ borderColor: `${primaryColor}20` }}>
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Crown className="w-10 h-10" style={{ color: primaryColor }} />
-                <div className="absolute inset-0 blur-2xl opacity-30" style={{ backgroundColor: primaryColor }} />
+                <div className="absolute inset-0 blur-lg opacity-30" style={{ backgroundColor: primaryColor }} />
               </div>
               <div>
+                {organization.logoUrl ? (
+                <Image
+                  src={organization.logoUrl}
+                  alt={organization.name}
+                  width={120}
+                  height={48}
+                  className="h-12 w-auto object-contain"
+                  priority
+                />
+              ) : (
                 <h1 className="text-3xl font-serif tracking-wider" style={{ color: primaryColor }}>{organization.name}</h1>
+              )}
                 <p className="text-xs tracking-widest uppercase opacity-60" style={{ color: primaryColor }}>Luxury Experience</p>
               </div>
             </div>
@@ -97,6 +166,18 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
       {/* HERO SECTION - Ultra Premium avec parallax */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+        {/* Background media (video or image) */}
+        {(organization.heroVideo || organization.heroImage) && (
+          <HeroMedia
+            videoUrl={organization.heroVideo}
+            imageUrl={organization.heroImage}
+            alt={`${organization.name} hero`}
+            priority
+            overlay
+            overlayOpacity={0.6}
+          />
+        )}
+
         {/* Background animé complexe */}
         <div className="absolute inset-0">
           {/* Grille dorée animée */}
@@ -109,11 +190,10 @@ export default function TemplateLuxe({ organization, services, team, content }: 
             maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)'
           }} />
 
-          {/* Cercles dorés concentriques animés */}
+          {/* Cercles dorés concentriques animés - Optimisé */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="w-[800px] h-[800px] border rounded-full animate-[spin_40s_linear_infinite]" style={{ borderColor: `${primaryColor}15` }} />
-            <div className="absolute inset-0 w-[600px] h-[600px] m-auto border rounded-full animate-[spin_30s_linear_infinite_reverse]" style={{ borderColor: `${primaryColor}20` }} />
-            <div className="absolute inset-0 w-[400px] h-[400px] m-auto border rounded-full animate-[spin_20s_linear_infinite]" style={{ borderColor: `${primaryColor}25` }} />
+            <div className="w-[600px] h-[600px] border rounded-full animate-[spin_30s_linear_infinite]" style={{ borderColor: `${primaryColor}20` }} />
+            <div className="absolute inset-0 w-[400px] h-[400px] m-auto border rounded-full animate-[spin_20s_linear_infinite_reverse]" style={{ borderColor: `${primaryColor}25` }} />
           </div>
 
           {/* Rayons lumineux subtils */}
@@ -123,7 +203,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
         <div className="relative z-10 text-center px-6 max-w-6xl mx-auto">
           {/* Badge Premium */}
-          <div className="inline-flex items-center gap-3 px-8 py-3 backdrop-blur-xl border rounded-full mb-8 shadow-2xl" style={{
+          <div className="inline-flex items-center gap-3 px-8 py-3 backdrop-blur-md border rounded-full mb-8 shadow-2xl" style={{
             backgroundColor: `${primaryColor}10`,
             borderColor: `${primaryColor}30`
           }}>
@@ -181,7 +261,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
               <div key={idx} className="text-center group">
                 <div className="relative inline-block mb-4">
                   <stat.icon className="w-12 h-12 relative z-10" style={{ color: primaryColor }} />
-                  <div className="absolute inset-0 blur-2xl opacity-20" style={{ backgroundColor: primaryColor }} />
+                  <div className="absolute inset-0 blur-lg opacity-20" style={{ backgroundColor: primaryColor }} />
                 </div>
                 <div className="text-5xl font-bold mb-2" style={{ color: primaryColor }}>{stat.number}</div>
                 <div className="text-sm tracking-widest uppercase text-white/50">{stat.label}</div>
@@ -207,7 +287,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-3 px-6 py-2 backdrop-blur-sm border rounded-full mb-6" style={{
+            <div className="inline-flex items-center gap-3 px-6 py-2 border rounded-full mb-6" style={{
               backgroundColor: `${primaryColor}10`,
               borderColor: `${primaryColor}20`
             }}>
@@ -242,7 +322,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
                 desc: 'Une sélection pointue des marques les plus prestigieuses et efficaces'
               }
             ].map((item, idx) => (
-              <div key={idx} className="group relative p-10 border backdrop-blur-sm transition-all duration-500" style={{
+              <div key={idx} className="group relative p-10 border transition-all duration-500" style={{
                 background: `linear-gradient(to bottom right, ${primaryColor}05, transparent)`,
                 borderColor: `${primaryColor}20`
               }}>
@@ -264,7 +344,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-3 px-6 py-2 backdrop-blur-sm border rounded-full mb-6" style={{
+            <div className="inline-flex items-center gap-3 px-6 py-2 border rounded-full mb-6" style={{
               backgroundColor: `${primaryColor}10`,
               borderColor: `${primaryColor}20`
             }}>
@@ -287,7 +367,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
                 className="group relative overflow-hidden"
               >
                 {/* Carte avec effet glassmorphism premium */}
-                <div className="relative p-8 backdrop-blur-xl border transition-all duration-500 h-full" style={{
+                <div className="relative p-8 backdrop-blur-md border transition-all duration-500 h-full" style={{
                   background: `linear-gradient(to bottom right, ${primaryColor}10, ${primaryColor}05)`,
                   borderColor: `${primaryColor}20`
                 }}>
@@ -340,7 +420,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
 
           <div className="max-w-7xl mx-auto relative z-10">
             <div className="text-center mb-20">
-              <div className="inline-flex items-center gap-3 px-6 py-2 backdrop-blur-sm border rounded-full mb-6" style={{
+              <div className="inline-flex items-center gap-3 px-6 py-2 border rounded-full mb-6" style={{
                 backgroundColor: `${primaryColor}10`,
                 borderColor: `${primaryColor}20`
               }}>
@@ -396,7 +476,7 @@ export default function TemplateLuxe({ organization, services, team, content }: 
       {/* CTA FINAL - Ultra Premium */}
       <section className="py-40 px-6 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ background: `linear-gradient(to bottom, transparent, ${secondaryColor}, transparent)` }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-10" style={{ backgroundColor: primaryColor }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-xl opacity-10" style={{ backgroundColor: primaryColor }} />
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
           <Crown className="w-20 h-20 mx-auto mb-8" style={{ color: primaryColor }} />
@@ -418,27 +498,61 @@ export default function TemplateLuxe({ organization, services, team, content }: 
         </div>
       </section>
 
-      {/* FOOTER Premium */}
-      <footer className="border-t py-16 px-6 relative" style={{ borderColor: `${primaryColor}20` }}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-4">
-              <Crown className="w-8 h-8" style={{ color: primaryColor }} />
-              <div>
-                <div className="text-2xl font-serif" style={{ color: primaryColor }}>{organization.name}</div>
-                <div className="text-xs tracking-widest uppercase opacity-50" style={{ color: primaryColor }}>Luxury Experience Since 2024</div>
+      {/* Founder Section */}
+      {organization.founderName && (
+        <section id="founder" className="py-20 px-6 relative overflow-hidden bg-black/20">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {organization.founderImage && (
+                <div className="relative">
+                  <div className="absolute -inset-4 border-2 transition-all duration-500" style={{ borderColor: `${primaryColor}20` }} />
+                  <Image
+                    src={organization.founderImage}
+                    alt={organization.founderName}
+                    width={600}
+                    height={800}
+                    className="relative rounded-none w-full h-auto object-cover shadow-2xl"
+                  />
+                </div>
+              )}
+              <div className={!organization.founderImage ? 'md:col-span-2 text-center' : ''}>
+                <div className="inline-flex items-center gap-3 px-6 py-2 border rounded-full mb-6" style={{
+                  backgroundColor: `${primaryColor}10`,
+                  borderColor: `${primaryColor}20`
+                }}>
+                  <Crown className="w-5 h-5" style={{ color: primaryColor }} />
+                  <span className="text-sm tracking-widest uppercase" style={{ color: primaryColor }}>Fondatrice</span>
+                </div>
+                <h3 className="text-3xl md:text-4xl font-serif mb-4 text-white">
+                  {organization.founderName}
+                </h3>
+                {organization.founderTitle && (
+                  <p className="text-lg mb-6" style={{ color: primaryColor }}>
+                    {organization.founderTitle}
+                  </p>
+                )}
+                {organization.founderQuote && (
+                  <blockquote className="text-xl text-white/80 italic leading-relaxed">
+                    "{organization.founderQuote}"
+                  </blockquote>
+                )}
               </div>
             </div>
-            <div className="text-sm" style={{ color: `${primaryColor}80` }}>
-              © 2024 {organization.name}. Tous droits réservés.
-            </div>
-            <div className="text-xs opacity-30" style={{ color: primaryColor }}>
-              Propulsé par LAIA Connect
-            </div>
           </div>
-        </div>
-      </footer>
+        </section>
+      )}
+
+      {/* Floating Buttons */}
+      {organization.phone && (
+        <FloatingCallButton phone={organization.phone} primaryColor={primaryColor} />
+      )}
+      {organization.whatsapp && (
+        <FloatingWhatsAppButton whatsapp={organization.whatsapp} />
+      )}
+      <ScrollToTopButton primaryColor={primaryColor} />
+
+      {/* FOOTER Premium */}
+      <TemplateFooter organization={organization} theme="dark" />
     </div>
   );
 }

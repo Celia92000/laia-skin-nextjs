@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -12,6 +13,19 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 export async function POST(request: NextRequest) {
   try {
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
+
     // Vérifier le secret du cron
     const cronSecret = request.headers.get('Authorization')?.replace('Bearer ', '');
     if (cronSecret !== process.env.CRON_SECRET) {

@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { X, Play, CheckCircle } from 'lucide-react'
 import VideoPlayer from '../platform/VideoPlayer'
+import OnboardingWizardComplete from '../OnboardingWizardComplete'
 
 export default function WelcomeModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
   const [videoUrl, setVideoUrl] = useState('')
 
   useEffect(() => {
@@ -34,7 +36,22 @@ export default function WelcomeModal() {
     setIsOpen(false)
   }
 
+  const handleStartOnboarding = () => {
+    setShowWizard(true)
+  }
+
+  const handleWizardComplete = () => {
+    localStorage.setItem('laia-welcome-seen', 'true')
+    setIsOpen(false)
+    window.location.href = '/admin'
+  }
+
   if (!isOpen) return null
+
+  // Si le wizard est activé, afficher uniquement le wizard
+  if (showWizard) {
+    return <OnboardingWizardComplete onComplete={handleWizardComplete} />
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -228,7 +245,7 @@ export default function WelcomeModal() {
             Passer l'introduction
           </button>
           <button
-            onClick={handleClose}
+            onClick={handleStartOnboarding}
             className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
           >
             C'est parti ! 🚀

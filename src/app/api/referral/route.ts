@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPrismaClient } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/auth';
 import { log } from '@/lib/logger';
 
 // Générer un code de parrainage unique
@@ -20,12 +20,16 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
     // 🔒 Récupérer le profil de fidélité DE CETTE ORGANISATION
     const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
-        userId: decoded.id,
+        userId: decoded.userId,
         organizationId: decoded.organizationId
       },
       include: {
@@ -46,7 +50,7 @@ export async function GET(request: Request) {
     // 🔒 Récupérer les parrainages effectués DE CETTE ORGANISATION
     const referrals = await prisma.referral.findMany({
       where: {
-        referrerUserId: decoded.id,
+        referrerUserId: decoded.userId,
         organizationId: decoded.organizationId
       },
       include: {
@@ -95,7 +99,11 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
     const { email, name } = await request.json();
 
@@ -131,30 +139,52 @@ export async function POST(request: Request) {
     // 🔒 Récupérer le profil de fidélité du parrain DE CETTE ORGANISATION
     const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
-        userId: decoded.id,
+        userId: decoded.userId,
         organizationId: decoded.organizationId
       },
       include: { user: true }
     });
 
-    if (!loyaltyProfile?.referralCode) {
-      const code = generateReferralCode(decoded.name);
+    if (!loyaltyProfile) {
+      return NextResponse.json({
+        error: 'Profil de fidélité introuvable'
+      }, { status: 404 });
+    }
+
+    if (!loyaltyProfile.referralCode) {
+      const code = generateReferralCode(loyaltyProfile.user.name);
       await prisma.loyaltyProfile.update({
         where: { id: loyaltyProfile.id },
         data: { referralCode: code }
       });
+      loyaltyProfile.referralCode = code;
+    }
+
+    // 🔒 Récupérer la configuration du parrainage de l'organisation
+    const organization = await prisma.organization.findUnique({
+      where: { id: decoded.organizationId },
+      select: {
+        referralEnabled: true,
+        referralReferrerReward: true
+      }
+    });
+
+    if (!organization?.referralEnabled) {
+      return NextResponse.json({
+        error: 'Le programme de parrainage est désactivé'
+      }, { status: 400 });
     }
 
     // 🔒 Créer le parrainage POUR CETTE ORGANISATION
     const referral = await prisma.referral.create({
       data: {
-        referrerUserId: decoded.id,
+        referrerUserId: decoded.userId,
         organizationId: decoded.organizationId,
-        referralCode: `${loyaltyProfile?.referralCode || generateReferralCode(decoded.name)}-${Date.now()}`,
+        referralCode: `${loyaltyProfile.referralCode}-${Date.now()}`,
         referredEmail: email,
         referredName: name,
         status: 'pending',
-        rewardAmount: 20
+        rewardAmount: organization.referralReferrerReward
       }
     });
 
@@ -184,7 +214,11 @@ export async function PUT(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'laia-secret-2024') as any;
+    const decoded = verifyToken(token);
+
+    if (!decoded) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
 
     const { referralId } = await request.json();
 
@@ -192,7 +226,7 @@ export async function PUT(request: Request) {
     const referral = await prisma.referral.findFirst({
       where: {
         id: referralId,
-        referrerUserId: decoded.id,
+        referrerUserId: decoded.userId,
         organizationId: decoded.organizationId,
         status: 'rewarded',
         rewardUsedAt: null

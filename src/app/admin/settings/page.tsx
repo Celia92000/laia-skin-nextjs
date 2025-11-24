@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft, Save, Lock, Mail, User, Shield,
   Eye, EyeOff, Check, X, AlertCircle, Settings as SettingsIcon, Globe, CreditCard,
-  Building, MapPin, Phone
+  Building, MapPin, Phone, Database
 } from 'lucide-react';
 import AdminConfigTab from '@/components/AdminConfigTab';
 import SubscriptionInvoices from '@/components/SubscriptionInvoices';
+import DataExport from '@/components/DataExport';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -18,7 +20,8 @@ export default function AdminSettings() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'site' | 'subscription' | 'migration'>('account');
+  const [migrationSubTab, setMigrationSubTab] = useState<'import' | 'export'>('import');
   
   const [userInfo, setUserInfo] = useState({
     email: '',
@@ -206,12 +209,12 @@ export default function AdminSettings() {
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push('/admin')}
+            <Link
+              href="/admin"
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
+            </Link>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
               <p className="text-sm text-gray-600">Gérez votre compte et la configuration du site</p>
@@ -267,6 +270,24 @@ export default function AdminSettings() {
               <CreditCard className="w-5 h-5" />
               Abonnement
               {activeTab === 'subscription' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+              )}
+            </button>
+          )}
+
+          {/* Migration de données - Seulement pour ORG_ADMIN, SUPER_ADMIN */}
+          {hasFullAccess && (
+            <button
+              onClick={() => setActiveTab('migration')}
+              className={`flex items-center gap-2 pb-4 px-4 transition relative ${
+                activeTab === 'migration'
+                  ? 'text-[#d4b5a0] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Database className="w-5 h-5" />
+              Migration de données
+              {activeTab === 'migration' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
               )}
             </button>
@@ -791,6 +812,7 @@ export default function AdminSettings() {
             </div>
           </div>
         </div>
+
         </div>
       ) : activeTab === 'site' ? (
         <div className="max-w-7xl mx-auto">
@@ -799,6 +821,154 @@ export default function AdminSettings() {
       ) : activeTab === 'subscription' ? (
         <div className="max-w-7xl mx-auto">
           <SubscriptionInvoices />
+        </div>
+      ) : activeTab === 'migration' ? (
+        <div className="max-w-7xl mx-auto">
+          {/* Sous-onglets Import/Export */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => setMigrationSubTab('import')}
+              className={`flex items-center gap-2 pb-3 px-4 transition relative ${
+                migrationSubTab === 'import'
+                  ? 'text-[#d4b5a0] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-xl">📥</span>
+              Import de données
+              {migrationSubTab === 'import' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+              )}
+            </button>
+
+            <button
+              onClick={() => setMigrationSubTab('export')}
+              className={`flex items-center gap-2 pb-3 px-4 transition relative ${
+                migrationSubTab === 'export'
+                  ? 'text-[#d4b5a0] font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="text-xl">📤</span>
+              Export de données
+              {migrationSubTab === 'export' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d4b5a0]"></div>
+              )}
+            </button>
+          </div>
+
+          {/* Contenu selon le sous-onglet */}
+          {migrationSubTab === 'import' ? (
+            <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl shadow-lg p-6 border-2 border-rose-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-2xl">
+                  📥
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Import de données</h2>
+                  <p className="text-sm text-gray-600">Migrez facilement depuis votre ancien système</p>
+                </div>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur rounded-xl p-5 mb-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">👥</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Clients</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">💅</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Services</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🛍️</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Produits</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📚</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Formations</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🎁</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Cartes cadeaux</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📦</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Forfaits</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🎟️</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Codes promo</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">⭐</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Avis clients</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📧</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Newsletter</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📅</div>
+                    <div className="text-sm">
+                      <div className="font-semibold text-gray-900">Rendez-vous</div>
+                      <div className="text-xs text-gray-600">Import CSV</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2 text-xs text-blue-800">
+                    <div className="mt-0.5">💡</div>
+                    <div>
+                      <strong>Assistant guidé :</strong> Nous vous accompagnons étape par étape pour
+                      importer toutes vos données existantes en quelques clics.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => router.push('/admin/import')}
+                className="w-full py-4 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl font-semibold hover:from-rose-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-lg"
+              >
+                <span>🚀</span>
+                Lancer l'assistant d'import
+                <span>→</span>
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-6 border-2 border-blue-200">
+              <DataExport />
+            </div>
+          )}
         </div>
       ) : null}
     </div>

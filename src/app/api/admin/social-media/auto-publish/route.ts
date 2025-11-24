@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { log } from '@/lib/logger';
+import { verifyToken } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  // 🔒 Vérification Admin obligatoire
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || !decoded.userId) {
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur a un rôle admin
+  const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT'];
+  if (!allowedRoles.includes(decoded.role)) {
+    return NextResponse.json({ error: 'Accès refusé - Rôle admin requis' }, { status: 403 });
+  }
+
   try {
     const now = new Date();
 
@@ -63,6 +83,25 @@ export async function POST(req: NextRequest) {
 
 // GET endpoint pour vérifier les posts à publier sans les publier
 export async function GET(req: NextRequest) {
+  // 🔒 Vérification Admin obligatoire
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || !decoded.userId) {
+    return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+  }
+
+  // Vérifier que l'utilisateur a un rôle admin
+  const allowedRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT'];
+  if (!allowedRoles.includes(decoded.role)) {
+    return NextResponse.json({ error: 'Accès refusé - Rôle admin requis' }, { status: 403 });
+  }
+
   try {
     const now = new Date();
 

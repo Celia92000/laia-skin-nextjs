@@ -1,7 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { BaseTemplateContent } from '@/types/template-content';
+import MobileMenu from './shared/MobileMenu';
+import FloatingCallButton from './shared/FloatingCallButton';
+import FloatingWhatsAppButton from './shared/FloatingWhatsAppButton';
+import ScrollToTopButton from './shared/ScrollToTopButton';
+import TemplateFooter from './shared/TemplateFooter';
+import HeroMedia from './shared/HeroMedia';
 
 interface TemplateProps {
   organization: {
@@ -9,6 +16,50 @@ interface TemplateProps {
     description?: string;
     primaryColor: string;
     secondaryColor: string;
+    accentColor?: string;
+
+    // Images
+    logoUrl?: string;
+    heroImage?: string;
+    heroVideo?: string;
+    faviconUrl?: string;
+
+    // Contact
+    email?: string;
+    contactEmail?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    googleMapsUrl?: string;
+
+    // Social Media
+    facebook?: string;
+    instagram?: string;
+    tiktok?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    youtube?: string;
+
+    // Business Hours
+    businessHours?: any;
+
+    // Founder
+    founderName?: string;
+    founderTitle?: string;
+    founderQuote?: string;
+    founderImage?: string;
+
+    // Legal
+    siret?: string;
+    termsAndConditions?: string;
+    privacyPolicy?: string;
+    legalNotice?: string;
+
+    // SEO
+    metaTitle?: string;
+    metaDescription?: string;
   };
   services: Array<{
     id: string;
@@ -52,21 +103,50 @@ export default function TemplateMinimal({ organization, services, team, content 
       <header className="fixed top-0 w-full z-50 bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-8 py-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-light tracking-[0.3em] text-gray-900">
-              {organization.name.toUpperCase()}
-            </h1>
+            {organization.logoUrl ? (
+              <Image src={organization.logoUrl} alt={organization.name} width={120} height={40} className="h-10 w-auto" priority />
+            ) : (
+              <h1 className="text-lg font-light tracking-[0.3em] text-gray-900">
+                {organization.name.toUpperCase()}
+              </h1>
+            )}
             <nav className="hidden md:flex gap-16 items-center">
               <a href="#services" className="text-xs text-gray-600 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">Services</a>
               <a href="#equipe" className="text-xs text-gray-600 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">Équipe</a>
               <a href="#contact" className="text-xs text-gray-600 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">Contact</a>
             </nav>
+
+            {/* Mobile Menu */}
+            <MobileMenu
+              organization={organization}
+              menuItems={[
+                { label: 'Services', href: '#services' },
+                { label: 'Équipe', href: '#equipe' },
+                { label: 'Contact', href: '#contact' }
+              ]}
+              ctaLabel="Réserver"
+              ctaHref="/booking"
+              theme="light"
+            />
           </div>
         </div>
       </header>
 
       {/* Hero - Typographie géante éditorial */}
-      <section className="pt-48 pb-40 px-8">
-        <div className="max-w-5xl mx-auto">
+      <section className="pt-48 pb-40 px-8 relative overflow-hidden">
+        {/* Background media (video or image) */}
+        {(organization.heroVideo || organization.heroImage) && (
+          <HeroMedia
+            videoUrl={organization.heroVideo}
+            imageUrl={organization.heroImage}
+            alt={`${organization.name} hero`}
+            priority
+            overlay
+            overlayOpacity={0.3}
+          />
+        )}
+
+        <div className="max-w-5xl mx-auto relative z-10">
           {/* Petit texte au dessus */}
           <div className="mb-16">
             <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-4">
@@ -220,6 +300,45 @@ export default function TemplateMinimal({ organization, services, team, content 
         </section>
       )}
 
+      {/* Founder Section */}
+      {organization.founderName && (
+        <section className="px-8 py-40">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-20 items-center">
+              {organization.founderImage && (
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  <Image
+                    src={organization.founderImage}
+                    alt={organization.founderName}
+                    width={600}
+                    height={800}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className={organization.founderImage ? '' : 'md:col-span-2 text-center'}>
+                <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-8">
+                  Fondatrice
+                </p>
+                <h2 className="text-5xl font-light text-gray-900 mb-6 tracking-tight">
+                  {organization.founderName}
+                </h2>
+                {organization.founderTitle && (
+                  <p className="text-xl text-gray-600 mb-8 font-light">
+                    {organization.founderTitle}
+                  </p>
+                )}
+                {organization.founderQuote && (
+                  <blockquote className="text-2xl italic text-gray-700 leading-relaxed font-light">
+                    "{organization.founderQuote}"
+                  </blockquote>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Contact - Minimaliste et élégant */}
       <section id="contact" className="px-8 py-40 bg-gray-50">
         <div className="max-w-5xl mx-auto">
@@ -231,55 +350,63 @@ export default function TemplateMinimal({ organization, services, team, content 
               </p>
 
               <div className="space-y-12">
-                <div>
-                  <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
-                    Adresse
-                  </h4>
-                  <p className="text-xl text-gray-900 font-light leading-relaxed">
-                    À 6 minutes de la gare<br />
-                    de Nanterre Université<br />
-                    92000 Nanterre, France
-                  </p>
-                </div>
+                {organization.address && (
+                  <div>
+                    <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
+                      Adresse
+                    </h4>
+                    <p className="text-xl text-gray-900 font-light leading-relaxed">
+                      {organization.address}<br />
+                      {organization.postalCode} {organization.city}
+                      {organization.country && `, ${organization.country}`}
+                    </p>
+                  </div>
+                )}
 
-                <div>
-                  <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
-                    Téléphone
-                  </h4>
-                  <p className="text-xl text-gray-900 font-light">
-                    +33 6 31 10 75 31
-                  </p>
-                </div>
+                {organization.phone && (
+                  <div>
+                    <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
+                      Téléphone
+                    </h4>
+                    <p className="text-xl text-gray-900 font-light">
+                      {organization.phone}
+                    </p>
+                  </div>
+                )}
 
-                <div>
-                  <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
-                    Email
-                  </h4>
-                  <p className="text-xl text-gray-900 font-light">
-                    contact@{organization.name.toLowerCase().replace(/\s+/g, '')}.fr
-                  </p>
-                </div>
+                {(organization.email || organization.contactEmail) && (
+                  <div>
+                    <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-4 font-light">
+                      Email
+                    </h4>
+                    <p className="text-xl text-gray-900 font-light">
+                      {organization.contactEmail || organization.email}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Horaires + CTA */}
             <div>
-              <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-12">
-                Horaires
-              </p>
+              {organization.businessHours && (
+                <>
+                  <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-12">
+                    Horaires
+                  </p>
 
-              <div className="space-y-6 mb-16">
-                {[
-                  { day: 'Lundi – Vendredi', hours: '9h – 19h' },
-                  { day: 'Samedi', hours: '10h – 18h' },
-                  { day: 'Dimanche', hours: 'Fermé' }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-baseline border-b border-gray-200 pb-4">
-                    <span className="text-gray-600 font-light">{item.day}</span>
-                    <span className="text-gray-900 font-light">{item.hours}</span>
+                  <div className="space-y-6 mb-16">
+                    {Object.entries(organization.businessHours).map(([day, hours]: [string, any]) => (
+                      <div key={day} className="flex justify-between items-baseline border-b border-gray-200 pb-4">
+                        <span className="text-gray-600 font-light capitalize">{day}</span>
+                        <span className="text-gray-900 font-light">
+                          {hours.closed ? 'Fermé' : `${hours.open} – ${hours.close}`}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              )}
 
               <Link
                 href="/booking"
@@ -294,40 +421,30 @@ export default function TemplateMinimal({ organization, services, team, content 
         </div>
       </section>
 
-      {/* Footer ultra minimal */}
-      <footer className="border-t border-gray-200 py-16 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div>
-              <h3 className="text-lg font-light tracking-[0.3em] text-gray-900 mb-2">
-                {organization.name.toUpperCase()}
-              </h3>
-              <p className="text-xs text-gray-400 tracking-[0.2em] uppercase font-light">
-                Since 2024
-              </p>
-            </div>
-            <div className="flex gap-12">
-              <a href="#" className="text-xs text-gray-400 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">
-                Facebook
-              </a>
-              <a href="#" className="text-xs text-gray-400 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">
-                Instagram
-              </a>
-              <a href="#" className="text-xs text-gray-400 hover:text-gray-900 tracking-[0.2em] uppercase font-light transition-colors">
-                TikTok
-              </a>
-            </div>
-          </div>
-          <div className="mt-12 pt-8 border-t border-gray-100 flex justify-between items-center">
-            <p className="text-xs text-gray-400 font-light">
-              © 2024 {organization.name}. Tous droits réservés.
-            </p>
-            <p className="text-xs text-gray-300 font-light">
-              Propulsé par LAIA Connect
-            </p>
-          </div>
-        </div>
-      </footer>
+      {/* Footer */}
+      <TemplateFooter
+        organization={organization}
+        theme="light"
+      />
+
+      {/* Floating Action Buttons */}
+      {organization.phone && (
+        <FloatingCallButton
+          phone={organization.phone}
+          primaryColor={organization.primaryColor}
+        />
+      )}
+
+      {organization.whatsapp && (
+        <FloatingWhatsAppButton
+          whatsapp={organization.whatsapp}
+          message="Bonjour, je souhaite prendre rendez-vous"
+        />
+      )}
+
+      <ScrollToTopButton
+        primaryColor={organization.primaryColor}
+      />
     </div>
   );
 }

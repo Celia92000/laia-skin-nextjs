@@ -72,7 +72,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(config);
+    // Ajouter un alias websiteTemplate pour compatibilité avec AdminConfigTab
+    const configWithAlias = {
+      ...config,
+      websiteTemplate: config.homeTemplate || 'modern'
+    };
+
+    return NextResponse.json(configWithAlias);
   } catch (error) {
     log.error('Erreur lors de la récupération de la configuration:', error);
     return NextResponse.json(
@@ -96,8 +102,49 @@ export async function PUT(request: NextRequest) {
     const prisma = await getPrismaClient();
     const data = await request.json();
 
+    // Log pour déboguer
+    log.info('Données reçues:', { data });
+
     // Retirer l'id et organizationId du data pour éviter les erreurs
-    const { id, organizationId, ...updateData } = data;
+    const { id, organizationId, websiteTemplate, ...rest } = data;
+
+    // Filtrer UNIQUEMENT les champs valides du schéma OrganizationConfig
+    const validFields = [
+      'siteName', 'siteTagline', 'siteDescription',
+      'email', 'contactEmail', 'phone', 'address', 'city', 'postalCode', 'country',
+      'facebook', 'instagram', 'tiktok', 'whatsapp', 'linkedin', 'youtube',
+      'primaryColor', 'secondaryColor', 'accentColor', 'logoUrl', 'faviconUrl',
+      'fontFamily', 'headingFont', 'baseFontSize', 'headingSize',
+      'businessHours', 'latitude', 'longitude', 'googleMapsUrl',
+      'heroTitle', 'heroSubtitle', 'heroImage', 'heroVideo', 'aboutText',
+      'founderName', 'founderTitle', 'founderQuote', 'founderImage',
+      'aboutIntro', 'aboutParcours', 'testimonials', 'formations',
+      'termsAndConditions', 'privacyPolicy', 'legalNotice',
+      'emailSignature', 'welcomeEmailText',
+      'legalName', 'siret', 'siren', 'tvaNumber', 'apeCode', 'rcs', 'capital', 'legalForm',
+      'insuranceCompany', 'insuranceContract', 'insuranceAddress',
+      'bankName', 'bankIban', 'bankBic',
+      'legalRepName', 'legalRepTitle',
+      'googleAnalyticsId', 'facebookPixelId', 'metaVerificationCode', 'googleVerificationCode',
+      'crispWebsiteId', 'crispEnabled',
+      'defaultMetaTitle', 'defaultMetaDescription', 'defaultMetaKeywords',
+      'homeTemplate', 'homeSections', 'footerConfig', 'extendedColors', 'customizedFields',
+      'googlePlaceId', 'googleBusinessUrl', 'googleApiKey', 'lastGoogleSync', 'autoSyncGoogleReviews'
+    ];
+
+    const updateData: any = {};
+    for (const field of validFields) {
+      if (rest.hasOwnProperty(field) && rest[field] !== undefined) {
+        updateData[field] = rest[field];
+      }
+    }
+
+    // Convertir websiteTemplate en homeTemplate pour compatibilité
+    if (websiteTemplate) {
+      updateData.homeTemplate = websiteTemplate;
+    }
+
+    log.info('Données filtrées:', { updateData });
 
     // Récupérer la config existante
     let config = await prisma.organizationConfig.findUnique({
@@ -120,11 +167,20 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(config);
-  } catch (error) {
+    // Ajouter l'alias websiteTemplate pour compatibilité
+    const configWithAlias = {
+      ...config,
+      websiteTemplate: config.homeTemplate || 'modern'
+    };
+
+    return NextResponse.json(configWithAlias);
+  } catch (error: any) {
     log.error('Erreur lors de la mise à jour de la configuration:', error);
     return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour' },
+      {
+        error: 'Erreur lors de la mise à jour',
+        details: error?.message || String(error)
+      },
       { status: 500 }
     );
   }
