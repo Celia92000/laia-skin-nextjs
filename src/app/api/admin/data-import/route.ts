@@ -780,7 +780,7 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
       }
 
       // Trouver le client si email fourni
-      let userId = null;
+      let userId: string | undefined = undefined;
       if (clientEmail) {
         const user = await prisma.user.findFirst({
           where: {
@@ -788,7 +788,7 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
             organizationId
           }
         });
-        userId = user?.id || null;
+        userId = user?.id ?? undefined;
       }
 
       // Trouver le service si fourni
