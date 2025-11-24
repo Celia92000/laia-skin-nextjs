@@ -318,6 +318,17 @@ model Organization {
   churnRiskProfile     ChurnRiskProfile?
   cancellationFeedback CancellationFeedback[]
 
+  // Multi-tenant relations
+  stocks                 Stock[]
+  loyaltyProfiles        LoyaltyProfile[]
+  referrals              Referral[]
+  notifications          Notification[]
+  emailHistory           EmailHistory[]
+  discounts              Discount[]
+  newsletterSubscribers  NewsletterSubscriber[]
+  serviceCategories      ServiceCategory[]
+  serviceSubcategories   ServiceSubcategory[]
+
   @@index([slug])
   @@index([subdomain])
   @@index([status])
@@ -865,6 +876,8 @@ model Service {
 model LoyaltyProfile {
   id                      String           @id @default(cuid())
   userId                  String           @unique
+  organizationId          String
+  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   points                  Int              @default(0)
   tier                    String           @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
   individualServicesCount Int              @default(0)
@@ -880,6 +893,8 @@ model LoyaltyProfile {
   updatedAt               DateTime         @updatedAt
   user                    User             @relation(fields: [userId], references: [id])
   history                 LoyaltyHistory[]
+
+  @@index([organizationId])
 }
 
 model LoyaltyHistory {
@@ -897,21 +912,25 @@ model LoyaltyHistory {
 }
 
 model Referral {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   referrerUserId   String // ID de l'utilisateur parrain
-  referralCode     String    @unique // Code unique de parrainage
+  referralCode     String       @unique // Code unique de parrainage
   referredEmail    String? // Email du filleul avant inscription
   referredName     String? // Nom du filleul
-  referredUserId   String?   @unique // ID du filleul une fois inscrit
-  status           String    @default("pending") // pending, used, rewarded
-  rewardAmount     Float     @default(20) // Montant de la récompense en euros
+  referredUserId   String?      @unique // ID du filleul une fois inscrit
+  status           String       @default("pending") // pending, used, rewarded
+  rewardAmount     Float        @default(20) // Montant de la récompense en euros
   rewardUsedAt     DateTime? // Date d'utilisation de la récompense
   firstServiceDate DateTime? // Date du premier soin du filleul
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   referrer User  @relation("ReferralReferrer", fields: [referrerUserId], references: [id])
   referred User? @relation("ReferralReferred", fields: [referredUserId], references: [id])
+
+  @@index([organizationId])
 }
 
 model BlogPost {
@@ -1000,15 +1019,19 @@ model Review {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String // reminder, promotion, loyalty, birthday, etc.
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  actionUrl String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  type           String // reminder, promotion, loyalty, birthday, etc.
+  title          String
+  message        String
+  read           Boolean      @default(false)
+  actionUrl      String?
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
 }
 
 model Setting {
@@ -1204,6 +1227,8 @@ model SiteConfig {
 }
 
 model EmailHistory {
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   id           String         @id @default(cuid())
   from         String         @default("contact@laiaskininstitut.fr")
   to           String // Email ou liste d'emails séparés par virgule
@@ -1224,6 +1249,7 @@ model EmailHistory {
   archived     Boolean        @default(false) // Pour archiver les conversations
   createdAt    DateTime       @default(now())
   campaign     EmailCampaign? @relation(fields: [campaignId], references: [id])
+  @@index([organizationId])
 }
 
 model EmailCampaign {
@@ -1246,11 +1272,13 @@ model EmailCampaign {
 }
 
 model Discount {
-  id                 String    @id @default(cuid())
+  id                 String       @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId             String
   type               String // service_5, package_9, birthday, referral, postponed
   amount             Float
-  status             String    @default("available") // available, used, expired, postponed
+  status             String       @default("available") // available, used, expired, postponed
   originalReason     String // Raison initiale (ex: "5ème soin", "9ème séance", "Anniversaire")
   usedAt             DateTime?
   usedForReservation String? // ID de la réservation où la réduction a été utilisée
@@ -1259,9 +1287,11 @@ model Discount {
   postponedTo        DateTime? // Date jusqu'à laquelle c'est reporté
   postponedReason    String? // Raison du report
   notes              String? // Notes additionnelles
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  user               User      @relation(fields: [userId], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  user               User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
 }
 
 model PromoCode {
@@ -1334,14 +1364,18 @@ model BusinessStats {
 }
 
 model NewsletterSubscriber {
-  id             String    @id @default(cuid())
-  email          String    @unique
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @unique
   name           String?
-  isActive       Boolean   @default(true)
-  subscribedAt   DateTime  @default(now())
+  isActive       Boolean      @default(true)
+  subscribedAt   DateTime     @default(now())
   unsubscribedAt DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 
 model WhatsAppHistory {
@@ -1469,13 +1503,15 @@ model ProductCategory {
 }
 
 model Stock {
-  id              String    @id @default(cuid())
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name            String
   description     String?
   category        String? // Consommables, Matériel, Produits de soin, etc.
-  quantity        Int       @default(0)
+  quantity        Int          @default(0)
   initialQuantity Int? // Quantité initiale pour afficher "X sur Y"
-  minQuantity     Int       @default(5) // Seuil d'alerte
+  minQuantity     Int          @default(5) // Seuil d'alerte
   unit            String? // ml, g, pièce, etc.
   cost            Float? // Prix d'achat
   supplier        String?
@@ -1486,14 +1522,15 @@ model Stock {
   lastRestocked   DateTime?
   location        String? // Emplacement dans le stock
   notes           String?
-  active          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   serviceLinks ServiceStock[] // Relation avec les services
   movements    StockMovement[] // Historique des mouvements
 
   @@index([category])
+  @@index([organizationId])
 }
 
 // Table de liaison entre Services et Stock (Many-to-Many)
@@ -1836,16 +1873,18 @@ model Integration {
 
 // Catégories de services (ex: Soins du visage, Soins du corps, Épilation)
 model ServiceCategory {
-  id          String  @id @default(cuid())
-  name        String // Ex: "Soins du visage"
-  slug        String  @unique // Ex: "soins-visage"
-  description String? @db.Text
-  icon        String? // Ex: "FaFaceSmile" (nom de l'icône React Icons)
-  color       String  @default("#e11d48") // Couleur hex pour l'interface
-  image       String? // Image de bannière de la catégorie
-  order       Int     @default(0) // Ordre d'affichage
-  active      Boolean @default(true)
-  featured    Boolean @default(false) // Mettre en avant sur la page d'accueil
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String // Ex: "Soins du visage"
+  slug           String       @unique // Ex: "soins-visage"
+  description    String?      @db.Text
+  icon           String? // Ex: "FaFaceSmile" (nom de l'icône React Icons)
+  color          String       @default("#e11d48") // Couleur hex pour l'interface
+  image          String? // Image de bannière de la catégorie
+  order          Int          @default(0) // Ordre d'affichage
+  active         Boolean      @default(true)
+  featured       Boolean      @default(false) // Mettre en avant sur la page d'accueil
 
   // SEO
   metaTitle       String?
@@ -1862,19 +1901,22 @@ model ServiceCategory {
   @@index([slug])
   @@index([active])
   @@index([order])
+  @@index([organizationId])
 }
 
 // Sous-catégories de services (ex: sous "Soins du visage" → HydroFacial, BB Glow)
 model ServiceSubcategory {
-  id          String  @id @default(cuid())
-  categoryId  String
-  name        String // Ex: "Soins anti-âge"
-  slug        String  @unique // Ex: "soins-anti-age"
-  description String? @db.Text
-  icon        String? // Icône spécifique
-  image       String? // Image de la sous-catégorie
-  order       Int     @default(0)
-  active      Boolean @default(true)
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  categoryId     String
+  name           String // Ex: "Soins anti-âge"
+  slug           String          @unique // Ex: "soins-anti-age"
+  description    String?         @db.Text
+  icon           String? // Icône spécifique
+  image          String? // Image de la sous-catégorie
+  order          Int             @default(0)
+  active         Boolean         @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1887,6 +1929,7 @@ model ServiceSubcategory {
   @@index([slug])
   @@index([active])
   @@index([order])
+  @@index([organizationId])
 }
 
 // Historique des paiements (tous types confondus)
@@ -1987,6 +2030,7 @@ enum AuditAction {
   DELETE_LOCATION
   UPDATE_SETTINGS
   RESET_PASSWORD
+  DATA_EXPORT
 }
 
 model AuditLog {

@@ -3,6 +3,7 @@ import { getResend } from '@/lib/resend';
 import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { log } from '@/lib/logger';
+import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 
 // Resend instance created lazily via getResend()
 
@@ -123,17 +124,21 @@ export async function POST(request: Request) {
 
     // Enregistrer le message reçu dans l'historique des emails
     try {
-      await prisma.emailHistory.create({
-        data: {
-          from: email,
-          to: '${email}',
-          subject: subject || 'Message de contact',
-          content: message,
-          template: 'contact_form',
-          status: 'received',
-          direction: 'incoming'
-        }
-      });
+      const organizationId = await getCurrentOrganizationId();
+      if (organizationId) {
+        await prisma.emailHistory.create({
+          data: {
+            organizationId,
+            from: email,
+            to: '${email}',
+            subject: subject || 'Message de contact',
+            content: message,
+            template: 'contact_form',
+            status: 'received',
+            direction: 'incoming'
+          }
+        });
+      }
     } catch (historyError) {
       log.error('Erreur enregistrement historique:', historyError);
     }

@@ -77,7 +77,7 @@ export async function generateOrganizationTemplate(options: TemplateGenerationOp
   }
 
   // 5. Créer les catégories de services
-  await generateServiceCategories()
+  await generateServiceCategories(organizationId)
   console.log(`✅ Catégories de services créées`)
 
   // 6. Configurer les paramètres de réservation
@@ -409,7 +409,7 @@ Un massage régulier améliore la qualité du sommeil.`,
 /**
  * Crée les catégories de services
  */
-async function generateServiceCategories() {
+async function generateServiceCategories(organizationId: string) {
   const categories = [
     { name: 'Soins du Visage', slug: 'soins-visage', icon: 'FaFaceSmile', color: '#e11d48' },
     { name: 'Soins du Corps', slug: 'soins-corps', icon: 'FaSpa', color: '#7c3aed' },
@@ -422,7 +422,10 @@ async function generateServiceCategories() {
     await prisma.serviceCategory.upsert({
       where: { slug: cat.slug },
       update: {},
-      create: cat
+      create: {
+        ...cat,
+        organizationId
+      }
     })
   }
 }

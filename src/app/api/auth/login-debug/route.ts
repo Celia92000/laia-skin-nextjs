@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       }, { status: 401 });
     }
 
-    log.info('✅ User found:', user.email, 'Role:', user.role);
+    log.info(`✅ User found: ${user.email} Role: ${user.role}`);
 
     // Vérifier que l'utilisateur a un mot de passe (pas OAuth)
     if (!user.password) {

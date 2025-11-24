@@ -130,22 +130,26 @@ export async function POST(request: NextRequest) {
     });
     
     for (const admin of adminUsers) {
-      await prisma.notification.create({
-        data: {
-          userId: admin.id,
-          type: 'new_review',
-          title: 'Nouvel avis reçu',
-          message: `${user.name} a laissé un avis ${rating}⭐ par email`,
-          actionUrl: '/admin/avis'
-        }
-      });
+      if (admin.organizationId) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            organizationId: admin.organizationId,
+            type: 'new_review',
+            title: 'Nouvel avis reçu',
+            message: `${user.name} a laissé un avis ${rating}⭐ par email`,
+            actionUrl: '/admin/avis'
+          }
+        });
+      }
     }
     
     // Créer une réduction si l'avis contient des photos
-    if (photos.length > 0 && rating >= 4) {
+    if (photos.length > 0 && rating >= 4 && user.organizationId) {
       await prisma.discount.create({
         data: {
           userId: user.id,
+          organizationId: user.organizationId,
           type: 'review_reward',
           amount: 5, // 5€ ou 5% selon votre préférence
           status: 'available',
@@ -153,11 +157,12 @@ export async function POST(request: NextRequest) {
           expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 jours
         }
       });
-      
+
       // Notification au client
       await prisma.notification.create({
         data: {
           userId: user.id,
+          organizationId: user.organizationId,
           type: 'discount',
           title: 'Réduction obtenue !',
           message: '🎁 Merci pour votre avis ! Vous avez gagné 5% de réduction sur votre prochain soin',

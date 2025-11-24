@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
 
         // 2. Supprimer les leads assignés à cet utilisateur
         await prisma.lead.updateMany({
-          where: { assignedToId: user.id },
-          data: { assignedToId: null }
+          where: { assignedToUserId: user.id },
+          data: { assignedToUserId: null }
         });
 
         // 3. Supprimer les tickets assignés à cet utilisateur
@@ -115,10 +115,12 @@ export async function GET(request: NextRequest) {
           where: { userId: user.id }
         });
 
-        // 8. Supprimer les tokens API
-        await prisma.apiToken.deleteMany({
-          where: { userId: user.id }
-        });
+        // 8. Supprimer les tokens API de l'organisation (si applicable)
+        if (user.organizationId) {
+          await prisma.apiToken.deleteMany({
+            where: { organizationId: user.organizationId }
+          });
+        }
 
         // 9. SUPPRESSION FINALE DE L'UTILISATEUR
         // (Cascade supprimera automatiquement : loyaltyHistory, loyaltyProfile,

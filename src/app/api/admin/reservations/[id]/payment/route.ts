@@ -170,29 +170,39 @@ export async function POST(
       });
 
       if (!existingBirthdayDiscount) {
-        // Créer la réduction anniversaire et la marquer comme utilisée
-        await prisma.discount.create({
-          data: {
-            userId: currentReservation.userId,
-            type: 'birthday',
-            amount: 10,
-            status: 'used',
-            originalReason: 'Réduction anniversaire offerte',
-            notes: `Utilisée sur la réservation ${id}`,
-            usedAt: new Date()
-          }
+        // Get user's organizationId
+        const reservationUser = await prisma.user.findUnique({
+          where: { id: currentReservation.userId },
+          select: { organizationId: true }
         });
 
-        // Créer une notification
-        await prisma.notification.create({
-          data: {
-            userId: currentReservation.userId,
-            type: 'discount',
-            title: 'Réduction anniversaire',
-            message: '🎂 Votre réduction anniversaire de 10€ a été appliquée !',
-            read: false
-          }
-        });
+        if (reservationUser?.organizationId) {
+          // Créer la réduction anniversaire et la marquer comme utilisée
+          await prisma.discount.create({
+            data: {
+              userId: currentReservation.userId,
+              organizationId: reservationUser.organizationId,
+              type: 'birthday',
+              amount: 10,
+              status: 'used',
+              originalReason: 'Réduction anniversaire offerte',
+              notes: `Utilisée sur la réservation ${id}`,
+              usedAt: new Date()
+            }
+          });
+
+          // Créer une notification
+          await prisma.notification.create({
+            data: {
+              userId: currentReservation.userId,
+              organizationId: reservationUser.organizationId,
+              type: 'discount',
+              title: 'Réduction anniversaire',
+              message: '🎂 Votre réduction anniversaire de 10€ a été appliquée !',
+              read: false
+            }
+          });
+        }
 
         log.info(`🎂 Réduction anniversaire appliquée pour l'utilisateur ${currentReservation.userId}`);
       }
@@ -371,22 +381,31 @@ export async function POST(
               if (pendingDiscount) {
                 await prisma.discount.update({
                   where: { id: pendingDiscount.id },
-                  data: { 
+                  data: {
                     status: 'available',
                     notes: `Activée suite au premier soin de ${reservation.user.name}`
                   }
                 });
 
-                // Créer une notification dans la base de données
-                await prisma.notification.create({
-                  data: {
-                    userId: sponsorProfile.userId,
-                    type: 'referral',
-                    title: 'Parrainage réussi',
-                    message: `🎉 Félicitations ! ${reservation.user.name} vient de faire son premier soin. Vous avez gagné 15€ de réduction sur votre prochain soin !`,
-                    read: false
-                  }
+                // Get sponsor's organizationId
+                const sponsorUser = await prisma.user.findUnique({
+                  where: { id: sponsorProfile.userId },
+                  select: { organizationId: true }
                 });
+
+                // Créer une notification dans la base de données
+                if (sponsorUser?.organizationId) {
+                  await prisma.notification.create({
+                    data: {
+                      userId: sponsorProfile.userId,
+                      organizationId: sponsorUser.organizationId,
+                      type: 'referral',
+                      title: 'Parrainage réussi',
+                      message: `🎉 Félicitations ! ${reservation.user.name} vient de faire son premier soin. Vous avez gagné 15€ de réduction sur votre prochain soin !`,
+                      read: false
+                    }
+                  });
+                }
 
                 // Envoyer notification WhatsApp au parrain
                 if (sponsorProfile.user.phone) {

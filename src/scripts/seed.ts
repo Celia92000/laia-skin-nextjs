@@ -32,7 +32,7 @@ async function main() {
       password: adminPassword,
       name: 'Laia Admin',
       phone: '0600000000',
-      role: "ORG_OWNER",
+      role: "ORG_ADMIN",
       organizationId: organization.id,
       loyaltyPoints: 0,
       totalSpent: 0

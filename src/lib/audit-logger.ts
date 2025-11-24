@@ -5,8 +5,8 @@ interface AuditLogParams {
   userId: string
   action: AuditAction
   targetType: string
+  organizationId: string // Required for multi-tenant isolation
   targetId?: string
-  organizationId?: string
   before?: any
   after?: any
   ipAddress?: string
@@ -21,13 +21,13 @@ export async function createAuditLog(params: AuditLogParams) {
         userId: params.userId,
         action: params.action,
         targetType: params.targetType,
-        targetId: params.targetId || undefined,
-        organizationId: params.organizationId || undefined,
-        before: params.before || undefined,
-        after: params.after || undefined,
-        ipAddress: params.ipAddress || undefined,
-        userAgent: params.userAgent || undefined,
-        metadata: params.metadata || undefined
+        organizationId: params.organizationId,
+        targetId: params.targetId,
+        before: params.before,
+        after: params.after,
+        ipAddress: params.ipAddress,
+        userAgent: params.userAgent,
+        metadata: params.metadata
       }
     })
   } catch (error) {

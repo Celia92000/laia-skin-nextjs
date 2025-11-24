@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
     }
 
     const categories = await prisma.serviceCategory.findMany({
+      where: {
+        organizationId: user.organizationId
+      },
       include: {
         subcategories: {
           orderBy: { order: 'asc' },
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
     const existingCategory = await prisma.serviceCategory.findFirst({
       where: {
         slug,
+        organizationId: user.organizationId,
       }
     });
 
@@ -97,6 +101,9 @@ export async function POST(request: NextRequest) {
 
     // Obtenir le prochain ordre POUR CETTE ORGANISATION
     const lastCategory = await prisma.serviceCategory.findFirst({
+      where: {
+        organizationId: user.organizationId
+      },
       orderBy: { order: 'desc' }
     });
     const order = (lastCategory?.order ?? -1) + 1;
@@ -114,6 +121,7 @@ export async function POST(request: NextRequest) {
         keywords,
         featured: featured || false,
         order,
+        organizationId: user.organizationId,
       }
     });
 

@@ -85,11 +85,12 @@ export async function POST(request: NextRequest) {
         const profile = await prisma.loyaltyProfile.create({
           data: {
             userId: client.id,
+            organizationId: client.organizationId,
             individualServicesCount,
             packagesCount,
             totalSpent,
             availableDiscounts: JSON.stringify([]),
-            lastVisit: lastReservation ? lastReservation.date : null
+            lastVisit: lastReservation ? lastReservation.date : undefined
           }
         });
 

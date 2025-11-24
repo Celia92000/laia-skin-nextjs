@@ -1,5 +1,9 @@
 import * as brevo from '@getbrevo/brevo'
 import { prisma } from '@/lib/prisma'
+import { Resend } from 'resend'
+
+// Configuration Resend (fallback email provider)
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Configuration Brevo pour LAIA Connect (plateforme SaaS)
 const apiInstance = new brevo.TransactionalEmailsApi()
@@ -16,13 +20,15 @@ async function sendEmailViaBrevo({
   subject,
   htmlContent,
   attachments,
-  template
+  template,
+  organizationId
 }: {
   to: string[]
   subject: string
   htmlContent: string
   attachments?: Array<{ content: string; name: string }>
   template?: string
+  organizationId: string
 }) {
   const sendSmtpEmail = new brevo.SendSmtpEmail()
 
@@ -44,6 +50,7 @@ async function sendEmailViaBrevo({
     // Logger dans EmailHistory
     await prisma.emailHistory.create({
       data: {
+        organizationId,
         from: sendSmtpEmail.sender.email,
         to: to.join(', '),
         subject,
@@ -51,7 +58,7 @@ async function sendEmailViaBrevo({
         template,
         status: 'sent',
         direction: 'outgoing',
-        messageId: data.messageId
+        messageId: (data.body as any)?.messageId || `brevo-${Date.now()}`
       }
     }).catch(err => console.error('⚠️ Erreur logging email:', err))
 
@@ -60,6 +67,7 @@ async function sendEmailViaBrevo({
     // Logger l'échec
     await prisma.emailHistory.create({
       data: {
+        organizationId,
         from: sendSmtpEmail.sender.email,
         to: to.join(', '),
         subject,
@@ -76,6 +84,7 @@ async function sendEmailViaBrevo({
 }
 
 interface WelcomeEmailData {
+  organizationId: string
   organizationName: string
   ownerFirstName: string
   ownerLastName: string
@@ -101,6 +110,7 @@ export async function sendWelcomeEmail(
   contractNumber?: string
 ) {
   const {
+    organizationId,
     organizationName,
     ownerFirstName,
     ownerLastName,
@@ -426,7 +436,8 @@ export async function sendWelcomeEmail(
       subject: `🎉 Bienvenue sur LAIA Connect - Votre site ${organizationName} est prêt !`,
       htmlContent: emailHtml,
       attachments: attachments.length > 0 ? attachments : undefined,
-      template: 'onboarding_welcome'
+      template: 'onboarding_welcome',
+      organizationId
     })
 
     console.log('✅ Email de bienvenue envoyé via Brevo:', result.messageId)
@@ -1236,7 +1247,8 @@ export async function sendSuperAdminNotification(data: {
       to: [superAdminEmail],
       subject: `🎉 Nouvelle inscription : ${organizationName} - Plan ${plan} (${monthlyAmount}€/mois)`,
       htmlContent: emailHtml,
-      template: 'onboarding_superadmin_notification'
+      template: 'onboarding_superadmin_notification',
+      organizationId
     })
 
     console.log('✅ Notification super-admin envoyée via Brevo:', result.messageId)

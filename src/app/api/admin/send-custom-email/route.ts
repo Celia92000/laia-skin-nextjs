@@ -33,6 +33,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'admin avec son organizationId
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { to, subject, message, html, clientName } = await request.json();
 
     // Validation des champs obligatoires
@@ -151,7 +161,7 @@ export async function POST(request: NextRequest) {
         text: `Bonjour ${clientName || 'Cliente'},\n\n${emailMessage}\n\nÀ très bientôt,\nLaïa\n${siteName} INSTITUT`
       });
 
-      // Enregistrer dans l'historique
+      // 🔒 Enregistrer dans l'historique avec organizationId
       await prisma.emailHistory.create({
         data: {
           from: 'contact@laia-skin.fr',
@@ -160,7 +170,8 @@ export async function POST(request: NextRequest) {
           content: emailMessage,
           template: 'custom',
           status: 'sent',
-          direction: 'outgoing'
+          direction: 'outgoing',
+          organizationId: admin.organizationId
         }
       });
 
@@ -173,7 +184,7 @@ export async function POST(request: NextRequest) {
     } catch (resendError: any) {
       log.error('Erreur Resend:', resendError);
 
-      // Enregistrer l'échec dans l'historique
+      // 🔒 Enregistrer l'échec dans l'historique avec organizationId
       await prisma.emailHistory.create({
         data: {
           from: 'contact@laia-skin.fr',
@@ -183,7 +194,8 @@ export async function POST(request: NextRequest) {
           template: 'custom',
           status: 'failed',
           direction: 'outgoing',
-          errorMessage: resendError.message
+          errorMessage: resendError.message,
+          organizationId: admin.organizationId
         }
       });
 

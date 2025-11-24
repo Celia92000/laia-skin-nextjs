@@ -17,6 +17,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'admin avec son organizationId
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const { to, subject, content, message, clientId, recipients } = await request.json();
 
     // Si c'est un envoi groupé avec plusieurs destinataires
@@ -42,7 +52,7 @@ export async function POST(request: Request) {
           } else {
             log.info(`✅ Email envoyé à ${recipient.email}`);
 
-            // Enregistrer dans l'historique
+            // 🔒 Enregistrer dans l'historique avec organizationId
             await prisma.emailHistory.create({
               data: {
                 from: '${email}',
@@ -52,7 +62,8 @@ export async function POST(request: Request) {
                 template: 'campaign',
                 status: 'sent',
                 direction: 'outgoing',
-                userId: recipient.userId
+                userId: recipient.userId,
+                organizationId: admin.organizationId
               }
             });
 
@@ -106,7 +117,7 @@ export async function POST(request: Request) {
     log.info('✅ Email de campagne envoyé à:', to);
     log.info('   ID Resend:', emailData?.id);
 
-    // Enregistrer dans l'historique
+    // 🔒 Enregistrer dans l'historique avec organizationId
     await prisma.emailHistory.create({
       data: {
         from: '${email}',
@@ -116,7 +127,8 @@ export async function POST(request: Request) {
         template: 'campaign',
         status: 'sent',
         direction: 'outgoing',
-        userId: clientId
+        userId: clientId,
+        organizationId: admin.organizationId
       }
     });
 

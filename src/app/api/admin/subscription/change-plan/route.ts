@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
-    const { newPlan } = await request.json()
+    const body = await request.json()
+    const newPlan = body.newPlan as OrgPlan
 
     // Valider le plan
     const validPlans: OrgPlan[] = ['SOLO', 'DUO', 'TEAM', 'PREMIUM']
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Récupérer les features du nouveau plan
-    const newFeatures = PLAN_FEATURES[newPlan]
+    const newFeatures = PLAN_FEATURES[newPlan as OrgPlan]
 
     // Mettre à jour le plan et les features
     await prisma.organization.update({

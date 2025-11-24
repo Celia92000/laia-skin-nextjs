@@ -27,9 +27,19 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
+    }
+
+    // 🔒 Récupérer l'admin avec son organizationId
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { automationId, recipients } = await request.json();
@@ -181,7 +191,7 @@ export async function POST(request: NextRequest) {
 
         const success = response.ok;
 
-        // Enregistrer dans l'historique
+        // 🔒 Enregistrer dans l'historique avec organizationId
         await prisma.emailHistory.create({
           data: {
             from: `${email}`,
@@ -190,7 +200,8 @@ export async function POST(request: NextRequest) {
             content: `Automatisation déclenchée manuellement : ${automation.name}`,
             template: automation.template,
             status: success ? 'sent' : 'failed',
-            userId: client.id
+            userId: client.id,
+            organizationId: admin.organizationId
           }
         });
 

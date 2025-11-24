@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       const city = orgConfig?.city || '';
       const postalCode = orgConfig?.postalCode || '';
       const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-      const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+      const website = organization.customDomain || organization.subdomain ? `https://${organization.subdomain}.laia-connect.fr` : 'https://votre-institut.fr';
 
       // 🔒 Récupérer les clients DE CETTE ORGANISATION dont c'est l'anniversaire
       const users = await prisma.user.findMany({

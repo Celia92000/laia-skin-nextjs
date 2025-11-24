@@ -37,6 +37,7 @@ async function checkCeliaLoyalty() {
       const newProfile = await prisma.loyaltyProfile.create({
         data: {
           userId: celia.id,
+          organizationId: celia.organizationId,
           individualServicesCount: 0,
           packagesCount: 0,
           totalSpent: 0,

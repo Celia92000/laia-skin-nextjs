@@ -23,9 +23,11 @@ export const GANDI_IMAP_CONFIG: EmailConfig = {
 export class EmailSyncService {
   private imap: Imap | null = null;
   private config: EmailConfig;
+  private organizationId: string;
 
-  constructor(config?: EmailConfig) {
+  constructor(config?: EmailConfig, organizationId?: string) {
     this.config = config || GANDI_IMAP_CONFIG;
+    this.organizationId = organizationId || 'default-org-id'; // Fallback for backward compatibility
   }
 
   async connect(): Promise<void> {
@@ -124,6 +126,7 @@ export class EmailSyncService {
                     // Enregistrer l'email
                     await prisma.emailHistory.create({
                       data: {
+                        organizationId: this.organizationId,
                         from: fromAddress,
                         to: toAddresses,
                         subject: parsed.subject || 'Sans objet',

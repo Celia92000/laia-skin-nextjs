@@ -30,11 +30,15 @@ export async function POST(request: NextRequest) {
     // Vérifier que c'est un admin
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!admin?.organizationId) {
+      return NextResponse.json({ error: 'Organization non trouvée' }, { status: 400 });
     }
 
     const { subject, content, recipients, template } = await request.json();
@@ -141,6 +145,7 @@ export async function POST(request: NextRequest) {
           // Enregistrer l'échec dans l'historique
           await prisma.emailHistory.create({
             data: {
+              organizationId: admin.organizationId,
               from: email,
               to: recipient.email,
               subject: personalizedSubject,
@@ -158,6 +163,7 @@ export async function POST(request: NextRequest) {
           // Enregistrer le succès dans l'historique
           await prisma.emailHistory.create({
             data: {
+              organizationId: admin.organizationId,
               from: email,
               to: recipient.email,
               subject: personalizedSubject,

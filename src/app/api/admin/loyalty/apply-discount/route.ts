@@ -28,10 +28,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
     
+    // Get user's organizationId
+    const userOrg = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true }
+    });
+
+    if (!userOrg?.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée pour cet utilisateur' }, { status: 404 });
+    }
+
     // Créer une réduction disponible dans la table Discount
     const discount = await prisma.discount.create({
       data: {
         userId,
+        organizationId: userOrg.organizationId,
         type: 'custom',
         amount,
         status: 'available',

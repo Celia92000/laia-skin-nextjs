@@ -33,14 +33,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    // Vérifier que c'est un admin
+    // 🔒 Vérifier que c'est un admin et récupérer son organizationId
     const admin = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     });
 
     if (admin?.role && !['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'].includes(admin.role)) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    if (!admin?.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
     const { emailId, replyContent, to, subject, message } = await request.json();
@@ -108,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      // Sauvegarder l'échec dans l'historique
+      // 🔒 Sauvegarder l'échec dans l'historique avec organizationId
       await prisma.emailHistory.create({
         data: {
           to: replyTo,
@@ -119,14 +123,15 @@ export async function POST(request: NextRequest) {
           status: 'failed',
           errorMessage: error.message,
           userId: originalUserId,
-          direction: 'outgoing'
+          direction: 'outgoing',
+          organizationId: admin.organizationId
         }
       });
 
       return NextResponse.json({ error: 'Erreur envoi email' }, { status: 500 });
     }
 
-    // Sauvegarder le succès dans l'historique
+    // 🔒 Sauvegarder le succès dans l'historique avec organizationId
     await prisma.emailHistory.create({
       data: {
         to: replyTo,
@@ -136,7 +141,8 @@ export async function POST(request: NextRequest) {
         template: 'reply',
         status: 'sent',
         userId: originalUserId,
-        direction: 'outgoing'
+        direction: 'outgoing',
+        organizationId: admin.organizationId
       }
     });
 

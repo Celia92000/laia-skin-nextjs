@@ -133,7 +133,7 @@ Merci infiniment ! 🙏
             data: { reviewWhatsAppSent: true }
           });
           
-          // Enregistrer dans l'historique email (si la table existe)
+          // 🔒 Enregistrer dans l'historique email avec organizationId
           try {
             await prisma.emailHistory.create({
               data: {
@@ -144,7 +144,8 @@ Merci infiniment ! 🙏
                 template: 'review_request_whatsapp',
                 status: 'sent',
                 direction: 'outgoing',
-                userId: reservation.userId
+                userId: reservation.userId,
+                organizationId: reservation.organizationId
               }
             });
           } catch (e) {

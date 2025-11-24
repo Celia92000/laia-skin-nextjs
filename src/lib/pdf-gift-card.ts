@@ -122,7 +122,7 @@ export async function generateGiftCardPDF(
 
   // Message personnalisé (si présent, sur une 2ème page)
   if (card.message && card.message.trim().length > 0) {
-    doc.addPage('landscape', [150, 100]);
+    doc.addPage([150, 100], 'landscape');
 
     // Fond blanc
     doc.setFillColor(255, 255, 255);
@@ -191,7 +191,7 @@ export async function generateMultipleGiftCardsPDF(
     const card = cards[i];
 
     if (i > 0) {
-      doc.addPage('portrait', 'a4');
+      doc.addPage('a4', 'portrait');
     }
 
     pageCount++;

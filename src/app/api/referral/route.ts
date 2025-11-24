@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
         userId: decoded.userId,
-        organizationId: decoded.organizationId
+        organizationId: decoded.organizationId || undefined
       },
       include: {
         user: true
@@ -51,10 +51,11 @@ export async function GET(request: Request) {
     const referrals = await prisma.referral.findMany({
       where: {
         referrerUserId: decoded.userId,
-        organizationId: decoded.organizationId
+        organizationId: decoded.organizationId || undefined
       },
       include: {
-        referred: true
+        referred: true,
+        referrer: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
     const existingReferral = await prisma.referral.findFirst({
       where: {
         referredEmail: email,
-        organizationId: decoded.organizationId,
+        organizationId: decoded.organizationId || undefined,
         status: { not: 'cancelled' }
       }
     });
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
     const loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
         userId: decoded.userId,
-        organizationId: decoded.organizationId
+        organizationId: decoded.organizationId || undefined
       },
       include: { user: true }
     });
@@ -179,10 +180,10 @@ export async function POST(request: Request) {
     const referral = await prisma.referral.create({
       data: {
         referrerUserId: decoded.userId,
-        organizationId: decoded.organizationId,
+        organizationId: decoded.organizationId || undefined,
         referralCode: `${loyaltyProfile.referralCode}-${Date.now()}`,
-        referredEmail: email,
-        referredName: name,
+        referredEmail: email || undefined,
+        referredName: name || undefined,
         status: 'pending',
         rewardAmount: organization.referralReferrerReward
       }
@@ -227,7 +228,7 @@ export async function PUT(request: Request) {
       where: {
         id: referralId,
         referrerUserId: decoded.userId,
-        organizationId: decoded.organizationId,
+        organizationId: decoded.organizationId || undefined,
         status: 'rewarded',
         rewardUsedAt: null
       }

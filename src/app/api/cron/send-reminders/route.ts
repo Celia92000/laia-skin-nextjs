@@ -118,8 +118,8 @@ export async function GET(request: Request) {
           html: htmlContent,
           text: `Rappel : Vous avez rendez-vous demain à ${reservation.time}.`
         });
-        
-        // Enregistrer dans l'historique
+
+        // 🔒 Enregistrer dans l'historique avec organizationId
         await prisma.emailHistory.create({
           data: {
             from: '${email}',
@@ -129,7 +129,8 @@ export async function GET(request: Request) {
             template: 'reminder',
             status: 'sent',
             direction: 'outgoing',
-            userId: reservation.userId
+            userId: reservation.userId,
+            organizationId: reservation.organizationId
           }
         });
         
@@ -314,8 +315,8 @@ export async function GET(request: Request) {
               html: htmlContent,
               text: `Joyeux anniversaire ${user.name} ! Profitez de -30% sur tous nos soins ce mois-ci.`
             });
-            
-            // Enregistrer dans l'historique
+
+            // 🔒 Enregistrer dans l'historique avec organizationId
             await prisma.emailHistory.create({
               data: {
                 from: '${email}',
@@ -325,10 +326,11 @@ export async function GET(request: Request) {
                 template: 'birthday',
                 status: 'sent',
                 direction: 'outgoing',
-                userId: user.id
+                userId: user.id,
+                organizationId: user.organizationId || undefined
               }
             });
-            
+
             await markReminderAsSent(reminderKey);
           }
         }

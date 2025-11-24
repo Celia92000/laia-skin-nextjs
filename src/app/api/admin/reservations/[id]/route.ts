@@ -206,11 +206,20 @@ export async function PATCH(
           }
         }
 
+        // Validate organizationId
+        if (!admin.organizationId) {
+          log.error('Organization ID manquant pour la création de profil de fidélité');
+          return NextResponse.json(
+            { error: 'Organization ID manquant' },
+            { status: 400 }
+          );
+        }
+
         // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
         let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
           where: {
             userId: reservation.userId,
-            organizationId: admin.organizationId ?? undefined
+            organizationId: admin.organizationId
           }
         });
 
@@ -218,7 +227,7 @@ export async function PATCH(
           loyaltyProfile = await prisma.loyaltyProfile.create({
             data: {
               userId: reservation.userId,
-              organizationId: admin.organizationId ?? undefined,
+              organizationId: admin.organizationId,
               individualServicesCount: 0,
               packagesCount: 0,
               totalSpent: 0,

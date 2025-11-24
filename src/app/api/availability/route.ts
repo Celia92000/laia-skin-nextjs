@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     });
 
     if (existingReservation) {
-      log.info('Créneau déjà réservé:', date, time, 'Réservation:', existingReservation);
+      log.info(`Créneau déjà réservé: ${date} ${time} Réservation: ${existingReservation.id}`);
       return NextResponse.json({ 
         available: false, 
         message: 'Ce créneau est déjà réservé' 

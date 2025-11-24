@@ -136,7 +136,7 @@ export async function POST(
       const result = results[index];
 
       return {
-        organizationId: decoded.organizationId,
+        organizationId: decoded.organizationId || '',
         campaignId: campaign.id,
         clientId: recipient.id,
         clientName: `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),

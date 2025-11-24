@@ -120,11 +120,11 @@ export async function POST(request: Request) {
     await prisma.sMSLog.create({
       data: {
         organizationId: organization.id,
-        recipient: recipientPhone,
+        clientName: recipientName || 'Client inconnu',
+        phoneNumber: recipientPhone,
         message: personalizedMessage,
         status: result.status || 'sent',
         cost: result.cost || 0,
-        messageId: result.messageId,
         sentAt: new Date()
       }
     })

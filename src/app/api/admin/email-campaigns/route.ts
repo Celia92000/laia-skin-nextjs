@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             })
           });
 
-          // ⚠️ EmailHistory n'a pas de organizationId dans le schema
+          // 🔒 EmailHistory avec organizationId
           await prisma.emailHistory.create({
             data: {
               from: `${email}`,
@@ -154,7 +154,8 @@ export async function POST(request: NextRequest) {
               template: data.template,
               status: response.ok ? 'sent' : 'failed',
               campaignId: campaign.id,
-              userId: recipient.id
+              userId: recipient.id,
+              organizationId: user.organizationId
             }
           });
         } catch (error) {

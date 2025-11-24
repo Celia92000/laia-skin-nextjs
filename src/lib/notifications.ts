@@ -176,15 +176,18 @@ export async function notifyLoyaltyMilestone(
     }
 
     // Enregistrer la notification
-    await prisma.notification.create({
-      data: {
-        userId: clientId,
-        type: 'loyalty',
-        title: 'Programme de fidélité',
-        message: subject,
-        read: false
-      }
-    });
+    if (client.organizationId) {
+      await prisma.notification.create({
+        data: {
+          userId: clientId,
+          organizationId: client.organizationId,
+          type: 'loyalty',
+          title: 'Programme de fidélité',
+          message: subject,
+          read: false
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Erreur notification fidélité:', error);
@@ -247,15 +250,18 @@ export async function notifyBirthday(clientId: string) {
     });
 
     // Enregistrer la notification
-    await prisma.notification.create({
-      data: {
-        userId: clientId,
-        type: 'birthday',
-        title: 'Joyeux anniversaire',
-        message: `Joyeux anniversaire ! Code promo: ${birthdayCode}`,
-        read: false
-      }
-    });
+    if (client.organizationId) {
+      await prisma.notification.create({
+        data: {
+          userId: clientId,
+          organizationId: client.organizationId,
+          type: 'birthday',
+          title: 'Joyeux anniversaire',
+          message: `Joyeux anniversaire ! Code promo: ${birthdayCode}`,
+          read: false
+        }
+      });
+    }
 
   } catch (error) {
     console.error('Erreur notification anniversaire:', error);

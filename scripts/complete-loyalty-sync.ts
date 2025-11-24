@@ -60,6 +60,7 @@ async function completeLoyaltySync() {
         const profile = await prisma.loyaltyProfile.create({
           data: {
             userId: client.id,
+            organizationId: client.organizationId,
             individualServicesCount: individualCount,
             packagesCount: packageCount,
             totalSpent: totalSpent,

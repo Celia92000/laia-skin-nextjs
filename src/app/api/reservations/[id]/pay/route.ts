@@ -18,27 +18,9 @@ export async function POST(
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
-        service: {
-          select: {
-            name: true,
-            price: true
-          }
-        },
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            stripeConnectedAccountId: true,
-            stripeChargesEnabled: true
-          }
-        },
-        client: {
-          select: {
-            email: true,
-            name: true
-          }
-        }
+        service: true,
+        organization: true,
+        client: true
       }
     })
 

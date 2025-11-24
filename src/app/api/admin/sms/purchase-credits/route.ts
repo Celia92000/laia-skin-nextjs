@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       }
     })
 
-    log.info('✅ Session Stripe créée:', session.id, 'pour', smsPackage.name)
+    log.info(`✅ Session Stripe créée: ${session.id} pour ${smsPackage.name}`)
 
     return NextResponse.json({
       sessionId: session.id,

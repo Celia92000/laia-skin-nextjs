@@ -417,6 +417,7 @@ async function importAppointments(
           serviceId: service.id,
           organizationId,
           date: appointmentDate,
+          time: '10:00', // Default time for imports without specific time
           status: status || 'completed',
           totalPrice: service.price,
           notes: notes || null,
@@ -716,13 +717,15 @@ async function importPromoCodes(rows: any[], organizationId: string | null | und
         data: {
           code,
           type: type === 'percentage' ? 'percentage' : 'fixed',
-          value: parseFloat(value) || 0,
-          startDate: startDate ? new Date(startDate) : new Date(),
-          endDate: endDate ? new Date(endDate) : null,
+          discount: parseFloat(value) || 0,
+          validFrom: startDate ? new Date(startDate) : new Date(),
+          validUntil: endDate ? new Date(endDate) : null,
           maxUses: maxUses === 'unlimited' ? null : parseInt(maxUses) || null,
-          currentUses: parseInt(currentUses) || 0,
-          minPurchase: parseFloat(minPurchase) || 0,
-          applicableServices: servicesList,
+          usedCount: parseInt(currentUses) || 0,
+          conditions: JSON.stringify({
+            minPurchase: parseFloat(minPurchase) || 0,
+            applicableServices: servicesList
+          }),
           organizationId,
           active: active === 'true' || active === '1' || active === 'oui',
         }
@@ -789,7 +792,7 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
       }
 
       // Trouver le service si fourni
-      let serviceId = null;
+      let serviceId: string | undefined = undefined;
       if (service) {
         const serviceRecord = await prisma.service.findFirst({
           where: {
@@ -797,7 +800,7 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
             organizationId
           }
         });
-        serviceId = serviceRecord?.id || null;
+        serviceId = serviceRecord?.id ?? undefined;
       }
 
       await prisma.review.create({
@@ -811,7 +814,7 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
           date: date ? new Date(date) : new Date(),
           validated: validated === 'true' || validated === '1' || validated === 'oui',
           published: published === 'true' || published === '1' || published === 'oui',
-          response: response || null,
+          response: response || undefined,
         }
       });
 

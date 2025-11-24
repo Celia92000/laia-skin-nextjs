@@ -8,6 +8,9 @@ if (!JWT_SECRET) {
   throw new Error('❌ ERREUR CRITIQUE: La variable d\'environnement JWT_SECRET est obligatoire. Définissez-la dans votre fichier .env.local');
 }
 
+// Type assertion since we know JWT_SECRET is defined after the check
+const jwtSecret: string = JWT_SECRET;
+
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
 }
@@ -21,12 +24,12 @@ export function generateToken(
   rememberMe: boolean = false
 ): string {
   const expiresIn = rememberMe ? '90d' : '30d';
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, jwtSecret, { expiresIn });
 }
 
 export function verifyToken(token: string): { userId: string; role: string; organizationId?: string | null } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; role: string; organizationId?: string | null };
+    return jwt.verify(token, jwtSecret) as { userId: string; role: string; organizationId?: string | null };
   } catch (error) {
     return null;
   }

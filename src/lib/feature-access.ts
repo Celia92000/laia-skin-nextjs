@@ -28,7 +28,7 @@ const FULL_ACCESS_ROLES: UserRole[] = [
 const ROLE_FEATURE_ACCESS: Record<UserRole, Partial<Record<FeatureKey, boolean>>> = {
   // Accès complet pour les admins (vérifié par FULL_ACCESS_ROLES)
   SUPER_ADMIN: {},
-  ORG_OWNER: {},
+  ORG_ADMIN: {},
 
   // Comptable : Accès aux features liées à la gestion financière et clients
   ACCOUNTANT: {

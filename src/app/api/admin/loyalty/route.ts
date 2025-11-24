@@ -150,11 +150,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, discountAmount, reason } = body;
 
+    // Validate organizationId
+    if (!admin.organizationId) {
+      return NextResponse.json(
+        { error: 'Organization ID manquant' },
+        { status: 400 }
+      );
+    }
+
     // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
     let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
         userId,
-        organizationId: admin.organizationId ?? undefined
+        organizationId: admin.organizationId
       }
     });
 
@@ -162,7 +170,7 @@ export async function POST(request: NextRequest) {
       loyaltyProfile = await prisma.loyaltyProfile.create({
         data: {
           userId,
-          organizationId: admin.organizationId ?? undefined,
+          organizationId: admin.organizationId,
           individualServicesCount: 0,
           packagesCount: 0,
           totalSpent: 0,
@@ -175,7 +183,7 @@ export async function POST(request: NextRequest) {
     await prisma.loyaltyHistory.create({
       data: {
         userId,
-        organizationId: admin.organizationId ?? undefined,
+        organizationId: admin.organizationId,
         action: 'DISCOUNT_APPLIED',
         points: 0,
         description: `Réduction manuelle de ${discountAmount}€ : ${reason}`

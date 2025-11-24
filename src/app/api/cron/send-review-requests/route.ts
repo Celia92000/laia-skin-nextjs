@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       const city = orgConfig?.city || '';
       const postalCode = orgConfig?.postalCode || '';
       const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-      const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+      const website = organization.customDomain || (organization.subdomain ? `https://${organization.subdomain}.laia-connect.fr` : 'https://votre-institut.fr');
       const ownerName = orgConfig?.legalRepName?.split(' ')[0] || 'Votre esthéticienne';
 
       // 🔒 Récupérer les réservations DE CETTE ORGANISATION

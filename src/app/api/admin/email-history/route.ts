@@ -60,14 +60,24 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = verifyToken(token);
-    
+
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
+    // 🔒 Récupérer l'admin avec son organizationId
+    const admin = await prisma.user.findFirst({
+      where: { id: decoded.userId },
+      select: { organizationId: true }
+    });
+
+    if (!admin || !admin.organizationId) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
+    }
+
     const data = await request.json();
 
-    // Créer l'entrée dans l'historique
+    // 🔒 Créer l'entrée dans l'historique avec organizationId
     const emailEntry = await prisma.emailHistory.create({
       data: {
         from: data.from || '${email}',
@@ -79,7 +89,8 @@ export async function POST(request: NextRequest) {
         direction: data.direction || 'outgoing',
         campaignId: data.campaignId,
         userId: data.userId,
-        errorMessage: data.errorMessage
+        errorMessage: data.errorMessage,
+        organizationId: admin.organizationId
       }
     });
 

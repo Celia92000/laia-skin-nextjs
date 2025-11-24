@@ -553,7 +553,8 @@ LAIA Connect - https://laia-connect.com
 
     log.info(`Export terminé pour ${organizationId}: ${totalRecords} enregistrements`);
 
-    return new NextResponse(zipBuffer, {
+    // Convert Buffer to Uint8Array for NextResponse
+    return new NextResponse(new Uint8Array(zipBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',

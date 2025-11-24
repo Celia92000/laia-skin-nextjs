@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
             await prisma.notification.create({
               data: {
                 userId: user.id,
+                organizationId: token.organizationId,
                 type: 'token_expiring',
                 title: `Token ${token.service} expire bientôt`,
                 message: `Votre token ${token.service}/${token.name} expire dans ${daysLeft} jour(s). Pensez à le renouveler dans les paramètres.`,

@@ -8,6 +8,7 @@ export interface ReservationEmailData {
   services: string[];
   totalPrice: number;
   reservationId: string;
+  organizationId: string;
 }
 
 export async function sendReservationConfirmationEmail(data: ReservationEmailData): Promise<boolean> {
@@ -221,6 +222,7 @@ Instagram : @laia.skin`;
       const { prisma } = await import('@/lib/prisma');
       await prisma.emailHistory.create({
         data: {
+          organizationId: data.organizationId,
           from: 'contact@laia.skin.fr',
           to: data.to,
           subject: `Confirmation RDV - ${data.date} à ${data.time}`,

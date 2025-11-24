@@ -78,7 +78,8 @@ export async function POST(request: Request) {
             time: reservation.time,
             services: serviceNames,
             totalPrice: reservation.totalPrice,
-            reservationId: reservation.id
+            reservationId: reservation.id,
+            organizationId: reservation.organizationId
           });
           log.info(`✅ Email de confirmation envoyé à ${reservation.user.email}`);
         } catch (emailError) {
