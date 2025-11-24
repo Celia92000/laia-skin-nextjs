@@ -9,7 +9,6 @@ import ClientSpaceWrapper from "./ClientSpaceWrapper";
 import Modal from "@/components/Modal";
 import { logout } from "@/lib/auth-client";
 import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-utils';
-import { safeJsonParse, safeParseNumber, safeArray } from '@/lib/safe-parse';
 
 // Lazy load des composants lourds
 const ClientDashboard = dynamic(() => import("@/components/ClientDashboard"), {
@@ -130,7 +129,7 @@ function EspaceClientContent() {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       })[0];
 
-    const lastService = lastSubscription ? safeArray(lastSubscription.services, [])[0] : null;
+    const lastService = lastSubscription ? (lastSubscription.services || [])[0] : null;
 
     return {
       hasSubscription: true,
@@ -159,15 +158,20 @@ function EspaceClientContent() {
         return;
       }
 
-      const userInfo = safeJsonParse(user, {});
+      let userInfo: any = {};
+      try {
+        userInfo = user ? JSON.parse(user) : {};
+      } catch {
+        userInfo = {};
+      }
       // Utiliser le nom de l'utilisateur tel quel, sans distinction pour l'admin
       let displayName = userInfo?.name || 'Cliente';
 
       setUserData({
         name: displayName,
         email: userInfo?.email || '',
-        loyaltyPoints: safeParseNumber(userInfo?.loyaltyPoints, 0),
-        totalSpent: safeParseNumber(userInfo?.totalSpent, 0)
+        loyaltyPoints: Number(userInfo?.loyaltyPoints) || 0,
+        totalSpent: Number(userInfo?.totalSpent) || 0
       });
 
       fetchUserData();
@@ -391,7 +395,7 @@ function EspaceClientContent() {
   const handleRebook = (reservation: Reservation) => {
     // Stocker les détails de la réservation dans le localStorage
     const rebookData = {
-      services: safeArray(reservation?.services, []),
+      services: reservation?.services || [],
       packages: reservation?.packages || {}
     };
     localStorage.setItem('rebookData', JSON.stringify(rebookData));
@@ -731,7 +735,7 @@ function EspaceClientContent() {
                       <div className="mb-4">
                         <h4 className="font-medium text-[#2c3e50] mb-2">Soins réservés :</h4>
                         <div className="flex flex-wrap gap-2">
-                          {safeArray(reservation?.services, []).map((serviceId: string) => {
+                          {(reservation?.services || []).map((serviceId: string) => {
                             const packageType = (reservation?.packages as any)?.[serviceId];
                             return (
                               <span key={serviceId} className="px-3 py-1 bg-[#d4b5a0]/10 rounded-full text-sm">
@@ -744,7 +748,7 @@ function EspaceClientContent() {
                       </div>
 
                       <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                        <span className="text-xl font-bold text-[#d4b5a0]">{safeParseNumber(reservation?.totalPrice, 0)}€</span>
+                        <span className="text-xl font-bold text-[#d4b5a0]">{Number(reservation?.totalPrice) || 0}€</span>
                         
                         {/* Actions selon le statut */}
                         <div className="flex gap-2">
@@ -938,7 +942,7 @@ function EspaceClientContent() {
                     <div key={reservation?.id} className="flex justify-between items-center py-3 border-b border-gray-100">
                       <div>
                         <p className="font-medium text-[#2c3e50]">
-                          {safeArray(reservation?.services, []).join(', ') || 'Service inconnu'}
+                          {(reservation?.services || []).join(', ') || 'Service inconnu'}
                         </p>
                         <p className="text-sm text-[#2c3e50]/60">
                           {reservation?.date ? new Date(reservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
@@ -1133,7 +1137,7 @@ function EspaceClientContent() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-[#2c3e50]">
-                            {safeArray(reservation?.services, []).join(', ') || 'Service inconnu'}
+                            {(reservation?.services || []).join(', ') || 'Service inconnu'}
                           </p>
                           <p className="text-sm text-[#2c3e50]/60">
                             Effectué le {reservation?.date ? new Date(reservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
@@ -1178,7 +1182,7 @@ function EspaceClientContent() {
                               <Star
                                 key={star}
                                 className={`w-4 h-4 ${
-                                  star <= safeParseNumber(review?.rating, 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                                  star <= (Number(review?.rating) || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
                                 }`}
                               />
                             ))}
@@ -1190,7 +1194,12 @@ function EspaceClientContent() {
 
                         {/* Photos de l'avis */}
                         {review?.photos && (() => {
-                          const photos = safeJsonParse(review.photos, []);
+                          let photos: string[] = [];
+                          try {
+                            photos = typeof review.photos === 'string' ? JSON.parse(review.photos) : review.photos;
+                          } catch {
+                            photos = [];
+                          }
                           return (photos || []).length > 0 && (
                             <div className="flex gap-2 mb-3">
                               {(photos || []).slice(0, 3).map((photo: string, idx: number) => (
@@ -1208,7 +1217,7 @@ function EspaceClientContent() {
                         <div className="mt-3 flex items-center justify-between text-sm">
                           <div className="flex items-center gap-4 text-[#2c3e50]/60">
                             <span>
-                              Satisfaction : {['😞', '😐', '🙂', '😊', '😍'][safeParseNumber(review?.satisfaction, 5) - 1] || '😊'}
+                              Satisfaction : {['😞', '😐', '🙂', '😊', '😍'][(Number(review?.satisfaction) || 5) - 1] || '😊'}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               review?.approved
@@ -1329,7 +1338,7 @@ function EspaceClientContent() {
       <Modal
         isOpen={showReviewModal && selectedReservation !== null}
         onClose={() => {
-          if (reviewText || rating !== 5 || safeArray(reviewPhotos).length > 0) {
+          if (reviewText || rating !== 5 || (reviewPhotos || []).length > 0) {
             if (window.confirm('Voulez-vous vraiment fermer ? Votre avis ne sera pas sauvegardé.')) {
               setShowReviewModal(false);
               setSelectedReservation(null);
@@ -1346,13 +1355,13 @@ function EspaceClientContent() {
         }}
         title="Évaluer votre soin"
         size="md"
-        preventCloseOnClickOutside={reviewText.length > 0 || safeArray(reviewPhotos).length > 0}
+        preventCloseOnClickOutside={reviewText.length > 0 || (reviewPhotos || []).length > 0}
       >
         {selectedReservation && (
           <div className="p-6">
             <div className="mb-4">
               <p className="font-medium text-[#2c3e50]">
-                {safeArray(selectedReservation?.services, []).join(', ') || 'Service inconnu'}
+                {(selectedReservation?.services || []).join(', ') || 'Service inconnu'}
               </p>
               <p className="text-sm text-[#2c3e50]/60">
                 Effectué le {selectedReservation?.date ? new Date(selectedReservation.date).toLocaleDateString('fr-FR') : 'Date inconnue'}
@@ -1453,9 +1462,9 @@ function EspaceClientContent() {
               </label>
               
               {/* Photos uploadées */}
-              {safeArray(reviewPhotos).length > 0 && (
+              {(reviewPhotos || []).length > 0 && (
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                  {safeArray(reviewPhotos).map((photo, index) => (
+                  {(reviewPhotos || []).map((photo, index) => (
                     <div key={index} className="relative group">
                       <img
                         src={photo}
@@ -1464,8 +1473,8 @@ function EspaceClientContent() {
                       />
                       <button
                         onClick={() => {
-                          setReviewPhotos(safeArray(reviewPhotos).filter((_, i) => i !== index));
-                          setUploadedPhotos(safeArray(uploadedPhotos).filter((_, i) => i !== index));
+                          setReviewPhotos((reviewPhotos || []).filter((_, i) => i !== index));
+                          setUploadedPhotos((uploadedPhotos || []).filter((_, i) => i !== index));
                         }}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
@@ -1476,7 +1485,7 @@ function EspaceClientContent() {
                 </div>
               )}
 
-              {safeArray(reviewPhotos).length < 3 && (
+              {(reviewPhotos || []).length < 3 && (
                 <label className="relative">
                   <input
                     type="file"
@@ -1485,24 +1494,24 @@ function EspaceClientContent() {
                     className="hidden"
                     onChange={(e) => {
                       const files = Array.from(e.target.files || []);
-                      const remainingSlots = 3 - safeArray(reviewPhotos).length;
+                      const remainingSlots = 3 - (reviewPhotos || []).length;
                       const filesToAdd = files.slice(0, remainingSlots);
 
                       filesToAdd.forEach(file => {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setReviewPhotos(prev => [...safeArray(prev), reader.result as string]);
+                          setReviewPhotos(prev => [...(prev || []), reader.result as string]);
                         };
                         reader.readAsDataURL(file);
                       });
 
-                      setUploadedPhotos(prev => [...safeArray(prev), ...filesToAdd]);
+                      setUploadedPhotos(prev => [...(prev || []), ...filesToAdd]);
                     }}
                   />
                   <div className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#d4b5a0] transition-colors flex items-center gap-2 w-full justify-center cursor-pointer">
                     <Camera className="w-5 h-5 text-gray-400" />
                     <span className="text-gray-600">
-                      Ajouter {safeArray(reviewPhotos).length > 0 ? 'd\'autres photos' : 'des photos'} ({3 - safeArray(reviewPhotos).length} restantes)
+                      Ajouter {(reviewPhotos || []).length > 0 ? 'd\'autres photos' : 'des photos'} ({3 - (reviewPhotos || []).length} restantes)
                     </span>
                   </div>
                 </label>
@@ -1540,18 +1549,18 @@ function EspaceClientContent() {
                       },
                       body: JSON.stringify({
                         reservationId: selectedReservation?.id,
-                        serviceName: safeArray(selectedReservation?.services, []).join(', ') || 'Service inconnu',
+                        serviceName: (selectedReservation?.services || []).join(', ') || 'Service inconnu',
                         rating,
                         comment: reviewText,
                         satisfaction,
                         photos: reviewPhotos
                       })
                     });
-                    
+
                     const data = await response.json();
 
                     if (response.ok) {
-                      alert(`Merci pour votre avis ! ${safeArray(reviewPhotos).length > 0 ? `\n${safeArray(reviewPhotos).length} photo(s) ajoutée(s)` : ''}\nIl sera publié après validation.`);
+                      alert(`Merci pour votre avis ! ${(reviewPhotos || []).length > 0 ? `\n${(reviewPhotos || []).length} photo(s) ajoutée(s)` : ''}\nIl sera publié après validation.`);
                       
                       // Si 5 étoiles, proposer de laisser un avis Google
                       if (rating === 5 && data.googleUrl) {
