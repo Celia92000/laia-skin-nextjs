@@ -7,9 +7,10 @@ import { verifyToken } from "@/lib/auth-client";
 interface AuthGuardProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  allowedRoles?: string[];
 }
 
-export default function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
+export default function AuthGuard({ children, requireAdmin = false, allowedRoles }: AuthGuardProps) {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +18,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
         return;
@@ -40,8 +41,15 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
 
         const data = await response.json();
 
-        if (requireAdmin) {
-          const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin', 'STAFF'];
+        // Vérifier les rôles autorisés si spécifiés
+        if (allowedRoles && allowedRoles.length > 0) {
+          if (!allowedRoles.includes(data.user.role)) {
+            router.push('/espace-client');
+            return;
+          }
+        } else if (requireAdmin) {
+          // Fallback sur requireAdmin pour rétrocompatibilité
+          const adminRoles = ['SUPER_ADMIN', 'ORG_ADMIN', 'LOCATION_MANAGER', 'STAFF', 'RECEPTIONIST', 'ACCOUNTANT', 'ADMIN', 'admin'];
           if (!adminRoles.includes(data.user.role)) {
             router.push('/espace-client');
             return;
@@ -58,7 +66,7 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
     };
 
     checkAuth();
-  }, [router, requireAdmin]);
+  }, [router, requireAdmin, allowedRoles]);
 
   if (isLoading) {
     return (
