@@ -323,7 +323,7 @@ export default function AdminDashboard() {
       const cacheTime = localStorage.getItem('cachedServicesTime');
       const now = Date.now();
 
-      if (cachedServices && cacheTime && (now - safeParseNumber(cacheTime, 0) < 5 * 60 * 1000)) {
+      if (cachedServices && cacheTime && (now - (safeParseNumber(cacheTime, 0) || 0) < 5 * 60 * 1000)) {
         const data = safeJsonParse(cachedServices, []);
         setDbServices(data);
         return;
@@ -342,9 +342,9 @@ export default function AdminDashboard() {
           id: s?.id ?? '',
           slug: s?.slug ?? '',
           name: String(s?.name ?? ''),
-          price: safeParseNumber(s?.price, 0),
+          price: safeParseNumber(s?.price, 0) || 0,
           promoPrice: s?.promoPrice ? safeParseNumber(s.promoPrice, null) : null,
-          duration: safeParseNumber(s?.duration, 0),
+          duration: safeParseNumber(s?.duration, 0) || 0,
           active: Boolean(s?.active)
         }));
 
@@ -987,7 +987,7 @@ export default function AdminDashboard() {
         paymentNotes = `Paiement mixte - ${methods.join(', ')}${paymentNotes ? ' | ' + paymentNotes : ''}`;
       } else {
         // Paiement simple
-        paymentAmount = safeParseNumber(amountInput?.value, 0);
+        paymentAmount = safeParseNumber(amountInput?.value, 0) || 0;
         paymentMethod = methodSelect?.value ?? 'cash';
       }
       
