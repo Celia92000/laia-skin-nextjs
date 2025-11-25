@@ -991,7 +991,7 @@ model ClientEvolution {
 model Review {
   id             String        @id @default(cuid())
   organizationId String // Organisation (multi-tenant) - OBLIGATOIRE
-  userId         String
+  userId         String?       // Optionnel pour permettre avis anonymes/importés
   reservationId  String?       @unique
   orderId        String?       @unique // Pour avis sur produits/formations
   serviceName    String?
@@ -1011,7 +1011,7 @@ model Review {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   organization   Organization? @relation("OrganizationReviews", fields: [organizationId], references: [id])
-  user           User          @relation(fields: [userId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
   reservation    Reservation?  @relation(fields: [reservationId], references: [id])
   order          Order?        @relation(fields: [orderId], references: [id])
 

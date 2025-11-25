@@ -792,7 +792,8 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
       }
 
       // Trouver le service si fourni
-      let serviceId: string | undefined = undefined;
+      let itemId: string | undefined = undefined;
+      let itemName: string | undefined = undefined;
       if (service) {
         const serviceRecord = await prisma.service.findFirst({
           where: {
@@ -800,21 +801,23 @@ async function importReviews(rows: any[], organizationId: string | null | undefi
             organizationId
           }
         });
-        serviceId = serviceRecord?.id ?? undefined;
+        itemId = serviceRecord?.id ?? undefined;
+        itemName = serviceRecord?.name ?? service;
       }
 
       await prisma.review.create({
         data: {
           userId,
-          serviceId,
+          itemId,
+          itemName,
+          itemType: 'service',
           organizationId,
-          clientName,
           rating: ratingValue,
           comment,
-          date: date ? new Date(date) : new Date(),
-          validated: validated === 'true' || validated === '1' || validated === 'oui',
-          published: published === 'true' || published === '1' || published === 'oui',
+          approved: validated === 'true' || validated === '1' || validated === 'oui',
+          featured: published === 'true' || published === '1' || published === 'oui',
           response: response || undefined,
+          source: 'import'
         }
       });
 
