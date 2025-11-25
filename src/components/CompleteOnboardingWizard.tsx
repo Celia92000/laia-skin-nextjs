@@ -1666,7 +1666,6 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
           <div className="flex justify-between items-center">
             <button
               onClick={handlePrevious}
-              disabled={currentStep === 'welcome'}
               className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-5 h-5" />

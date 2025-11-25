@@ -240,7 +240,7 @@ export default function AdminConfigTab() {
       {/* Configuration Progress Checklist */}
       <ConfigurationChecklist
         currentTabId={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={setActiveTab as (tabId: string) => void}
       />
 
       {/* Tabs */}

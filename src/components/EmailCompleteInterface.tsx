@@ -239,37 +239,37 @@ export default function EmailCompleteInterface() {
     // Dernier service
     if (advancedFilters.lastService) {
       filtered = filtered.filter(c =>
-        c.lastService?.toLowerCase().includes(advancedFilters.lastService.toLowerCase())
+        c.lastService?.toLowerCase().includes(advancedFilters.lastService!.toLowerCase())
       );
     }
 
     // Nombre de visites
     if (advancedFilters.minVisits) {
-      filtered = filtered.filter(c => (c.visitCount || 0) >= advancedFilters.minVisits);
+      filtered = filtered.filter(c => (c.visitCount || 0) >= advancedFilters.minVisits!);
     }
     if (advancedFilters.maxVisits) {
-      filtered = filtered.filter(c => (c.visitCount || 0) <= advancedFilters.maxVisits);
+      filtered = filtered.filter(c => (c.visitCount || 0) <= advancedFilters.maxVisits!);
     }
 
     // Points de fidélité
     if (advancedFilters.minPoints) {
-      filtered = filtered.filter(c => (c.loyaltyPoints || 0) >= advancedFilters.minPoints);
+      filtered = filtered.filter(c => (c.loyaltyPoints || 0) >= advancedFilters.minPoints!);
     }
     if (advancedFilters.maxPoints) {
-      filtered = filtered.filter(c => (c.loyaltyPoints || 0) <= advancedFilters.maxPoints);
+      filtered = filtered.filter(c => (c.loyaltyPoints || 0) <= advancedFilters.maxPoints!);
     }
 
     // Montant dépensé
     if (advancedFilters.minSpent) {
-      filtered = filtered.filter(c => (c.totalSpent || 0) >= advancedFilters.minSpent);
+      filtered = filtered.filter(c => (c.totalSpent || 0) >= advancedFilters.minSpent!);
     }
     if (advancedFilters.maxSpent) {
-      filtered = filtered.filter(c => (c.totalSpent || 0) <= advancedFilters.maxSpent);
+      filtered = filtered.filter(c => (c.totalSpent || 0) <= advancedFilters.maxSpent!);
     }
 
     // Type de peau
     if (advancedFilters.skinType) {
-      filtered = filtered.filter(c => c.skinType === advancedFilters.skinType);
+      filtered = filtered.filter(c => (c as any).skinType === advancedFilters.skinType);
     }
 
     // Anniversaire
