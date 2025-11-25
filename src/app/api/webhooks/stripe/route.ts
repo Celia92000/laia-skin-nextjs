@@ -1300,9 +1300,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         monthlyAmount: planPrices[finalPlan] || 49,
         trialEndsAt: organization.trialEndsAt!,
         subscriptionStartDate: new Date(),
-        sepaIban: organization.sepaIban || '',
-        sepaBic: organization.sepaBic || '',
-        sepaAccountHolder: organization.sepaAccountHolder || '',
+        sepaIban: (organization as any).sepaIban || '',
+        sepaBic: (organization as any).sepaBic || '',
+        sepaAccountHolder: (organization as any).sepaAccountHolder || '',
         sepaMandateRef,
         sepaMandateDate: organization.sepaMandateDate!
       })
