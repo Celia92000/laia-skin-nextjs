@@ -6,6 +6,12 @@ import DynamicHomePage from '@/components/sites/DynamicHomePage'
 // Force dynamic rendering - these pages depend on database queries
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const dynamicParams = true
+
+// Ne pas pré-générer de pages au build - tout est dynamique
+export async function generateStaticParams() {
+  return []
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>

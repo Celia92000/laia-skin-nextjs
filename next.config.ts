@@ -39,6 +39,8 @@ const nextConfig: NextConfig = {
     cpus: 1,
   },
   serverExternalPackages: ['pdfkit'],
+  // Désactiver la génération statique au build pour multi-tenant
+  output: 'standalone',
   // 🔒 Headers de sécurité
   async headers() {
     return [
