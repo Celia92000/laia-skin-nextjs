@@ -694,6 +694,7 @@ export async function POST(request: Request) {
         : `https://${data.subdomain}.laia-connect.fr/admin`
 
       await sendWelcomeEmail({
+        organizationId: organization.id,
         organizationName: data.name,
         ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
         ownerLastName: data.ownerLastName || '',

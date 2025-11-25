@@ -92,6 +92,7 @@ export async function POST(
     // Envoyer l'email d'activation avec les identifiants
     try {
       await sendAccountActivationEmail({
+        organizationId: organization.id,
         organizationName: organization.name,
         ownerFirstName: organization.ownerFirstName || '',
         ownerLastName: organization.ownerLastName || '',

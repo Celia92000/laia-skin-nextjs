@@ -1331,6 +1331,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         : `https://${subdomain}.laia-connect.fr/admin`
 
       await sendWelcomeEmail({
+        organizationId: organization.id,
         organizationName: institutName,
         ownerFirstName,
         ownerLastName,
