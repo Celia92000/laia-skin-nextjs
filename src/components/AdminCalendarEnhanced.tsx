@@ -391,7 +391,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                         <div className="mt-3 pt-3 border-t border-[#d4b5a0]/10">
                           <ReservationPaymentButton
                             reservationId={reservation?.id ?? ''}
-                            amount={safeParseNumber(reservation?.totalPrice, 0)}
+                            amount={safeParseNumber(reservation?.totalPrice ?? 0, 0)}
                             serviceName={reservation?.serviceName ?? safeArray(reservation?.services, [])[0] ?? 'Prestation'}
                             paymentStatus={reservation?.paymentStatus ?? 'unpaid'}
                             paymentMethod={reservation?.paymentMethod}
@@ -551,7 +551,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                       {stats.count} réservations
                     </div>
                     <div className="text-lg font-bold text-[#d4b5a0]">
-                      {safeParseNumber(stats?.revenue, 0).toLocaleString('fr-FR')}€
+                      {(safeParseNumber(stats?.revenue ?? 0, 0)).toLocaleString('fr-FR')}€
                     </div>
                   </div>
                 ) : (
@@ -701,7 +701,7 @@ export default function AdminCalendarEnhanced({ reservations, onDateSelect }: Ad
                           </div>
                           <ReservationPaymentButton
                             reservationId={reservation?.id ?? ''}
-                            amount={safeParseNumber(reservation?.totalPrice, 0)}
+                            amount={safeParseNumber(reservation?.totalPrice ?? 0, 0)}
                             serviceName={reservation?.serviceName ?? safeArray(reservation?.services, [])[0] ?? 'Prestation'}
                             paymentStatus={reservation?.paymentStatus ?? 'unpaid'}
                             paymentMethod={reservation?.paymentMethod}
