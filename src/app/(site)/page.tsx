@@ -11,8 +11,9 @@ import { TemplateRenderer } from '@/components/TemplateRenderer';
 
 // Force dynamic rendering to avoid build-time database queries
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = false;
 export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 
 export default async function Home() {
   // Routing par domaine : laiaconnect.fr → /platform
