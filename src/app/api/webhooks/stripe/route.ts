@@ -555,7 +555,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     await prisma.organization.update({
       where: { id: org.id },
       data: {
-        plan: newPlan,
+        plan: newPlan as any,
         status: subscription.status === 'active' ? 'ACTIVE' :
                 subscription.status === 'trialing' ? 'TRIAL' :
                 subscription.status === 'canceled' ? 'CANCELLED' : org.status,
@@ -698,7 +698,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       })
     } else {
       // Créer une nouvelle facture
-      await generateAndSaveInvoice(org.id, invoice)
+      await generateAndSaveInvoice(org.id, invoice.amount_paid / 100, org.plan as any, invoice.id)
     }
 
     // S'assurer que l'organisation est active
@@ -760,7 +760,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         data: { status: 'FAILED' }
       })
     } else {
-      await generateAndSaveInvoice(org.id, invoice, 'FAILED')
+      await generateAndSaveInvoice(org.id, invoice.amount_paid / 100, org.plan as any, invoice.id)
     }
 
     // Envoyer email d'alerte de paiement échoué
