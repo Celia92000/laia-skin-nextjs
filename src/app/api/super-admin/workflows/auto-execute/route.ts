@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
             // Enregistrer l'exécution
             await prisma.workflowExecution.create({
               data: {
-                workflowTemplateId: workflow.id,
+                workflowId: workflow.id,
                 organizationId: org.id,
                 status: 'SUCCESS'
               }
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
             // Enregistrer l'échec
             await prisma.workflowExecution.create({
               data: {
-                workflowTemplateId: workflow.id,
+                workflowId: workflow.id,
                 organizationId: org.id,
                 status: 'FAILED',
                 error: error.message
