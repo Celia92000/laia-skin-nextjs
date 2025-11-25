@@ -37,8 +37,6 @@ export async function POST(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const { id } = params
-
     // Marquer la démo comme vue en mettant à jour viewedByAdminAt
     await prisma.demoBooking.update({
       where: { id },

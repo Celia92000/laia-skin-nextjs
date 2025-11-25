@@ -37,8 +37,6 @@ export async function POST(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
     }
 
-    const { id } = params
-
     // Marquer le lead comme vu en mettant à jour lastContactDate
     await prisma.lead.update({
       where: { id },
