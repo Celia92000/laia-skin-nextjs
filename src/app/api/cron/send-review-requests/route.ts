@@ -27,7 +27,13 @@ export async function GET(request: Request) {
 
     // 🔒 Récupérer toutes les organisations actives
     const organizations = await prisma.organization.findMany({
-      where: { status: 'ACTIVE' }
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        customDomain: true,
+        subdomain: true
+      }
     });
 
     log.info(`📧 Traitement de ${organizations.length} organisation(s)`);
@@ -297,7 +303,13 @@ export async function POST(request: Request) {
     });
 
     const organization = await prisma.organization.findUnique({
-      where: { id: reservation.organizationId }
+      where: { id: reservation.organizationId },
+      select: {
+        id: true,
+        name: true,
+        customDomain: true,
+        subdomain: true
+      }
     });
 
     // 🔒 Utiliser la config spécifique à cette organisation
@@ -308,7 +320,7 @@ export async function POST(request: Request) {
     const city = orgConfig?.city || '';
     const postalCode = orgConfig?.postalCode || '';
     const fullAddress = address && city ? `${address}, ${postalCode} ${city}` : 'Votre institut';
-    const website = orgConfig?.customDomain || 'https://votre-institut.fr';
+    const website = organization?.customDomain || (organization?.subdomain ? `https://${organization.subdomain}.laia-connect.fr` : 'https://votre-institut.fr');
 
     // Envoyer l'email d'avis
     const services = JSON.parse(reservation.services as string);

@@ -30,7 +30,13 @@ export async function GET(request: NextRequest) {
 
     // 🔒 Récupérer toutes les organisations actives
     const organizations = await prisma.organization.findMany({
-      where: { status: 'ACTIVE' }
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        customDomain: true,
+        subdomain: true
+      }
     });
 
     let totalSent = 0;
