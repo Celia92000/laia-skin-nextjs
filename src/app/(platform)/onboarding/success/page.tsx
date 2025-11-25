@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function OnboardingSuccessPage() {
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
+function OnboardingSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const sessionId = searchParams.get('session_id')
@@ -127,5 +130,20 @@ export default function OnboardingSuccessPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function OnboardingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <OnboardingSuccessContent />
+    </Suspense>
   )
 }

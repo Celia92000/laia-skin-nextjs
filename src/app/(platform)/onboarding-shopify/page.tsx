@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, useSession } from 'next-auth/react'
 import { validateEmail, validatePhoneNumber } from '@/lib/validation'
+
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
 
 // Étapes complètes de l'onboarding
 type Step = 'account' | 'about' | 'questions' | 'plan' | 'template' | 'customization' | 'legal' | 'payment'
@@ -50,7 +53,7 @@ interface OnboardingData {
   billingCountry?: string
 }
 
-export default function OnboardingShopify() {
+function OnboardingShopifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const shouldReset = searchParams.get('reset') === 'true'
@@ -1038,5 +1041,20 @@ export default function OnboardingShopify() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OnboardingShopify() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <OnboardingShopifyContent />
+    </Suspense>
   )
 }
