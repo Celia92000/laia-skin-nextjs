@@ -32,20 +32,10 @@ export async function GET(req: NextRequest) {
       },
       include: {
         users: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            createdAt: true,
+          include: {
             reservations: {
               where: {
                 status: { in: ['completed', 'confirmed', 'COMPLETED', 'CONFIRMED'] }
-              },
-              select: {
-                id: true,
-                totalPrice: true,
-                createdAt: true
               },
               orderBy: { createdAt: 'desc' }
             }
@@ -54,11 +44,6 @@ export async function GET(req: NextRequest) {
         reservations: {
           where: {
             status: { in: ['completed', 'confirmed', 'COMPLETED', 'CONFIRMED'] }
-          },
-          select: {
-            id: true,
-            totalPrice: true,
-            createdAt: true
           }
         }
       }

@@ -57,21 +57,10 @@ export async function GET(req: NextRequest) {
 
     // Récupérer toutes les organisations avec leurs données
     const organizations = await prisma.organization.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        plan: true,
-        status: true,
-        createdAt: true,
+      include: {
         reservations: {
           where: {
             status: { in: ['completed', 'confirmed', 'COMPLETED', 'CONFIRMED'] }
-          },
-          select: {
-            id: true,
-            totalPrice: true,
-            createdAt: true
           }
         },
         _count: {
