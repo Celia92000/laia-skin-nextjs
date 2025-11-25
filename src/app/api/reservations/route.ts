@@ -283,7 +283,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
     
-    log.info('Prix calculé:', calculatedPrice, 'Prix reçu:', totalPrice, 'Prix final:', finalPrice);
+    log.info(`Prix calculé: ${calculatedPrice} Prix reçu: ${totalPrice} Prix final: ${finalPrice}`);
     
     // Déterminer si c'est un abonnement
     let isSubscription = false;

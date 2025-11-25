@@ -237,7 +237,7 @@ export async function POST(request: Request) {
           });
 
           // Mettre à jour la date de prochain prélèvement
-          const nextBillingDate = getNextBillingDate(new Date());
+          const nextBillingDate = getNextBillingDate();
           await prisma.organization.update({
             where: { id: org.id },
             data: {
