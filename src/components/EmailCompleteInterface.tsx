@@ -597,7 +597,7 @@ export default function EmailCompleteInterface() {
                   {/* Type de client */}
                   <select
                     value={advancedFilters.status}
-                    onChange={(e) => setAdvancedFilters({...advancedFilters, status: e.target.value})}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, status: e.target.value as any})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Tous les clients</option>
@@ -610,7 +610,7 @@ export default function EmailCompleteInterface() {
                   {/* Niveau de fidélité */}
                   <select
                     value={advancedFilters.tier}
-                    onChange={(e) => setAdvancedFilters({...advancedFilters, tier: e.target.value})}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, tier: e.target.value as any})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Tous les niveaux</option>
@@ -633,8 +633,8 @@ export default function EmailCompleteInterface() {
                   <input
                     type="number"
                     placeholder="Nombre minimum de visites"
-                    value={advancedFilters.minVisits}
-                    onChange={(e) => setAdvancedFilters({...advancedFilters, minVisits: e.target.value})}
+                    value={advancedFilters.minVisits || ''}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, minVisits: e.target.value ? parseInt(e.target.value) : undefined})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   />
                   
@@ -646,15 +646,15 @@ export default function EmailCompleteInterface() {
                         <input
                           type="number"
                           placeholder="Points min"
-                          value={advancedFilters.minPoints}
-                          onChange={(e) => setAdvancedFilters({...advancedFilters, minPoints: e.target.value})}
+                          value={advancedFilters.minPoints || ''}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, minPoints: e.target.value ? parseInt(e.target.value) : undefined})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                         <input
                           type="number"
                           placeholder="Points max"
-                          value={advancedFilters.maxPoints}
-                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxPoints: e.target.value})}
+                          value={advancedFilters.maxPoints || ''}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxPoints: e.target.value ? parseInt(e.target.value) : undefined})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                       </div>
@@ -663,15 +663,15 @@ export default function EmailCompleteInterface() {
                         <input
                           type="number"
                           placeholder="€ dépensé min"
-                          value={advancedFilters.minSpent}
-                          onChange={(e) => setAdvancedFilters({...advancedFilters, minSpent: e.target.value})}
+                          value={advancedFilters.minSpent || ''}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, minSpent: e.target.value ? parseFloat(e.target.value) : undefined})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                         <input
                           type="number"
                           placeholder="€ dépensé max"
-                          value={advancedFilters.maxSpent}
-                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxSpent: e.target.value})}
+                          value={advancedFilters.maxSpent || ''}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxSpent: e.target.value ? parseFloat(e.target.value) : undefined})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                       </div>
@@ -680,8 +680,8 @@ export default function EmailCompleteInterface() {
                   
                   {/* Dernière visite */}
                   <select
-                    value={filters.lastVisitDays}
-                    onChange={(e) => setFilters({...filters, lastVisitDays: e.target.value})}
+                    value={advancedFilters.lastVisitDays}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, lastVisitDays: e.target.value})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Toutes les visites</option>
