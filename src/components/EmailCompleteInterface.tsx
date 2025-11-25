@@ -275,8 +275,8 @@ export default function EmailCompleteInterface() {
     // Anniversaire
     if (advancedFilters.birthdayMonth !== undefined) {
       filtered = filtered.filter(c => {
-        if (!c.birthDate) return false;
-        return new Date(c.birthDate).getMonth() === advancedFilters.birthdayMonth;
+        if (!(c as any).birthDate) return false;
+        return new Date((c as any).birthDate).getMonth() === advancedFilters.birthdayMonth;
       });
     }
 
@@ -589,15 +589,15 @@ export default function EmailCompleteInterface() {
                   <input
                     type="text"
                     placeholder="Nom, prénom ou email..."
-                    value={filters.search}
-                    onChange={(e) => setFilters({...filters, search: e.target.value})}
+                    value={advancedFilters.search}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, search: e.target.value})}
                     className="w-full px-3 py-2 border rounded-lg text-sm"
                   />
-                  
+
                   {/* Type de client */}
                   <select
-                    value={filters.status}
-                    onChange={(e) => setFilters({...filters, status: e.target.value})}
+                    value={advancedFilters.status}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, status: e.target.value})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Tous les clients</option>
@@ -609,8 +609,8 @@ export default function EmailCompleteInterface() {
 
                   {/* Niveau de fidélité */}
                   <select
-                    value={filters.tier}
-                    onChange={(e) => setFilters({...filters, tier: e.target.value})}
+                    value={advancedFilters.tier}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, tier: e.target.value})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Tous les niveaux</option>
@@ -624,8 +624,8 @@ export default function EmailCompleteInterface() {
                   <input
                     type="text"
                     placeholder="Dernier soin effectué..."
-                    value={filters.lastService}
-                    onChange={(e) => setFilters({...filters, lastService: e.target.value})}
+                    value={advancedFilters.lastService}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, lastService: e.target.value})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   />
 
@@ -633,8 +633,8 @@ export default function EmailCompleteInterface() {
                   <input
                     type="number"
                     placeholder="Nombre minimum de visites"
-                    value={filters.minVisits}
-                    onChange={(e) => setFilters({...filters, minVisits: e.target.value})}
+                    value={advancedFilters.minVisits}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, minVisits: e.target.value})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   />
                   
@@ -646,32 +646,32 @@ export default function EmailCompleteInterface() {
                         <input
                           type="number"
                           placeholder="Points min"
-                          value={filters.minPoints}
-                          onChange={(e) => setFilters({...filters, minPoints: e.target.value})}
+                          value={advancedFilters.minPoints}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, minPoints: e.target.value})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                         <input
                           type="number"
                           placeholder="Points max"
-                          value={filters.maxPoints}
-                          onChange={(e) => setFilters({...filters, maxPoints: e.target.value})}
+                          value={advancedFilters.maxPoints}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxPoints: e.target.value})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-2">
                         <input
                           type="number"
                           placeholder="€ dépensé min"
-                          value={filters.minSpent}
-                          onChange={(e) => setFilters({...filters, minSpent: e.target.value})}
+                          value={advancedFilters.minSpent}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, minSpent: e.target.value})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                         <input
                           type="number"
                           placeholder="€ dépensé max"
-                          value={filters.maxSpent}
-                          onChange={(e) => setFilters({...filters, maxSpent: e.target.value})}
+                          value={advancedFilters.maxSpent}
+                          onChange={(e) => setAdvancedFilters({...advancedFilters, maxSpent: e.target.value})}
                           className="px-2 py-1 border rounded text-xs"
                         />
                       </div>
