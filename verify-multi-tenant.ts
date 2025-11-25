@@ -149,8 +149,16 @@ async function verifyMultiTenant() {
     console.log('📊 RÉSUMÉ GLOBAL');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-    const orgWithAdmin = organizations.filter(org => {
-      return users.some(u => u.role === 'ORG_ADMIN' || u.role === 'SUPER_ADMIN');
+    // Récupérer tous les admins pour compter les orgs avec admin
+    const allAdmins = await prisma.user.findMany({
+      where: {
+        role: { in: ['ORG_ADMIN', 'SUPER_ADMIN'] }
+      },
+      select: { organizationId: true }
+    });
+
+    const orgWithAdmin = organizations.filter((org: any) => {
+      return allAdmins.some((u: any) => u.organizationId === org.id);
     });
 
     console.log(`✅ ${organizations.length} organisations avec site généré`);

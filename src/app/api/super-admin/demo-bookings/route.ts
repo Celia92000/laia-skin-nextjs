@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const meetingUrl = generateJitsiMeetingUrl(`${data.institutName}-${Date.now()}`, data.institutName)
 
     // Créer la réservation principale avec transaction pour bloquer tous les créneaux
-    const booking = await prisma.$transaction(async (tx: any) => {
+    const booking = await (prisma.$transaction as any)(async (tx: any) => {
       // Créer le booking principal
       const mainBooking = await tx.demoBooking.create({
         data: {

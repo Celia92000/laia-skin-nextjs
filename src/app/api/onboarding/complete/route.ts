@@ -134,9 +134,9 @@ export async function POST(req: NextRequest) {
     // 🔒 3D Secure automatique pour les cartes (DSP2/SCA)
 
     // Modes de paiement selon migration
-    const paymentMethods = needsDataMigration
+    const paymentMethods = (needsDataMigration
       ? ['sepa_debit', 'card'] // Migration = SEPA + Carte pour le paiement unique
-      : ['sepa_debit']         // Pas de migration = SEPA uniquement
+      : ['sepa_debit']) as any // Pas de migration = SEPA uniquement
 
     // Préparer les items de facturation
     const lineItems: any[] = [
