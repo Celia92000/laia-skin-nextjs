@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       const now = new Date()
 
       // RECENCY: Nombre de jours depuis la dernière réservation
-      const allReservations = org.reservations
+      const allReservations = org.reservations as any[]
       const lastReservation = allReservations[0]
       const daysSinceLastReservation = lastReservation
         ? Math.floor((now.getTime() - new Date(lastReservation.createdAt).getTime()) / (1000 * 60 * 60 * 24))
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       const totalReservations = allReservations.length
 
       // MONETARY: Chiffre d'affaires total
-      const totalRevenue = allReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0)
+      const totalRevenue = allReservations.reduce((sum: number, r: any) => sum + (r.totalPrice || 0), 0)
 
       // Calcul des scores (1-5 pour chaque dimension)
       let recencyScore = 1

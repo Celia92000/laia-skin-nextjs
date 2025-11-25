@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
 
       // Calculer les mois actifs (mois avec au moins 1 réservation)
       const monthsWithActivity = new Set(
-        org.reservations.map(r => {
+        (org.reservations as any[]).map((r: any) => {
           const date = new Date(r.createdAt)
           return `${date.getFullYear()}-${date.getMonth() + 1}`
         })
@@ -100,19 +100,19 @@ export async function GET(req: NextRequest) {
       const activeMonths = Math.max(1, monthsWithActivity)
 
       // Revenus
-      const totalRevenue = org.reservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0)
+      const totalRevenue = (org.reservations as any[]).reduce((sum: number, r: any) => sum + (r.totalPrice || 0), 0)
       const monthlySubscriptionFee = planPrices[org.plan] || 0
 
       // Activité
-      const totalReservations = org.reservations.length
+      const totalReservations = (org.reservations as any[]).length
       const averageReservationsPerMonth = totalReservations / lifetimeMonths
 
       // LTV historique (ce que le client a déjà généré)
       const historicalLTV = totalRevenue + (monthlySubscriptionFee * lifetimeMonths)
 
       // Probabilité de churn basée sur l'activité récente
-      const lastReservation = org.reservations.length > 0
-        ? new Date(Math.max(...org.reservations.map(r => new Date(r.createdAt).getTime())))
+      const lastReservation = (org.reservations as any[]).length > 0
+        ? new Date(Math.max(...(org.reservations as any[]).map((r: any) => new Date(r.createdAt).getTime())))
         : createdAt
       const daysSinceLastActivity = Math.floor(
         (now.getTime() - lastReservation.getTime()) / (1000 * 60 * 60 * 24)
@@ -135,19 +135,19 @@ export async function GET(req: NextRequest) {
       const averageLifetimeExpectancy = Math.round(1 / monthlyChurnRate)
 
       // Taux de croissance mensuel
-      const recentMonthsRevenue = org.reservations
-        .filter(r => {
+      const recentMonthsRevenue = (org.reservations as any[])
+        .filter((r: any) => {
           const monthsAgo = (now.getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
           return monthsAgo <= 3
         })
-        .reduce((sum, r) => sum + (r.totalPrice || 0), 0)
+        .reduce((sum: number, r: any) => sum + (r.totalPrice || 0), 0)
 
-      const previousMonthsRevenue = org.reservations
-        .filter(r => {
+      const previousMonthsRevenue = (org.reservations as any[])
+        .filter((r: any) => {
           const monthsAgo = (now.getTime() - new Date(r.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)
           return monthsAgo > 3 && monthsAgo <= 6
         })
-        .reduce((sum, r) => sum + (r.totalPrice || 0), 0)
+        .reduce((sum: number, r: any) => sum + (r.totalPrice || 0), 0)
 
       const monthlyGrowthRate = previousMonthsRevenue > 0
         ? Math.round(((recentMonthsRevenue - previousMonthsRevenue) / previousMonthsRevenue) * 100)
