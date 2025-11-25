@@ -331,7 +331,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             ...formData.criteria,
                             totalSpent: {
                               ...formData.criteria.totalSpent,
-                              min: e.target.value ? parseFloat(e.target.value) : undefined
+                              min: (e.target.value ? parseFloat(e.target.value) : undefined) as number | undefined
                             }
                           }
                         })}
@@ -347,7 +347,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             ...formData.criteria,
                             totalSpent: {
                               ...formData.criteria.totalSpent,
-                              max: e.target.value ? parseFloat(e.target.value) : undefined
+                              max: (e.target.value ? parseFloat(e.target.value) : undefined) as number | undefined
                             }
                           }
                         })}
@@ -373,7 +373,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             lastVisit: {
                               daysAgo: {
                                 ...formData.criteria.lastVisit.daysAgo,
-                                min: e.target.value ? parseInt(e.target.value) : undefined
+                                min: (e.target.value ? parseInt(e.target.value) : undefined) as number | undefined
                               }
                             }
                           }
@@ -391,7 +391,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             lastVisit: {
                               daysAgo: {
                                 ...formData.criteria.lastVisit.daysAgo,
-                                max: e.target.value ? parseInt(e.target.value) : undefined
+                                max: (e.target.value ? parseInt(e.target.value) : undefined) as number | undefined
                               }
                             }
                           }
@@ -417,7 +417,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             ...formData.criteria,
                             loyaltyPoints: {
                               ...formData.criteria.loyaltyPoints,
-                              min: e.target.value ? parseInt(e.target.value) : undefined
+                              min: (e.target.value ? parseInt(e.target.value) : undefined) as number | undefined
                             }
                           }
                         })}
@@ -433,7 +433,7 @@ export default function ClientSegmentsTab({ onSegmentAction }: ClientSegmentsTab
                             ...formData.criteria,
                             loyaltyPoints: {
                               ...formData.criteria.loyaltyPoints,
-                              max: e.target.value ? parseInt(e.target.value) : undefined
+                              max: (e.target.value ? parseInt(e.target.value) : undefined) as number | undefined
                             }
                           }
                         })}

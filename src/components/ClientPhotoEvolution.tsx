@@ -705,7 +705,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              hydration: safeParseInt(e.target.value, 0)
+                              hydration: safeParseInt(e.target.value, 0) ?? undefined
                             }
                           }))}
                           placeholder="0-100"
@@ -723,7 +723,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              elasticity: safeParseInt(e.target.value, 0)
+                              elasticity: safeParseInt(e.target.value, 0) ?? undefined
                             }
                           }))}
                           placeholder="0-100"
@@ -741,7 +741,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              pigmentation: safeParseInt(e.target.value, 0)
+                              pigmentation: safeParseInt(e.target.value, 0) ?? undefined
                             }
                           }))}
                           placeholder="0-100"
@@ -759,7 +759,7 @@ export default function ClientPhotoEvolution({ clientId, clientName, onClose }: 
                             ...prev,
                             skinAnalysis: {
                               ...prev.skinAnalysis,
-                              wrinkles: safeParseInt(e.target.value, 0)
+                              wrinkles: safeParseInt(e.target.value, 0) ?? undefined
                             }
                           }))}
                           placeholder="0-100"
