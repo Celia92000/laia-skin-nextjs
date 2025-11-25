@@ -1103,10 +1103,10 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
 
     // Récupérer les adresses de facturation depuis le customer Stripe si manquantes
     const customerObj = typeof session.customer === 'object' ? session.customer : null
-    const finalBillingAddress = billingAddress || customerObj?.address?.line1 || ''
-    const finalBillingPostalCode = billingPostalCode || customerObj?.address?.postal_code || ''
-    const finalBillingCity = billingCity || customerObj?.address?.city || ''
-    const finalBillingCountry = billingCountry || customerObj?.address?.country || 'France'
+    const finalBillingAddress = billingAddress || (customerObj as any)?.address?.line1 || ''
+    const finalBillingPostalCode = billingPostalCode || (customerObj as any)?.address?.postal_code || ''
+    const finalBillingCity = billingCity || (customerObj as any)?.address?.city || ''
+    const finalBillingCountry = billingCountry || (customerObj as any)?.address?.country || 'France'
 
     // Les données bancaires sont gérées par Stripe - pas besoin de les stocker
 
@@ -1300,9 +1300,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         monthlyAmount: planPrices[finalPlan] || 49,
         trialEndsAt: organization.trialEndsAt!,
         subscriptionStartDate: new Date(),
-        sepaIban,
-        sepaBic,
-        sepaAccountHolder,
+        sepaIban: organization.sepaIban || '',
+        sepaBic: organization.sepaBic || '',
+        sepaAccountHolder: organization.sepaAccountHolder || '',
         sepaMandateRef,
         sepaMandateDate: organization.sepaMandateDate!
       })
