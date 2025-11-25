@@ -144,7 +144,7 @@ export async function GET(
 
     // Formater les 3 derniers avis pour affichage
     const testimonials = reviews.slice(0, 3).map(review => ({
-      name: review.user.name,
+      name: review.user?.name || 'Client anonyme',
       rating: review.rating,
       comment: review.comment,
       date: review.createdAt

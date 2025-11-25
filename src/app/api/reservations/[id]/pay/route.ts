@@ -14,13 +14,33 @@ export async function POST(
   try {
     const { id: reservationId } = await params
 
-    // Récupérer la réservation
+    // Récupérer la réservation avec les relations
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
-        service: true,
-        organization: true,
-        client: true
+        service: {
+          select: {
+            id: true,
+            name: true,
+            price: true
+          }
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            stripeConnectedAccountId: true,
+            stripeChargesEnabled: true
+          }
+        },
+        client: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        }
       }
     })
 
@@ -29,8 +49,16 @@ export async function POST(
     }
 
     // Vérifier que la réservation n'est pas déjà payée
-    if (reservation.paid) {
+    if (reservation.status === 'paid' || reservation.paymentStatus === 'paid') {
       return NextResponse.json({ error: 'Réservation déjà payée' }, { status: 400 })
+    }
+
+    if (!reservation.organization) {
+      return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
+    }
+
+    if (!reservation.client) {
+      return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
     }
 
     // Vérifier que l'organisation a Stripe Connect configuré
@@ -55,7 +83,7 @@ export async function POST(
       metadata: {
         reservationId: reservation.id,
         serviceId: reservation.serviceId || '',
-        clientId: reservation.clientId
+        clientId: reservation.userId
       },
       successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${reservation.organization.slug}/reservations/${reservation.id}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${reservation.organization.slug}/reservations/${reservation.id}`,

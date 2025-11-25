@@ -12,7 +12,7 @@ export async function POST(
   try {
     // Vérifier que l'utilisateur est super admin
     const auth = await verifyAuth(req)
-    if (!auth || auth.role !== 'SUPER_ADMIN') {
+    if (!auth.isValid || !auth.user || auth.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { error: 'Non autorisé' },
         { status: 403 }
