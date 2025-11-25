@@ -455,7 +455,7 @@ export default function AdminServicesTab() {
                         min="0"
                         step="0.01"
                         value={formData?.price ?? 0}
-                        onChange={(e) => setFormData({...formData, price: safeParseNumber(e.target.value, 0)})}
+                        onChange={(e) => setFormData({...formData, price: safeParseNumber(e.target.value, 0) ?? 0})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -469,7 +469,7 @@ export default function AdminServicesTab() {
                         min="0"
                         step="0.01"
                         value={formData?.promoPrice ?? ''}
-                        onChange={(e) => setFormData({...formData, promoPrice: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
+                        onChange={(e) => setFormData({...formData, promoPrice: e.target.value ? (safeParseNumber(e.target.value, 0) ?? undefined) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -483,7 +483,7 @@ export default function AdminServicesTab() {
                         min="0"
                         step="0.01"
                         value={formData?.forfaitPrice ?? ''}
-                        onChange={(e) => setFormData({...formData, forfaitPrice: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
+                        onChange={(e) => setFormData({...formData, forfaitPrice: e.target.value ? (safeParseNumber(e.target.value, 0) ?? undefined) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -497,7 +497,7 @@ export default function AdminServicesTab() {
                         min="0"
                         step="0.01"
                         value={formData?.forfaitPromo ?? ''}
-                        onChange={(e) => setFormData({...formData, forfaitPromo: e.target.value ? safeParseNumber(e.target.value, 0) : undefined})}
+                        onChange={(e) => setFormData({...formData, forfaitPromo: e.target.value ? (safeParseNumber(e.target.value, 0) ?? undefined) : undefined})}
                         className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                       />
                     </div>
@@ -515,7 +515,7 @@ export default function AdminServicesTab() {
                       min="15"
                       step="15"
                       value={formData?.duration ?? 60}
-                      onChange={(e) => setFormData({...formData, duration: safeParseInt(e.target.value, 60)})}
+                      onChange={(e) => setFormData({...formData, duration: safeParseInt(e.target.value, 60) ?? 60})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
@@ -583,7 +583,7 @@ export default function AdminServicesTab() {
                       type="number"
                       min="0"
                       value={formData?.order ?? 0}
-                      onChange={(e) => setFormData({...formData, order: safeParseInt(e.target.value, 0)})}
+                      onChange={(e) => setFormData({...formData, order: safeParseInt(e.target.value, 0) ?? 0})}
                       className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
                     />
                   </div>
@@ -842,7 +842,7 @@ export default function AdminServicesTab() {
                                   min="0"
                                   max="100"
                                   value={imagePosition?.x ?? 50}
-                                  onChange={(e) => setImagePosition(prev => ({ ...prev, x: safeParseInt(e.target.value, 50) }))}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, x: safeParseInt(e.target.value, 50) ?? 50 }))}
                                   className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                                 />
                               </div>
@@ -856,7 +856,7 @@ export default function AdminServicesTab() {
                                   min="0"
                                   max="100"
                                   value={imagePosition?.y ?? 50}
-                                  onChange={(e) => setImagePosition(prev => ({ ...prev, y: safeParseInt(e.target.value, 50) }))}
+                                  onChange={(e) => setImagePosition(prev => ({ ...prev, y: safeParseInt(e.target.value, 50) ?? 50 }))}
                                   className="w-full h-2 bg-gradient-to-r from-[#d4b5a0]/30 via-[#d4b5a0]/60 to-[#d4b5a0] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                                 />
                               </div>
@@ -918,7 +918,7 @@ export default function AdminServicesTab() {
                                 min="50"
                                 max="200"
                                 value={imageZoom ?? 100}
-                                onChange={(e) => setImageZoom(safeParseInt(e.target.value, 100))}
+                                onChange={(e) => setImageZoom(safeParseInt(e.target.value, 100) ?? 100)}
                                 className="flex-1 h-2 bg-gradient-to-r from-blue-200 via-[#d4b5a0] to-pink-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#d4b5a0]"
                               />
                               <button
