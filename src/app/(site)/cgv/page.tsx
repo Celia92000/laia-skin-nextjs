@@ -1,5 +1,9 @@
 import { getSiteConfigFull } from '@/lib/config-service';
 
+// Force Node.js runtime
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export default async function CGV() {
   const config = await getSiteConfigFull();
 

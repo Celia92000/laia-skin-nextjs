@@ -1,5 +1,9 @@
 import { Metadata } from 'next';
 
+// Force Node.js runtime
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const metadata: Metadata = {
   title: 'Politique de Confidentialité | Laia Skin Institut',
   description: 'Politique de confidentialité et protection des données personnelles de Laia Skin Institut'

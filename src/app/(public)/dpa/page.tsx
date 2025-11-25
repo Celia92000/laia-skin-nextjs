@@ -1,5 +1,9 @@
 import Image from 'next/image'
 
+// Force Node.js runtime
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export default function DPAPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">

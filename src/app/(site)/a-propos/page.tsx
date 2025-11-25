@@ -3,6 +3,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSiteConfigFull } from '@/lib/config-service';
 
+// Force Node.js runtime
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export default async function APropos() {
   const config = await getSiteConfigFull();
 

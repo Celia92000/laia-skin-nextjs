@@ -5,6 +5,7 @@ import FormationCard from '@/components/FormationCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const runtime = 'nodejs';
 
 export default async function FormationsPage() {
   const prisma = await getPrismaClient();
