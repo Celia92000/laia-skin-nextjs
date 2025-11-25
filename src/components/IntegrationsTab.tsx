@@ -912,6 +912,7 @@ export default function IntegrationsTab() {
       {showGrouponModal && (
         <GrouponConfigModal
           onClose={() => setShowGrouponModal(false)}
+          onSave={async () => {}}
         />
       )}
 
@@ -942,6 +943,7 @@ export default function IntegrationsTab() {
       {showShopifyModal && (
         <ShopifyConfigModal
           onClose={() => setShowShopifyModal(false)}
+          onSave={async () => {}}
         />
       )}
 
@@ -949,6 +951,7 @@ export default function IntegrationsTab() {
       {showQuickBooksModal && (
         <QuickBooksConfigModal
           onClose={() => setShowQuickBooksModal(false)}
+          onSave={async () => {}}
         />
       )}
 
@@ -956,6 +959,7 @@ export default function IntegrationsTab() {
       {showGoogleMyBusinessModal && (
         <GoogleMyBusinessConfigModal
           onClose={() => setShowGoogleMyBusinessModal(false)}
+          onSave={async () => {}}
         />
       )}
 

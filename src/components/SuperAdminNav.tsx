@@ -136,7 +136,7 @@ export default function SuperAdminNav() {
                 <Icon className="w-4 h-4 mr-2" />
                 {tab.name}
                 {external && <span className="ml-1 text-xs">↗</span>}
-                {badge > 0 && (
+                {badge && badge > 0 && (
                   <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white animate-pulse">
                     {badge}
                   </span>

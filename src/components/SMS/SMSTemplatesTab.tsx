@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Save, X, Copy, Trash2, Toggle, ToggleLeft, ToggleRight, FileText, Sparkles } from 'lucide-react'
+import { Plus, Edit2, Save, X, Copy, Trash2, ToggleLeft, ToggleRight, FileText, Sparkles } from 'lucide-react'
 
 interface SMSTemplate {
   id: string
