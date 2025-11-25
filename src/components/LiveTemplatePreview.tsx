@@ -160,7 +160,7 @@ export default function LiveTemplatePreview(props: LiveTemplatePreviewProps) {
       'laser-tech': TemplateLaserTech,
     }[props.templateId] || TemplateModern;
 
-    return <TemplateComponent {...mockData} />;
+    return <TemplateComponent {...mockData as any} />;
   };
 
   return (

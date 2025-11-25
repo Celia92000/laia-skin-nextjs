@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         include: { organization: true },
         orderBy: { createdAt: 'asc' } // Prendre le premier créé (= le propriétaire)
       })
-      log.info('🏢 Target user by organizationId:', targetUser?.email, 'Organization:', targetUser?.organization?.slug)
+      log.info(`🏢 Target user by organizationId: ${targetUser?.email} Organization: ${targetUser?.organization?.slug}`)
     } else {
       return NextResponse.json({ error: 'userId ou organizationId requis' }, { status: 400 })
     }
