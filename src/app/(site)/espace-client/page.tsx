@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { Calendar, Clock, CheckCircle, XCircle, Gift, Star, RefreshCw, User, Award, TrendingUp, LogOut, Share2, Heart, History, Check, Edit2, X, CalendarDays, MessageSquare, ThumbsUp, Send, Camera, Edit, Bell, AlertCircle } from "lucide-react";
 import ClientSpaceWrapper from "./ClientSpaceWrapper";
 import Modal from "@/components/Modal";
@@ -14,36 +14,36 @@ import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-ut
 export const dynamic = 'force-dynamic'
 
 // Lazy load des composants lourds
-const ClientDashboard = dynamic(() => import("@/components/ClientDashboard"), {
+const ClientDashboard = dynamicImport(() => import("@/components/ClientDashboard"), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
 
-const ReferralSystem = dynamic(() => import("@/components/ReferralSystem").then(mod => ({ default: mod.ReferralSystem })), {
+const ReferralSystem = dynamicImport(() => import("@/components/ReferralSystem").then(mod => ({ default: mod.ReferralSystem })), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
 
-const DiscountHistory = dynamic(() => import("@/components/DiscountHistory").then(mod => ({ default: mod.DiscountHistory })), {
+const DiscountHistory = dynamicImport(() => import("@/components/DiscountHistory").then(mod => ({ default: mod.DiscountHistory })), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
 
-const SocialQRCodes = dynamic(() => import("@/components/SocialQRCodes").then(mod => ({ default: mod.SocialQRCodes })), {
+const SocialQRCodes = dynamicImport(() => import("@/components/SocialQRCodes").then(mod => ({ default: mod.SocialQRCodes })), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
 
-const CongratulationsAnimation = dynamic(() => import("@/components/CongratulationsAnimation").then(mod => ({ default: mod.CongratulationsAnimation })), {
+const CongratulationsAnimation = dynamicImport(() => import("@/components/CongratulationsAnimation").then(mod => ({ default: mod.CongratulationsAnimation })), {
   ssr: false
 });
 
-const ClientGiftCards = dynamic(() => import("@/components/ClientGiftCards"), {
+const ClientGiftCards = dynamicImport(() => import("@/components/ClientGiftCards"), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
 
-const LoyaltyCards = dynamic(() => import("@/components/client/LoyaltyCards"), {
+const LoyaltyCards = dynamicImport(() => import("@/components/client/LoyaltyCards"), {
   loading: () => <div className="text-center py-12">Chargement...</div>,
   ssr: false
 });
