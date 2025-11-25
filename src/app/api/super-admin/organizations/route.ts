@@ -87,7 +87,6 @@ export async function GET() {
 
         // Mapper les rôles vers des labels français pour l'équipe
         const roleLabels: Record<string, string> = {
-          'ORG_ADMIN': 'Propriétaire',
           'ORG_ADMIN': 'Administrateur',
           'LOCATION_MANAGER': 'Responsable d\'établissement',
           'STAFF': 'Praticien(ne)',
