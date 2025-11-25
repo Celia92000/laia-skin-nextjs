@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Trouver l'utilisateur
     const user = await prisma.user.findFirst({
       where: { email: userEmail },
-      select: { id: true, email: true, organizationId: true }
+      select: { id: true, email: true, name: true, organizationId: true }
     });
 
     if (!user || !user.organizationId) {

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const decoded = await verifyToken(token) as { userId: string };
+    const decoded = await verifyToken(token) as { userId: string; organizationId?: string };
     if (!decoded) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findFirst({
       where: {
         id: decoded.userId,
-        organizationId: decoded.organizationId
+        ...(decoded.organizationId && { organizationId: decoded.organizationId })
       }
     });
 

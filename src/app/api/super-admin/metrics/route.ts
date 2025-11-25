@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         growthRate: Math.round(growthRate * 10) / 10,
 
         // Répartition
-        planDistribution: planDistribution.map(p => ({
+        planDistribution: planDistribution.map((p: any) => ({
           plan: p.plan,
           count: p._count.id,
           revenue: (p._count.id * (planPrices[p.plan] || 0)),
