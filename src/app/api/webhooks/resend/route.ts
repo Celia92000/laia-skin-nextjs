@@ -143,22 +143,25 @@ export async function POST(request: NextRequest) {
           // Si on ne trouve pas l'org par email, utiliser l'organisation par défaut ou undefined
           const organizationId = orgConfig?.organizationId ?? undefined;
 
-          // Enregistrer l'email entrant
-          await prisma.emailHistory.create({
-            data: {
-              from: inboundEmail.from || inboundEmail.from_email || '',
-              to: toEmail,
-              subject: inboundEmail.subject || 'Sans objet',
-              content: inboundEmail.html || inboundEmail.text || inboundEmail.body || '',
-              direction: 'incoming',
-              status: 'received',
-              resendId: inboundEmail.email_id || inboundEmail.id,
-              createdAt: inboundEmail.created_at ? new Date(inboundEmail.created_at) : new Date(),
-              organizationId
-            }
-          });
-
-          log.info('Email entrant enregistré');
+          // Enregistrer l'email entrant seulement si on a un organizationId
+          if (organizationId) {
+            await prisma.emailHistory.create({
+              data: {
+                from: inboundEmail.from || inboundEmail.from_email || '',
+                to: toEmail,
+                subject: inboundEmail.subject || 'Sans objet',
+                content: inboundEmail.html || inboundEmail.text || inboundEmail.body || '',
+                direction: 'incoming',
+                status: 'received',
+                resendId: inboundEmail.email_id || inboundEmail.id,
+                createdAt: inboundEmail.created_at ? new Date(inboundEmail.created_at) : new Date(),
+                organizationId
+              }
+            });
+            log.info('Email entrant enregistré');
+          } else {
+            log.warn('Email entrant ignoré : organizationId introuvable');
+          }
         }
         break;
         

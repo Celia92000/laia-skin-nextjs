@@ -67,12 +67,18 @@ export async function POST(request: NextRequest) {
     const createdProfiles = [];
     for (const client of clientsWithoutProfile) {
       try {
+        // Vérifier que le client a un organizationId
+        if (!client.organizationId) {
+          log.warn(`Client ${client.name} n'a pas d'organizationId, profil ignoré`);
+          continue;
+        }
+
         // Calculer les statistiques du client
-        const individualServicesCount = client.reservations.filter(r => 
+        const individualServicesCount = client.reservations.filter(r =>
           !r.packages || Object.keys(r.packages).length === 0
         ).length;
 
-        const packagesCount = client.reservations.filter(r => 
+        const packagesCount = client.reservations.filter(r =>
           r.packages && Object.keys(r.packages).length > 0
         ).length;
 
@@ -85,7 +91,7 @@ export async function POST(request: NextRequest) {
         const profile = await prisma.loyaltyProfile.create({
           data: {
             userId: client.id,
-            organizationId: client.organizationId ?? undefined,
+            organizationId: client.organizationId,
             individualServicesCount,
             packagesCount,
             totalSpent,

@@ -317,19 +317,21 @@ export async function GET(request: Request) {
             });
 
             // 🔒 Enregistrer dans l'historique avec organizationId
-            await prisma.emailHistory.create({
-              data: {
-                from: '${email}',
-                to: user.email,
-                subject: `🎂 Joyeux anniversaire ${user.name} !`,
-                content: 'Email d\'anniversaire automatique',
-                template: 'birthday',
-                status: 'sent',
-                direction: 'outgoing',
-                userId: user.id,
-                organizationId: user.organizationId ?? undefined
-              }
-            });
+            if (user.organizationId) {
+              await prisma.emailHistory.create({
+                data: {
+                  from: '${email}',
+                  to: user.email,
+                  subject: `🎂 Joyeux anniversaire ${user.name} !`,
+                  content: 'Email d\'anniversaire automatique',
+                  template: 'birthday',
+                  status: 'sent',
+                  direction: 'outgoing',
+                  userId: user.id,
+                  organizationId: user.organizationId
+                }
+              });
+            }
 
             await markReminderAsSent(reminderKey);
           }

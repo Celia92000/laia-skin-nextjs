@@ -161,6 +161,13 @@ export async function POST(request: Request) {
       loyaltyProfile.referralCode = code;
     }
 
+    // 🔒 Vérifier que l'utilisateur a bien un organizationId
+    if (!decoded.organizationId) {
+      return NextResponse.json({
+        error: 'Organization ID manquant'
+      }, { status: 400 });
+    }
+
     // 🔒 Récupérer la configuration du parrainage de l'organisation
     const organization = await prisma.organization.findUnique({
       where: { id: decoded.organizationId },
@@ -180,7 +187,7 @@ export async function POST(request: Request) {
     const referral = await prisma.referral.create({
       data: {
         referrerUserId: decoded.userId,
-        organizationId: decoded.organizationId ?? undefined,
+        organizationId: decoded.organizationId,
         referralCode: `${loyaltyProfile.referralCode}-${Date.now()}`,
         referredEmail: email ?? undefined,
         referredName: name ?? undefined,
