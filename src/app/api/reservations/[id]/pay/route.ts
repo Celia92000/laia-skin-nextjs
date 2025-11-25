@@ -18,29 +18,8 @@ export async function POST(
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
-        service: {
-          select: {
-            id: true,
-            name: true,
-            price: true
-          }
-        },
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            stripeConnectedAccountId: true,
-            stripeChargesEnabled: true
-          }
-        },
-        client: {
-          select: {
-            id: true,
-            email: true,
-            name: true
-          }
-        }
+        service: true,
+        user: true
       }
     })
 
@@ -53,8 +32,19 @@ export async function POST(
       return NextResponse.json({ error: 'Réservation déjà payée' }, { status: 400 })
     }
 
-    const organization = reservation.organization
-    const client = reservation.client
+    // Récupérer l'organisation séparément (pas de relation directe dans Reservation)
+    const organization = await prisma.organization.findUnique({
+      where: { id: reservation.organizationId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        stripeConnectedAccountId: true,
+        stripeChargesEnabled: true
+      }
+    })
+
+    const client = reservation.user
 
     if (!organization) {
       return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
