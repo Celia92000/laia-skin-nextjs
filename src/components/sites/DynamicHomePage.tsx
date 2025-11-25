@@ -72,6 +72,6 @@ export default async function DynamicHomePage({ organization }: DynamicHomePageP
 
     default:
       console.warn(`[DynamicHomePage] Template inconnu: ${templateId}, utilisation du template moderne par défaut`)
-      return <ModernTemplate organization={organization} />
+      return <ModernTemplate data={templateData} />
   }
 }

@@ -30,6 +30,7 @@ interface DemoBooking {
   status: string
   meetingUrl: string | null
   createdAt: string
+  customDuration?: number
   lead: {
     id: string
     institutName: string

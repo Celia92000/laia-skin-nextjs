@@ -135,7 +135,7 @@ export default function TemplateModern({ organization, services, team, content }
             )}
 
             <nav className="hidden md:flex gap-8 items-center">
-              {['Services', organization.founderName && 'About', 'Contact'].filter(Boolean).map((item) => (
+              {(['Services', organization.founderName && 'About', 'Contact'].filter(Boolean) as string[]).map((item) => (
                 <a
                   key={item}
                   href={`#${item.toLowerCase()}`}

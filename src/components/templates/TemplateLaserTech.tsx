@@ -342,7 +342,7 @@ export default function TemplateLaserTech({ organization, services, team, conten
                       {faq.answer}
                     </p>
                   </div>
-                  {idx < c.faq.items.length - 1 && (
+                  {idx < c.faq!.items.length - 1 && (
                     <div className="h-px" style={{ backgroundColor: `${primaryColor}10` }} />
                   )}
                 </div>
