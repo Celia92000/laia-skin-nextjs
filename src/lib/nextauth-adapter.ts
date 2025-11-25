@@ -11,7 +11,7 @@ import type { Adapter } from "next-auth/adapters"
  * Solution : Override getUserByEmail pour gérer le cas OAuth (organizationId = null)
  */
 export function CustomPrismaAdapter(): Adapter {
-  const baseAdapter = PrismaAdapter(prisma)
+  const baseAdapter = PrismaAdapter(prisma as any)
 
   return {
     ...baseAdapter,
@@ -29,7 +29,7 @@ export function CustomPrismaAdapter(): Adapter {
     },
 
     // Override createUser pour créer un user OAuth sans organization
-    async createUser(data) {
+    async createUser(data: any) {
       const user = await prisma.user.create({
         data: {
           email: data.email,

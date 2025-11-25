@@ -220,7 +220,7 @@ export default function OnboardingWizardComplete({ onComplete }: { onComplete: (
           fridayHours: '9h00 - 18h00',
           saturdayHours: '10h00 - 16h00',
           sundayHours: 'Fermé'
-        });
+        } as any);
       }
     } catch (error) {
       console.error('Erreur chargement config:', error);

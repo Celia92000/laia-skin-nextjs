@@ -132,6 +132,10 @@ export default function LiveTemplatePreview(props: LiveTemplatePreviewProps) {
         description: 'Réservez dès maintenant votre prochain rendez-vous',
         button: 'Prendre rendez-vous'
       },
+      pricing: {
+        title: 'Nos Tarifs',
+        description: 'Des prestations de qualité à prix juste'
+      },
       footer: {
         tagline: props.siteTagline || 'Votre beauté, notre passion'
       }

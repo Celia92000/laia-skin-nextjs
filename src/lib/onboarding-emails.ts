@@ -440,7 +440,7 @@ export async function sendWelcomeEmail(
       organizationId
     })
 
-    console.log('✅ Email de bienvenue envoyé via Brevo:', result.messageId)
+    console.log('✅ Email de bienvenue envoyé via Brevo:', (result as any).messageId)
     return result
   } catch (error) {
     console.error('❌ Erreur envoi email de bienvenue:', error)
@@ -1251,7 +1251,7 @@ export async function sendSuperAdminNotification(data: {
       organizationId
     })
 
-    console.log('✅ Notification super-admin envoyée via Brevo:', result.messageId)
+    console.log('✅ Notification super-admin envoyée via Brevo:', (result as any).messageId)
     return result
   } catch (error) {
     console.error('❌ Erreur envoi notification super-admin:', error)
