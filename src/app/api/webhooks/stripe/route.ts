@@ -983,7 +983,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
           metadata: {
             amount: session.amount_total ? session.amount_total / 100 : 0,
             sessionId: session.id,
-            paymentIntentId: session.payment_intent
+            paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
           }
         }
       })
@@ -1012,7 +1012,7 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
           metadata: {
             amount: session.amount_total ? session.amount_total / 100 : 0,
             sessionId: session.id,
-            paymentIntentId: session.payment_intent
+            paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
           }
         }
       })
