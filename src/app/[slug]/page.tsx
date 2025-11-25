@@ -3,6 +3,9 @@ import { detectOrganizationFromSlug } from '@/lib/organization-detector'
 import { notFound } from 'next/navigation'
 import DynamicHomePage from '@/components/sites/DynamicHomePage'
 
+// Force dynamic rendering - these pages depend on database queries
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ slug: string }>
 }
