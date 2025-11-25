@@ -23,18 +23,20 @@ export async function POST(request: NextRequest) {
     
     // Trouver l'utilisateur
     const user = await prisma.user.findFirst({
-      where: { email: userEmail }
+      where: { email: userEmail },
+      select: { id: true, email: true, organizationId: true }
     });
-    
-    if (!user) {
-      log.info(`Utilisateur non trouvé pour l'email : ${userEmail}`);
+
+    if (!user || !user.organizationId) {
+      log.info(`Utilisateur non trouvé ou sans organisation pour l'email : ${userEmail}`);
       return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
-    
+
     // Trouver la dernière réservation complétée de cet utilisateur
     const lastReservation = await prisma.reservation.findFirst({
       where: {
         userId: user.id,
+        organizationId: user.organizationId,
         status: 'completed'
       },
       orderBy: {
@@ -106,11 +108,12 @@ export async function POST(request: NextRequest) {
       review = await prisma.review.create({
         data: {
           userId: user.id,
+          organizationId: user.organizationId,
           reservationId: lastReservation.id,
-          serviceName: lastReservation.services ? 
-            (typeof lastReservation.services === 'string' ? 
-              JSON.parse(lastReservation.services)[0] : 
-              lastReservation.services[0]) : 
+          serviceName: lastReservation.services ?
+            (typeof lastReservation.services === 'string' ?
+              JSON.parse(lastReservation.services)[0] :
+              lastReservation.services[0]) :
             'Service',
           rating,
           comment,

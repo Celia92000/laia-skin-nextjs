@@ -180,10 +180,10 @@ export async function POST(request: Request) {
     const referral = await prisma.referral.create({
       data: {
         referrerUserId: decoded.userId,
-        organizationId: decoded.organizationId || undefined,
+        organizationId: decoded.organizationId ?? undefined,
         referralCode: `${loyaltyProfile.referralCode}-${Date.now()}`,
-        referredEmail: email || undefined,
-        referredName: name || undefined,
+        referredEmail: email ?? undefined,
+        referredName: name ?? undefined,
         status: 'pending',
         rewardAmount: organization.referralReferrerReward
       }

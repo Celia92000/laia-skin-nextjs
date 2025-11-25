@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
             select: { organizationId: true }
           });
 
-          // Si on ne trouve pas l'org par email, utiliser l'organisation par défaut ou null
-          const organizationId = orgConfig?.organizationId || null;
+          // Si on ne trouve pas l'org par email, utiliser l'organisation par défaut ou undefined
+          const organizationId = orgConfig?.organizationId ?? undefined;
 
           // Enregistrer l'email entrant
           await prisma.emailHistory.create({
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
               status: 'received',
               resendId: inboundEmail.email_id || inboundEmail.id,
               createdAt: inboundEmail.created_at ? new Date(inboundEmail.created_at) : new Date(),
-              organizationId: organizationId || undefined
+              organizationId
             }
           });
 

@@ -327,7 +327,7 @@ export async function GET(request: Request) {
                 status: 'sent',
                 direction: 'outgoing',
                 userId: user.id,
-                organizationId: user.organizationId || undefined
+                organizationId: user.organizationId ?? undefined
               }
             });
 

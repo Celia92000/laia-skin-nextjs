@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         const profile = await prisma.loyaltyProfile.create({
           data: {
             userId: client.id,
-            organizationId: client.organizationId,
+            organizationId: client.organizationId ?? undefined,
             individualServicesCount,
             packagesCount,
             totalSpent,
