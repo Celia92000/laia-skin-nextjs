@@ -53,16 +53,19 @@ export async function POST(
       return NextResponse.json({ error: 'Réservation déjà payée' }, { status: 400 })
     }
 
-    if (!reservation.organization) {
+    const organization = reservation.organization
+    const client = reservation.client
+
+    if (!organization) {
       return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
     }
 
-    if (!reservation.client) {
+    if (!client) {
       return NextResponse.json({ error: 'Client introuvable' }, { status: 404 })
     }
 
     // Vérifier que l'organisation a Stripe Connect configuré
-    if (!reservation.organization.stripeConnectedAccountId || !reservation.organization.stripeChargesEnabled) {
+    if (!organization.stripeConnectedAccountId || !organization.stripeChargesEnabled) {
       return NextResponse.json(
         { error: 'Paiement en ligne non disponible pour cet institut' },
         { status: 400 }
@@ -79,15 +82,15 @@ export async function POST(
     const session = await createConnectedCheckoutSession({
       organizationId: reservation.organizationId,
       amount: amount,
-      description: `${reservation.service?.name || 'Réservation'} - ${reservation.organization.name}`,
+      description: `${reservation.service?.name || 'Réservation'} - ${organization.name}`,
       metadata: {
         reservationId: reservation.id,
         serviceId: reservation.serviceId || '',
         clientId: reservation.userId
       },
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${reservation.organization.slug}/reservations/${reservation.id}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${reservation.organization.slug}/reservations/${reservation.id}`,
-      customerEmail: reservation.client.email
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${organization.slug}/reservations/${reservation.id}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${organization.slug}/reservations/${reservation.id}`,
+      customerEmail: client.email
     })
 
     // Enregistrer la session ID dans la réservation

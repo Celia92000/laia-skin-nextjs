@@ -32,10 +32,20 @@ export async function GET(req: NextRequest) {
       },
       include: {
         users: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            createdAt: true,
             reservations: {
               where: {
-                status: { in: ['COMPLETED', 'CONFIRMED'] }
+                status: { in: ['completed', 'confirmed', 'COMPLETED', 'CONFIRMED'] }
+              },
+              select: {
+                id: true,
+                totalPrice: true,
+                createdAt: true
               },
               orderBy: { createdAt: 'desc' }
             }
@@ -43,7 +53,12 @@ export async function GET(req: NextRequest) {
         },
         reservations: {
           where: {
-            status: { in: ['COMPLETED', 'CONFIRMED'] }
+            status: { in: ['completed', 'confirmed', 'COMPLETED', 'CONFIRMED'] }
+          },
+          select: {
+            id: true,
+            totalPrice: true,
+            createdAt: true
           }
         }
       }
@@ -200,12 +215,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { id: session.user.id }
     })
 
     if (user?.role !== 'SUPER_ADMIN') {
