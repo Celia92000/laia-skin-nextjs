@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     let funnel = await prisma.conversionFunnel.findFirst({
       where: {
         name: 'LAIA Connect SaaS',
-        organizationId: null // Funnel global, pas lié à une organisation
+        organizationId: { equals: null } // Funnel global, pas lié à une organisation
       }
     });
 
@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
         data: {
           name: 'LAIA Connect SaaS',
           description: 'Parcours de conversion du visiteur au client payant sur LAIA Connect',
-          organizationId: null,
           stages: {
             stages: [
               { name: 'Visite site', stage: 'AWARENESS', description: 'Visite du site laia-connect.fr' },
@@ -213,7 +212,7 @@ export async function POST(request: NextRequest) {
     const funnel = await prisma.conversionFunnel.findFirst({
       where: {
         name: 'LAIA Connect SaaS',
-        organizationId: null
+        organizationId: { equals: null }
       }
     });
 
@@ -250,7 +249,7 @@ export async function POST(request: NextRequest) {
             convertedAt: isConverted ? new Date() : existingEntry.convertedAt,
             conversionValue: conversionValue || existingEntry.conversionValue,
             stages: {
-              ...existingEntry.stages,
+              ...(existingEntry.stages as any),
               [stage]: new Date()
             }
           }

@@ -71,7 +71,7 @@ export async function PATCH(request: Request) {
 
     const user = await prisma.user.findFirst({
       where: { id: decoded.userId },
-      select: { role: true }
+      select: { role: true, organizationId: true }
     })
 
     if (!user || user.role !== 'SUPER_ADMIN') {
@@ -109,6 +109,7 @@ export async function PATCH(request: Request) {
     // Log l'action
     await createAuditLog({
       userId: decoded.userId,
+      organizationId: user.organizationId || 'PLATFORM',
       action: 'UPDATE_SETTINGS',
       targetType: 'SETTINGS',
       targetId: key,
