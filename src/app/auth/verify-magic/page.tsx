@@ -4,6 +4,9 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function VerifyMagicLinkContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Loader2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

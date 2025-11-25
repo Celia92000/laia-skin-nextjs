@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Star, ThumbsUp, MessageSquare, Award, Camera, X, Upload } from 'lucide-react';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function AvisContent() {
   const searchParams = useSearchParams();
   const reservationId = searchParams.get('id');

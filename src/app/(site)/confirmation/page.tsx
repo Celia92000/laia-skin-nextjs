@@ -6,6 +6,9 @@ import { CheckCircle, Calendar, Clock, MapPin, Phone, Mail, MessageCircle, Edit,
 import { useSearchParams } from 'next/navigation';
 import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-utils';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const [reservation, setReservation] = useState<any>(null);

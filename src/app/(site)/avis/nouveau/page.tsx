@@ -4,6 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Star, Send, CheckCircle } from "lucide-react";
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ReviewForm() {
   const searchParams = useSearchParams();
   const router = useRouter();

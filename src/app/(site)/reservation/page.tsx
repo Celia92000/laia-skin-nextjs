@@ -8,6 +8,9 @@ import { getDisplayPrice, getForfaitDisplayPrice, hasPromotion, getDiscountPerce
 import { formatDateLocal } from "@/lib/date-utils";
 import { safeJsonParse, safeParseNumber, safeArray, safeGet } from '@/lib/safe-parse';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ReservationContent() {
   const searchParams = useSearchParams();
   const rescheduleId = searchParams.get('reschedule'); // ID de la réservation à reprogrammer

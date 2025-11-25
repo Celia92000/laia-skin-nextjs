@@ -5,6 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, Eye, EyeOff, Check, AlertCircle } from "lucide-react";
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();

@@ -10,6 +10,9 @@ import Modal from "@/components/Modal";
 import { logout } from "@/lib/auth-client";
 import { getReservationWithServiceNames, getServiceIcon } from '@/lib/service-utils';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 // Lazy load des composants lourds
 const ClientDashboard = dynamic(() => import("@/components/ClientDashboard"), {
   loading: () => <div className="text-center py-12">Chargement...</div>,

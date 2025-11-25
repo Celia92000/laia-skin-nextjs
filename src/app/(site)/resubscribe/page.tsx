@@ -4,6 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Mail, CheckCircle, X } from 'lucide-react';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ResubscribePageContent() {
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email');

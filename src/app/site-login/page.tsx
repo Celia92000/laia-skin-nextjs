@@ -4,6 +4,9 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function SiteLoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

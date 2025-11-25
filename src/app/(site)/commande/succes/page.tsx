@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowRight, Download, Mail } from 'lucide-react';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function CommandeSuccesContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
