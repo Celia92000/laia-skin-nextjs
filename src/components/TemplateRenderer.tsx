@@ -226,32 +226,32 @@ export function TemplateRenderer({
     case 'modern':
       return <TemplateModern {...modernStyleProps} />;
     case 'classic':
-      return <TemplateClassic data={templateData} />;
+      return <TemplateClassic organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'minimal':
-      return <TemplateMinimal data={templateData} />;
+      return <TemplateMinimal organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'elegance':
-      return <TemplateElegance data={templateData} />;
+      return <TemplateElegance organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'zen':
-      return <TemplateZen data={templateData} />;
+      return <TemplateZen organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'fresh':
-      return <TemplateFresh data={templateData} />;
+      return <TemplateFresh organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'boutique':
-      return <TemplateBoutique data={templateData} />;
+      return <TemplateBoutique organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'professional':
-      return <TemplateProfessional data={templateData} />;
+      return <TemplateProfessional organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'luxe':
-      return <TemplateLuxe data={templateData} />;
+      return <TemplateLuxe organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'laia':
     case 'laia-skin':
       return <TemplateLaia {...modernStyleProps} />;
     case 'medical':
-      return <TemplateMedical data={templateData} />;
+      return <TemplateMedical organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'spa-luxe':
     case 'spaluxe':
-      return <TemplateSpaLuxe data={templateData} />;
+      return <TemplateSpaLuxe organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     case 'laser-tech':
     case 'lasertech':
-      return <TemplateLaserTech data={templateData} />;
+      return <TemplateLaserTech organization={templateData.organization} services={templateData.services} content={templateData.config} />;
     default:
       // Par défaut, utiliser le template Modern
       return <TemplateModern {...modernStyleProps} />;

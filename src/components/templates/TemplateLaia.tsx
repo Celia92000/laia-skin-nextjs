@@ -825,17 +825,16 @@ export default function TemplateLaia({ organization, services, team, content }: 
       <TemplateFooter
         organization={organization}
         theme="light"
-        tagline={c.footer.tagline}
       />
 
       {/* Floating Buttons */}
       {organization.phone && (
-        <FloatingCallButton phoneNumber={organization.phone} />
+        <FloatingCallButton phone={organization.phone} primaryColor={roseGold} />
       )}
       {organization.whatsapp && (
-        <FloatingWhatsAppButton phoneNumber={organization.whatsapp} />
+        <FloatingWhatsAppButton whatsapp={organization.whatsapp} />
       )}
-      <ScrollToTopButton />
+      <ScrollToTopButton primaryColor={roseGold} />
     </div>
   );
 }

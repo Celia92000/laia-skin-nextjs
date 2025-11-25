@@ -151,7 +151,7 @@ export default function TemplateBoutique({ organization, services, team, content
               </Link>
             </nav>
             <div className="md:hidden">
-              <MobileMenu menuItems={menuItems} primaryColor={organization.primaryColor} />
+              <MobileMenu organization={organization} menuItems={menuItems} />
             </div>
           </div>
         </div>

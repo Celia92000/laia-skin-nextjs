@@ -216,7 +216,7 @@ export default function TemplateZen({ organization, services, team, content }: T
               </Link>
             </nav>
             <div className="md:hidden">
-              <MobileMenu menuItems={menuItems} primaryColor={primaryColor} />
+              <MobileMenu organization={organization} menuItems={menuItems} />
             </div>
           </div>
         </div>

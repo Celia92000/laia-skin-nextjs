@@ -18,20 +18,36 @@ interface MobileMenuProps {
     primaryColor: string;
     secondaryColor?: string;
   };
-  menuItems: MenuItem[];
+  menuItems?: MenuItem[];
   ctaLabel?: string;
   ctaHref?: string;
   theme?: 'dark' | 'light';
+  // External state control (optional)
+  isOpen?: boolean;
+  onClose?: () => void;
+  bookingLabel?: string;
 }
 
 export default function MobileMenu({
   organization,
-  menuItems,
+  menuItems = [],
   ctaLabel = 'Réserver',
   ctaHref = '/booking',
-  theme = 'dark'
+  theme = 'dark',
+  isOpen: externalIsOpen,
+  onClose: externalOnClose,
+  bookingLabel
 }: MobileMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = externalOnClose ? (value: boolean) => {
+    if (!value) externalOnClose();
+  } : setInternalIsOpen;
+
+  // Use bookingLabel if provided, otherwise use ctaLabel
+  const finalCtaLabel = bookingLabel || ctaLabel;
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -62,14 +78,16 @@ export default function MobileMenu({
 
   return (
     <>
-      {/* Hamburger Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`md:hidden p-2 rounded-lg transition-colors ${textColor} hover:bg-white/10`}
-        aria-label="Open menu"
-      >
-        <Menu className="w-6 h-6" />
-      </button>
+      {/* Hamburger Button - only show if not using external state */}
+      {externalIsOpen === undefined && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`md:hidden p-2 rounded-lg transition-colors ${textColor} hover:bg-white/10`}
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Overlay */}
       {isOpen && (
@@ -140,7 +158,7 @@ export default function MobileMenu({
               background: `linear-gradient(135deg, ${organization.primaryColor}, ${organization.secondaryColor || organization.primaryColor})`
             }}
           >
-            {ctaLabel}
+            {finalCtaLabel}
           </Link>
         </div>
       </div>
