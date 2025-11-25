@@ -4,6 +4,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()

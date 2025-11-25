@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { Check, Mail, Clock } from 'lucide-react';
 import Link from 'next/link';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic';
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);

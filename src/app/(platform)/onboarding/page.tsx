@@ -21,6 +21,9 @@ import TemplateMedical from '@/components/templates/TemplateMedical'
 import TemplateSpaLuxe from '@/components/templates/TemplateSpaLuxe'
 import TemplateLaserTech from '@/components/templates/TemplateLaserTech'
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic'
+
 // Étapes du tunnel (paiement géré par Stripe Checkout)
 // AVANT paiement : compte + questionnaire + plan + infos + template + PERSONNALISATION AVEC PREVIEW LIVE (vendeur!)
 // APRÈS paiement : success → redirect admin

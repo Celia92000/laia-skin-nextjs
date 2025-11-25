@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, CreditCard, Lock, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
+// Force dynamic rendering for pages with search params
+export const dynamic = 'force-dynamic';
+
 const PLANS = [
   {
     id: 'SOLO',
