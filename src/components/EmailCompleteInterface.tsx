@@ -680,8 +680,8 @@ export default function EmailCompleteInterface() {
                   
                   {/* Dernière visite */}
                   <select
-                    value={advancedFilters.lastVisitDays}
-                    onChange={(e) => setAdvancedFilters({...advancedFilters, lastVisitDays: e.target.value})}
+                    value={advancedFilters.lastVisitDays || ''}
+                    onChange={(e) => setAdvancedFilters({...advancedFilters, lastVisitDays: e.target.value ? parseInt(e.target.value) : undefined})}
                     className="w-full px-2 py-1 border rounded text-sm"
                   >
                     <option value="">Toutes les visites</option>

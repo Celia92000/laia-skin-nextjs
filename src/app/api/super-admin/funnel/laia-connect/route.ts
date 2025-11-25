@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     let funnel = await prisma.conversionFunnel.findFirst({
       where: {
         name: 'LAIA Connect SaaS',
-        organizationId: { equals: null } // Funnel global, pas lié à une organisation
+        organizationId: undefined // Funnel global, pas lié à une organisation
       }
     });
 
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
     const funnel = await prisma.conversionFunnel.findFirst({
       where: {
         name: 'LAIA Connect SaaS',
-        organizationId: { equals: null }
+        organizationId: undefined
       }
     });
 
