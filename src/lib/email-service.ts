@@ -923,3 +923,467 @@ export async function sendOnboardingInvitationEmail({
     return { success: false, error };
   }
 }
+
+/**
+ * Envoyer un email de confirmation d'achat de crédits SMS
+ */
+interface SendSMSPurchaseConfirmationParams {
+  organizationName: string;
+  ownerEmail: string;
+  credits: number;
+  amount: number;
+  packageName: string;
+}
+
+export async function sendSMSPurchaseConfirmation({
+  organizationName,
+  ownerEmail,
+  credits,
+  amount,
+  packageName
+}: SendSMSPurchaseConfirmationParams) {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmation achat crédits SMS</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #d4b5a0 0%, #c9a084 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+                                    ✅ Achat confirmé !
+                                </h1>
+                            </td>
+                        </tr>
+
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px;">
+                                    Bonjour,
+                                </p>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px;">
+                                    Votre achat de crédits SMS a été confirmé avec succès ! 🎉
+                                </p>
+
+                                <div style="background-color: #f8f6f0; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                                    <table width="100%" cellpadding="8" cellspacing="0">
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Organisation:</td>
+                                            <td style="color: #2c3e50; text-align: right;">${organizationName}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Forfait:</td>
+                                            <td style="color: #2c3e50; text-align: right;">${packageName}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Crédits SMS:</td>
+                                            <td style="color: #d4b5a0; text-align: right; font-size: 18px; font-weight: 700;">+${credits} SMS</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Montant:</td>
+                                            <td style="color: #2c3e50; text-align: right; font-weight: 600;">${amount.toFixed(2)}€</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Date:</td>
+                                            <td style="color: #2c3e50; text-align: right;">${new Date().toLocaleDateString('fr-FR')}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 20px 0;">
+                                    Vos crédits sont immédiatement disponibles dans votre espace admin.
+                                </p>
+
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="https://laiaconnect.fr/admin?tab=sms"
+                                       style="display: inline-block; background: linear-gradient(135deg, #d4b5a0, #c9a084);
+                                              color: white; text-decoration: none; padding: 14px 32px;
+                                              border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                        Accéder à mon espace SMS
+                                    </a>
+                                </div>
+
+                                <p style="font-size: 14px; color: #7f8c8d; margin: 30px 0 0;">
+                                    Merci de votre confiance ! 💙<br>
+                                    L'équipe LAIA Connect
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8f6f0; padding: 20px; text-align: center;">
+                                <p style="font-size: 12px; color: #7f8c8d; margin: 0;">
+                                    LAIA Connect - Votre partenaire digital pour instituts de beauté<br>
+                                    <a href="https://laiaconnect.fr" style="color: #d4b5a0; text-decoration: none;">laiaconnect.fr</a>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
+      console.log('\n📧 SIMULATION EMAIL CONFIRMATION ACHAT SMS');
+      console.log('Destinataire:', ownerEmail);
+      console.log('Crédits:', credits);
+      console.log('Montant:', amount, '€');
+      return { success: true, simulated: true };
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <noreply@laia-connect.fr>';
+
+    const { data, error } = await getResend().emails.send({
+      from: fromEmail,
+      to: ownerEmail,
+      subject: `✅ ${credits} crédits SMS ajoutés à votre compte`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Erreur Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Email confirmation achat SMS envoyé:', ownerEmail);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erreur envoi email confirmation SMS:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Envoyer un email au SUPER_ADMIN en cas d'erreurs de génération de factures
+ */
+interface SendInvoiceGenerationErrorsParams {
+  errors: Array<{
+    org: string;
+    error: string;
+  }>;
+  totalOrgs: number;
+  successCount: number;
+}
+
+export async function sendInvoiceGenerationErrors({
+  errors,
+  totalOrgs,
+  successCount
+}: SendInvoiceGenerationErrorsParams) {
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'contact@laiaconnect.fr';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>⚠️ Erreurs génération factures mensuelles</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+                                    ⚠️ Erreurs génération factures
+                                </h1>
+                            </td>
+                        </tr>
+
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px;">
+                                    Le cron job de génération des factures mensuelles a rencontré des erreurs.
+                                </p>
+
+                                <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                    <p style="margin: 0; color: #856404; font-weight: 600;">
+                                        ${errors.length} organisation(s) en erreur sur ${totalOrgs} traitées
+                                    </p>
+                                </div>
+
+                                <div style="background-color: #f8f6f0; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                                    <h3 style="color: #2c3e50; margin: 0 0 15px;">📊 Statistiques</h3>
+                                    <table width="100%" cellpadding="8" cellspacing="0">
+                                        <tr>
+                                            <td style="color: #2c3e50;">Total organisations:</td>
+                                            <td style="color: #2c3e50; text-align: right; font-weight: 600;">${totalOrgs}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #27ae60;">✅ Réussies:</td>
+                                            <td style="color: #27ae60; text-align: right; font-weight: 600;">${successCount}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #e74c3c;">❌ Erreurs:</td>
+                                            <td style="color: #e74c3c; text-align: right; font-weight: 600;">${errors.length}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <h3 style="color: #2c3e50; margin: 30px 0 15px;">❌ Détail des erreurs</h3>
+                                <div style="background-color: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                                    ${errors.map(err => `
+                                        <div style="border-bottom: 1px solid #f0f0f0; padding: 12px 0;">
+                                            <p style="margin: 0 0 5px; color: #2c3e50; font-weight: 600;">
+                                                ${err.org}
+                                            </p>
+                                            <p style="margin: 0; color: #e74c3c; font-family: monospace; font-size: 13px;">
+                                                ${err.error}
+                                            </p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="https://laiaconnect.fr/super-admin?tab=billing"
+                                       style="display: inline-block; background: linear-gradient(135deg, #d4b5a0, #c9a084);
+                                              color: white; text-decoration: none; padding: 14px 32px;
+                                              border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                        Accéder au tableau de bord
+                                    </a>
+                                </div>
+
+                                <p style="font-size: 14px; color: #7f8c8d; margin: 30px 0 0;">
+                                    <strong>Action requise :</strong> Vérifiez les organisations en erreur et régénérez les factures manuellement si nécessaire.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8f6f0; padding: 20px; text-align: center;">
+                                <p style="font-size: 12px; color: #7f8c8d; margin: 0;">
+                                    Notification automatique LAIA Connect<br>
+                                    Date: ${new Date().toLocaleString('fr-FR')}
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
+      console.log('\n📧 SIMULATION EMAIL ERREURS FACTURES');
+      console.log('Destinataire:', superAdminEmail);
+      console.log('Erreurs:', errors.length);
+      return { success: true, simulated: true };
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <alerts@laia-connect.fr>';
+
+    const { data, error } = await getResend().emails.send({
+      from: fromEmail,
+      to: superAdminEmail,
+      subject: `⚠️ ${errors.length} erreur(s) génération factures - Action requise`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Erreur Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Email erreurs factures envoyé au SUPER_ADMIN');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erreur envoi email erreurs factures:', error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Envoyer un email de bienvenue au lead converti avec ses identifiants
+ */
+interface SendLeadConvertedWelcomeParams {
+  email: string;
+  contactName: string;
+  institutName: string;
+  tempPassword: string;
+  subdomain: string;
+  trialDays: number;
+}
+
+export async function sendLeadConvertedWelcome({
+  email,
+  contactName,
+  institutName,
+  tempPassword,
+  subdomain,
+  trialDays
+}: SendLeadConvertedWelcomeParams) {
+  const loginUrl = `https://${subdomain}.laiaconnect.fr/login`;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenue sur LAIA Connect</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #d4b5a0 0%, #c9a084 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 600;">
+                                    🎉 Bienvenue sur LAIA Connect !
+                                </h1>
+                            </td>
+                        </tr>
+
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px;">
+                                    Bonjour ${contactName},
+                                </p>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px;">
+                                    Félicitations ! Votre compte <strong>${institutName}</strong> sur LAIA Connect a été créé avec succès. 🎊
+                                </p>
+
+                                <div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                    <p style="margin: 0; color: #2e7d32; font-weight: 600;">
+                                        🎁 Période d'essai gratuite de ${trialDays} jours activée !
+                                    </p>
+                                </div>
+
+                                <h3 style="color: #2c3e50; margin: 30px 0 15px;">🔑 Vos identifiants de connexion</h3>
+                                <div style="background-color: #f8f6f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <table width="100%" cellpadding="8" cellspacing="0">
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Email:</td>
+                                            <td style="color: #2c3e50; font-family: monospace; text-align: right;">${email}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">Mot de passe:</td>
+                                            <td style="color: #d4b5a0; font-family: monospace; font-weight: 700; text-align: right;">${tempPassword}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">URL:</td>
+                                            <td style="text-align: right;">
+                                                <a href="${loginUrl}" style="color: #d4b5a0; text-decoration: none; font-size: 14px;">
+                                                    ${loginUrl}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                    <p style="margin: 0; color: #856404;">
+                                        <strong>⚠️ Sécurité :</strong> Changez votre mot de passe dès votre première connexion.
+                                    </p>
+                                </div>
+
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${loginUrl}"
+                                       style="display: inline-block; background: linear-gradient(135deg, #d4b5a0, #c9a084);
+                                              color: white; text-decoration: none; padding: 16px 40px;
+                                              border-radius: 8px; font-weight: 600; font-size: 18px;">
+                                        Se connecter maintenant
+                                    </a>
+                                </div>
+
+                                <h3 style="color: #2c3e50; margin: 30px 0 15px;">🚀 Prochaines étapes</h3>
+                                <div style="background-color: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+                                    <ol style="margin: 0; padding-left: 20px; color: #2c3e50; line-height: 1.8;">
+                                        <li>Connectez-vous avec vos identifiants</li>
+                                        <li>Changez votre mot de passe</li>
+                                        <li>Configurez votre institut (logo, horaires, services)</li>
+                                        <li>Invitez votre équipe</li>
+                                        <li>Commencez à prendre des réservations !</li>
+                                    </ol>
+                                </div>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 30px 0 20px;">
+                                    Besoin d'aide ? Notre équipe est là pour vous accompagner ! 💙
+                                </p>
+
+                                <p style="font-size: 14px; color: #7f8c8d; margin: 0;">
+                                    À très vite,<br>
+                                    L'équipe LAIA Connect
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #f8f6f0; padding: 20px; text-align: center;">
+                                <p style="font-size: 12px; color: #7f8c8d; margin: 0 0 10px;">
+                                    LAIA Connect - Votre partenaire digital pour instituts de beauté
+                                </p>
+                                <p style="font-size: 12px; color: #7f8c8d; margin: 0;">
+                                    <a href="https://laiaconnect.fr" style="color: #d4b5a0; text-decoration: none;">laiaconnect.fr</a> •
+                                    <a href="https://laiaconnect.fr/contact" style="color: #d4b5a0; text-decoration: none;">Support</a>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
+      console.log('\n📧 SIMULATION EMAIL BIENVENUE LEAD CONVERTI');
+      console.log('Destinataire:', email);
+      console.log('Institut:', institutName);
+      console.log('Password:', tempPassword);
+      console.log('URL:', loginUrl);
+      return { success: true, simulated: true };
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <bienvenue@laia-connect.fr>';
+
+    const { data, error } = await getResend().emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `🎉 Bienvenue ${institutName} - Vos identifiants LAIA Connect`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Erreur Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Email bienvenue lead converti envoyé:', email);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erreur envoi email bienvenue:', error);
+    return { success: false, error };
+  }
+}

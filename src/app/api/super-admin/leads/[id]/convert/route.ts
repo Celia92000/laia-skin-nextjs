@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { log } from '@/lib/logger';
+import { sendLeadConvertedWelcome } from '@/lib/email-service';
 
 /**
  * Convertir un lead en organisation cliente (Trial)
@@ -137,16 +138,16 @@ export async function POST(
       }
     })
 
-    // TODO: Envoyer email de bienvenue avec credentials
+    // Envoyer email de bienvenue avec credentials
     if (sendWelcomeEmail) {
-      // await sendWelcomeEmail(lead.contactEmail, {
-      //   name: lead.contactName,
-      //   institutName: lead.institutName,
-      //   email: lead.contactEmail,
-      //   password: tempPassword,
-      //   loginUrl: `https://${subdomain}.laiaskin.com/login`,
-      //   trialDays
-      // })
+      await sendLeadConvertedWelcome({
+        email: lead.contactEmail,
+        contactName: lead.contactName,
+        institutName: lead.institutName,
+        tempPassword: tempPassword,
+        subdomain: subdomain,
+        trialDays: trialDays
+      });
     }
 
     return NextResponse.json({

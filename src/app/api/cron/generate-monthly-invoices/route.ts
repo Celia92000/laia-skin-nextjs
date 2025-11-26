@@ -7,7 +7,7 @@ import {
   getCurrentBillingPeriod,
   getNextBillingDate
 } from '@/lib/subscription-billing'
-import { sendInvoiceEmail } from '@/lib/email-service'
+import { sendInvoiceEmail, sendInvoiceGenerationErrors } from '@/lib/email-service'
 import { log } from '@/lib/logger';
 
 /**
@@ -158,11 +158,12 @@ export async function GET(request: NextRequest) {
     if (results.errors.length > 0) {
       log.warn('⚠️  Erreurs détectées lors de la génération:', results.errors)
 
-      // TODO: Envoyer email de notification au super-admin
-      // await sendAdminNotification({
-      //   subject: 'Erreurs génération factures mensuelles',
-      //   errors: results.errors
-      // })
+      // Envoyer email de notification au super-admin
+      await sendInvoiceGenerationErrors({
+        errors: results.errors,
+        totalOrgs: organizations.length,
+        successCount: results.success.length
+      });
     }
 
     log.info('✅ Génération factures terminée')
