@@ -11,6 +11,19 @@ const prisma = new PrismaClient()
  */
 export async function GET(req: NextRequest) {
   try {
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
+
     const settings = await prisma.invoiceSettings.findFirst()
 
     if (!settings) {
@@ -36,6 +49,19 @@ export async function GET(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   try {
+    // 🔒 Vérification SUPER_ADMIN obligatoire
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé - Rôle SUPER_ADMIN requis' }, { status: 403 });
+    }
+
     const data = await req.json()
 
     // Vérifier que l'ID est fourni

@@ -5,7 +5,6 @@ import Footer from "@/components/Footer";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import CrispChatLoader from "@/components/CrispChatLoader";
-import PushNotificationManager from "@/components/PushNotificationManager";
 
 // Force dynamic rendering - layout queries database
 export const dynamic = 'force-dynamic';
@@ -82,7 +81,6 @@ export default async function SiteLayout({
       <Footer organizationData={organization} />
       <PWAInstallPrompt />
       <CrispChatLoader />
-      <PushNotificationManager />
     </div>
   );
 }
