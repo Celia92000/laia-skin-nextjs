@@ -477,6 +477,14 @@ model OrganizationConfig {
   lastGoogleSync        DateTime? // Dernière synchronisation Google Reviews
   autoSyncGoogleReviews Boolean   @default(false) // Activer sync automatique quotidienne
 
+  // Google My Business - OAuth2 tokens
+  googleBusinessConnected    Boolean   @default(false) // Connecté à Google My Business
+  googleBusinessAccessToken  String?   @db.Text // Token d'accès OAuth2 (chiffré)
+  googleBusinessRefreshToken String?   @db.Text // Token de rafraîchissement (chiffré)
+  googleBusinessTokenExpiry  DateTime? // Date d'expiration du token
+  googleBusinessEmail        String? // Email du compte Google connecté
+  googleBusinessAccountId    String? // ID du compte Google My Business
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

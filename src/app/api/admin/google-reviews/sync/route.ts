@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth-session';
 import { log } from '@/lib/logger';
 import { verifyToken } from '@/lib/auth';
+import { syncGoogleReviews } from '@/lib/google-business-api';
 
 export async function POST(request: NextRequest) {
   // 🔒 Vérification Admin obligatoire
@@ -31,69 +32,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { googlePlaceId } = await request.json();
-
-    if (!googlePlaceId) {
-      return NextResponse.json({ error: 'Google Place ID requis' }, { status: 400 });
-    }
-
-    // TODO: Implémenter l'appel à l'API Google Places pour récupérer les avis
-    // Pour le moment, on simule avec des données de test
-    const mockGoogleReviews = [
-      {
-        reviewId: `google_${user.organizationId}_1`,
-        authorName: 'Client Google 1',
-        rating: 5,
-        comment: 'Excellent service ! Je recommande vivement.',
-        publishedAt: new Date('2025-01-15')
-      },
-      {
-        reviewId: `google_${user.organizationId}_2`,
-        authorName: 'Client Google 2',
-        rating: 5,
-        comment: 'Très professionnels, résultats visibles rapidement.',
-        publishedAt: new Date('2025-01-10')
-      },
-      {
-        reviewId: `google_${user.organizationId}_3`,
-        authorName: 'Client Google 3',
-        rating: 4,
-        comment: 'Bon institut, bonne ambiance.',
-        publishedAt: new Date('2025-01-05')
-      }
-    ];
-
-    // Insérer ou mettre à jour les avis Google
-    let syncedCount = 0;
-    for (const review of mockGoogleReviews) {
-      await prisma.googleReview.upsert({
-        where: { reviewId: review.reviewId },
-        create: {
-          ...review,
-          organizationId: user.organizationId ?? undefined
-        },
-        update: {
-          rating: review.rating,
-          comment: review.comment
-        }
-      });
-      syncedCount++;
-    }
-
-    // Mettre à jour la configuration de l'organisation
-    await prisma.organizationConfig.updateMany({
+    // Vérifier que l'organisation est connectée à Google My Business
+    const orgConfig = await prisma.organizationConfig.findUnique({
       where: { organizationId: user.organizationId ?? undefined },
-      data: {
-        googlePlaceId,
-        googleBusinessUrl: `https://www.google.com/maps/place/?q=place_id:${googlePlaceId}`,
-        lastGoogleSync: new Date()
-      }
+      select: {
+        googleBusinessConnected: true,
+        googleBusinessAccountId: true,
+      },
     });
+
+    if (!orgConfig || !orgConfig.googleBusinessConnected) {
+      return NextResponse.json({
+        error: 'Organisation non connectée à Google My Business. Veuillez d\'abord vous connecter.'
+      }, { status: 400 });
+    }
+
+    // Synchroniser les avis avec l'API Google My Business
+    log.info(`[Google Reviews Sync] Démarrage pour ${user.organizationId}`);
+
+    const result = await syncGoogleReviews(user.organizationId);
+
+    log.info(`[Google Reviews Sync] Terminé: ${result.synced} avis synchronisés, ${result.errors} erreurs`);
 
     return NextResponse.json({
       success: true,
-      message: 'Synchronisation Google terminée',
-      reviewsCount: syncedCount
+      message: `Synchronisation terminée: ${result.synced} avis synchronisés`,
+      synced: result.synced,
+      errors: result.errors,
+      total: result.total
     });
   } catch (error) {
     log.error('Erreur synchronisation Google:', error);
