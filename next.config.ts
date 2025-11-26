@@ -37,6 +37,10 @@ const nextConfig: NextConfig = {
     // Optimiser la génération des pages pour éviter les timeouts de DB
     workerThreads: false,
     cpus: 1,
+    // Fix pour l'erreur ENOENT client-reference-manifest
+    appDir: true,
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    serverMinification: false,
   },
   serverExternalPackages: ['pdfkit'],
   // Désactiver la génération statique au build pour multi-tenant
