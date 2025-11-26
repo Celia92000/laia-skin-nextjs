@@ -2,7 +2,13 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
-import PageContent from '@/components/PageContent';
+import dynamicImport from 'next/dynamic';
+
+// Import dynamique avec SSR désactivé pour éviter ENOENT
+const PageContent = dynamicImport(
+  () => import('@/components/PageContent'),
+  { ssr: false }
+);
 
 // Force dynamic rendering to avoid build-time database queries
 export const dynamic = 'force-dynamic';
