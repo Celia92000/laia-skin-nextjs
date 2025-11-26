@@ -125,6 +125,28 @@ export async function GET(request: NextRequest) {
 
         log.info(`✅ Facture ${invoiceNumber} créée pour ${org.name}`)
 
+        // Logger l'action dans ActivityLog
+        await prisma.activityLog.create({
+          data: {
+            userId: 'system',
+            action: 'INVOICE_GENERATED',
+            entityType: 'INVOICE',
+            entityId: invoice.id,
+            description: `Facture ${invoiceNumber} générée automatiquement pour ${org.name}`,
+            metadata: {
+              invoiceNumber,
+              amount,
+              plan: org.plan,
+              organizationId: org.id,
+              organizationName: org.name,
+              billingPeriod: {
+                start: billingPeriod.start.toISOString(),
+                end: billingPeriod.end.toISOString()
+              }
+            }
+          }
+        });
+
         // Envoyer la facture par email automatiquement
         try {
           await sendInvoiceEmail({
@@ -147,10 +169,30 @@ export async function GET(request: NextRequest) {
 
       } catch (error) {
         log.error(`❌ Erreur pour ${org.name}:`, error)
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+
         results.errors.push({
           org: org.name,
-          error: error instanceof Error ? error.message : 'Erreur inconnue'
-        })
+          error: errorMessage
+        });
+
+        // Logger l'erreur dans ActivityLog
+        await prisma.activityLog.create({
+          data: {
+            userId: 'system',
+            action: 'INVOICE_ERROR',
+            entityType: 'INVOICE',
+            entityId: org.id, // Organization ID car la facture n'a pas été créée
+            description: `Erreur génération facture pour ${org.name}: ${errorMessage}`,
+            metadata: {
+              organizationId: org.id,
+              organizationName: org.name,
+              plan: org.plan,
+              error: errorMessage,
+              errorStack: error instanceof Error ? error.stack : undefined
+            }
+          }
+        });
       }
     }
 

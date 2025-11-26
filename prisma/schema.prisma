@@ -3248,6 +3248,22 @@ model SMSLog {
 }
 
 // ============================================
+// REMINDERS & NOTIFICATIONS TRACKING
+// ============================================
+
+model SentReminder {
+  id           String   @id @default(cuid())
+  bookingId    String // ID de la réservation
+  reminderType String // '24h', '2h', 'post-visit', 'review-email', 'review-whatsapp'
+  channel      String // 'email', 'sms', 'whatsapp'
+  sentAt       DateTime @default(now())
+
+  @@unique([bookingId, reminderType])
+  @@index([bookingId])
+  @@index([sentAt])
+}
+
+// ============================================
 // NEXTAUTH MODELS (OAuth Google, etc.)
 // ============================================
 

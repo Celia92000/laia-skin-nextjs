@@ -365,14 +365,35 @@ export async function GET(request: Request) {
 
 // Fonctions helper pour gérer les rappels déjà envoyés
 async function checkIfReminderSent(key: string): Promise<boolean> {
-  // En production, utiliser Redis ou une table dédiée
-  // Pour l'instant, on utilise localStorage côté serveur ou une table simple
-  // TODO: Implémenter avec Redis ou une table dédiée
-  // Pour l'instant, on retourne false pour permettre l'envoi
-  return false;
+  // key format: "reminder_24h_cuid" or "reminder_2h_cuid" or "birthday_userId_2024"
+  const parts = key.split('_');
+  const reminderType = parts.slice(0, -1).join('_'); // "reminder_24h", "reminder_2h", "birthday"
+  const bookingId = parts[parts.length - 1]; // last part is the ID
+
+  const sent = await prisma.sentReminder.findUnique({
+    where: {
+      bookingId_reminderType: {
+        bookingId,
+        reminderType
+      }
+    }
+  });
+
+  return !!sent;
 }
 
 async function markReminderAsSent(key: string): Promise<void> {
-  // TODO: Implémenter avec Redis ou une table dédiée
-  log.info(`Reminder marked as sent: ${key}`);
+  const parts = key.split('_');
+  const reminderType = parts.slice(0, -1).join('_');
+  const bookingId = parts[parts.length - 1];
+
+  await prisma.sentReminder.create({
+    data: {
+      bookingId,
+      reminderType,
+      channel: 'email' // Par défaut email pour cette route
+    }
+  });
+
+  log.info(`✅ Reminder marked as sent in database: ${key}`);
 }
