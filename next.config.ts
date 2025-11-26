@@ -38,7 +38,6 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     cpus: 1,
     // Fix pour l'erreur ENOENT client-reference-manifest
-    appDir: true,
     serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
     serverMinification: false,
   },
