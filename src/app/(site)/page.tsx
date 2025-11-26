@@ -2,10 +2,10 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
 // Import dynamique pour éviter les erreurs de build sur Vercel
-const HomePageClient = dynamic(
+const HomePageClient = dynamicImport(
   () => import('@/components/HomePageClient'),
   { ssr: false }
 );
