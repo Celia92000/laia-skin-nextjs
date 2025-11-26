@@ -38,7 +38,7 @@ export default function RapportsContent() {
     { id: 'appointments', name: 'Rendez-vous', icon: Calendar, category: 'appointments', enabled: true },
     { id: 'completed_appointments', name: 'RDV complétés', icon: Calendar, category: 'appointments', enabled: false },
     { id: 'avg_ticket', name: 'Panier moyen', icon: DollarSign, category: 'revenue', enabled: true },
-    { id: 'products_sold', name: 'Produits vendus', icon: BarChart3, category: 'products', enabled: false },
+    { id: 'products_sold', name: 'Produits vendus', icon: BarChart3, category: 'products', enabled: true },
     { id: 'top_services', name: 'Services populaires', icon: TrendingUp, category: 'appointments', enabled: false },
     { id: 'client_retention', name: 'Taux de rétention', icon: Users, category: 'clients', enabled: false },
     { id: 'conversion_rate', name: 'Taux de conversion', icon: TrendingUp, category: 'clients', enabled: false },
