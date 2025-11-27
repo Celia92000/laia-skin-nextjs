@@ -163,12 +163,28 @@ export async function getGoogleBusinessLocations(organizationId: string, account
   }
 }
 
+// Type temporaire pour les avis Google
+interface GoogleReview {
+  reviewId?: string;
+  reviewer?: {
+    displayName?: string;
+    profilePhotoUrl?: string;
+  };
+  starRating?: 'FIVE' | 'FOUR' | 'THREE' | 'TWO' | 'ONE';
+  comment?: string;
+  createTime?: string;
+  reviewReply?: {
+    comment?: string;
+    updateTime?: string;
+  };
+}
+
 /**
  * Récupérer les avis Google d'un établissement
  * TODO: Migrer vers Google Business Profile API (mybusinessbusinessinformation)
  * L'API mybusiness v4 a été dépréciée
  */
-export async function getGoogleReviews(organizationId: string, locationName: string) {
+export async function getGoogleReviews(organizationId: string, locationName: string): Promise<GoogleReview[]> {
   const oauth2Client = await getAuthenticatedClient(organizationId);
 
   try {
@@ -182,7 +198,7 @@ export async function getGoogleReviews(organizationId: string, locationName: str
 
     // Temporairement retourner un tableau vide en attendant la migration
     log.warn('Google My Business API non migrée - retourne tableau vide');
-    return [];
+    return [] as GoogleReview[];
   } catch (error) {
     log.error('Erreur récupération avis Google:', error);
     throw error;
