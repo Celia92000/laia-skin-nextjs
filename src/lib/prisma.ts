@@ -105,7 +105,7 @@ const getPrismaClient = async () => {
         await prisma.$queryRaw`SELECT 1`;
         console.log('✅ Prisma connected successfully');
         isConnected = true;
-        return;
+        return prisma;
       } catch (error: any) {
         retries--;
         if (retries > 0) {
@@ -115,10 +115,11 @@ const getPrismaClient = async () => {
           console.log('⚠️ Prisma connection attempts exhausted, queries will auto-connect');
           // Marquer comme "connecté" même si échoué - Prisma se connectera auto à la 1ère requête
           isConnected = true;
-          return;
+          return prisma;
         }
       }
     }
+    return prisma;
   })();
 
   await connectionPromise;
