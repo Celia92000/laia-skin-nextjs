@@ -165,19 +165,24 @@ export async function getGoogleBusinessLocations(organizationId: string, account
 
 /**
  * Récupérer les avis Google d'un établissement
+ * TODO: Migrer vers Google Business Profile API (mybusinessbusinessinformation)
+ * L'API mybusiness v4 a été dépréciée
  */
 export async function getGoogleReviews(organizationId: string, locationName: string) {
   const oauth2Client = await getAuthenticatedClient(organizationId);
 
   try {
-    const mybusiness = google.mybusiness({ version: 'v4', auth: oauth2Client });
+    // TODO: Remplacer par la nouvelle API Google Business Profile
+    // const mybusiness = google.mybusiness({ version: 'v4', auth: oauth2Client });
+    // const response = await mybusiness.accounts.locations.reviews.list({
+    //   parent: locationName,
+    //   pageSize: 50,
+    // });
+    // return response.data.reviews || [];
 
-    const response = await mybusiness.accounts.locations.reviews.list({
-      parent: locationName,
-      pageSize: 50, // Max 50 avis par requête
-    });
-
-    return response.data.reviews || [];
+    // Temporairement retourner un tableau vide en attendant la migration
+    log.warn('Google My Business API non migrée - retourne tableau vide');
+    return [];
   } catch (error) {
     log.error('Erreur récupération avis Google:', error);
     throw error;
@@ -292,6 +297,8 @@ export async function syncGoogleReviews(organizationId: string) {
 
 /**
  * Répondre à un avis Google
+ * TODO: Migrer vers Google Business Profile API
+ * L'API mybusiness v4 a été dépréciée
  */
 export async function replyToGoogleReview(
   organizationId: string,
@@ -301,16 +308,19 @@ export async function replyToGoogleReview(
   const oauth2Client = await getAuthenticatedClient(organizationId);
 
   try {
-    const mybusiness = google.mybusiness({ version: 'v4', auth: oauth2Client });
+    // TODO: Remplacer par la nouvelle API Google Business Profile
+    // const mybusiness = google.mybusiness({ version: 'v4', auth: oauth2Client });
+    // const response = await mybusiness.accounts.locations.reviews.updateReply({
+    //   name: reviewName,
+    //   requestBody: {
+    //     comment: replyText,
+    //   },
+    // });
+    // return response.data;
 
-    const response = await mybusiness.accounts.locations.reviews.updateReply({
-      name: reviewName,
-      requestBody: {
-        comment: replyText,
-      },
-    });
-
-    return response.data;
+    // Temporairement retourner null en attendant la migration
+    log.warn('Google My Business reply API non migrée - fonction désactivée');
+    return null;
   } catch (error) {
     log.error('Erreur réponse avis Google:', error);
     throw error;
