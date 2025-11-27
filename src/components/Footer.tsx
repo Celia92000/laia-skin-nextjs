@@ -222,12 +222,28 @@ export default function Footer({ organizationData }: FooterProps) {
                   <span className="text-base text-white/95">
                     {(() => {
                       const hours = safeJsonParse(config.businessHours, { 'Lun-Ven': '14h-20h' });
-                      return Object.entries(hours).slice(0, 2).map(([day, time], i) => (
-                        <span key={day}>
-                          {i > 0 && <br />}
-                          {day}: {time as string}
-                        </span>
-                      ));
+                      return Object.entries(hours).slice(0, 2).map(([day, time], i) => {
+                        // Formater correctement les horaires
+                        let timeStr = '';
+                        if (typeof time === 'string') {
+                          timeStr = time;
+                        } else if (typeof time === 'object' && time !== null) {
+                          // Si c'est un objet {open, close, closed}
+                          const timeObj = time as any;
+                          if (timeObj.closed) {
+                            timeStr = 'Fermé';
+                          } else if (timeObj.open && timeObj.close) {
+                            timeStr = `${timeObj.open} - ${timeObj.close}`;
+                          }
+                        }
+
+                        return (
+                          <span key={day}>
+                            {i > 0 && <br />}
+                            {day}: {timeStr}
+                          </span>
+                        );
+                      });
                     })()}
                   </span>
                 </li>

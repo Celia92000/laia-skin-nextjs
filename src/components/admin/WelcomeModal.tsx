@@ -3,21 +3,47 @@
 import { useState, useEffect } from 'react'
 import { X, Play, CheckCircle } from 'lucide-react'
 import VideoPlayer from '../platform/VideoPlayer'
-import OnboardingWizardComplete from '../OnboardingWizardComplete'
 
 export default function WelcomeModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
-  const [showWizard, setShowWizard] = useState(false)
   const [videoUrl, setVideoUrl] = useState('')
 
   useEffect(() => {
-    // Vérifier si c'est la première connexion
-    const hasSeenWelcome = localStorage.getItem('laia-welcome-seen')
+    console.log('🎯 WelcomeModal chargé')
 
-    if (!hasSeenWelcome) {
-      setIsOpen(true)
+    // Vérifier la complétion de la configuration
+    const checkConfigCompletion = async () => {
+      try {
+        // Ne pas afficher si déjà fermé pendant cette session
+        const dismissedThisSession = sessionStorage.getItem('laia-welcome-dismissed-this-session')
+        if (dismissedThisSession) {
+          console.log('⏭️  Modal masqué (fermé pendant cette session)')
+          return
+        }
+
+        const response = await fetch('/api/admin/config-completion')
+        const data = await response.json()
+        const completion = data.completionPercentage || 0
+
+        console.log('📊 Complétion de la configuration:', completion + '%')
+
+        // Afficher le modal si la configuration est < 70%
+        if (completion < 70) {
+          console.log('✅ Modal affiché (complétion < 70%)')
+          setIsOpen(true)
+        } else {
+          console.log('⏭️  Modal masqué (complétion >= 70%)')
+          // Marquer comme vu définitivement une fois que 70% est atteint
+          localStorage.setItem('laia-welcome-seen', 'true')
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de la complétion:', error)
+        // En cas d'erreur, ne pas afficher le modal
+      }
     }
+
+    checkConfigCompletion()
 
     // Charger l'URL de la vidéo tuto depuis l'API
     fetch('/api/platform/videos')
@@ -27,31 +53,28 @@ export default function WelcomeModal() {
   }, [])
 
   const handleClose = () => {
-    localStorage.setItem('laia-welcome-seen', 'true')
+    // Enregistrer pour cette session uniquement (sessionStorage)
+    // Le modal réapparaîtra à la prochaine connexion si config < 70%
+    sessionStorage.setItem('laia-welcome-dismissed-this-session', 'true')
     setIsOpen(false)
   }
 
   const handleSkip = () => {
-    localStorage.setItem('laia-welcome-seen', 'true')
+    // Enregistrer pour cette session uniquement
+    sessionStorage.setItem('laia-welcome-dismissed-this-session', 'true')
     setIsOpen(false)
   }
 
   const handleStartOnboarding = () => {
-    setShowWizard(true)
-  }
-
-  const handleWizardComplete = () => {
-    localStorage.setItem('laia-welcome-seen', 'true')
+    console.log('🚀 Lancement du wizard inline...')
+    // Dispatch l'événement pour OUVRIR (pas toggle) le wizard inline dans la page admin
+    const event = new CustomEvent('openConfigWizard', { detail: { forceOpen: true } })
+    window.dispatchEvent(event)
+    // Fermer le modal de bienvenue (sans enregistrer pour permettre réapparition si < 70%)
     setIsOpen(false)
-    window.location.href = '/admin'
   }
 
   if (!isOpen) return null
-
-  // Si le wizard est activé, afficher uniquement le wizard
-  if (showWizard) {
-    return <OnboardingWizardComplete onComplete={handleWizardComplete} />
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -164,46 +187,6 @@ export default function WelcomeModal() {
                 </div>
               </div>
 
-              {/* Quick actions */}
-              <div className="border-t pt-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  Par où commencer ?
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <a
-                    href="/admin/apparence"
-                    onClick={handleClose}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
-                  >
-                    <div className="text-2xl mb-2">🎨</div>
-                    <div className="font-medium text-gray-900 group-hover:text-purple-600">
-                      Personnaliser l'apparence
-                    </div>
-                  </a>
-
-                  <a
-                    href="/admin/prestations"
-                    onClick={handleClose}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
-                  >
-                    <div className="text-2xl mb-2">💼</div>
-                    <div className="font-medium text-gray-900 group-hover:text-purple-600">
-                      Ajouter mes prestations
-                    </div>
-                  </a>
-
-                  <a
-                    href="/admin/parametres"
-                    onClick={handleClose}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all group"
-                  >
-                    <div className="text-2xl mb-2">⚙️</div>
-                    <div className="font-medium text-gray-900 group-hover:text-purple-600">
-                      Configurer mes horaires
-                    </div>
-                  </a>
-                </div>
-              </div>
             </div>
           ) : (
             // Video view

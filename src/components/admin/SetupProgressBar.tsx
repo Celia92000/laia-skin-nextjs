@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
+import WelcomeSetupBanner from './WelcomeSetupBanner'
+import CompleteOnboardingWizard from '../CompleteOnboardingWizard'
 
 interface SetupProgressBarProps {
   completionPercentage: number
@@ -12,138 +14,153 @@ interface SetupProgressBarProps {
     hasServices?: boolean
     hasBusinessHours?: boolean
   }
+  organizationId?: string
+  plan?: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'
+  firstName?: string
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
 }
 
-export default function SetupProgressBar({ completionPercentage, stats }: SetupProgressBarProps) {
+export default function SetupProgressBar({
+  completionPercentage,
+  stats,
+  organizationId,
+  plan,
+  firstName,
+  primaryColor = '#d4b5a0',
+  secondaryColor = '#c9a084',
+  accentColor = '#2c3e50'
+}: SetupProgressBarProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [showWizard, setShowWizard] = useState(false)
 
-  // Ne pas afficher si étapes importantes complètes (>= 70%)
-  if (completionPercentage >= 70) {
+  // Écouter l'événement pour ouvrir/fermer le wizard
+  useEffect(() => {
+    console.log('🔧 SetupProgressBar: useEffect monté, écouteur installé')
+
+    const handleOpenWizard = (e: any) => {
+      console.log('🎬 SetupProgressBar: Événement openConfigWizard reçu', e.detail)
+
+      if (e.detail?.forceOpen) {
+        console.log('✅ Ouverture FORCÉE du wizard depuis modal "C\'est parti"')
+        setShowWizard(true)
+
+        // Scroller vers le wizard après un délai suffisant pour le rendu
+        setTimeout(() => {
+          console.log('🔍 Scroll vers #config-wizard...')
+          const wizardElement = document.getElementById('config-wizard')
+          if (wizardElement) {
+            console.log('📍 Element trouvé, scrolling...')
+            wizardElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          } else {
+            console.warn('⚠️ Element #config-wizard non trouvé')
+          }
+        }, 500)
+      } else {
+        console.log('🔄 Toggle du wizard')
+        setShowWizard(prev => !prev)
+      }
+    }
+
+    window.addEventListener('openConfigWizard', handleOpenWizard)
+    console.log('✅ Écouteur openConfigWizard installé')
+
+    return () => {
+      window.removeEventListener('openConfigWizard', handleOpenWizard)
+      console.log('🧹 Écouteur openConfigWizard retiré')
+    }
+  }, [])
+
+  // Ne pas afficher si étapes importantes complètes (>= 70%) OU si pas d'organizationId/plan
+  if (completionPercentage >= 70 || !organizationId || !plan) {
     return null
   }
 
   const remainingPercentage = 100 - completionPercentage
 
   return (
-    <div className="sticky top-0 z-40 bg-gradient-to-r from-[#d4b5a0] via-[#c9a084] to-[#d4b5a0] shadow-xl border-b-2 border-[#c9a084]/30">
-      <div className="max-w-7xl mx-auto">
-        {/* Barre principale toujours visible */}
-        <div className="px-4 py-2">
+    <>
+      {/* Barre compacte sticky en haut */}
+      <div
+        className="sticky top-0 z-40 shadow-xl border-b-2"
+        style={{
+          background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+          borderColor: `${secondaryColor}50`
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
-            {/* Icône + Titre */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="p-1.5 bg-white/30 rounded-lg backdrop-blur-sm flex-shrink-0 shadow-sm">
-                <Sparkles className="w-4 h-4 text-[#2c3e50]" />
-              </div>
-              <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-1">
+              <Sparkles className="w-5 h-5" style={{ color: accentColor }} />
+              <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#2c3e50] font-bold text-sm truncate">
+                  <span className="font-bold text-sm" style={{ color: accentColor }}>
                     Configuration du site
                   </span>
-                  <span className="px-2 py-0.5 bg-[#2c3e50] text-white rounded-full text-xs font-bold shadow-sm">
+                  <span
+                    className="px-2 py-0.5 text-white rounded-full text-xs font-bold"
+                    style={{ backgroundColor: accentColor }}
+                  >
                     {completionPercentage}%
                   </span>
                 </div>
-                {!isExpanded && (
-                  <div className="w-full max-w-xs bg-white/40 rounded-full h-1.5 mt-1 shadow-inner">
+                {!showWizard && (
+                  <div className="w-full max-w-md bg-white/40 rounded-full h-2 mt-1">
                     <div
-                      className="bg-gradient-to-r from-[#2c3e50] to-[#3d5a80] h-1.5 rounded-full transition-all duration-500 shadow-sm"
-                      style={{ width: `${completionPercentage}%` }}
+                      className="h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${completionPercentage}%`,
+                        background: `linear-gradient(to right, ${accentColor}, ${primaryColor})`
+                      }}
                     />
                   </div>
                 )}
               </div>
             </div>
+            <button
+              onClick={() => {
+                console.log('🎯 Clic sur bouton Configurer/Réduire')
+                setShowWizard(!showWizard)
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => {
-                  window.location.href = '/admin/site-setup'
+                // Scroller vers le wizard après ouverture
+                if (!showWizard) {
+                  setTimeout(() => {
+                    const wizardElement = document.getElementById('config-wizard')
+                    if (wizardElement) {
+                      wizardElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }, 100)
+                }
+              }}
+              className="px-6 py-2 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all"
+              style={{ backgroundColor: accentColor }}
+            >
+              {showWizard ? 'Réduire' : 'Configurer'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Wizard complet qui s'étend - NON STICKY, scrollable */}
+      {showWizard && (
+        <div className="bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div
+              id="config-wizard"
+              className="bg-white rounded-lg shadow-xl border-2 border-gray-200 p-6"
+            >
+              <CompleteOnboardingWizard
+                onComplete={() => {
+                  setShowWizard(false)
+                  window.location.reload()
                 }}
-                className="px-4 py-1.5 bg-[#2c3e50] text-white rounded-lg font-semibold text-sm hover:bg-[#3d5a80] hover:shadow-lg hover:scale-105 transition-all"
-              >
-                Reprendre
-              </button>
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 text-[#2c3e50] hover:bg-white/30 rounded-lg transition-colors"
-                aria-label={isExpanded ? 'Réduire' : 'Développer'}
-              >
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
+                inModal={false}
+              />
             </div>
           </div>
         </div>
-
-        {/* Détails expansibles */}
-        {isExpanded && (
-          <div className="px-4 pb-3 border-t border-[#2c3e50]/20">
-            <div className="pt-3">
-              {/* Barre de progression détaillée */}
-              <div className="bg-white/40 backdrop-blur-sm rounded-lg p-3 mb-3 border border-white/60 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[#2c3e50] text-xs font-semibold">Progression globale</span>
-                  <span className="text-[#2c3e50] font-bold text-sm">{completionPercentage}%</span>
-                </div>
-                <div className="w-full bg-white/60 rounded-full h-3 overflow-hidden shadow-inner">
-                  <div
-                    className="bg-gradient-to-r from-[#2c3e50] via-[#3d5a80] to-[#2c3e50] h-3 rounded-full transition-all duration-500 ease-out flex items-center justify-end px-2 shadow-sm"
-                    style={{ width: `${completionPercentage}%` }}
-                  >
-                    {completionPercentage > 15 && (
-                      <span className="text-xs font-bold text-white drop-shadow-lg">{completionPercentage}%</span>
-                    )}
-                  </div>
-                </div>
-                <p className="text-[#2c3e50]/80 text-xs mt-2 font-medium">
-                  {remainingPercentage > 0
-                    ? `Plus que ${remainingPercentage}% pour finaliser votre site !`
-                    : 'Configuration terminée 🎉'
-                  }
-                </p>
-              </div>
-
-              {/* Étapes à compléter */}
-              <div className="grid grid-cols-5 gap-2 text-xs mb-3">
-                {[
-                  { emoji: '🎨', label: 'Template', time: '2min' },
-                  { emoji: '🌈', label: 'Couleurs', time: '1min' },
-                  { emoji: '🖼️', label: 'Logo', time: '1min' },
-                  { emoji: '💆', label: 'Services', time: '2min' },
-                  { emoji: '🕐', label: 'Horaires', time: '2min' },
-                ].map((step, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      window.location.href = '/admin/site-setup'
-                    }}
-                    className="bg-white/50 backdrop-blur-sm rounded-lg p-2 text-center border border-white/80 shadow-sm hover:bg-white/70 hover:border-[#2c3e50]/30 hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <div className="text-base mb-0.5">{step.emoji}</div>
-                    <div className="text-[#2c3e50] font-semibold text-xs mb-0.5">{step.label}</div>
-                    <div className="text-[#2c3e50]/60 text-xs">{step.time}</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Message d'encouragement */}
-              <div className="flex items-center gap-2 text-[#2c3e50] text-xs font-medium">
-                <span className="inline-block w-2 h-2 bg-[#2c3e50] rounded-full animate-pulse"></span>
-                <span>
-                  {completionPercentage === 0 && '🚀 Démarrez en 15 minutes chrono !'}
-                  {completionPercentage > 0 && completionPercentage < 40 && '💪 Bon début ! Continuez sur votre lancée'}
-                  {completionPercentage >= 40 && completionPercentage < 70 && '⭐ Vous êtes sur la bonne voie !'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </>
   )
 }

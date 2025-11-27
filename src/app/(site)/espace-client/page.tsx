@@ -1556,7 +1556,8 @@ function EspaceClientContent() {
                         rating,
                         comment: reviewText,
                         satisfaction,
-                        photos: reviewPhotos
+                        photos: reviewPhotos,
+                        source: 'site'
                       })
                     });
 

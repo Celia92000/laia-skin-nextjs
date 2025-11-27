@@ -161,9 +161,12 @@ export async function GET(request: Request) {
       <div class="review-box">
         <h3>💕 Votre avis compte énormément pour moi</h3>
         <p>Pourriez-vous prendre quelques secondes pour partager votre expérience ?</p>
-        <a href="https://laiaskin.fr/avis?id=${reservation.id}" class="btn">Donner mon avis</a>
+        <a href="${website}/avis?id=${reservation.id}&source=email" class="btn">⭐ Donner mon avis (rapide)</a>
+        <p style="margin-top: 15px; font-size: 14px; color: #666;">
+          Ou connectez-vous à votre <a href="${website}/espace-client" style="color: #667eea; text-decoration: none;">espace client</a> pour voir tous vos avantages
+        </p>
       </div>
-      
+
       <div class="loyalty-box">
         <h3>🎆 Votre statut fidélité</h3>
         <p>${loyaltyProgress}</p>
@@ -225,7 +228,8 @@ J'espère que vous avez apprécié votre soin *${serviceNames}* d'il y a 3 jours
 ⭐ *Votre avis est précieux !*
 Pourriez-vous prendre quelques secondes pour partager votre expérience ?
 
-👉 Cliquez ici : https://laiaskin.fr/avis?id=${reservation.id}
+👉 Formulaire rapide : ${website}/avis?id=${reservation.id}&source=whatsapp
+👤 Ou via votre espace client : ${website}/espace-client
 
 🎁 *Programme de fidélité*
 ${loyaltyProgress}
@@ -397,9 +401,12 @@ export async function POST(request: Request) {
       <div class="review-box">
         <h3>💕 Votre avis compte énormément pour moi</h3>
         <p>Pourriez-vous prendre quelques secondes pour partager votre expérience ?</p>
-        <a href="https://laiaskin.fr/avis?id=${reservation.id}" class="btn">Donner mon avis</a>
+        <a href="${website}/avis?id=${reservation.id}&source=email" class="btn">⭐ Donner mon avis (rapide)</a>
+        <p style="margin-top: 15px; font-size: 14px; color: #666;">
+          Ou connectez-vous à votre <a href="${website}/espace-client" style="color: #667eea; text-decoration: none;">espace client</a> pour voir tous vos avantages
+        </p>
       </div>
-      
+
       <div class="loyalty-box">
         <h3>🎆 Votre statut fidélité</h3>
         <p>${loyaltyProgress}</p>

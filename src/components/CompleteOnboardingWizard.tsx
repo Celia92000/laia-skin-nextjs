@@ -6,7 +6,7 @@ import {
   Check, ChevronRight, ChevronLeft, Sparkles, Palette, FileText,
   Settings, MapPin, Clock, Globe, Mail, Phone, Building,
   CreditCard, MessageCircle, Instagram, Search, Shield, Star,
-  Package, Users
+  Package, Users, X, CheckCircle
 } from 'lucide-react';
 import { websiteTemplates } from '@/lib/website-templates';
 import ImageUpload from '@/components/ImageUpload';
@@ -105,11 +105,19 @@ const defaultHours = {
   dimanche: { open: '', close: '', closed: true },
 };
 
-export default function CompleteOnboardingWizard({ onComplete }: { onComplete: () => void }) {
+export default function CompleteOnboardingWizard({
+  onComplete,
+  inModal = false
+}: {
+  onComplete: () => void;
+  inModal?: boolean;
+}) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<Step>('welcome');
+  // Commencer directement à 'general' si pas dans un modal (mode inline)
+  const [currentStep, setCurrentStep] = useState<Step>(inModal ? 'welcome' : 'general');
   const [saving, setSaving] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   const [data, setData] = useState<WizardData>({
     siteName: '',
@@ -214,65 +222,68 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
+      console.log('📝 Début de la sauvegarde - TOUS les champs seront sauvegardés et synchronisés...');
 
-      // Mapper les données du wizard aux champs du schéma
-      const configData: any = {};
+      // Mapper TOUS les données du wizard aux champs du schéma (même les champs vides)
+      const configData: any = {
+        // Informations générales - sauvegardées même si vides
+        siteName: data.siteName || '',
+        siteTagline: data.siteTagline || '',
+        logoUrl: data.logoUrl || '',
 
-      // Informations générales
-      if (data.siteName) configData.siteName = data.siteName;
-      if (data.siteTagline) configData.siteTagline = data.siteTagline;
-      if (data.logoUrl) configData.logoUrl = data.logoUrl;
+        // Template
+        homeTemplate: data.selectedTemplate || 'modern',
 
-      // Template
-      if (data.selectedTemplate) configData.homeTemplate = data.selectedTemplate;
+        // Couleurs - toujours sauvegardées
+        primaryColor: data.primaryColor || '#d4b5a0',
+        secondaryColor: data.secondaryColor || '#c9a084',
+        accentColor: data.accentColor || '#2c3e50',
 
-      // Couleurs
-      if (data.primaryColor) configData.primaryColor = data.primaryColor;
-      if (data.secondaryColor) configData.secondaryColor = data.secondaryColor;
-      if (data.accentColor) configData.accentColor = data.accentColor;
+        // Contact - tous les champs
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        postalCode: data.postalCode || '',
+        city: data.city || '',
 
-      // Contact
-      if (data.email) configData.email = data.email;
-      if (data.phone) configData.phone = data.phone;
-      if (data.address) configData.address = data.address;
-      if (data.postalCode) configData.postalCode = data.postalCode;
-      if (data.city) configData.city = data.city;
+        // Localisation
+        latitude: data.latitude || '',
+        longitude: data.longitude || '',
 
-      // Localisation
-      if (data.latitude) configData.latitude = data.latitude;
-      if (data.longitude) configData.longitude = data.longitude;
+        // Horaires
+        businessHours: data.businessHours ? JSON.stringify(data.businessHours) : JSON.stringify({}),
 
-      // Horaires (convertir en JSON string si nécessaire)
-      if (data.businessHours) {
-        configData.businessHours = JSON.stringify(data.businessHours);
-      }
+        // Contenu de la page d'accueil
+        heroTitle: data.heroTitle || '',
+        heroSubtitle: data.heroSubtitle || '',
+        heroImage: data.heroImage || '',
+        heroVideo: data.heroVideo || '',
 
-      // Contenu de la page d'accueil
-      if (data.heroTitle) configData.heroTitle = data.heroTitle;
-      if (data.heroSubtitle) configData.heroSubtitle = data.heroSubtitle;
-      if (data.heroImage) configData.heroImage = data.heroImage;
-      if (data.heroVideo) configData.heroVideo = data.heroVideo;
+        // À propos
+        aboutText: data.aboutText || '',
+        aboutIntro: data.aboutTitle || '',
 
-      // À propos
-      if (data.aboutText) configData.aboutText = data.aboutText;
-      if (data.aboutTitle) configData.aboutIntro = data.aboutTitle;
+        // Réseaux sociaux
+        facebook: data.facebook || '',
+        instagram: data.instagram || '',
+        tiktok: data.tiktok || '',
+        linkedin: data.linkedin || '',
 
-      // Réseaux sociaux
-      if (data.facebook) configData.facebook = data.facebook;
-      if (data.instagram) configData.instagram = data.instagram;
-      if (data.tiktok) configData.tiktok = data.tiktok;
-      if (data.linkedin) configData.linkedin = data.linkedin;
+        // SEO
+        defaultMetaTitle: data.metaTitle || '',
+        defaultMetaDescription: data.metaDescription || '',
+        defaultMetaKeywords: data.keywords || '',
 
-      // SEO
-      if (data.metaTitle) configData.defaultMetaTitle = data.metaTitle;
-      if (data.metaDescription) configData.defaultMetaDescription = data.metaDescription;
-      if (data.keywords) configData.defaultMetaKeywords = data.keywords;
+        // Mentions légales
+        termsAndConditions: data.termsOfService || '',
+        privacyPolicy: data.privacyPolicy || '',
+        legalNotice: data.legalNotices || '',
+      };
 
-      // Mentions légales
-      if (data.termsOfService) configData.termsAndConditions = data.termsOfService;
-      if (data.privacyPolicy) configData.privacyPolicy = data.privacyPolicy;
-      if (data.legalNotices) configData.legalNotice = data.legalNotices;
+      console.log('📦 Données à sauvegarder (tous les champs):', configData);
+      console.log('📊 Nombre de champs:', Object.keys(configData).length);
 
+      // Sauvegarder TOUS les champs via l'API
       const response = await fetch('/api/admin/config', {
         method: 'PUT',
         headers: {
@@ -284,13 +295,14 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Erreur sauvegarde:', errorData);
+        console.error('❌ Erreur sauvegarde:', errorData);
         const errorMsg = errorData.details
           ? `${errorData.error}: ${errorData.details}`
           : errorData.error || 'Erreur inconnue';
         alert('Erreur lors de la sauvegarde: ' + errorMsg);
         return false;
       }
+      console.log('✅ Sauvegarde API réussie');
       return true;
     } catch (error) {
       console.error('Erreur:', error);
@@ -325,29 +337,45 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
   const progress = Math.round((currentStepIndex / (steps.length - 1)) * 100);
 
   const handleNext = async () => {
+    console.log('🔄 handleNext - Étape actuelle:', currentStep);
+
     // Marquer l'étape actuelle comme complétée
     setData(prev => ({
       ...prev,
       completedSteps: new Set([...prev.completedSteps, currentStep])
     }));
 
-    // Sauvegarder avant de passer à l'étape suivante
-    const saved = await saveCurrentStep();
-    if (!saved) return;
+    // Sauvegarder automatiquement avant de passer à l'étape suivante (sauf pour welcome et complete)
+    if (currentStep !== 'welcome' && currentStep !== 'complete') {
+      console.log('💾 Sauvegarde automatique de l\'étape:', currentStep);
+      setSaving(true);
+      const saved = await saveCurrentStep();
+      setSaving(false);
 
-    // Vérifier si le taux de complétion atteint 70% -> auto-compléter
-    const autoCompleted = await checkAutoComplete();
-    if (autoCompleted) {
-      onComplete(); // Fermer le wizard et rediriger vers l'admin
-      return;
+      if (!saved) {
+        console.error('❌ Sauvegarde échouée');
+        // Ne pas bloquer la progression, juste avertir
+        alert('Attention : La sauvegarde a échoué. Vos modifications pourraient ne pas être enregistrées.');
+      } else {
+        console.log('✅ Données sauvegardées et synchronisées sur le site vitrine, admin et espace client');
+        // Afficher le message de succès
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+      }
+
+      // NE PLUS vérifier l'auto-complétion pour permettre de finir toutes les étapes
+      // Le client doit pouvoir aller jusqu'au bout
     }
 
     // Passer à l'étape suivante
     if (currentStepIndex < steps.length - 1) {
       const nextStep = steps[currentStepIndex + 1].id as Step;
+      console.log('➡️ Passage à l\'étape suivante:', nextStep);
       setCurrentStep(nextStep);
-      // Sauvegarder l'étape actuelle dans localStorage
+      // Sauvegarder l'étape actuelle dans localStorage pour reprendre plus tard
       localStorage.setItem('onboarding-current-step', nextStep);
+    } else {
+      console.log('🏁 Dernière étape atteinte');
     }
   };
 
@@ -425,11 +453,11 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
   const handleSaveAndExit = async () => {
     setSaving(true);
     const saved = await saveCurrentStep();
+    setSaving(false);
     if (saved) {
       // L'étape est déjà sauvegardée dans localStorage
-      router.push('/admin');
+      onComplete(); // Fermer la modal et retourner à l'admin
     }
-    setSaving(false);
   };
 
   const renderStepContent = () => {
@@ -1606,27 +1634,56 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
     );
   }
 
+  const containerClass = inModal
+    ? "h-full overflow-auto p-6"
+    : "min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 py-8 px-4";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className={containerClass}>
+      <div className={inModal ? "h-full flex flex-col max-w-5xl mx-auto" : "max-w-6xl mx-auto"}>
         {/* Header with Exit Button */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {inModal && (
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Configuration de votre site</h2>
             <button
-              onClick={handleSaveAndExit}
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-lg transition disabled:opacity-50"
+              onClick={onComplete}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition"
+              aria-label="Fermer"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Sauvegarder et quitter
+              <X className="w-6 h-6" />
             </button>
           </div>
-          {currentStep !== 'welcome' && currentStep !== 'complete' && (
-            <div className="text-sm text-gray-500">
-              💾 Votre progression est sauvegardée automatiquement
+        )}
+        {!inModal && (
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveAndExit}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-lg transition disabled:opacity-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Sauvegarder et quitter
+              </button>
             </div>
-          )}
-        </div>
+            {currentStep !== 'welcome' && currentStep !== 'complete' && (
+              <div className="text-sm text-gray-500">
+                💾 Votre progression est sauvegardée automatiquement
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Success Toast */}
+        {showSaveSuccess && (
+          <div className="mb-4 bg-green-50 border-2 border-green-500 rounded-lg p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-5 duration-300">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-900">Sauvegarde réussie !</p>
+              <p className="text-xs text-green-700">Vos modifications sont synchronisées sur le site vitrine, l'admin et l'espace client</p>
+            </div>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-8">
@@ -1635,6 +1692,12 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
               Étape {currentStepIndex + 1} sur {steps.length}
             </span>
             <div className="flex items-center gap-4">
+              {saving && (
+                <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                  Sauvegarde en cours...
+                </span>
+              )}
               <span className="text-sm font-medium text-gray-700">
                 Configuration : {calculateCompletionRate()}%
               </span>
@@ -1649,9 +1712,10 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
               style={{ width: `${progress}%` }}
             />
           </div>
-          {calculateCompletionRate() >= 70 && (
-            <p className="text-xs text-green-600 mt-2 font-medium">
-              ✅ Configuration suffisante atteinte ! Le wizard se fermera automatiquement.
+          {!inModal && currentStep !== 'welcome' && currentStep !== 'complete' && (
+            <p className="text-xs text-blue-600 mt-2 font-medium flex items-center gap-2">
+              <span className="inline-block w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+              Sauvegarde automatique activée - Vos modifications sont synchronisées en temps réel
             </p>
           )}
         </div>
@@ -1694,7 +1758,7 @@ export default function CompleteOnboardingWizard({ onComplete }: { onComplete: (
             </button>
             <div>
               <button
-                onClick={() => router.push('/admin')}
+                onClick={onComplete}
                 className="text-sm text-gray-600 hover:text-gray-900 underline"
               >
                 Revenir plus tard

@@ -31,27 +31,85 @@ export async function POST(request: Request) {
         // Traiter les réponses automatiques
         if (text) {
           const lowerText = text.toLowerCase();
-          
+
+          // Détecter si c'est un avis (note + commentaire)
+          const ratingMatch = text.match(/(\d)[\s\/]*(?:sur[\s\/]*5|étoiles?|⭐)/i);
+          const starCount = (text.match(/⭐/g) || []).length;
+
+          if (ratingMatch || (starCount > 0 && starCount <= 5)) {
+            // C'est probablement un avis !
+            const rating = ratingMatch ? parseInt(ratingMatch[1]) : starCount;
+
+            // Nettoyer le commentaire
+            let comment = text.replace(/^[\s\S]*?(?:note|rating|étoiles?)[\s:]*\d[\s\/]*(?:sur[\s\/]*5|étoiles?)[\s\n]*/i, '');
+            comment = comment.replace(/^⭐+[\s\n]*/, '').trim();
+
+            try {
+              // Trouver le client par son numéro
+              const client = await prisma.user.findFirst({
+                where: { phone: from },
+                select: { id: true, name: true, organizationId: true }
+              });
+
+              if (client && client.organizationId) {
+                // Trouver la dernière réservation complétée
+                const lastReservation = await prisma.reservation.findFirst({
+                  where: {
+                    userId: client.id,
+                    organizationId: client.organizationId,
+                    status: { in: ['completed', 'confirmed'] }
+                  },
+                  orderBy: { date: 'desc' }
+                });
+
+                // Créer l'avis
+                await prisma.review.create({
+                  data: {
+                    userId: client.id,
+                    organizationId: client.organizationId,
+                    reservationId: lastReservation?.id,
+                    serviceName: lastReservation?.services ?
+                      (typeof lastReservation.services === 'string' ?
+                        JSON.parse(lastReservation.services)[0] :
+                        lastReservation.services[0]) :
+                      'Service',
+                    rating,
+                    comment,
+                    satisfaction: rating,
+                    source: 'whatsapp',
+                    approved: false // Nécessite validation admin
+                  }
+                });
+
+                // Envoyer un message de remerciement
+                await sendAutoReply(from,
+                  `✨ Merci ${client.name} !\n\nVotre avis ${rating}⭐ a bien été reçu.\n\nIl sera publié après validation. 🙏`
+                );
+
+                log.info(`📱 Avis WhatsApp reçu de ${client.name}: ${rating}⭐`);
+              }
+            } catch (reviewError) {
+              log.error('Erreur création avis WhatsApp:', reviewError);
+            }
+          }
           // Réponses automatiques simples
-          if (lowerText.includes('rdv') || lowerText.includes('rendez-vous')) {
+          else if (lowerText.includes('rdv') || lowerText.includes('rendez-vous')) {
             // Envoyer un lien de réservation
-            await sendAutoReply(from, 
+            await sendAutoReply(from,
               `Pour prendre rendez-vous, cliquez ici:\n👉 ${website}/reservation\n\nOu appelez-nous au ${phone}`
             );
           }
-          
-          if (lowerText.includes('prix') || lowerText.includes('tarif')) {
+          else if (lowerText.includes('prix') || lowerText.includes('tarif')) {
             await sendAutoReply(from,
               `Nos tarifs:\n\n💆‍♀️ Hydro'Cleaning: 120€\n✨ Renaissance: 150€\n🌟 Hydro'Naissance: 180€\n💎 BB Glow: 90€\n💡 LED Thérapie: 60€\n\nPour plus d'infos: ${website}`
             );
           }
-          
-          if (lowerText.includes('horaire') || lowerText.includes('ouvert')) {
+          else if (lowerText.includes('horaire') || lowerText.includes('ouvert')) {
             await sendAutoReply(from,
               `Nous sommes ouverts:\n\n📅 Lundi-Vendredi: 9h-20h\n📅 Samedi: 10h-18h\n📅 Dimanche: Fermé\n\n⭐ Nocturnes possibles jusqu'à 23h sur demande`
             );
           }
-          
+
           // Enregistrer le message dans la base de données
           try {
             // Trouver le client par son numéro
@@ -60,7 +118,7 @@ export async function POST(request: Request) {
                 phone: from
               }
             });
-            
+
             if (client) {
               // Ajouter à l'historique des messages (si vous avez une table pour ça)
               log.info(`Message reçu de ${client.name}: ${text}`);

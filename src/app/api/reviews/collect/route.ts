@@ -15,9 +15,23 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!data.organizationId) {
+    // 🔒 Récupérer l'organizationId depuis la réservation si disponible
+    let organizationId = data.organizationId;
+
+    if (!organizationId && data.reservationId) {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: data.reservationId },
+        select: { organizationId: true }
+      });
+
+      if (reservation) {
+        organizationId = reservation.organizationId;
+      }
+    }
+
+    if (!organizationId) {
       return NextResponse.json(
-        { error: 'organizationId requis' },
+        { error: 'organizationId non trouvé' },
         { status: 400 }
       );
     }
@@ -78,7 +92,7 @@ export async function POST(request: Request) {
       data: {
         rating: data.rating,
         comment: data.comment,
-        source: data.source || 'email', // email, whatsapp, website
+        source: data.source || 'website', // email, whatsapp, website
         userId: client.id,
         organizationId: data.organizationId,
         serviceName: service?.name || data.serviceName,

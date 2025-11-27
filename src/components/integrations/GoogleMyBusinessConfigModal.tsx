@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { X, ExternalLink, Globe, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, ExternalLink, Globe, AlertCircle, Loader2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface GoogleMyBusinessConfigModalProps {
   onClose: () => void;
@@ -9,9 +10,49 @@ interface GoogleMyBusinessConfigModalProps {
   existingConfig?: any;
 }
 
+interface ConnectionStatus {
+  connected: boolean;
+  email?: string;
+  accountId?: string;
+  lastSync?: string;
+  autoSync?: boolean;
+}
+
 export default function GoogleMyBusinessConfigModal({ onClose, onSave, existingConfig }: GoogleMyBusinessConfigModalProps) {
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
+  const [autoSync, setAutoSync] = useState(false);
+
+  // Récupérer le statut de connexion au chargement
+  useEffect(() => {
+    fetchConnectionStatus();
+  }, []);
+
+  const fetchConnectionStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus({
+          connected: data.organizationConfig?.googleBusinessConnected || false,
+          email: data.organizationConfig?.googleBusinessEmail,
+          accountId: data.organizationConfig?.googleBusinessAccountId,
+          autoSync: data.organizationConfig?.autoSyncGoogleReviews || false,
+        });
+        setAutoSync(data.organizationConfig?.autoSyncGoogleReviews || false);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la récupération du statut:', err);
+    }
+  };
 
   const handleConnect = async () => {
     setLoading(true);
@@ -19,11 +60,10 @@ export default function GoogleMyBusinessConfigModal({ onClose, onSave, existingC
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/integrations/google-my-business/connect', {
-        method: 'POST',
+      const response = await fetch('/api/auth/google-business/authorize', {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
         }
       });
 
@@ -40,6 +80,105 @@ export default function GoogleMyBusinessConfigModal({ onClose, onSave, existingC
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/google-reviews/sync', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erreur lors de la synchronisation');
+      }
+
+      const data = await response.json();
+      toast.success(`${data.synced} avis synchronisés avec succès`);
+      await fetchConnectionStatus();
+
+      // Rediriger vers l'onglet Avis avec filtre Google après 1.5s
+      setTimeout(() => {
+        onClose();
+        const event = new CustomEvent('openAdminTab', { detail: { tab: 'reviews', filter: 'google' } });
+        window.dispatchEvent(event);
+      }, 1500);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleToggleAutoSync = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          autoSyncGoogleReviews: !autoSync
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour');
+      }
+
+      setAutoSync(!autoSync);
+      toast.success(!autoSync ? 'Synchronisation automatique activée' : 'Synchronisation automatique désactivée');
+    } catch (err) {
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir déconnecter Google My Business ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          googleBusinessConnected: false,
+          googleBusinessAccessToken: null,
+          googleBusinessRefreshToken: null,
+          googleBusinessTokenExpiry: null,
+          googleBusinessEmail: null,
+          googleBusinessAccountId: null,
+          autoSyncGoogleReviews: false,
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la déconnexion');
+      }
+
+      toast.success('Déconnecté de Google My Business');
+      setConnectionStatus(null);
+      setAutoSync(false);
+    } catch (err) {
+      toast.error('Erreur lors de la déconnexion');
     }
   };
 
@@ -64,38 +203,95 @@ export default function GoogleMyBusinessConfigModal({ onClose, onSave, existingC
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-900">
-                <p className="font-semibold mb-2">Connexion OAuth Google</p>
-                <ul className="space-y-1 text-blue-800">
-                  <li>✓ Mise à jour automatique des horaires</li>
-                  <li>✓ Publication des photos depuis LAIA</li>
-                  <li>✓ Réponse aux avis clients facilitée</li>
-                  <li>✓ Statistiques de visibilité Google</li>
-                </ul>
+          {/* Statut de connexion */}
+          {connectionStatus?.connected ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-semibold">Connecté à Google My Business</span>
+                </div>
+                <button
+                  onClick={handleDisconnect}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  Déconnecter
+                </button>
               </div>
-            </div>
-          </div>
-
-          {existingConfig?.connected && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-green-700">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="font-semibold">Connecté à Google My Business</span>
-              </div>
-              {existingConfig?.businessName && (
-                <p className="text-sm text-green-600 mt-1">
-                  Établissement : {existingConfig.businessName}
+              {connectionStatus?.email && (
+                <p className="text-sm text-green-600">
+                  Compte : {connectionStatus.email}
                 </p>
               )}
+              {connectionStatus?.accountId && (
+                <p className="text-sm text-green-600">
+                  ID Établissement : {connectionStatus.accountId.split('/').pop()}
+                </p>
+              )}
+
+              {/* Synchronisation manuelle */}
+              <div className="pt-3 border-t border-green-200">
+                <button
+                  onClick={handleSync}
+                  disabled={syncing}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Synchronisation...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Synchroniser les avis maintenant
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Synchronisation automatique */}
+              <div className="pt-3 border-t border-green-200">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <p className="font-medium text-gray-900">Synchronisation automatique</p>
+                    <p className="text-sm text-gray-500">Synchroniser les avis quotidiennement à 6h du matin</p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={autoSync}
+                      onChange={handleToggleAutoSync}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-900">
+                  <p className="font-semibold mb-2">Connexion OAuth Google</p>
+                  <ul className="space-y-1 text-blue-800">
+                    <li>✓ Synchronisation automatique des avis Google</li>
+                    <li>✓ Réponse aux avis clients depuis LAIA</li>
+                    <li>✓ Statistiques de visibilité Google</li>
+                    <li>✓ Gestion centralisée de votre e-réputation</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-600">{error}</p>
+              <div className="flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-red-600" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
             </div>
           )}
 
@@ -159,24 +355,27 @@ export default function GoogleMyBusinessConfigModal({ onClose, onSave, existingC
 
         <div className="border-t p-6 flex gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
-            Annuler
+            {connectionStatus?.connected ? 'Fermer' : 'Annuler'}
           </button>
-          <button
-            onClick={handleConnect}
-            disabled={loading}
-            className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Connexion...
-              </>
-            ) : existingConfig?.connected ? (
-              'Reconnecter'
-            ) : (
-              'Connecter avec Google'
-            )}
-          </button>
+          {!connectionStatus?.connected && (
+            <button
+              onClick={handleConnect}
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Connexion...
+                </>
+              ) : (
+                <>
+                  <Globe className="w-4 h-4" />
+                  Connecter avec Google
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

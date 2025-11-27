@@ -108,7 +108,7 @@ const AVAILABLE_INTEGRATIONS = [
     type: 'google_calendar',
     name: 'Google Calendar',
     description: 'Synchronisation bidirectionnelle de vos rendez-vous',
-    category: 'calendar',
+    category: 'google',
     icon: Calendar,
     color: 'bg-blue-500',
     docsUrl: 'https://developers.google.com/calendar',
@@ -157,12 +157,12 @@ const AVAILABLE_INTEGRATIONS = [
   {
     type: 'google_my_business',
     name: 'Google My Business',
-    description: 'Gestion automatique de votre fiche Google',
-    category: 'reputation',
+    description: 'Synchronisation automatique des avis Google',
+    category: 'google',
     icon: Globe,
     color: 'bg-yellow-500',
     docsUrl: 'https://developers.google.com/my-business',
-    importance: 'bonus'
+    importance: 'important'
   }
 ];
 
@@ -170,12 +170,11 @@ const CATEGORIES = {
   booking: { name: 'Réservations', icon: Calendar, color: 'text-pink-600' },
   payments: { name: 'Paiements', icon: CreditCard, color: 'text-indigo-600' },
   promotions: { name: 'Promotions', icon: Gift, color: 'text-green-600' },
-  calendar: { name: 'Calendrier', icon: Calendar, color: 'text-blue-600' },
+  google: { name: 'Google', icon: Globe, color: 'text-blue-500' },
   marketing: { name: 'Marketing', icon: TrendingUp, color: 'text-teal-600' },
   communication: { name: 'Communication', icon: MessageSquare, color: 'text-red-600' },
   ecommerce: { name: 'E-commerce', icon: Package, color: 'text-green-700' },
-  accounting: { name: 'Comptabilité', icon: FileText, color: 'text-blue-700' },
-  reputation: { name: 'Réputation', icon: Globe, color: 'text-yellow-600' }
+  accounting: { name: 'Comptabilité', icon: FileText, color: 'text-blue-700' }
 };
 
 export default function IntegrationsTab() {

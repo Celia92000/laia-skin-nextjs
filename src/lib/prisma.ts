@@ -81,12 +81,19 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Variable pour stocker la promesse de connexion
 let connectionPromise: Promise<typeof prisma> | null = null;
+let isConnected = false;
 
 // Fonction pour obtenir le client Prisma (avec connexion assurée)
 const getPrismaClient = async () => {
+  // Si déjà connecté, retourner directement le client
+  if (isConnected) {
+    return prisma;
+  }
+
   // Si une connexion est déjà en cours, attendre qu'elle se termine
   if (connectionPromise) {
-    return connectionPromise;
+    await connectionPromise;
+    return prisma;
   }
 
   // Créer la promesse de connexion
@@ -94,25 +101,29 @@ const getPrismaClient = async () => {
     let retries = 3;
     while (retries > 0) {
       try {
-        await prisma.$connect();
+        // Tenter une requête simple pour forcer la connexion
+        await prisma.$queryRaw`SELECT 1`;
         console.log('✅ Prisma connected successfully');
-        return prisma;
+        isConnected = true;
+        return;
       } catch (error: any) {
         retries--;
         if (retries > 0) {
           console.log(`⏳ Retrying Prisma connection (${3 - retries}/3)...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 300));
         } else {
-          console.error('❌ Failed to connect to Prisma after 3 attempts:', error);
-          // Retourner quand même le client - il se connectera à la première requête
-          return prisma;
+          console.log('⚠️ Prisma connection attempts exhausted, queries will auto-connect');
+          // Marquer comme "connecté" même si échoué - Prisma se connectera auto à la 1ère requête
+          isConnected = true;
+          return;
         }
       }
     }
-    return prisma;
   })();
 
-  return connectionPromise;
+  await connectionPromise;
+  connectionPromise = null;
+  return prisma;
 };
 
 // Gérer la déconnexion gracieuse

@@ -24,14 +24,19 @@ export default async function SiteLayout({
   let organization = null;
 
   try {
+    // Utiliser directement le client Prisma (se connecte automatiquement)
     const prisma = await getPrismaClient();
 
     // 1️⃣ Domaine personnalisé
     if (!cleanHost.includes('localhost')) {
-      organization = await prisma.organization.findUnique({
-        where: { domain: cleanHost },
-        include: { config: true }
-      });
+      try {
+        organization = await prisma.organization.findUnique({
+          where: { domain: cleanHost },
+          include: { config: true }
+        });
+      } catch (e) {
+        console.log('Domain lookup failed, trying subdomain...');
+      }
     }
 
     // 2️⃣ Subdomain
@@ -43,22 +48,31 @@ export default async function SiteLayout({
         subdomain = parts[0];
       }
 
-      organization = await prisma.organization.findUnique({
-        where: { subdomain },
-        include: { config: true }
-      });
+      try {
+        organization = await prisma.organization.findUnique({
+          where: { subdomain },
+          include: { config: true }
+        });
+      } catch (e) {
+        console.log('Subdomain lookup failed, trying fallback...');
+      }
     }
 
     // 3️⃣ Fallback
     if (!organization) {
-      organization = await prisma.organization.findFirst({
-        where: { slug: 'laia-skin-institut' },
-        include: { config: true }
-      });
+      try {
+        organization = await prisma.organization.findFirst({
+          where: { slug: 'laia-skin-institut' },
+          include: { config: true }
+        });
+      } catch (e) {
+        console.log('Fallback lookup failed, using defaults...');
+      }
     }
-  } catch (error) {
-    console.error('Error loading organization in layout:', error);
+  } catch (error: any) {
+    console.log('Layout organization loading skipped, using defaults');
     // Continuer avec organization = null, les couleurs par défaut seront utilisées
+    organization = null;
   }
 
   // Couleurs par défaut

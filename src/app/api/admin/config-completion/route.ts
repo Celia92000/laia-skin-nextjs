@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { verifyAuth } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await verifyAuth(request)
-    if (!session.isValid || !session.user?.organizationId) {
+    // Vérifier l'authentification via cookies
+    const cookieStore = await cookies()
+    const token = cookieStore.get('auth-token')?.value
+
+    if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const organizationId = session.user.organizationId
+    const decoded = verifyToken(token)
+    if (!decoded || !decoded.organizationId) {
+      return NextResponse.json({ error: 'Token invalide' }, { status: 401 })
+    }
+
+    const organizationId = decoded.organizationId
 
     // Récupérer l'organisation ET sa config (l'onboarding remplit Organization, la config remplit OrganizationConfig)
     const organization = await prisma.organization.findUnique({
@@ -31,13 +40,8 @@ export async function GET(request: NextRequest) {
       where: { organizationId }
     })
 
-    // Compter les packages
-    const packagesCount = await prisma.service.count({
-      where: {
-        organizationId,
-        isPackage: true
-      }
-    })
+    // Les packages n'existent plus dans ce schéma
+    const packagesCount = 0
 
     // Compter les réservations
     const bookingsCount = await prisma.reservation.count({
@@ -156,6 +160,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       globalPercentage,
+      completionPercentage: globalPercentage, // Alias pour compatibilité
       totalFields,
       completedFields,
       sections: completionData,

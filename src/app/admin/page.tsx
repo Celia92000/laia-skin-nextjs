@@ -99,6 +99,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [userRole, setUserRole] = useState<string>('');
   const [userData, setUserData] = useState<any>(null);
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null); // Organization ID pour multi-tenant
   const [useOptimizedView, setUseOptimizedView] = useState(false); // Dashboard classique pour l'instant
   const [activeTab, setActiveTab] = useState("stats");
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -114,6 +115,7 @@ export default function AdminDashboard() {
   const [paymentDateEnd, setPaymentDateEnd] = useState("");
   const [orgFeatures, setOrgFeatures] = useState<OrgFeatures | null>(null);
   const [orgPlan, setOrgPlan] = useState<string | null>(null);
+  const [orgColors, setOrgColors] = useState<{primaryColor: string, secondaryColor: string, accentColor: string}>({ primaryColor: '#d4b5a0', secondaryColor: '#c9a084', accentColor: '#2c3e50' });
   const [isOnboarded, setIsOnboarded] = useState<boolean>(true); // Par défaut true pour éviter le flash
   const [smsCredits, setSmsCredits] = useState<number>(0);
   const [hasPurchasedSMS, setHasPurchasedSMS] = useState<boolean>(false);
@@ -393,6 +395,11 @@ export default function AdminDashboard() {
 
       if (response.ok) {
         const org = await response.json();
+
+        // Stocker l'organizationId pour le wizard multi-tenant
+        setCurrentOrgId(org?.id ?? null);
+        console.log('✅ Organization ID récupéré:', org?.id);
+
         // Utiliser directement les features de la BDD (priorisées sur le plan)
         const features = {
           featureCRM: org?.featureCRM ?? false,
@@ -409,6 +416,14 @@ export default function AdminDashboard() {
         setOrgFeatures(features);
         setOrgPlan(org?.plan ?? null);
         setIsOnboarded(org?.isOnboarded !== false); // true par défaut si non défini
+        // Couleurs de l'organisation
+        if (org?.config) {
+          setOrgColors({
+            primaryColor: org.config.primaryColor || '#d4b5a0',
+            secondaryColor: org.config.secondaryColor || '#c9a084',
+            accentColor: org.config.accentColor || '#2c3e50'
+          });
+        }
         // Crédits SMS
         setSmsCredits(org?.smsCredits ?? 0);
         setHasPurchasedSMS((org?.smsTotalPurchased ?? 0) > 0);
@@ -1185,17 +1200,23 @@ export default function AdminDashboard() {
   // Dashboard classique
   return (
     <AuthGuard requireAdmin={true}>
-      {/* Bannière persistante de progression (visible si configuration < 70% - étapes importantes) */}
-      {(userRole === 'ORG_OWNER' || userRole === 'ADMIN' || userRole === 'ORG_ADMIN') && configCompletion < 70 && (
+      {/* Bannière de configuration avec wizard intégré */}
+      {(userRole === 'ORG_OWNER' || userRole === 'ADMIN' || userRole === 'ORG_ADMIN') && currentOrgId && wizardStats && orgPlan && orgFeatures && (
         <SetupProgressBar
           completionPercentage={configCompletion}
           stats={wizardStats}
+          organizationId={currentOrgId}
+          plan={orgPlan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'}
+          firstName={userData?.firstName}
+          primaryColor={orgColors.primaryColor}
+          secondaryColor={orgColors.secondaryColor}
+          accentColor={orgColors.accentColor}
         />
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pt-32 pb-20">
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pb-20">
         <div className="max-w-7xl mx-auto px-4">
-        
+
         {/* Notification de nouvelles réservations */}
         {showNotification && (
           <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-4 shadow-xl animate-pulse">
@@ -1627,39 +1648,6 @@ export default function AdminDashboard() {
               ) : (
                 // Vue complète pour les admins
                 <>
-                  {/* Bannière d'accueil + Setup Checklist Wizard Intelligent - Uniquement pour les admins */}
-                  {(userRole === 'ORG_OWNER' || userRole === 'ADMIN') && userData?.organizationId && wizardStats && orgPlan && orgFeatures && (
-                    <>
-                      {/* Bannière d'invitation si étapes importantes non complètes (< 70%) */}
-                      {configCompletion < 70 && (
-                        <WelcomeSetupBanner
-                          organizationId={userData.organizationId}
-                          plan={orgPlan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'}
-                          firstName={userData.firstName}
-                          completionPercentage={configCompletion}
-                        />
-                      )}
-
-                      {/* Wizard de configuration */}
-                      <div data-setup-checklist>
-                        <SetupChecklist
-                          organizationId={userData.organizationId}
-                          plan={orgPlan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM'}
-                          features={{
-                            featureCRM: orgFeatures.featureCRM || false,
-                            featureEmailing: orgFeatures.featureEmailing || false,
-                            featureBlog: orgFeatures.featureBlog || false,
-                            featureShop: orgFeatures.featureShop || false,
-                            featureWhatsApp: orgFeatures.featureWhatsApp || false,
-                            featureSocialMedia: orgFeatures.featureSocialMedia || false,
-                            featureSMS: orgFeatures.featureSMS || false
-                          }}
-                          stats={wizardStats}
-                        />
-                      </div>
-                    </>
-                  )}
-
                   {/* Vue employé avec statistiques utiles */}
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold text-[#2c3e50] mb-4 flex items-center gap-2">

@@ -60,5 +60,5 @@ export function getUserFromStorage(): any {
 export function logout(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  window.location.href = '/login';
+  window.location.href = '/';
 }

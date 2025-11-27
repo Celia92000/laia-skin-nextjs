@@ -177,19 +177,19 @@ export default async function RootLayout({
         <meta name="msapplication-TileColor" content="#d4b5a0" />
         <meta name="msapplication-tap-highlight" content="no" />
 
-        {/* Service Worker Registration */}
+        {/* Service Worker - Désactivé temporairement (causait des problèmes avec la page offline) */}
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(
-                  function(registration) {
-                    console.log('[PWA] Service Worker enregistré:', registration.scope);
-                  },
-                  function(err) {
-                    console.log('[PWA] Erreur Service Worker:', err);
-                  }
-                );
+              // Désenregistrer tout service worker existant
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister().then(function(success) {
+                    if (success) {
+                      console.log('[PWA] Service Worker désenregistré avec succès');
+                    }
+                  });
+                }
               });
             }
           `

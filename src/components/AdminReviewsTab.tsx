@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Calendar, User, Mail, Phone, Check, X, Eye, ThumbsUp, MessageCircle } from "lucide-react";
+import { Star, MessageSquare, Calendar, User, Mail, Phone, Check, X, Eye, ThumbsUp, MessageCircle, RefreshCw, Globe, CheckCircle } from "lucide-react";
+import toast from 'react-hot-toast';
 
 interface Review {
   id: string;
@@ -29,10 +30,86 @@ export default function AdminReviewsTab() {
   const [response, setResponse] = useState("");
   const [filter, setFilter] = useState<'all' | 'published' | 'pending'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'website' | 'email' | 'whatsapp' | 'google'>('all');
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchReviews();
+    checkGoogleConnection();
+
+    // Vérifier si on arrive depuis la connexion Google
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('google_connected') === 'true') {
+      setSourceFilter('google');
+      // Nettoyer l'URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Écouter l'événement pour appliquer le filtre Google
+    const handleOpenTab = (e: CustomEvent) => {
+      if (e.detail?.tab === 'reviews' && e.detail?.filter === 'google') {
+        setSourceFilter('google');
+      }
+    };
+
+    window.addEventListener('openAdminTab', handleOpenTab as EventListener);
+
+    return () => {
+      window.removeEventListener('openAdminTab', handleOpenTab as EventListener);
+    };
   }, []);
+
+  const checkGoogleConnection = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/settings', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGoogleConnected(data.organizationConfig?.googleBusinessConnected || false);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification de la connexion Google:', error);
+    }
+  };
+
+  const handleSyncGoogleReviews = async () => {
+    if (!googleConnected) {
+      toast.error('Veuillez d\'abord connecter Google My Business dans Paramètres > Intégrations');
+      return;
+    }
+
+    setSyncing(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/google-reviews/sync', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Erreur lors de la synchronisation');
+      }
+
+      const data = await response.json();
+      toast.success(`${data.synced} avis Google synchronisés avec succès`);
+      await fetchReviews();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Erreur inconnue';
+      toast.error(errorMsg);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -213,8 +290,8 @@ export default function AdminReviewsTab() {
       {/* Sources des avis */}
       <div className="bg-white rounded-xl p-4 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex gap-6 text-sm">
-            <span className="text-[#2c3e50]/60">Sources :</span>
+          <div className="flex gap-6 text-sm flex-wrap">
+            <span className="text-[#2c3e50]/60 font-medium">Sources :</span>
             <span className="flex items-center gap-1">
               <MessageSquare className="w-4 h-4 text-purple-600" />
               Site web ({stats.bySource.website})
@@ -227,16 +304,29 @@ export default function AdminReviewsTab() {
               <MessageCircle className="w-4 h-4 text-green-600" />
               WhatsApp ({stats.bySource.whatsapp})
             </span>
-            <span className="flex items-center gap-1">
-              <span className="w-4 h-4 bg-yellow-600 text-white text-xs rounded flex items-center justify-center">G</span>
-              Google ({stats.bySource.google})
-            </span>
+            <button
+              onClick={() => {
+                // Ouvrir l'onglet Paramètres > Intégrations
+                const event = new CustomEvent('openAdminTab', { detail: { tab: 'settings', subtab: 'integrations' } });
+                window.dispatchEvent(event);
+              }}
+              className="flex items-center gap-1 hover:bg-yellow-50 px-2 py-1 rounded-lg transition-colors group"
+              title="Configurer Google My Business"
+            >
+              <span className="w-4 h-4 bg-yellow-600 group-hover:bg-yellow-700 text-white text-xs rounded flex items-center justify-center transition-colors">G</span>
+              <span className="group-hover:text-yellow-700 transition-colors">Google ({stats.bySource.google})</span>
+              {!googleConnected && (
+                <span className="text-xs text-yellow-600 group-hover:text-yellow-700 font-medium ml-1">
+                  • Configurer
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-4 mb-6 items-center">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as any)}
@@ -246,7 +336,7 @@ export default function AdminReviewsTab() {
           <option value="published">Publiés</option>
           <option value="pending">En attente</option>
         </select>
-        
+
         <select
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value as any)}
@@ -258,6 +348,36 @@ export default function AdminReviewsTab() {
           <option value="whatsapp">WhatsApp</option>
           <option value="google">Google</option>
         </select>
+
+        <div className="flex-1"></div>
+
+        {/* Bouton synchronisation Google */}
+        {googleConnected && (
+          <button
+            onClick={handleSyncGoogleReviews}
+            disabled={syncing}
+            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium disabled:opacity-50 flex items-center gap-2 transition-colors"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Synchronisation...
+              </>
+            ) : (
+              <>
+                <Globe className="w-4 h-4" />
+                Synchroniser Google
+              </>
+            )}
+          </button>
+        )}
+
+        {!googleConnected && (
+          <div className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg flex items-center gap-2 text-sm">
+            <Globe className="w-4 h-4" />
+            Google non connecté
+          </div>
+        )}
       </div>
 
       {/* Liste des avis */}

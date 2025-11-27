@@ -162,6 +162,64 @@ function NewOrganizationForm() {
         </div>
       </div>
 
+      {/* Bannière d'information */}
+      <div className="max-w-4xl mx-auto px-4 mb-6">
+        <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+          {/* Motif de fond décoratif */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="bg-white/20 p-4 rounded-xl backdrop-blur-sm">
+                <span className="text-4xl">🚀</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold mb-3">Site Web Complet Créé en 2 Minutes !</h3>
+                <p className="text-purple-100 mb-4 text-lg">
+                  Lancez votre nouveau client immédiatement avec un site professionnel clé en main
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">✨</span>
+                      <span className="font-semibold">Création Automatique</span>
+                    </div>
+                    <ul className="text-sm text-purple-100 space-y-1">
+                      <li>• Page d'accueil personnalisée</li>
+                      <li>• Services, produits & formations</li>
+                      <li>• Blog avec 2 articles</li>
+                      <li>• Système de réservation</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-2xl">⚡</span>
+                      <span className="font-semibold">Activation Immédiate</span>
+                    </div>
+                    <ul className="text-sm text-purple-100 space-y-1">
+                      <li>• Compte admin créé automatiquement</li>
+                      <li>• 30 jours d'essai gratuit</li>
+                      <li>• Prélèvement auto après l'essai</li>
+                      <li>• Email de bienvenue envoyé</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-yellow-400/20 border border-yellow-300/30 rounded-lg px-4 py-3">
+                  <span className="text-2xl">💎</span>
+                  <p className="text-sm font-medium">
+                    <strong>Le client peut personnaliser 100% de son site</strong> depuis son espace admin : logo, couleurs, textes, services, horaires, etc.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {error && (

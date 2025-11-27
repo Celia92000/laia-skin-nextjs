@@ -112,7 +112,9 @@ Pourriez-vous prendre quelques secondes pour partager votre expérience ?
 - Une note de 1 à 5 étoiles (⭐)
 - Votre commentaire
 
-Ou cliquez ici : https://laiaskin.fr/avis?id=${reservation.id}
+Ou cliquez ici :
+📝 Formulaire rapide : ${website}/avis?id=${reservation.id}
+👤 Espace client : ${website}/espace-client
 
 🎁 *Programme de fidélité*
 ${loyaltyProgress}
@@ -240,8 +242,9 @@ Bonjour ${reservation.user.name} ! 💕
 J'espère que vous avez apprécié votre soin *${serviceNames}*.
 
 ⭐ *Votre avis compte !*
-Partagez votre expérience en répondant à ce message ou en cliquant ici :
-👉 https://laiaskin.fr/avis?id=${reservation.id}
+Partagez votre expérience :
+👉 Formulaire rapide : ${website}/avis?id=${reservation.id}
+👤 Ou via votre espace client : ${website}/espace-client
 
 🎁 Programme de fidélité : ${sessionsCount} séance${sessionsCount > 1 ? 's' : ''}
 

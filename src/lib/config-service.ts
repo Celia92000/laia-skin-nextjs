@@ -9,10 +9,11 @@ import { unstable_cache } from 'next/cache';
  */
 export const getSiteConfig = unstable_cache(
   async (): Promise<SiteConfig> => {
-    const prisma = await getPrismaClient();
+    try {
+      const prisma = await getPrismaClient();
 
-    // Récupérer uniquement les champs essentiels couramment utilisés
-    let config = await prisma.siteConfig.findFirst({
+      // Récupérer uniquement les champs essentiels couramment utilisés
+      let config = await prisma.siteConfig.findFirst({
       select: {
         id: true,
         siteName: true,
@@ -58,19 +59,33 @@ export const getSiteConfig = unstable_cache(
       }
     });
 
-    // Si pas de config, créer une config par défaut
-    if (!config) {
-      config = await prisma.siteConfig.create({
-        data: {
-          siteName: "LAIA SKIN Institut",
-          siteTagline: "Institut de Beauté & Bien-être",
-          email: "contact@laiaskininstitut.fr",
-          phone: "+33 6 31 10 75 31",
-        }
-      }) as SiteConfig;
-    }
+      // Si pas de config, créer une config par défaut
+      if (!config) {
+        config = await prisma.siteConfig.create({
+          data: {
+            siteName: "LAIA SKIN Institut",
+            siteTagline: "Institut de Beauté & Bien-être",
+            email: "contact@laiaskininstitut.fr",
+            phone: "+33 6 31 10 75 31",
+          }
+        }) as SiteConfig;
+      }
 
-    return config as SiteConfig;
+      return config as SiteConfig;
+    } catch (error) {
+      console.log('getSiteConfig: Using fallback config due to error');
+      // Retourner une config par défaut en cas d'erreur
+      return {
+        id: 1,
+        siteName: "LAIA SKIN Institut",
+        siteTagline: "Institut de Beauté & Bien-être",
+        email: "contact@laiaskininstitut.fr",
+        phone: "+33 6 31 10 75 31",
+        primaryColor: "#d4b5a0",
+        secondaryColor: "#c9a084",
+        accentColor: "#2c3e50",
+      } as SiteConfig;
+    }
   },
   ['site-config'], // Cache key
   {
@@ -85,24 +100,39 @@ export const getSiteConfig = unstable_cache(
  */
 export const getSiteConfigFull = unstable_cache(
   async (): Promise<SiteConfig> => {
-    const prisma = await getPrismaClient();
+    try {
+      const prisma = await getPrismaClient();
 
-    // Récupérer la config complète
-    let config = await prisma.siteConfig.findFirst();
+      // Récupérer la config complète
+      let config = await prisma.siteConfig.findFirst();
 
-    // Si pas de config, créer une config par défaut
-    if (!config) {
-      config = await prisma.siteConfig.create({
-        data: {
-          siteName: "LAIA SKIN Institut",
-          siteTagline: "Institut de Beauté & Bien-être",
-          email: "contact@laiaskininstitut.fr",
-          phone: "+33 6 31 10 75 31",
-        }
-      });
+      // Si pas de config, créer une config par défaut
+      if (!config) {
+        config = await prisma.siteConfig.create({
+          data: {
+            siteName: "LAIA SKIN Institut",
+            siteTagline: "Institut de Beauté & Bien-être",
+            email: "contact@laiaskininstitut.fr",
+            phone: "+33 6 31 10 75 31",
+          }
+        });
+      }
+
+      return config;
+    } catch (error) {
+      console.log('getSiteConfigFull: Using fallback config due to error');
+      // Retourner une config par défaut en cas d'erreur
+      return {
+        id: 1,
+        siteName: "LAIA SKIN Institut",
+        siteTagline: "Institut de Beauté & Bien-être",
+        email: "contact@laiaskininstitut.fr",
+        phone: "+33 6 31 10 75 31",
+        primaryColor: "#d4b5a0",
+        secondaryColor: "#c9a084",
+        accentColor: "#2c3e50",
+      } as SiteConfig;
     }
-
-    return config;
   },
   ['site-config-full'], // Cache key
   {

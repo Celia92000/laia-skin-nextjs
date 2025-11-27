@@ -132,9 +132,12 @@ export async function PUT(request: NextRequest) {
       'googlePlaceId', 'googleBusinessUrl', 'googleApiKey', 'lastGoogleSync', 'autoSyncGoogleReviews'
     ];
 
+    // Inclure TOUS les champs valides, même vides (chaînes vides '')
+    // Cela permet de synchroniser les suppressions de contenu
     const updateData: any = {};
     for (const field of validFields) {
       if (rest.hasOwnProperty(field) && rest[field] !== undefined) {
+        // Accepter tous les types de valeurs, y compris les chaînes vides
         updateData[field] = rest[field];
       }
     }
@@ -157,6 +160,7 @@ export async function PUT(request: NextRequest) {
         where: { organizationId: admin.organizationId ?? undefined },
         data: updateData
       });
+      log.info(`✅ Configuration mise à jour pour l'organisation ${admin.organizationId} - Synchronisée sur site vitrine, admin et espace client`);
     } else {
       // Créer
       config = await prisma.organizationConfig.create({
@@ -165,6 +169,7 @@ export async function PUT(request: NextRequest) {
           organizationId: admin.organizationId ?? undefined
         }
       });
+      log.info(`✅ Configuration créée pour l'organisation ${admin.organizationId} - Synchronisée sur site vitrine, admin et espace client`);
     }
 
     // Ajouter l'alias websiteTemplate pour compatibilité
