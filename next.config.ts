@@ -37,19 +37,12 @@ const nextConfig: NextConfig = {
     // Optimiser la génération des pages pour éviter les timeouts de DB
     workerThreads: false,
     cpus: 1,
-    // Fix pour l'erreur ENOENT client-reference-manifest
     serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
     serverMinification: false,
-    // Désactiver le turbo pour le build (évite bugs cache)
-    turbo: undefined,
-  },
-  // Force un build ID unique pour éviter les caches corrompus
-  generateBuildId: async () => {
-    return `build-${Date.now()}`;
   },
   serverExternalPackages: ['pdfkit'],
   // Désactiver la génération statique au build pour multi-tenant
-  // output: 'standalone', // Temporairement désactivé pour éviter ENOENT client-reference-manifest bug Next.js 15.5.1
+  output: 'standalone',
   // 🔒 Headers de sécurité
   async headers() {
     return [
