@@ -189,6 +189,7 @@ Merci infiniment ! 🙏
 export async function POST(request: Request) {
   const config = await getSiteConfig();
   const siteName = config.siteName || 'Mon Institut';
+  const website = process.env.NEXT_PUBLIC_SITE_URL || 'https://laia-skin-institut.vercel.app';
 
   try {
     const body = await request.json();
@@ -200,7 +201,7 @@ export async function POST(request: Request) {
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
-      include: { 
+      include: {
         user: {
           include: {
             loyaltyProfile: true
@@ -233,7 +234,7 @@ export async function POST(request: Request) {
     // Calculer les informations de fidélité
     const loyaltyProfile = reservation.user.loyaltyProfile;
     const sessionsCount = loyaltyProfile?.individualServicesCount || 0;
-    
+
     // Message WhatsApp
     const reviewMessage = `✨ *${siteName}* ✨
 
