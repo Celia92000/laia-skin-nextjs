@@ -1,5 +1,26 @@
 import { getResend } from '@/lib/resend';
 
+/**
+ * Fonction générique pour envoyer un email
+ */
+export async function sendEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+}) {
+  const resend = await getResend();
+
+  const result = await resend.emails.send({
+    from: params.from || 'LAIA Connect <noreply@laiaconnect.fr>',
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+  });
+
+  return result;
+}
+
 interface SendPasswordResetEmailParams {
   email: string;
   name: string;
