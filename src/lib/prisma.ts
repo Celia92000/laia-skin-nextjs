@@ -2,66 +2,62 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  isConnected: boolean
 }
 
-// Créer une instance Prisma avec pool de connexions optimisé pour Supabase free tier
+// Créer une instance Prisma optimisée pour Supabase PgBouncer
 const createPrismaClient = () => {
-  // Vérifier que DATABASE_URL est définie
   if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not defined');
-    // Retourner un client mock en développement si DATABASE_URL n'est pas définie
-    if (process.env.NODE_ENV === 'development') {
-      throw new Error('DATABASE_URL environment variable is required');
-    }
+    throw new Error('DATABASE_URL environment variable is required');
   }
 
-  return new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  const client = new PrismaClient({
+    log: process.env.NODE_ENV === 'development'
+      ? ['error', 'warn']
+      : ['error'],
     errorFormat: 'minimal',
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      }
-    },
-  }).$extends({
+  });
+
+  // Extension pour retry automatique et logging
+  return client.$extends({
     query: {
       async $allOperations({ operation, model, args, query }) {
         const start = performance.now();
-        let retries = 3;
-        let lastError;
+        const maxRetries = 2;
+        let lastError: any;
 
-        while (retries > 0) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
           try {
-            return await query(args);
+            const result = await query(args);
+
+            // Log des requêtes lentes (> 3s seulement pour éviter spam)
+            const duration = performance.now() - start;
+            if (duration > 3000) {
+              console.warn(`⚠️ Slow query: ${model}.${operation} took ${Math.round(duration)}ms`);
+            }
+
+            return result;
           } catch (error: any) {
             lastError = error;
-            // Si le moteur n'est pas connecté, la réponse est vide, ou erreur de connexion DB
-            const isRetriableError =
-              error.message?.includes('Engine is not yet connected') ||
-              error.message?.includes('Response from the Engine was empty') ||
-              error.message?.includes('Can\'t reach database server') ||
-              error.name?.includes('PrismaClientUnknownRequestError') ||
-              error.name?.includes('PrismaClientInitializationError') ||
-              error.code === 'P1001' || // Prisma connection error
-              error.code === 'P1008' || // Timeout
-              error.code === 'P1017';   // Server closed connection
 
-            if (isRetriableError) {
-              retries--;
-              if (retries > 0) {
-                console.log(`Retrying ${model}.${operation} (${3 - retries}/3)...`);
-                // Attendre un peu avant de réessayer (backoff exponentiel)
-                const delay = (4 - retries) * 500; // 500ms, 1s, 1.5s
-                await new Promise(resolve => setTimeout(resolve, delay));
-                continue;
-              }
+            // Erreurs retriables
+            const isRetriable =
+              error.code === 'P1001' || // Can't reach database
+              error.code === 'P1008' || // Timeout
+              error.code === 'P1017' || // Server closed connection
+              error.code === 'P2024' || // Connection pool timeout
+              error.message?.includes('Connection pool timeout') ||
+              error.message?.includes('Can\'t reach database') ||
+              error.message?.includes('Connection terminated');
+
+            if (isRetriable && attempt < maxRetries) {
+              const delay = Math.min(100 * Math.pow(2, attempt), 1000); // 100ms, 200ms, max 1s
+              console.log(`🔄 Retry ${model}.${operation} (${attempt + 1}/${maxRetries}) in ${delay}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
             }
+
             throw error;
-          } finally {
-            const end = performance.now();
-            if (end - start > 1000) {
-              console.warn(`Slow query: ${model}.${operation} took ${end - start}ms`);
-            }
           }
         }
 
@@ -71,67 +67,53 @@ const createPrismaClient = () => {
   });
 };
 
-// Instance Prisma singleton
+// Singleton Prisma - une seule instance par process
 const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-// Sauvegarder l'instance globale en développement pour éviter les multiples instances
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma as any;
 }
 
-// Variable pour stocker la promesse de connexion
-let connectionPromise: Promise<typeof prisma> | null = null;
-let isConnected = false;
+// Connexion initiale asynchrone (non-bloquante)
+let connectionPromise: Promise<void> | null = null;
 
-// Fonction pour obtenir le client Prisma (avec connexion assurée)
-const getPrismaClient = async () => {
-  // Si déjà connecté, retourner directement le client
-  if (isConnected) {
-    return prisma;
-  }
+const ensureConnection = async () => {
+  if (globalForPrisma.isConnected) return;
 
-  // Si une connexion est déjà en cours, attendre qu'elle se termine
-  if (connectionPromise) {
-    await connectionPromise;
-    return prisma;
-  }
-
-  // Créer la promesse de connexion
-  connectionPromise = (async () => {
-    let retries = 3;
-    while (retries > 0) {
+  if (!connectionPromise) {
+    connectionPromise = (async () => {
       try {
-        // Tenter une requête simple pour forcer la connexion
-        await prisma.$queryRaw`SELECT 1`;
-        console.log('✅ Prisma connected successfully');
-        isConnected = true;
-        return prisma;
-      } catch (error: any) {
-        retries--;
-        if (retries > 0) {
-          console.log(`⏳ Retrying Prisma connection (${3 - retries}/3)...`);
-          await new Promise(resolve => setTimeout(resolve, 300));
-        } else {
-          console.log('⚠️ Prisma connection attempts exhausted, queries will auto-connect');
-          // Marquer comme "connecté" même si échoué - Prisma se connectera auto à la 1ère requête
-          isConnected = true;
-          return prisma;
-        }
+        await prisma.$connect();
+        globalForPrisma.isConnected = true;
+        console.log('✅ Prisma connected to Supabase');
+      } catch (e) {
+        console.log('⚠️ Prisma initial connection failed, will retry on first query');
       }
-    }
-    return prisma;
-  })();
+    })();
+  }
 
   await connectionPromise;
-  connectionPromise = null;
+};
+
+// Fonction qui retourne le client Prisma après avoir assuré la connexion
+const getPrismaClient = async () => {
+  await ensureConnection();
   return prisma;
 };
 
-// Gérer la déconnexion gracieuse
+// Lancer la connexion en background au démarrage
+if (typeof window === 'undefined') {
+  ensureConnection().catch(() => {});
+}
+
+// Cleanup gracieux
 if (process.env.NODE_ENV === 'production') {
-  process.on('beforeExit', async () => {
+  const cleanup = async () => {
     await prisma.$disconnect();
-  });
+  };
+  process.on('beforeExit', cleanup);
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
 }
 
 export default prisma;

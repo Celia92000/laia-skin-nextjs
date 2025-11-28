@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 import { log } from '@/lib/logger';
+import { getPlanPrice } from '@/lib/features-simple';
+import { calculateInvoiceTotal } from '@/lib/subscription-billing';
 
 /**
  * API Cron job pour la facturation mensuelle automatique
@@ -67,11 +69,14 @@ export async function GET(request: Request) {
           }
         })
 
+        // Calculer le montant total (forfait + add-ons récurrents) via les prix centralisés
+        const totalAmount = calculateInvoiceTotal(org.plan, org.addonsJson)
+
         // Ajouter une ligne pour l'abonnement
         await stripe.invoiceItems.create({
           customer: org.stripeCustomerId!,
           invoice: invoice.id,
-          amount: Math.round((org.monthlyAmount || 49) * 100), // Convertir en centimes
+          amount: Math.round(totalAmount * 100), // Convertir en centimes
           currency: 'eur',
           description: `Abonnement ${org.plan}`
         })
@@ -82,12 +87,12 @@ export async function GET(request: Request) {
         results.push({
           organizationId: org.id,
           organizationName: org.name,
-          amount: org.monthlyAmount,
+          amount: totalAmount,
           status: 'invoice_created',
           stripeInvoiceId: invoice.id
         })
 
-        log.info(`✅ Facture créée pour ${org.name} - ${org.monthlyAmount}€`)
+        log.info(`✅ Facture créée pour ${org.name} - ${totalAmount}€`)
 
       } catch (error: any) {
         log.error(`❌ Erreur facturation ${org.name}:`, error.message)

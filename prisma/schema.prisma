@@ -320,7 +320,6 @@ model Organization {
 
   // Multi-tenant relations
   stocks                 Stock[]
-  loyaltyProfiles        LoyaltyProfile[]
   referrals              Referral[]
   notifications          Notification[]
   emailHistory           EmailHistory[]
@@ -328,6 +327,10 @@ model Organization {
   newsletterSubscribers  NewsletterSubscriber[]
   serviceCategories      ServiceCategory[]
   serviceSubcategories   ServiceSubcategory[]
+
+  // Système de quotas et usage
+  usage        OrganizationUsage?
+  usageHistory OrganizationUsageHistory[]
 
   @@index([slug])
   @@index([subdomain])
@@ -884,8 +887,7 @@ model Service {
 model LoyaltyProfile {
   id                      String           @id @default(cuid())
   userId                  String           @unique
-  organizationId          String
-  organization            Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // L'organisation est déterminée via user.organizationId
   points                  Int              @default(0)
   tier                    String           @default("BRONZE") // BRONZE, SILVER, GOLD, PLATINUM
   individualServicesCount Int              @default(0)
@@ -901,8 +903,6 @@ model LoyaltyProfile {
   updatedAt               DateTime         @updatedAt
   user                    User             @relation(fields: [userId], references: [id])
   history                 LoyaltyHistory[]
-
-  @@index([organizationId])
 }
 
 model LoyaltyHistory {
@@ -3311,4 +3311,69 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ============================================
+// SYSTÈME DE QUOTAS ET USAGE MULTI-TENANT
+// ============================================
+
+model OrganizationUsage {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+
+  // Usage actuel
+  currentUsers       Int @default(0)  // Nombre d'utilisateurs actifs
+  currentLocations   Int @default(0)  // Nombre d'établissements
+  currentStorageBytes BigInt @default(0) // Stockage utilisé en bytes
+
+  // Compteurs mensuels (réinitialisés chaque mois)
+  emailsSentThisMonth    Int @default(0)
+  smsSentThisMonth       Int @default(0)
+  whatsappSentThisMonth  Int @default(0)
+  apiCallsThisMonth      Int @default(0)
+
+  // Compteurs totaux (jamais réinitialisés)
+  totalEmailsSent    Int @default(0)
+  totalSmsSent       Int @default(0)
+  totalWhatsappSent  Int @default(0)
+  totalApiCalls      Int @default(0)
+  totalReservations  Int @default(0)
+  totalRevenue       Float @default(0) // Chiffre d'affaires total via la plateforme
+
+  // Dates de tracking
+  lastResetDate  DateTime @default(now()) // Dernière réinitialisation mensuelle
+  lastUpdatedAt  DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// Historique d'usage mensuel (pour analytics)
+model OrganizationUsageHistory {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  // Période
+  year  Int
+  month Int
+
+  // Snapshot de fin de mois
+  usersCount      Int @default(0)
+  locationsCount  Int @default(0)
+  storageBytes    BigInt @default(0)
+  emailsSent      Int @default(0)
+  smsSent         Int @default(0)
+  whatsappSent    Int @default(0)
+  apiCalls        Int @default(0)
+  reservations    Int @default(0)
+  revenue         Float @default(0)
+
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, year, month])
+  @@index([organizationId])
 }

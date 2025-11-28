@@ -36,6 +36,31 @@ export async function POST(req: NextRequest) {
       institutName,
       slug,
       subdomain,
+      city,
+      address,
+      postalCode,
+
+      // Personnalisation site
+      primaryColor,
+      secondaryColor,
+      websiteTemplateId,
+      siteTagline,
+      heroTitle,
+      heroSubtitle,
+      aboutText,
+      founderName,
+      founderTitle,
+
+      // Réseaux sociaux
+      facebook,
+      instagram,
+      whatsapp,
+
+      // Premier service
+      serviceName,
+      servicePrice,
+      serviceDuration,
+      serviceDescription,
 
       // Informations légales
       legalName,
@@ -191,7 +216,7 @@ export async function POST(req: NextRequest) {
       },
       metadata: {
         type: 'onboarding',
-        // Stocker les données essentielles séparément (limite: 500 chars/champ)
+        // Stocker les données essentielles séparément (limite: 500 chars/champ, max 50 champs)
         // Le webhook va récupérer toutes les infos depuis les champs individuels
         slug: finalSlug,
         subdomain: finalSubdomain,
@@ -204,9 +229,31 @@ export async function POST(req: NextRequest) {
         legalName,
         siret,
         billingEmail: billingEmail || ownerEmail,
-        websiteTemplateId: data.websiteTemplateId || 'modern',
+        websiteTemplateId: websiteTemplateId || 'modern',
         needsDataMigration: needsDataMigration ? 'true' : 'false',
-        currentSoftware: currentSoftware || ''
+        currentSoftware: currentSoftware || '',
+        // Adresse institut
+        city: city || '',
+        address: address || '',
+        postalCode: postalCode || '',
+        // Personnalisation du site
+        primaryColor: primaryColor || '#d4b5a0',
+        secondaryColor: secondaryColor || '#c9a084',
+        siteTagline: siteTagline || '',
+        heroTitle: heroTitle || '',
+        heroSubtitle: heroSubtitle || '',
+        aboutText: (aboutText || '').substring(0, 500), // Limiter à 500 chars
+        founderName: founderName || '',
+        founderTitle: founderTitle || '',
+        // Réseaux sociaux
+        facebook: facebook || '',
+        instagram: instagram || '',
+        whatsapp: whatsapp || '',
+        // Premier service (si fourni)
+        serviceName: serviceName || '',
+        servicePrice: servicePrice ? String(servicePrice) : '',
+        serviceDuration: serviceDuration ? String(serviceDuration) : '',
+        serviceDescription: (serviceDescription || '').substring(0, 500)
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding?step=payment&canceled=true`,

@@ -159,18 +159,23 @@ export async function POST(request: NextRequest) {
     }
 
     // 🔒 Récupérer ou créer le profil de fidélité DE CETTE ORGANISATION
+    // Note: On filtre via user.organizationId car la colonne LoyaltyProfile.organizationId
+    // peut ne pas exister dans certaines bases de données non migrées
     let loyaltyProfile = await prisma.loyaltyProfile.findFirst({
       where: {
         userId,
-        organizationId: admin.organizationId
+        user: {
+          organizationId: admin.organizationId
+        }
       }
     });
 
     if (!loyaltyProfile) {
+      // Créer le profil sans organizationId pour rétrocompatibilité
+      // L'organisation est déterminée via la relation user
       loyaltyProfile = await prisma.loyaltyProfile.create({
         data: {
           userId,
-          organizationId: admin.organizationId,
           individualServicesCount: 0,
           packagesCount: 0,
           totalSpent: 0,
@@ -179,11 +184,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 🔒 Créer une entrée dans l'historique DE CETTE ORGANISATION
+    // 🔒 Créer une entrée dans l'historique
+    // L'organisation est déterminée via la relation user
     await prisma.loyaltyHistory.create({
       data: {
         userId,
-        organizationId: admin.organizationId,
+        profileId: loyaltyProfile.id,
         action: 'DISCOUNT_APPLIED',
         points: 0,
         description: `Réduction manuelle de ${discountAmount}€ : ${reason}`

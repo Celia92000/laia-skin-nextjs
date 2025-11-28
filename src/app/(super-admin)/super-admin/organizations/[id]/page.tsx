@@ -62,6 +62,21 @@ interface User {
   createdAt: string
 }
 
+interface QuotaItem {
+  current: number
+  limit: number
+  unlimited: boolean
+}
+
+interface Quotas {
+  users: QuotaItem
+  locations: QuotaItem
+  storage: QuotaItem
+  emails: QuotaItem
+  sms: QuotaItem
+  whatsapp: QuotaItem
+}
+
 export default function OrganizationDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -70,6 +85,7 @@ export default function OrganizationDetailPage() {
   const [organization, setOrganization] = useState<Organization | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [quotas, setQuotas] = useState<Quotas | null>(null)
   const [loading, setLoading] = useState(true)
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -87,6 +103,7 @@ export default function OrganizationDetailPage() {
         setOrganization(data.organization)
         setInvoices(data.invoices || [])
         setUsers(data.users || [])
+        setQuotas(data.quotas || null)
 
         // Récupérer le mot de passe généré depuis l'historique des communications
         if (data.organization?.ownerEmail) {
@@ -459,8 +476,129 @@ export default function OrganizationDetailPage() {
                 ))}
               </div>
             </div>
+
+            {/* Quotas */}
+            {quotas && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold mb-4">Quotas & Usage</h2>
+                <div className="space-y-4">
+                  {/* Utilisateurs */}
+                  <QuotaBar
+                    label="Utilisateurs"
+                    current={quotas.users.current}
+                    limit={quotas.users.limit}
+                    unlimited={quotas.users.unlimited}
+                  />
+                  {/* Emplacements */}
+                  <QuotaBar
+                    label="Emplacements"
+                    current={quotas.locations.current}
+                    limit={quotas.locations.limit}
+                    unlimited={quotas.locations.unlimited}
+                  />
+                  {/* Stockage */}
+                  <QuotaBar
+                    label="Stockage"
+                    current={quotas.storage.current}
+                    limit={quotas.storage.limit}
+                    unlimited={quotas.storage.unlimited}
+                    formatBytes
+                  />
+                  {/* Emails */}
+                  <QuotaBar
+                    label="Emails / mois"
+                    current={quotas.emails.current}
+                    limit={quotas.emails.limit}
+                    unlimited={quotas.emails.unlimited}
+                  />
+                  {/* SMS */}
+                  <QuotaBar
+                    label="SMS / mois"
+                    current={quotas.sms.current}
+                    limit={quotas.sms.limit}
+                    unlimited={quotas.sms.unlimited}
+                    notIncluded={quotas.sms.limit === 0}
+                  />
+                  {/* WhatsApp */}
+                  <QuotaBar
+                    label="WhatsApp / mois"
+                    current={quotas.whatsapp.current}
+                    limit={quotas.whatsapp.limit}
+                    unlimited={quotas.whatsapp.unlimited}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Composant pour afficher une barre de quota
+function QuotaBar({
+  label,
+  current,
+  limit,
+  unlimited,
+  formatBytes: shouldFormatBytes = false,
+  notIncluded = false
+}: {
+  label: string
+  current: number
+  limit: number
+  unlimited: boolean
+  formatBytes?: boolean
+  notIncluded?: boolean
+}) {
+  const percentage = unlimited || limit === 0 ? 0 : Math.min(100, Math.round((current / limit) * 100))
+  const isNearLimit = percentage >= 80
+  const isAtLimit = percentage >= 100
+
+  const formatValue = (val: number) => {
+    if (shouldFormatBytes) {
+      if (val === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+      const i = Math.floor(Math.log(val) / Math.log(k))
+      return parseFloat((val / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+    }
+    return val.toLocaleString('fr-FR')
+  }
+
+  if (notIncluded) {
+    return (
+      <div>
+        <div className="flex justify-between text-sm mb-1">
+          <span className="text-gray-600">{label}</span>
+          <span className="text-gray-400">Non inclus</span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full" />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-gray-600">{label}</span>
+        <span className={`font-medium ${isAtLimit ? 'text-red-600' : isNearLimit ? 'text-orange-600' : 'text-gray-900'}`}>
+          {formatValue(current)} / {unlimited ? 'Illimité' : formatValue(limit)}
+        </span>
+      </div>
+      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        {!unlimited && (
+          <div
+            className={`h-full rounded-full transition-all ${
+              isAtLimit ? 'bg-red-500' : isNearLimit ? 'bg-orange-500' : 'bg-green-500'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        )}
+        {unlimited && (
+          <div className="h-full bg-gradient-to-r from-purple-500 to-purple-300 rounded-full w-full" />
+        )}
       </div>
     </div>
   )

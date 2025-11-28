@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getPlanPrice, getPlanQuotas, getPlanName } from '@/lib/features-simple'
 
 interface Organization {
   id: string
@@ -570,6 +571,83 @@ export default function OrganizationsPage() {
       {/* Organizations Tab */}
       {activeTab === 'organizations' && (
         <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Stats par plan */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {(['SOLO', 'DUO', 'TEAM', 'PREMIUM'] as const).map((plan) => {
+              const count = organizations.filter(org => org.plan === plan && org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut').length
+              const price = getPlanPrice(plan)
+              const quotas = getPlanQuotas(plan)
+              const revenue = count * price
+
+              return (
+                <div
+                  key={plan}
+                  className={`bg-white rounded-lg shadow-md p-4 border-l-4 cursor-pointer transition-all hover:shadow-lg ${
+                    planFilter === plan ? 'ring-2 ring-purple-500' : ''
+                  } ${
+                    plan === 'SOLO' ? 'border-gray-400' :
+                    plan === 'DUO' ? 'border-blue-400' :
+                    plan === 'TEAM' ? 'border-amber-400' :
+                    'border-purple-400'
+                  }`}
+                  onClick={() => setPlanFilter(planFilter === plan ? 'ALL' : plan)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`px-2 py-1 text-xs font-bold rounded ${planColors[plan]}`}>
+                      {getPlanName(plan)}
+                    </span>
+                    <span className="text-lg font-bold text-purple-600">{price}€<span className="text-xs text-gray-500">/mois</span></span>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">{count}</div>
+                  <div className="text-xs text-gray-500 mb-2">organisation{count > 1 ? 's' : ''}</div>
+                  <div className="text-xs text-gray-400 space-y-0.5">
+                    <div>👤 {typeof quotas.users === 'string' ? quotas.users : `${quotas.users} user${quotas.users > 1 ? 's' : ''}`}</div>
+                    <div>📍 {typeof quotas.locations === 'string' ? quotas.locations : `${quotas.locations} site${quotas.locations > 1 ? 's' : ''}`}</div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="text-xs text-green-600 font-semibold">MRR: {revenue.toLocaleString('fr-FR')}€</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Total MRR */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-md p-4 mb-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm opacity-80">Revenu Mensuel Récurrent (MRR) estimé</div>
+                <div className="text-3xl font-bold">
+                  {organizations
+                    .filter(org => org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut')
+                    .reduce((total, org) => {
+                      try {
+                        return total + getPlanPrice(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')
+                      } catch {
+                        return total
+                      }
+                    }, 0)
+                    .toLocaleString('fr-FR')}€
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm opacity-80">ARR estimé</div>
+                <div className="text-2xl font-bold">
+                  {(organizations
+                    .filter(org => org.slug !== 'laia-skin' && org.slug !== 'laia-skin-institut')
+                    .reduce((total, org) => {
+                      try {
+                        return total + getPlanPrice(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')
+                      } catch {
+                        return total
+                      }
+                    }, 0) * 12)
+                    .toLocaleString('fr-FR')}€
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Filtres */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             {/* Toggle Nouvelles organisations */}
@@ -757,10 +835,13 @@ export default function OrganizationsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
-                              {org.plan}
-                            </span>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
+                                {org.plan}
+                              </span>
+                              <span className="text-xs text-amber-700">Modèle</span>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[org.status]}`}>
@@ -875,10 +956,64 @@ export default function OrganizationsPage() {
                             <div className="text-sm text-gray-500">@{org.slug}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
-                            {org.plan}
-                          </span>
+                        <td className="px-6 py-4">
+                          <div className="group relative">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${planColors[org.plan] || 'bg-gray-100 text-gray-800'}`}>
+                                {org.plan}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {(() => {
+                                  try {
+                                    return `${getPlanPrice(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')}€/mois`
+                                  } catch {
+                                    return ''
+                                  }
+                                })()}
+                              </span>
+                            </div>
+                            {/* Tooltip avec détails */}
+                            <div className="hidden group-hover:block absolute z-10 left-0 mt-2 w-56 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-3">
+                              {(() => {
+                                try {
+                                  const quotas = getPlanQuotas(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')
+                                  return (
+                                    <div className="space-y-1.5">
+                                      <div className="font-bold text-sm border-b border-gray-700 pb-1 mb-2">
+                                        {getPlanName(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')} - {getPlanPrice(org.plan as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM')}€/mois
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">👤 Utilisateurs</span>
+                                        <span>{typeof quotas.users === 'string' ? quotas.users : quotas.users}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">📍 Sites</span>
+                                        <span>{typeof quotas.locations === 'string' ? quotas.locations : quotas.locations}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">💾 Stockage</span>
+                                        <span>{typeof quotas.storageGB === 'string' ? quotas.storageGB : `${quotas.storageGB} Go`}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">📧 Emails</span>
+                                        <span>{typeof quotas.emailsPerMonth === 'string' ? quotas.emailsPerMonth : `${quotas.emailsPerMonth.toLocaleString('fr-FR')}/mois`}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">💬 WhatsApp</span>
+                                        <span>{typeof quotas.whatsappPerMonth === 'string' ? quotas.whatsappPerMonth : `${quotas.whatsappPerMonth.toLocaleString('fr-FR')}/mois`}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-400">📱 SMS</span>
+                                        <span>{typeof quotas.smsPerMonth === 'string' ? quotas.smsPerMonth : `${quotas.smsPerMonth}/mois`}</span>
+                                      </div>
+                                    </div>
+                                  )
+                                } catch {
+                                  return <span>Plan inconnu</span>
+                                }
+                              })()}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[org.status]}`}>

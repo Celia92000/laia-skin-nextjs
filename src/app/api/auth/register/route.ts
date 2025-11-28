@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 import { log } from '@/lib/logger';
-
-const prisma = new PrismaClient();
+import { getPrismaClient } from '@/lib/prisma';
+import { validateBody, registerSchema } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +17,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, name, phone, referralCode } = await request.json();
+    // 🔒 Validation Zod des données d'entrée
+    const validation = await validateBody(request, registerSchema);
+    if (!validation.success) {
+      return validation.error;
+    }
+    const { email, password, name, phone, referralCode } = validation.data;
+
+    // Utiliser getPrismaClient pour s'assurer que la connexion est active
+    const prisma = await getPrismaClient();
 
     // 🔒 Vérifier si l'utilisateur existe déjà DANS CETTE ORGANISATION
     const existingUser = await prisma.user.findFirst({
@@ -135,10 +142,19 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // 🔒 Vérifier que JWT_SECRET est défini (pas de fallback pour la sécurité)
+    if (!process.env.JWT_SECRET) {
+      log.error('JWT_SECRET non défini dans les variables d\'environnement');
+      return NextResponse.json(
+        { error: 'Erreur de configuration serveur' },
+        { status: 500 }
+      );
+    }
+
     // Générer un token JWT
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'laia-skin-secret-key-2024',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 

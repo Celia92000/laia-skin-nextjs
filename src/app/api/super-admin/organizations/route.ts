@@ -52,6 +52,30 @@ export async function GET() {
     const totalReservations = await prisma.reservation.count()
     const totalServices = await prisma.service.count()
 
+    // Statistiques d'usage plateforme (emails, WhatsApp, stockage, API)
+    let usageStats = { totalEmails: 0, totalWhatsapp: 0, totalStorage: 0, totalApiCalls: 0 }
+    try {
+      // Compter les emails envoyés ce mois-ci
+      const emailCount = await prisma.emailHistory.count({
+        where: {
+          direction: 'outgoing',
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+        }
+      })
+      usageStats.totalEmails = emailCount
+
+      // Compter les WhatsApp envoyés ce mois-ci (via les logs ou notifications)
+      const whatsappCount = await prisma.notification.count({
+        where: {
+          type: 'whatsapp',
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+        }
+      }).catch(() => 0)
+      usageStats.totalWhatsapp = whatsappCount
+    } catch {
+      // Si les tables n'existent pas encore, on garde les valeurs par défaut
+    }
+
     // Enrichir chaque organisation avec les statistiques utilisateurs
     const organizationsWithUserStats = await Promise.all(
       organizations.map(async (org) => {
@@ -183,7 +207,12 @@ export async function GET() {
         // 📊 Statistiques des comptes
         totalClients: globalClientCount,
         totalStaff: globalStaffCount,
-        staffByRole: globalStaffByRole
+        staffByRole: globalStaffByRole,
+        // 📊 Statistiques d'usage plateforme
+        totalEmails: usageStats.totalEmails,
+        totalWhatsapp: usageStats.totalWhatsapp,
+        totalStorage: usageStats.totalStorage,
+        totalApiCalls: usageStats.totalApiCalls
       }
     })
 

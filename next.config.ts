@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const nextConfig: NextConfig = {
   images: {
-    unoptimized: false,
+    unoptimized: isDev, // Pas d'optimisation en dev pour accélérer
     remotePatterns: [
       {
         protocol: 'http',
@@ -32,19 +34,48 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   outputFileTracingRoot: __dirname,
   poweredByHeader: false,
-  compress: true,
+  compress: !isDev, // Pas de compression en dev
   experimental: {
-    // Optimiser la génération des pages pour éviter les timeouts de DB
+    // Optimiser pour dev
     workerThreads: false,
     cpus: 1,
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
     serverMinification: false,
   },
-  serverExternalPackages: ['pdfkit'],
+  // Packages externes pour le serveur
+  serverExternalPackages: ['@prisma/client', 'prisma', 'pdfkit'],
   // Désactiver la génération statique au build pour multi-tenant
   output: 'standalone',
   // 🔒 Headers de sécurité
   async headers() {
+    // CSP stricte en production, permissive en dev (Next.js nécessite unsafe-eval/inline en dev)
+    const cspPolicy = isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.stripe.com ws: wss:; frame-src 'self' https://js.stripe.com;"
+      : [
+          "default-src 'self'",
+          // Scripts: self + Stripe + unsafe-inline requis par Next.js hydration
+          "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+          // Styles: self + inline (requis par styled-jsx/tailwind) + Google Fonts
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          // Fonts
+          "font-src 'self' https://fonts.gstatic.com data:",
+          // Images: permissif pour les CDN et uploads
+          "img-src 'self' data: https: blob:",
+          // Connexions API
+          "connect-src 'self' https://api.stripe.com https://*.supabase.co https://*.sentry.io",
+          // Frames: Stripe uniquement
+          "frame-src 'self' https://js.stripe.com",
+          // Objects: bloqué
+          "object-src 'none'",
+          // Base URI: self uniquement
+          "base-uri 'self'",
+          // Form actions: self uniquement
+          "form-action 'self'",
+          // Frame ancestors: aucun (anti-clickjacking)
+          "frame-ancestors 'none'",
+          // Upgrade insecure requests en prod
+          "upgrade-insecure-requests",
+        ].join('; ');
+
     return [
       {
         source: '/(.*)',
@@ -60,24 +91,29 @@ const nextConfig: NextConfig = {
             value: 'nosniff'
           },
           {
-            // Force HTTPS pendant 1 an (sécurité maximale)
+            // Force HTTPS pendant 1 an + preload (sécurité maximale)
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains'
+            value: 'max-age=31536000; includeSubDomains; preload'
           },
           {
-            // Contrôle quelles ressources peuvent être chargées (anti-injection)
+            // Content Security Policy
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.stripe.com; frame-src 'self' https://js.stripe.com;"
+            value: cspPolicy
           },
           {
             // Bloque les anciennes API dangereuses du navigateur
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
+            value: 'camera=(), microphone=(), geolocation=(), payment=(self)'
           },
           {
             // Protection contre les attaques XSS (Cross-Site Scripting)
             key: 'X-XSS-Protection',
             value: '1; mode=block'
+          },
+          {
+            // Contrôle les informations envoyées dans le Referer
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
           }
         ]
       }
@@ -85,16 +121,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Configuration Sentry pour le monitoring d'erreurs
-export default withSentryConfig(nextConfig, {
-  // Désactiver les logs Sentry pendant le build
-  silent: true,
+// Désactiver Sentry complètement en développement pour la performance
+const finalConfig = isDev
+  ? nextConfig
+  : withSentryConfig(nextConfig, {
+      silent: true,
+      org: "laia-skin-institut",
+      project: "javascript-nextjs",
+      widenClientFileUpload: true,
+      disableLogger: true,
+    });
 
-  // Configuration pour l'upload des source maps
-  org: "laia-skin-institut",
-  project: "javascript-nextjs",
-
-  // Ne pas uploader les source maps en développement
-  widenClientFileUpload: true,
-  disableLogger: true,
-});
+export default finalConfig;

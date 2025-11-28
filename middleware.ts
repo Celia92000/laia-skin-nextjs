@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { checkRateLimit, checkStrictRateLimit, getClientIp } from '@/lib/rateLimit';
+
+const isDev = process.env.NODE_ENV === 'development';
 
 export async function middleware(request: NextRequest) {
-  // 🔒 RATE LIMITING sur toutes les routes API
-  if (request.nextUrl.pathname.startsWith('/api')) {
+  // 🔒 RATE LIMITING sur toutes les routes API (désactivé en dev pour performance)
+  if (!isDev && request.nextUrl.pathname.startsWith('/api')) {
+    // Import dynamique pour éviter le chargement en dev
+    const { checkRateLimit, checkStrictRateLimit, getClientIp } = await import('@/lib/rateLimit');
     const ip = getClientIp(request);
 
     // Routes sensibles avec rate limiting strict (5 req/min)
@@ -27,7 +30,6 @@ export async function middleware(request: NextRequest) {
       : await checkRateLimit(ip);
 
     if (!rateLimitResult.success) {
-      // Convertir reset en Date si c'est un timestamp
       const resetDate = typeof rateLimitResult.reset === 'number'
         ? new Date(rateLimitResult.reset)
         : rateLimitResult.reset;

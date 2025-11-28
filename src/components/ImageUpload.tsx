@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Upload, X, Loader2, AlertCircle } from 'lucide-react';
 
 interface ImageUploadProps {
   value?: string;
@@ -10,6 +10,8 @@ interface ImageUploadProps {
   label?: string;
   placeholder?: string;
   preview?: boolean;
+  maxSize?: number; // in MB
+  className?: string;
 }
 
 export default function ImageUpload({
@@ -18,27 +20,26 @@ export default function ImageUpload({
   folder = 'general',
   label = 'Image',
   placeholder = 'https://example.com/image.jpg',
-  preview = true
+  preview = true,
+  maxSize = 10,
+  className = ''
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleUpload = useCallback(async (file: File) => {
     // Vérifier le type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      setError('Type de fichier non autorisé. Utilisez JPG, PNG, GIF ou WebP.');
+      setError('Type de fichier non autorisé. Utilisez JPG, PNG, GIF, WebP ou SVG.');
       return;
     }
 
-    // Vérifier la taille (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setError('Fichier trop volumineux. Taille maximale : 5MB');
+    // Vérifier la taille
+    if (file.size > maxSize * 1024 * 1024) {
+      setError(`Fichier trop volumineux. Taille maximale : ${maxSize}MB`);
       return;
     }
 
@@ -51,7 +52,7 @@ export default function ImageUpload({
       formData.append('folder', folder);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/admin/upload-image', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -71,69 +72,106 @@ export default function ImageUpload({
     } finally {
       setUploading(false);
     }
+  }, [folder, maxSize, onChange]);
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await handleUpload(file);
+    }
   };
+
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleUpload(e.dataTransfer.files[0]);
+    }
+  }, [handleUpload]);
 
   const handleRemove = () => {
     onChange('');
+    setError('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className="space-y-3">
+    <div className={`space-y-3 ${className}`}>
       <label className="block text-sm font-medium text-gray-700">
         {label}
       </label>
 
-      {/* Zone d'upload */}
-      <div className="flex gap-3 items-start">
-        {/* Input URL manuel */}
-        <div className="flex-1">
-          <input
-            type="url"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            placeholder={placeholder}
-          />
-        </div>
+      {/* Zone de drag-and-drop */}
+      <div
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`
+          relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
+          transition-all duration-200
+          ${dragActive
+            ? 'border-purple-500 bg-purple-50'
+            : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
+          }
+          ${uploading ? 'pointer-events-none opacity-60' : ''}
+        `}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
 
-        {/* Bouton upload */}
-        <div className="relative">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {uploading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span className="text-sm">Upload...</span>
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
-                <span className="text-sm">Upload</span>
-              </>
-            )}
-          </button>
-        </div>
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+            <p className="text-sm text-gray-600">Upload en cours...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <Upload className={`w-8 h-8 ${dragActive ? 'text-purple-500' : 'text-gray-400'}`} />
+            <p className="text-sm text-gray-600">
+              {dragActive ? 'Deposez l\'image ici' : 'Cliquez ou glissez une image'}
+            </p>
+            <p className="text-xs text-gray-400">
+              JPEG, PNG, GIF, WebP, SVG (max {maxSize}MB)
+            </p>
+          </div>
+        )}
+      </div>
 
-        {/* Bouton supprimer */}
+      {/* Input URL manuel */}
+      <div className="flex gap-2 items-center">
+        <input
+          type="url"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm"
+          placeholder={placeholder}
+        />
         {value && (
           <button
             type="button"
             onClick={handleRemove}
-            className="p-3 text-red-600 hover:bg-red-50 rounded-lg transition"
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
             title="Supprimer"
           >
             <X className="w-4 h-4" />
@@ -143,24 +181,20 @@ export default function ImageUpload({
 
       {/* Message d'erreur */}
       {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
-          {error}
+        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Info */}
-      <p className="text-xs text-gray-500">
-        💡 Cliquez sur "Upload" pour sélectionner une image depuis votre ordinateur (max 5MB) ou collez une URL
-      </p>
-
-      {/* Aperçu */}
+      {/* Apercu */}
       {preview && value && (
         <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-2">Aperçu :</p>
+          <p className="text-sm font-medium text-gray-700 mb-2">Apercu :</p>
           <img
             src={value}
-            alt="Aperçu"
-            className="max-h-40 object-contain rounded-lg"
+            alt="Apercu"
+            className="max-h-48 object-contain rounded-lg"
             onError={() => setError('Impossible de charger l\'image')}
           />
         </div>

@@ -8,6 +8,7 @@ import Link from 'next/link';
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic';
 
+// Prix centralisés : SOLO=49€, DUO=69€, TEAM=119€, PREMIUM=179€
 const PLANS = [
   {
     id: 'SOLO',
@@ -26,7 +27,7 @@ const PLANS = [
   {
     id: 'DUO',
     name: 'Duo',
-    price: 89,
+    price: 69,
     setupFee: 0,
     features: [
       'Jusqu\'à 3 praticiens',
@@ -41,10 +42,10 @@ const PLANS = [
   {
     id: 'TEAM',
     name: 'Team',
-    price: 149,
+    price: 119,
     setupFee: 0,
     features: [
-      'Jusqu\'à 10 praticiens',
+      'Jusqu\'à 8 praticiens',
       '3 emplacements',
       'Tout du plan Duo +',
       'Boutique produits',
@@ -55,13 +56,13 @@ const PLANS = [
   {
     id: 'PREMIUM',
     name: 'Premium',
-    price: 249,
+    price: 179,
     setupFee: 0,
     features: [
       'Praticiens illimités',
       'Emplacements illimités',
       'Tout du plan Team +',
-      'Gestion de stock',
+      'Gestion de stock avancé',
       'Vente de formations',
       'Support prioritaire'
     ]

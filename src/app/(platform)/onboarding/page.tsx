@@ -401,10 +401,10 @@ function OnboardingForm() {
     const { teamSize, locations, neededFeatures } = questionnaireAnswers
 
     // RÈGLES BASÉES SUR LES VRAIES LIMITES DES FORMULES
-    // SOLO: 1 utilisateur, 1 emplacement, fonctionnalités essentielles
-    // DUO: 3 utilisateurs, 1 emplacement, + CRM + Email + Blog
-    // TEAM: 10 utilisateurs, 3 emplacements, + Boutique + WhatsApp + Réseaux sociaux
-    // PREMIUM: illimité, illimité, toutes fonctionnalités avancées
+    // SOLO 49€: 1 utilisateur, 1 site, base uniquement
+    // DUO 69€: 3 utilisateurs, 1 site, + CRM + Email Marketing
+    // TEAM 119€: 8 utilisateurs, 3 sites, + Blog + Boutique + WhatsApp + SMS + Social
+    // PREMIUM 179€: illimité, illimité, + Stock Avancé
 
     // 1. EMPLACEMENTS (critère bloquant prioritaire)
     if (locations === '4+') {
@@ -664,7 +664,7 @@ function OnboardingForm() {
   }
 
   const planDetails = {
-    SOLO: { name: 'Solo', price: 39, icon: '👤' },
+    SOLO: { name: 'Solo', price: 49, icon: '👤' },
     DUO: { name: 'Duo', price: 69, icon: '👥' },
     TEAM: { name: 'Team', price: 119, icon: '👨‍👩‍👧' },
     PREMIUM: { name: 'Premium', price: 179, icon: '⭐' }
@@ -1089,37 +1089,90 @@ function OnboardingForm() {
               </div>
             )}
 
-            {/* Section: Vos limites */}
+            {/* Section: Ce qui est inclus dans votre plan */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex-1 h-px bg-blue-200"></div>
                 <h3 className="text-xl font-bold text-blue-800 px-3">
-                  📊 Vos limites
+                  📊 Inclus dans votre plan
                 </h3>
                 <div className="flex-1 h-px bg-blue-200"></div>
               </div>
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Utilisateurs */}
                   <div className="flex items-center gap-3 text-blue-900">
                     <span className="text-2xl">👤</span>
                     <div>
                       <div className="font-bold">Utilisateurs</div>
-                      <div className="text-sm">
-                        {data.selectedPlan === 'SOLO' && '1 utilisateur'}
-                        {data.selectedPlan === 'DUO' && 'Jusqu\'à 3 utilisateurs'}
-                        {data.selectedPlan === 'TEAM' && 'Jusqu\'à 10 utilisateurs'}
-                        {data.selectedPlan === 'PREMIUM' && 'Utilisateurs illimités'}
+                      <div className="text-sm font-medium">
+                        {data.selectedPlan === 'SOLO' && '1'}
+                        {data.selectedPlan === 'DUO' && '3'}
+                        {data.selectedPlan === 'TEAM' && '8'}
+                        {data.selectedPlan === 'PREMIUM' && 'Illimité'}
                       </div>
                     </div>
                   </div>
+                  {/* Emplacements */}
                   <div className="flex items-center gap-3 text-blue-900">
                     <span className="text-2xl">📍</span>
                     <div>
-                      <div className="font-bold">Emplacements</div>
-                      <div className="text-sm">
-                        {(data.selectedPlan === 'SOLO' || data.selectedPlan === 'DUO') && '1 emplacement'}
-                        {data.selectedPlan === 'TEAM' && 'Jusqu\'à 3 emplacements'}
-                        {data.selectedPlan === 'PREMIUM' && 'Emplacements illimités'}
+                      <div className="font-bold">Sites</div>
+                      <div className="text-sm font-medium">
+                        {(data.selectedPlan === 'SOLO' || data.selectedPlan === 'DUO') && '1'}
+                        {data.selectedPlan === 'TEAM' && '3'}
+                        {data.selectedPlan === 'PREMIUM' && 'Illimité'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Stockage */}
+                  <div className="flex items-center gap-3 text-blue-900">
+                    <span className="text-2xl">💾</span>
+                    <div>
+                      <div className="font-bold">Stockage</div>
+                      <div className="text-sm font-medium">
+                        {data.selectedPlan === 'SOLO' && '5 Go'}
+                        {data.selectedPlan === 'DUO' && '15 Go'}
+                        {data.selectedPlan === 'TEAM' && '30 Go'}
+                        {data.selectedPlan === 'PREMIUM' && 'Illimité'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Emails */}
+                  <div className="flex items-center gap-3 text-blue-900">
+                    <span className="text-2xl">📧</span>
+                    <div>
+                      <div className="font-bold">Emails/mois</div>
+                      <div className="text-sm font-medium">
+                        {data.selectedPlan === 'SOLO' && '1 000'}
+                        {data.selectedPlan === 'DUO' && '2 000'}
+                        {data.selectedPlan === 'TEAM' && '5 000'}
+                        {data.selectedPlan === 'PREMIUM' && 'Illimité'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* WhatsApp */}
+                  <div className="flex items-center gap-3 text-blue-900">
+                    <span className="text-2xl">💬</span>
+                    <div>
+                      <div className="font-bold">WhatsApp/mois</div>
+                      <div className="text-sm font-medium">
+                        {data.selectedPlan === 'SOLO' && '200'}
+                        {data.selectedPlan === 'DUO' && '500'}
+                        {data.selectedPlan === 'TEAM' && '1 000'}
+                        {data.selectedPlan === 'PREMIUM' && 'Illimité'}
+                      </div>
+                    </div>
+                  </div>
+                  {/* SMS */}
+                  <div className="flex items-center gap-3 text-blue-900">
+                    <span className="text-2xl">📱</span>
+                    <div>
+                      <div className="font-bold">SMS/mois</div>
+                      <div className="text-sm font-medium">
+                        {(data.selectedPlan === 'SOLO' || data.selectedPlan === 'DUO') && <span className="text-gray-400">—</span>}
+                        {data.selectedPlan === 'TEAM' && '200'}
+                        {data.selectedPlan === 'PREMIUM' && '1 000'}
                       </div>
                     </div>
                   </div>

@@ -8,6 +8,8 @@ import {
   Clock, Calendar, Tag, Search, ChevronUp, ChevronDown,
   Globe, FileText, Star, AlertCircle, CheckCircle, Image, Trash2
 } from "lucide-react";
+import RichTextEditor from './RichTextEditor';
+import ImageUpload from './ImageUpload';
 
 interface BlogPost {
   id: string;
@@ -377,7 +379,7 @@ export default function AdminBlogTab() {
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    💡 Vous pouvez utiliser du HTML pour formater votre contenu (h2, h3, p, ul, ol, strong, em, etc.)
+                    💡 Utilisez la barre d'outils pour formater votre contenu (titres, gras, italique, listes, liens, images...)
                   </p>
                 </div>
 
@@ -385,13 +387,10 @@ export default function AdminBlogTab() {
                   <label className="block text-sm font-medium text-[#2c3e50] mb-2">
                     Contenu de l'article *
                   </label>
-                  <textarea
-                    required
-                    rows={20}
-                    value={formData?.content ?? ''}
-                    onChange={(e) => setFormData({...formData, content: e.target.value})}
-                    placeholder="<h2>Titre de section</h2>&#10;<p>Votre contenu ici...</p>"
-                    className="w-full px-4 py-2 border border-[#d4b5a0]/20 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent font-mono text-sm"
+                  <RichTextEditor
+                    content={formData?.content ?? ''}
+                    onChange={(html) => setFormData({...formData, content: html})}
+                    placeholder="Commencez à écrire votre article..."
                   />
                 </div>
               </div>
@@ -455,32 +454,13 @@ export default function AdminBlogTab() {
                   </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg border-2 border-[#d4b5a0]/30">
-                  <label className="block text-lg font-semibold text-[#2c3e50] mb-3">
-                    ⭐ Image principale (URL)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData?.mainImage ?? ''}
-                    onChange={(e) => setFormData({...formData, mainImage: e.target.value})}
-                    placeholder="https://exemple.com/image.jpg ou /images/mon-image.jpg"
-                    className="w-full px-4 py-3 text-lg border-2 border-[#d4b5a0]/30 rounded-lg focus:ring-2 focus:ring-[#d4b5a0] focus:border-[#d4b5a0] transition-all"
-                  />
-                  {formData?.mainImage && (
-                    <div className="mt-4 p-2 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Aperçu :</p>
-                      <img
-                        src={formData.mainImage}
-                        alt="Aperçu"
-                        className="w-full max-w-md h-64 object-cover rounded-lg shadow-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
-                          (e.target as HTMLImageElement).alt = 'Image non trouvée';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
+                <ImageUpload
+                  value={formData?.mainImage ?? ''}
+                  onChange={(url) => setFormData({...formData, mainImage: url})}
+                  folder="blog"
+                  label="Image principale"
+                  placeholder="https://exemple.com/image.jpg"
+                />
 
                 <div className="bg-white p-6 rounded-lg border-2 border-[#d4b5a0]/30">
                   <label className="block text-lg font-semibold text-[#2c3e50] mb-3">

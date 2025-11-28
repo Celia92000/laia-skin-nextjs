@@ -15,7 +15,6 @@ import ApiTokensManager from './ApiTokensManager';
 import AdminSMSConfigTab from './AdminSMSConfigTab';
 import AdminEmailConfigTab from './AdminEmailConfigTab';
 import AdminWhatsAppConfigTab from './AdminWhatsAppConfigTab';
-import ConfigurationChecklist from './ConfigurationChecklist';
 import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates';
 import LiveTemplatePreview from './LiveTemplatePreview';
 
@@ -137,10 +136,26 @@ export default function AdminConfigTab() {
   const [activeTab, setActiveTab] = useState<'general' | 'contact' | 'social' | 'appearance' | 'template' | 'hours' | 'content' | 'legal' | 'company' | 'about' | 'location' | 'seo' | 'finances' | 'integrations' | 'api' | 'google' | 'sms' | 'email' | 'whatsapp'>('general');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [organizationPlan, setOrganizationPlan] = useState<string>('SOLO');
+  const [configCompletion, setConfigCompletion] = useState(0);
+  const [configSections, setConfigSections] = useState<{[key: string]: {label: string, completed: number, total: number, isCompleted: boolean}}>({});
 
   useEffect(() => {
     fetchConfig();
+    fetchConfigCompletion();
   }, []);
+
+  const fetchConfigCompletion = async () => {
+    try {
+      const response = await fetch('/api/admin/config-completion');
+      if (response.ok) {
+        const data = await response.json();
+        setConfigCompletion(data.globalPercentage || 0);
+        setConfigSections(data.sections || {});
+      }
+    } catch (error) {
+      console.error('Erreur chargement complétion:', error);
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -237,11 +252,60 @@ export default function AdminConfigTab() {
         </button>
       </div>
 
-      {/* Configuration Progress Checklist */}
-      <ConfigurationChecklist
-        currentTabId={activeTab}
-        onTabChange={setActiveTab as (tabId: string) => void}
-      />
+      {/* Barre de progression de configuration - Style Onboarding */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">
+            Progression de la configuration
+          </span>
+          <span className={`text-sm font-bold ${configCompletion === 100 ? 'text-green-600' : 'text-purple-600'}`}>
+            {configCompletion}% complété
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+          <div
+            className={`h-3 rounded-full transition-all duration-500 ${configCompletion === 100 ? 'bg-green-500' : 'bg-gradient-to-r from-purple-600 to-pink-600'}`}
+            style={{ width: `${configCompletion}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(configSections).map(([key, section]) => (
+            <button
+              key={key}
+              onClick={() => {
+                // Map section key to tab id
+                const tabMapping: {[key: string]: string} = {
+                  'services': 'services',
+                  'appearance': 'appearance',
+                  'seo': 'seo'
+                };
+                if (tabMapping[key]) {
+                  setActiveTab(tabMapping[key] as any);
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105 cursor-pointer ${
+                section.isCompleted
+                  ? 'bg-green-100 text-green-700 border border-green-200'
+                  : section.completed > 0
+                    ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                    : 'bg-gray-100 text-gray-600 border border-gray-200'
+              }`}
+            >
+              {section.isCompleted ? (
+                <span className="text-green-600">✓</span>
+              ) : section.completed > 0 ? (
+                <span className="text-orange-500">◐</span>
+              ) : (
+                <span className="text-gray-400">○</span>
+              )}
+              {section.label}
+              <span className="text-[10px] opacity-75 font-normal">
+                {section.completed}/{section.total}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto border-b border-gray-200 pb-2">

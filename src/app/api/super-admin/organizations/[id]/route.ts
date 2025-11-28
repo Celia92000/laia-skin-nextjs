@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { log } from '@/lib/logger';
+import { PLAN_LIMITS } from '@/lib/quotas';
 
 export async function GET(
   request: Request,
@@ -91,13 +92,60 @@ export async function GET(
       orderBy: { createdAt: 'asc' }
     })
 
+    // Récupérer les quotas/usage
+    const usage = await prisma.organizationUsage.findUnique({
+      where: { organizationId: id }
+    })
+
+    // Récupérer les emplacements
+    const locationsCount = await prisma.location.count({
+      where: { organizationId: id }
+    })
+
+    // Limites du plan
+    const planLimits = PLAN_LIMITS[organization.plan] || PLAN_LIMITS.SOLO
+
+    const quotas = {
+      users: {
+        current: users.length,
+        limit: planLimits.users,
+        unlimited: planLimits.users === -1
+      },
+      locations: {
+        current: locationsCount,
+        limit: planLimits.locations,
+        unlimited: planLimits.locations === -1
+      },
+      storage: {
+        current: Number(usage?.currentStorageBytes || 0),
+        limit: planLimits.storage,
+        unlimited: planLimits.storage === -1
+      },
+      emails: {
+        current: usage?.emailsSentThisMonth || 0,
+        limit: planLimits.emails,
+        unlimited: planLimits.emails === -1
+      },
+      sms: {
+        current: usage?.smsSentThisMonth || 0,
+        limit: planLimits.sms,
+        unlimited: planLimits.sms === -1
+      },
+      whatsapp: {
+        current: usage?.whatsappSentThisMonth || 0,
+        limit: planLimits.whatsapp,
+        unlimited: planLimits.whatsapp === -1
+      }
+    }
+
     return NextResponse.json({
       organization: {
         ...organization,
         config: organization.config || {}
       },
       invoices,
-      users
+      users,
+      quotas
     })
 
   } catch (error) {

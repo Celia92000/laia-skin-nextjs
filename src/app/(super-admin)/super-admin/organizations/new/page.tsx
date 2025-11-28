@@ -7,6 +7,7 @@ import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
 import AddonSelector from '@/components/super-admin/AddonSelector'
 import { OrgPlan } from '@prisma/client'
 import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
+import { getPlanPrice } from '@/lib/features-simple'
 
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic'
@@ -487,10 +488,10 @@ function NewOrganizationForm() {
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                     style={{ backgroundColor: 'white' }}
                   >
-                    <option value="SOLO">SOLO - 49€/mois (Pour démarrer • ROI +500€/mois) - 1 user</option>
-                    <option value="DUO">DUO - 69€/mois (Développer son CA • ROI +1200€/mois) - 3 users</option>
-                    <option value="TEAM">TEAM - 119€/mois ⭐ LE PLUS RENTABLE (E-commerce • ROI +3500€/mois) - 10 users</option>
-                    <option value="PREMIUM">PREMIUM - 179€/mois (Instituts établis • ROI +8000€/mois) - Illimité</option>
+                    <option value="SOLO">SOLO - 49€/mois (Pour démarrer) - 1 user</option>
+                    <option value="DUO">DUO - 69€/mois (Marketing de base) - 3 users</option>
+                    <option value="TEAM">TEAM - 119€/mois ⭐ POPULAIRE (Tous canaux de com) - 8 users</option>
+                    <option value="PREMIUM">PREMIUM - 179€/mois (Scale illimité) - Illimité</option>
                   </select>
                 </div>
 
@@ -668,12 +669,7 @@ function NewOrganizationForm() {
                     <div className="flex justify-between items-center text-lg font-bold">
                       <span className="text-gray-700">💳 Prix total mensuel :</span>
                       <span className="text-green-600">
-                        {(
-                          (formData.plan === 'SOLO' ? 49 :
-                           formData.plan === 'DUO' ? 69 :
-                           formData.plan === 'TEAM' ? 119 : 179) +
-                          formData.customAddonPrice
-                        )}€/mois
+                        {getPlanPrice(formData.plan as OrgPlan) + formData.customAddonPrice}€/mois
                       </span>
                     </div>
                   </div>
@@ -949,10 +945,10 @@ function NewOrganizationForm() {
                       En cochant cette case, le client autorise LAIA à prélever automatiquement le montant de l'abonnement mensuel :
                     </p>
                     <ul className="text-gray-700 space-y-1 ml-4 mb-2">
-                      <li>• <strong>SOLO</strong> : 49€/mois (Pour démarrer • ROI +500€/mois)</li>
-                      <li>• <strong>DUO</strong> : 69€/mois (Développer son CA • ROI +1200€/mois)</li>
-                      <li>• <strong>TEAM</strong> : 119€/mois (E-commerce • ROI +3500€/mois) ⭐</li>
-                      <li>• <strong>PREMIUM</strong> : 179€/mois (Instituts établis • ROI +8000€/mois)</li>
+                      <li>• <strong>SOLO</strong> : 49€/mois - 1 user, base uniquement</li>
+                      <li>• <strong>DUO</strong> : 69€/mois - 3 users, +CRM +Email Marketing</li>
+                      <li>• <strong>TEAM</strong> : 119€/mois - 8 users, 3 sites, tous canaux ⭐</li>
+                      <li>• <strong>PREMIUM</strong> : 179€/mois - Illimité + Stock Avancé</li>
                     </ul>
                     <p className="text-gray-700 text-xs">
                       Le premier prélèvement aura lieu automatiquement à la fin de la période d'essai de 30 jours.

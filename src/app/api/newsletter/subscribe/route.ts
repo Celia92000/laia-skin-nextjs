@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
 import { log } from '@/lib/logger';
-
-const prisma = new PrismaClient();
+import { getPrismaClient } from '@/lib/prisma';
+import { validateBody, newsletterSubscribeSchema } from '@/lib/validations';
 
 export async function POST(request: Request) {
   try {
@@ -13,14 +12,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
 
-    const { email, name } = await request.json();
-
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email requis' },
-        { status: 400 }
-      );
+    // 🔒 Validation Zod des données d'entrée
+    const validation = await validateBody(request, newsletterSubscribeSchema);
+    if (!validation.success) {
+      return validation.error;
     }
+    const { email, name } = validation.data;
+
+    // Utiliser getPrismaClient pour s'assurer que la connexion est active
+    const prisma = await getPrismaClient();
 
     // 🔒 Vérifier si l'email existe déjà dans la newsletter DE CETTE ORGANISATION
     const existingSubscriber = await prisma.newsletterSubscriber.findFirst({
@@ -143,8 +143,6 @@ export async function POST(request: Request) {
       { error: 'Erreur lors de l\'inscription' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -156,6 +154,8 @@ export async function GET() {
     if (!organizationId) {
       return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 });
     }
+
+    const prisma = await getPrismaClient();
 
     // 🔒 Récupérer les inscrits DE CETTE ORGANISATION
     const subscribers = await prisma.newsletterSubscriber.findMany({
@@ -192,7 +192,5 @@ export async function GET() {
       { error: 'Erreur lors de la récupération' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

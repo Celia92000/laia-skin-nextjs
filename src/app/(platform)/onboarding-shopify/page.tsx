@@ -865,7 +865,7 @@ function OnboardingShopifyContent() {
                     description: 'Institut établi - E-commerce complet',
                     features: [
                       'Tout DUO +',
-                      '10 utilisateurs max',
+                      '8 utilisateurs max',
                       '3 emplacements max',
                       '✨ Boutique en ligne (produits + formations)',
                       '✨ Blog + SEO',

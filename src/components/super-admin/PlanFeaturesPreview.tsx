@@ -1,16 +1,18 @@
 'use client'
 
 import { OrgPlan } from '@prisma/client'
-import { getFeaturesForPlan, getPlanName, getPlanPrice } from '@/lib/features-simple'
+import { getFeaturesForPlan, getPlanName, getPlanPrice, getPlanQuotas, formatQuotaValue } from '@/lib/features-simple'
 
 interface PlanFeaturesPreviewProps {
   selectedPlan: OrgPlan
+  showQuotas?: boolean
 }
 
-export default function PlanFeaturesPreview({ selectedPlan }: PlanFeaturesPreviewProps) {
+export default function PlanFeaturesPreview({ selectedPlan, showQuotas = true }: PlanFeaturesPreviewProps) {
   const features = getFeaturesForPlan(selectedPlan)
   const planName = getPlanName(selectedPlan)
   const planPrice = getPlanPrice(selectedPlan)
+  const quotas = getPlanQuotas(selectedPlan)
 
   if (!features || !planName || !planPrice) {
     return null
@@ -27,6 +29,48 @@ export default function PlanFeaturesPreview({ selectedPlan }: PlanFeaturesPrevie
           {planPrice}€<span className="text-lg text-gray-500">/mois</span>
         </div>
       </div>
+
+      {/* Quotas/Limites incluses */}
+      {showQuotas && quotas && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <span>📊</span>
+            <span>Inclus dans ce plan</span>
+          </h4>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>👤</span>
+              <span className="font-medium">{formatQuotaValue(quotas.users)}</span>
+              <span className="text-blue-700">utilisateur{typeof quotas.users === 'number' && quotas.users > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>📍</span>
+              <span className="font-medium">{formatQuotaValue(quotas.locations)}</span>
+              <span className="text-blue-700">emplacement{typeof quotas.locations === 'number' && quotas.locations > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>💾</span>
+              <span className="font-medium">{formatQuotaValue(quotas.storageGB)} Go</span>
+              <span className="text-blue-700">stockage</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>📧</span>
+              <span className="font-medium">{formatQuotaValue(quotas.emailsPerMonth)}</span>
+              <span className="text-blue-700">emails/mois</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>💬</span>
+              <span className="font-medium">{formatQuotaValue(quotas.whatsappPerMonth)}</span>
+              <span className="text-blue-700">WhatsApp/mois</span>
+            </div>
+            <div className="flex items-center gap-2 text-blue-900">
+              <span>📱</span>
+              <span className="font-medium">{formatQuotaValue(quotas.smsPerMonth)}</span>
+              <span className="text-blue-700">{quotas.smsPerMonth !== 'Non inclus' ? 'SMS/mois' : ''}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fonctionnalités TOUJOURS incluses */}
       <div className="space-y-4">

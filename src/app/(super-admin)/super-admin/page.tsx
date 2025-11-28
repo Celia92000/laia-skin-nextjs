@@ -536,6 +536,35 @@ export default function SuperAdminPage() {
           </div>
         </div>
 
+        {/* Statistiques d'usage plateforme */}
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-md p-6 mb-8 border-2 border-indigo-200">
+          <h3 className="text-xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
+            📊 Usage Plateforme (ce mois)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-indigo-600 mb-1">Emails envoyés</p>
+              <p className="text-2xl font-bold text-indigo-900">{stats?.totalEmails ?? 0}</p>
+              <p className="text-xs text-indigo-500 mt-1">Ce mois</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-green-600 mb-1">WhatsApp envoyés</p>
+              <p className="text-2xl font-bold text-green-900">{stats?.totalWhatsapp ?? 0}</p>
+              <p className="text-xs text-green-500 mt-1">Ce mois</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-amber-600 mb-1">Stockage total</p>
+              <p className="text-2xl font-bold text-amber-900">{((stats?.totalStorage ?? 0) / (1024 * 1024 * 1024)).toFixed(2)} GB</p>
+              <p className="text-xs text-amber-500 mt-1">Toutes organisations</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-sm text-rose-600 mb-1">Appels API</p>
+              <p className="text-2xl font-bold text-rose-900">{stats?.totalApiCalls ?? 0}</p>
+              <p className="text-xs text-rose-500 mt-1">Ce mois</p>
+            </div>
+          </div>
+        </div>
+
         {/* Statistiques détaillées par organisation */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">📊 Performance des Organisations</h2>

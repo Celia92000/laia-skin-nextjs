@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Download, Clock, CheckCircle, XCircle, AlertCircle, CreditCard, Calendar, Zap, ArrowRight, Sparkles } from 'lucide-react';
 import { OrgPlan } from '@prisma/client';
-import { getPlanName, getPlanPrice, getPlanDescription, PLAN_FEATURES } from '@/lib/features-simple';
+import { getPlanName, getPlanPrice, getPlanDescription, PLAN_FEATURES, getPlanQuotas } from '@/lib/features-simple';
 import CancelSubscriptionSection from './CancelSubscriptionSection';
 
 interface InvoiceMetadata {
@@ -237,26 +237,36 @@ export default function SubscriptionInvoices() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            {Object.entries(PLAN_FEATURES[currentPlan]).map(([key, enabled]) => {
-              if (key === 'featureMultiLocation' || key === 'featureMultiUser') return null;
-              const featureNames: Record<string, string> = {
-                featureBlog: 'Blog',
-                featureCRM: 'CRM',
-                featureEmailing: 'Email Marketing',
-                featureShop: 'Boutique',
-                featureWhatsApp: 'WhatsApp',
-                featureSMS: 'SMS',
-                featureSocialMedia: 'Réseaux Sociaux',
-                featureStock: 'Stock Avancé',
-              };
-              return (
-                <div key={key} className={`flex items-center gap-2 text-sm ${enabled ? 'text-white' : 'text-purple-200 opacity-50'}`}>
-                  {enabled ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                  <span>{featureNames[key]}</span>
-                </div>
-              );
-            })}
+          <div className="mb-4">
+            {/* Fonctionnalités incluses */}
+            {Object.entries(PLAN_FEATURES[currentPlan]).some(([key, enabled]) =>
+              enabled && !['featureMultiLocation', 'featureMultiUser'].includes(key)
+            ) ? (
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(PLAN_FEATURES[currentPlan]).map(([key, enabled]) => {
+                  if (key === 'featureMultiLocation' || key === 'featureMultiUser') return null;
+                  if (!enabled) return null;
+                  const featureNames: Record<string, string> = {
+                    featureBlog: 'Blog',
+                    featureCRM: 'CRM',
+                    featureEmailing: 'Email Marketing',
+                    featureShop: 'Boutique',
+                    featureWhatsApp: 'WhatsApp',
+                    featureSMS: 'SMS',
+                    featureSocialMedia: 'Réseaux Sociaux',
+                    featureStock: 'Stock Avancé',
+                  };
+                  return (
+                    <div key={key} className="flex items-center gap-2 text-sm text-white bg-white/20 px-3 py-1.5 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-300" />
+                      <span className="font-medium">{featureNames[key]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-purple-200 text-sm italic">Formule de base - passez à DUO pour débloquer CRM et Email Marketing</p>
+            )}
           </div>
 
           <button
@@ -543,6 +553,7 @@ export default function SubscriptionInvoices() {
                       const isCurrentPlan = plan === currentPlan;
                       const isSelected = plan === selectedNewPlan;
                       const features = PLAN_FEATURES[plan];
+                      const quotas = getPlanQuotas(plan);
 
                       return (
                         <div
@@ -553,6 +564,8 @@ export default function SubscriptionInvoices() {
                               ? 'bg-gray-50 border-gray-300 cursor-not-allowed opacity-60'
                               : isSelected
                               ? 'border-purple-500 bg-purple-50'
+                              : plan === 'PREMIUM'
+                              ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 hover:border-amber-500'
                               : 'border-gray-200 hover:border-purple-300'
                           }`}
                         >
@@ -561,19 +574,50 @@ export default function SubscriptionInvoices() {
                               Actuel
                             </div>
                           )}
+                          {plan === 'PREMIUM' && !isCurrentPlan && (
+                            <div className="absolute top-3 right-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" /> ILLIMITÉ
+                            </div>
+                          )}
 
                           <div className="mb-4">
                             <h3 className="text-xl font-bold text-gray-900 mb-1">Formule {getPlanName(plan)}</h3>
                             <p className="text-sm text-gray-600 mb-3">{getPlanDescription(plan)}</p>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-3xl font-bold text-purple-600">{getPlanPrice(plan)}€</span>
+                              <span className={`text-3xl font-bold ${plan === 'PREMIUM' ? 'text-amber-600' : 'text-purple-600'}`}>{getPlanPrice(plan)}€</span>
                               <span className="text-sm text-gray-500">/mois</span>
                             </div>
                           </div>
 
+                          {/* Quotas */}
+                          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-xs font-bold text-blue-800 mb-2">📊 Capacités :</p>
+                            <div className="grid grid-cols-2 gap-1 text-xs">
+                              <div className="flex items-center gap-1 text-blue-700">
+                                <span>👤</span>
+                                <span className="font-semibold">{typeof quotas.users === 'string' ? quotas.users : quotas.users}</span>
+                                <span className="text-blue-600">utilisateurs</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-blue-700">
+                                <span>📍</span>
+                                <span className="font-semibold">{typeof quotas.locations === 'string' ? quotas.locations : quotas.locations}</span>
+                                <span className="text-blue-600">sites</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-blue-700">
+                                <span>📧</span>
+                                <span className="font-semibold">{typeof quotas.emailsPerMonth === 'string' ? quotas.emailsPerMonth : quotas.emailsPerMonth.toLocaleString()}</span>
+                                <span className="text-blue-600">emails/mois</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-blue-700">
+                                <span>📱</span>
+                                <span className="font-semibold">{typeof quotas.smsPerMonth === 'string' ? quotas.smsPerMonth : quotas.smsPerMonth}</span>
+                                <span className="text-blue-600">SMS/mois</span>
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="space-y-2">
-                            {Object.entries(features).map(([key, enabled]) => {
-                              if (key === 'featureMultiLocation' || key === 'featureMultiUser') return null;
+                            {(() => {
                               const featureNames: Record<string, string> = {
                                 featureBlog: 'Blog',
                                 featureCRM: 'CRM',
@@ -584,13 +628,71 @@ export default function SubscriptionInvoices() {
                                 featureSocialMedia: 'Réseaux Sociaux',
                                 featureStock: 'Stock Avancé',
                               };
+
+                              const enabledFeatures = Object.entries(features)
+                                .filter(([key, enabled]) => enabled && !['featureMultiLocation', 'featureMultiUser'].includes(key));
+
+                              const disabledFeatures = Object.entries(features)
+                                .filter(([key, enabled]) => !enabled && !['featureMultiLocation', 'featureMultiUser'].includes(key));
+
+                              // Trouver le plan suivant pour inciter l'upgrade
+                              const planOrder = ['SOLO', 'DUO', 'TEAM', 'PREMIUM'] as const;
+                              const currentIdx = planOrder.indexOf(plan);
+                              const nextPlan = currentIdx < planOrder.length - 1 ? planOrder[currentIdx + 1] : null;
+                              const nextPlanFeatures = nextPlan ? PLAN_FEATURES[nextPlan] : null;
+
+                              // Nouvelles fonctionnalités si upgrade
+                              const newFeaturesOnUpgrade = nextPlanFeatures
+                                ? Object.entries(nextPlanFeatures)
+                                    .filter(([key, enabled]) =>
+                                      enabled && !features[key as keyof typeof features] &&
+                                      !['featureMultiLocation', 'featureMultiUser'].includes(key)
+                                    )
+                                : [];
+
                               return (
-                                <div key={key} className={`flex items-center gap-2 text-xs ${enabled ? 'text-gray-700' : 'text-gray-400'}`}>
-                                  {enabled ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3" />}
-                                  <span>{featureNames[key]}</span>
-                                </div>
+                                <>
+                                  {/* Fonctionnalités incluses */}
+                                  {enabledFeatures.length > 0 ? (
+                                    <>
+                                      <p className="text-xs font-semibold text-green-700 mb-1">Inclus :</p>
+                                      {enabledFeatures.map(([key]) => (
+                                        <div key={key} className="flex items-center gap-2 text-xs text-green-700 bg-green-50 px-2 py-1 rounded">
+                                          <CheckCircle className="w-3 h-3 text-green-500" />
+                                          <span className="font-medium">{featureNames[key]}</span>
+                                        </div>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <p className="text-xs text-gray-400 italic">Formule de base</p>
+                                  )}
+
+                                  {/* Incitation à l'upgrade - ce qu'on débloquerait */}
+                                  {nextPlan && newFeaturesOnUpgrade.length > 0 && !isCurrentPlan && (
+                                    <div className="mt-3 pt-3 border-t border-dashed border-purple-200">
+                                      <p className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1">
+                                        <Sparkles className="w-3 h-3" />
+                                        Débloquez avec {getPlanName(nextPlan)} :
+                                      </p>
+                                      {newFeaturesOnUpgrade.map(([key]) => (
+                                        <div key={key} className="flex items-center gap-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mt-1">
+                                          <Zap className="w-3 h-3" />
+                                          <span className="font-medium">{featureNames[key]}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {/* Pour le plan premium, montrer qu'il a tout */}
+                                  {plan === 'PREMIUM' && (
+                                    <div className="mt-2 text-xs text-purple-600 font-semibold flex items-center gap-1">
+                                      <Sparkles className="w-3 h-3" />
+                                      Toutes les fonctionnalités incluses !
+                                    </div>
+                                  )}
+                                </>
                               );
-                            })}
+                            })()}
                           </div>
                         </div>
                       );

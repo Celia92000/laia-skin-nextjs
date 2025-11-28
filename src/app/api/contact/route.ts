@@ -4,6 +4,7 @@ import { getPrismaClient } from '@/lib/prisma';
 import { getSiteConfig } from '@/lib/config-service';
 import { log } from '@/lib/logger';
 import { getCurrentOrganizationId } from '@/lib/get-current-organization';
+import { validateBody, contactFormSchema } from '@/lib/validations';
 
 // Resend instance created lazily via getResend()
 
@@ -15,15 +16,12 @@ export async function POST(request: Request) {
     const contactEmail = config.email || 'contact@institut.fr';
     const primaryColor = config.primaryColor || '#d4b5a0';
 
-    const { name, email, phone, subject, message } = await request.json();
-
-    // Validation des données
-    if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: 'Nom, email et message sont requis' },
-        { status: 400 }
-      );
+    // 🔒 Validation Zod des données d'entrée
+    const validation = await validateBody(request, contactFormSchema);
+    if (!validation.success) {
+      return validation.error;
     }
+    const { name, email, phone, subject, message } = validation.data;
 
     // Créer ou mettre à jour le lead dans la base de données
     try {

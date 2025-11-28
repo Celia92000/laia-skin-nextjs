@@ -52,6 +52,9 @@
     },
     "src/app/api/cron/process-gdpr-deletions/route.ts": {
       "maxDuration": 120
+    },
+    "src/app/api/cron/reset-monthly-usage/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
@@ -118,6 +121,10 @@
     {
       "path": "/api/cron/process-gdpr-deletions?secret=B1yUNIovEnCBJ3edhVuVriCKCGr2EDajmXk/xd6rF2E=",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/reset-monthly-usage",
+      "schedule": "0 1 1 * *"
     }
   ]
 }

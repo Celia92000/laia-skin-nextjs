@@ -110,7 +110,7 @@ export const PLAN_FEATURES: Record<OrgPlan, OrgFeatures> = {
 
     // Limites
     featureMultiLocation: true,   // ✅ 3 emplacements max
-    featureMultiUser: true,       // ✅ 10 utilisateurs max
+    featureMultiUser: true,       // ✅ 5 utilisateurs max
   },
 
   // ==========================================
@@ -302,4 +302,103 @@ export function getPlanDescription(plan: OrgPlan): string {
     ENTERPRISE: 'Pour les chaînes et franchises',
   }
   return descriptions[plan]
+}
+
+/**
+ * Quotas/limites par plan - pour affichage sur le site vitrine
+ */
+export interface PlanQuotas {
+  users: number | 'Illimité'
+  locations: number | 'Illimité'
+  storageGB: number | 'Illimité'
+  emailsPerMonth: number | 'Illimité'
+  whatsappPerMonth: number | 'Illimité'
+  smsPerMonth: number | 'Non inclus' | 'Illimité'
+}
+
+/**
+ * Retourne les quotas d'un plan (pour affichage client)
+ * Répartition équitable - mise à jour Nov 2024
+ */
+export function getPlanQuotas(plan: OrgPlan): PlanQuotas {
+  const quotas: Record<OrgPlan, PlanQuotas> = {
+    // SOLO 49€ - Esthéticienne indépendante
+    SOLO: {
+      users: 1,
+      locations: 1,
+      storageGB: 5,
+      emailsPerMonth: 1000,
+      whatsappPerMonth: 200,
+      smsPerMonth: 'Non inclus',
+    },
+    // DUO 69€ - Petit institut 2-3 personnes
+    DUO: {
+      users: 3,
+      locations: 1,
+      storageGB: 15,
+      emailsPerMonth: 2000,
+      whatsappPerMonth: 500,
+      smsPerMonth: 'Non inclus',
+    },
+    // TEAM 119€ - Institut établi
+    TEAM: {
+      users: 8,
+      locations: 3,
+      storageGB: 30,
+      emailsPerMonth: 5000,
+      whatsappPerMonth: 1000,
+      smsPerMonth: 200,
+    },
+    // PREMIUM 179€ - Chaîne / Franchise
+    PREMIUM: {
+      users: 'Illimité',
+      locations: 'Illimité',
+      storageGB: 'Illimité',
+      emailsPerMonth: 'Illimité',
+      whatsappPerMonth: 'Illimité',
+      smsPerMonth: 1000,
+    },
+    // Anciens plans (compatibilité)
+    STARTER: {
+      users: 1,
+      locations: 1,
+      storageGB: 5,
+      emailsPerMonth: 1000,
+      whatsappPerMonth: 200,
+      smsPerMonth: 'Non inclus',
+    },
+    ESSENTIAL: {
+      users: 3,
+      locations: 1,
+      storageGB: 15,
+      emailsPerMonth: 2000,
+      whatsappPerMonth: 500,
+      smsPerMonth: 'Non inclus',
+    },
+    PROFESSIONAL: {
+      users: 8,
+      locations: 3,
+      storageGB: 30,
+      emailsPerMonth: 5000,
+      whatsappPerMonth: 1000,
+      smsPerMonth: 200,
+    },
+    ENTERPRISE: {
+      users: 'Illimité',
+      locations: 'Illimité',
+      storageGB: 'Illimité',
+      emailsPerMonth: 'Illimité',
+      whatsappPerMonth: 'Illimité',
+      smsPerMonth: 1000,
+    },
+  }
+  return quotas[plan]
+}
+
+/**
+ * Formate une valeur de quota pour affichage
+ */
+export function formatQuotaValue(value: number | string): string {
+  if (typeof value === 'string') return value
+  return value.toLocaleString('fr-FR')
 }
