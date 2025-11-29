@@ -33,13 +33,22 @@ export default function SecureLoginPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Vérifier si déjà connecté
-      const token = localStorage.getItem('token');
-      const user = localStorage.getItem('user');
-      if (token && user) {
-        setAlreadyLoggedIn(true);
-        setCurrentUser(JSON.parse(user));
-      }
+      // Vérifier si déjà connecté via l'API (cookie httpOnly)
+      const checkAuth = async () => {
+        try {
+          const response = await fetch('/api/auth/me');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated && data.user) {
+              setAlreadyLoggedIn(true);
+              setCurrentUser(data.user);
+            }
+          }
+        } catch (e) {
+          // Non connecté, continuer normalement
+        }
+      };
+      checkAuth();
 
       // Charger les emails sauvegardés
       const savedEmailsStr = localStorage.getItem('savedEmails');
@@ -164,14 +173,10 @@ export default function SecureLoginPage() {
           // Ne jamais sauvegarder le mot de passe
           localStorage.removeItem('rememberedPassword');
 
-          // Stocker le token de manière sécurisée
-          localStorage.setItem('token', data.token);
+          // Stocker uniquement les infos user (non sensibles) pour l'UI
+          // Le token est stocké dans un cookie httpOnly par le serveur (plus sécurisé)
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('userRole', data.user.role);
-
-          // Cookie httpOnly serait mieux en production
-          const maxAge = rememberMe ? 2592000 : 604800; // 30 jours si "Se souvenir", sinon 7 jours
-          document.cookie = `token=${data.token}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
           // Redirection basée sur le rôle
           const roleRedirects = {
@@ -231,10 +236,10 @@ export default function SecureLoginPage() {
 
         if (response.ok) {
           const data = await response.json();
-          localStorage.setItem('token', data.token);
+          // Stocker uniquement les infos user (non sensibles) pour l'UI
+          // Le token est stocké dans un cookie httpOnly par le serveur
           localStorage.setItem('user', JSON.stringify(data.user));
           localStorage.setItem('userRole', data.user.role);
-          document.cookie = `token=${data.token}; path=/; max-age=604800; SameSite=Strict`;
           window.location.href = '/espace-client';
         } else {
           const errorData = await response.json();
