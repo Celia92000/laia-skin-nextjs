@@ -799,7 +799,7 @@ export default function PlatformHomePage() {
                   <h4 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h4>
                   <p className="text-gray-600 text-sm mb-6">{plan.description}</p>
 
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{plan.price}€</span>
                       <span className="text-gray-600 text-lg">/mois</span>
@@ -810,6 +810,62 @@ export default function PlatformHomePage() {
                     <p className="text-xs text-gray-400 text-center mt-1">
                       Engagement 1 an • Prélèvement SEPA
                     </p>
+                  </div>
+
+                  {/* Quotas utilisateurs et emplacements - bien visible */}
+                  <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                    <div className="text-center">
+                      <div className="text-2xl font-black text-purple-600">
+                        {plan.id === 'SOLO' ? '1' : plan.id === 'DUO' ? '3' : plan.id === 'TEAM' ? '8' : '∞'}
+                      </div>
+                      <div className="text-xs text-gray-600 font-semibold">👤 Utilisateur{plan.id !== 'SOLO' ? 's' : ''}</div>
+                    </div>
+                    <div className="text-center border-l border-purple-200">
+                      <div className="text-2xl font-black text-pink-600">
+                        {plan.id === 'SOLO' ? '1' : plan.id === 'DUO' ? '1' : plan.id === 'TEAM' ? '3' : '∞'}
+                      </div>
+                      <div className="text-xs text-gray-600 font-semibold">📍 Site{(plan.id === 'TEAM' || plan.id === 'PREMIUM') ? 's' : ''}</div>
+                    </div>
+                  </div>
+
+                  {/* Quotas communication et activité */}
+                  <div className="space-y-2 mb-6">
+                    {/* Ligne 1: Réservations et Clients */}
+                    <div className="grid grid-cols-2 gap-1 p-2 bg-blue-50 rounded-lg text-center text-xs">
+                      <div>
+                        <div className="font-bold text-blue-700">
+                          {plan.id === 'SOLO' ? '100' : plan.id === 'DUO' ? '300' : plan.id === 'TEAM' ? '1000' : '∞'}
+                        </div>
+                        <div className="text-blue-600">📅 RDV/mois</div>
+                      </div>
+                      <div className="border-l border-blue-200">
+                        <div className="font-bold text-blue-700">
+                          {plan.id === 'SOLO' ? '200' : plan.id === 'DUO' ? '500' : plan.id === 'TEAM' ? '2000' : '∞'}
+                        </div>
+                        <div className="text-blue-600">👥 Clients</div>
+                      </div>
+                    </div>
+                    {/* Ligne 2: Communication */}
+                    <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded-lg text-center text-xs">
+                      <div>
+                        <div className="font-bold text-gray-800">
+                          {plan.id === 'SOLO' ? '1K' : plan.id === 'DUO' ? '2K' : plan.id === 'TEAM' ? '5K' : '∞'}
+                        </div>
+                        <div className="text-gray-500">📧 Emails</div>
+                      </div>
+                      <div className="border-l border-gray-200">
+                        <div className="font-bold text-gray-800">
+                          {plan.id === 'SOLO' ? '200' : plan.id === 'DUO' ? '500' : plan.id === 'TEAM' ? '1K' : '∞'}
+                        </div>
+                        <div className="text-gray-500">💬 WhatsApp</div>
+                      </div>
+                      <div className="border-l border-gray-200">
+                        <div className="font-bold text-gray-800">
+                          {plan.id === 'SOLO' ? '—' : plan.id === 'DUO' ? '—' : plan.id === 'TEAM' ? '200' : '1K'}
+                        </div>
+                        <div className="text-gray-500">📱 SMS</div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ROI Badge - Commercial */}

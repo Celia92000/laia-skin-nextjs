@@ -3350,10 +3350,14 @@ model OrganizationUsage {
   currentStorageBytes BigInt @default(0) // Stockage utilisé en bytes
 
   // Compteurs mensuels (réinitialisés chaque mois)
-  emailsSentThisMonth    Int @default(0)
-  smsSentThisMonth       Int @default(0)
-  whatsappSentThisMonth  Int @default(0)
-  apiCallsThisMonth      Int @default(0)
+  emailsSentThisMonth      Int @default(0)
+  smsSentThisMonth         Int @default(0)
+  whatsappSentThisMonth    Int @default(0)
+  apiCallsThisMonth        Int @default(0)
+  reservationsThisMonth    Int @default(0)  // Réservations ce mois
+
+  // Compteur clients (permanent)
+  currentClients           Int @default(0)  // Nombre de clients actifs
 
   // Compteurs totaux (jamais réinitialisés)
   totalEmailsSent    Int @default(0)

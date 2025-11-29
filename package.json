@@ -112,6 +112,7 @@
     "@types/nodemailer": "^7.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autocannon": "^8.0.0",
     "autoprefixer": "^10.4.21",
     "dotenv-cli": "^10.0.0",
     "jest": "^30.2.0",

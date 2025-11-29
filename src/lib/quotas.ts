@@ -9,7 +9,9 @@ export type QuotaType =
   | 'emails'
   | 'sms'
   | 'whatsapp'
-  | 'apiCalls';
+  | 'apiCalls'
+  | 'reservations'
+  | 'clients';
 
 // Limites par plan - LAIA Connect tarification officielle (Nov 2024)
 export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
@@ -22,6 +24,8 @@ export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
     sms: 0,        // Pas de SMS en SOLO
     whatsapp: 200,
     apiCalls: 10000,
+    reservations: 100,  // 100 réservations/mois
+    clients: 200,       // 200 clients max
   },
   // DUO - 69€/mois - Petit institut 2-3 personnes
   DUO: {
@@ -32,6 +36,8 @@ export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
     sms: 0,        // Pas de SMS en DUO
     whatsapp: 500,
     apiCalls: 25000,
+    reservations: 300,  // 300 réservations/mois
+    clients: 500,       // 500 clients max
   },
   // TEAM - 119€/mois - Institut établi
   TEAM: {
@@ -42,6 +48,8 @@ export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
     sms: 200,      // SMS inclus à partir de TEAM
     whatsapp: 1000,
     apiCalls: 50000,
+    reservations: 1000, // 1000 réservations/mois
+    clients: 2000,      // 2000 clients max
   },
   // PREMIUM - 179€/mois - Multi-sites / Scale
   PREMIUM: {
@@ -52,6 +60,8 @@ export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
     sms: 1000,
     whatsapp: -1,  // Illimité
     apiCalls: -1,  // Illimité
+    reservations: -1, // Illimité
+    clients: -1,      // Illimité
   },
   // ENTERPRISE - Sur devis (alias PREMIUM)
   ENTERPRISE: {
@@ -62,6 +72,8 @@ export const PLAN_LIMITS: Record<string, Record<QuotaType, number>> = {
     sms: -1,
     whatsapp: -1,
     apiCalls: -1,
+    reservations: -1, // Illimité
+    clients: -1,      // Illimité
   },
 };
 
@@ -116,6 +128,8 @@ export async function getOrganizationLimits(organizationId: string) {
     sms: planLimits.sms,
     whatsapp: planLimits.whatsapp,
     apiCalls: planLimits.apiCalls,
+    reservations: planLimits.reservations,
+    clients: planLimits.clients,
   };
 }
 
@@ -168,6 +182,14 @@ export async function checkQuota(
     case 'apiCalls':
       current = usage.apiCallsThisMonth;
       limit = limits.apiCalls;
+      break;
+    case 'reservations':
+      current = usage.reservationsThisMonth || 0;
+      limit = limits.reservations;
+      break;
+    case 'clients':
+      current = usage.currentClients || 0;
+      limit = limits.clients;
       break;
     default:
       throw new Error(`Type de quota inconnu: ${quotaType}`);
@@ -235,6 +257,13 @@ export async function incrementUsage(
       updateData.apiCallsThisMonth = { increment: amount };
       updateData.totalApiCalls = { increment: amount };
       break;
+    case 'reservations':
+      updateData.reservationsThisMonth = { increment: amount };
+      updateData.totalReservations = { increment: amount };
+      break;
+    case 'clients':
+      updateData.currentClients = { increment: amount };
+      break;
   }
 
   await prisma.organizationUsage.upsert({
@@ -254,7 +283,7 @@ export async function incrementUsage(
  */
 export async function decrementUsage(
   organizationId: string,
-  quotaType: 'users' | 'locations' | 'storage',
+  quotaType: 'users' | 'locations' | 'storage' | 'clients',
   amount: number = 1
 ): Promise<void> {
   const prisma = await getPrismaClient();
@@ -270,6 +299,9 @@ export async function decrementUsage(
       break;
     case 'storage':
       updateData.currentStorageBytes = { decrement: amount };
+      break;
+    case 'clients':
+      updateData.currentClients = { decrement: amount };
       break;
   }
 
