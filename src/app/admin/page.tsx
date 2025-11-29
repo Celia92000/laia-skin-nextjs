@@ -1214,21 +1214,21 @@ export default function AdminDashboard() {
         />
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pb-20">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] pb-20 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 pt-2 sm:pt-0">
 
         {/* Notification de nouvelles réservations */}
         {showNotification && (
-          <div className="mb-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-4 shadow-xl animate-pulse">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-6 h-6" />
+          <div className="mb-4 sm:mb-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 sm:p-4 shadow-xl animate-pulse">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
                 <div>
-                  <p className="font-bold text-lg">
+                  <p className="font-bold text-sm sm:text-lg">
                     {newReservationCount} nouvelle{newReservationCount > 1 ? 's' : ''} réservation{newReservationCount > 1 ? 's' : ''} !
                   </p>
-                  <p className="text-white/90 text-sm">
-                    En attente de confirmation dans l'onglet "Planning du jour"
+                  <p className="text-white/90 text-xs sm:text-sm">
+                    En attente de confirmation
                   </p>
                 </div>
               </div>
@@ -1241,58 +1241,58 @@ export default function AdminDashboard() {
                     .map(r => r.id);
                   localStorage.setItem('lastCheckedReservations', JSON.stringify(pendingIds));
                 }}
-                className="px-4 py-2 bg-white text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-white text-green-600 rounded-lg font-semibold hover:bg-green-50 transition-colors text-sm"
               >
-                Voir les réservations
+                Voir
               </button>
             </div>
           </div>
         )}
-        
+
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-serif font-bold text-[#2c3e50] mb-2">
-                Tableau de Bord Admin
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-4 sm:mb-8 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-[#2c3e50] mb-1 sm:mb-2 truncate">
+                Tableau de Bord
               </h1>
-              <p className="text-[#2c3e50]/70">Gérez vos réservations et vos clients</p>
+              <p className="text-sm sm:text-base text-[#2c3e50]/70 truncate">Gérez vos réservations et clients</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setShowAdvancedSearch(true)}
-                className="px-4 py-2 text-sm border border-laia-primary/10 bg-white/50 backdrop-blur-sm hover:bg-white hover:border-laia-primary/30 rounded-full transition-all flex items-center gap-2 text-laia-gray hover:text-laia-primary"
+                className="p-2 sm:px-4 sm:py-2 text-sm border border-laia-primary/10 bg-white/50 backdrop-blur-sm hover:bg-white hover:border-laia-primary/30 rounded-full transition-all flex items-center gap-2 text-laia-gray hover:text-laia-primary"
               >
                 <Search className="w-4 h-4" />
-                Recherche
+                <span className="hidden sm:inline">Recherche</span>
               </button>
-              
+
               {/* Boutons visibles uniquement pour les ADMINS */}
               {['SUPER_ADMIN', 'ORG_ADMIN', 'ADMIN', 'admin'].includes(userRole) && (
                 <button
                   onClick={() => router.push('/admin/users')}
-                  className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
+                  className="p-2 sm:px-4 sm:py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   <Users className="w-4 h-4" />
-                  Utilisateurs & Permissions
+                  <span className="hidden md:inline">Utilisateurs</span>
                 </button>
               )}
               <button
                 onClick={() => router.push('/admin/settings')}
-                className="px-4 py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
+                className="p-2 sm:px-4 sm:py-2 text-sm bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white hover:from-[#c9a084] hover:to-[#b89778] rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
               >
                 <Settings className="w-4 h-4" />
-                Paramètres
+                <span className="hidden sm:inline">Paramètres</span>
               </button>
               <button
                 onClick={() => {
                   localStorage.clear();
                   router.push('/');
                 }}
-                className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                className="p-2 sm:px-4 sm:py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                Déconnexion
+                <span className="hidden sm:inline">Déconnexion</span>
               </button>
             </div>
           </div>
@@ -1300,50 +1300,50 @@ export default function AdminDashboard() {
           {/* Bannière de bienvenue */}
           <WelcomeBanner />
 
-          {/* Stats - Cliquables */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {/* Stats - Cliquables - Grille responsive: 2 cols mobile, 3 cols tablette, 5 cols desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
             <button
               onClick={() => setShowDetailsModal('total')}
-              className="bg-gradient-to-br from-[#f5e6d3]/30 to-[#fdfbf7] rounded-xl p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
+              className="bg-gradient-to-br from-[#f5e6d3]/30 to-[#fdfbf7] rounded-xl p-3 sm:p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
             >
-              <p className="text-sm text-[#2c3e50]/60 mb-1">Réservations</p>
-              <p className="text-2xl font-bold text-[#d4a574]">{stats.totalReservations}</p>
+              <p className="text-xs sm:text-sm text-[#2c3e50]/60 mb-1">Réservations</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#d4a574] truncate">{stats.totalReservations}</p>
               <p className="text-xs text-[#d4a574]/70 mt-1">Total</p>
             </button>
             <button
               onClick={() => setShowDetailsModal('pending')}
-              className="bg-gradient-to-br from-[#f5e6d3]/30 to-[#fdfbf7] rounded-xl p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
+              className="bg-gradient-to-br from-[#f5e6d3]/30 to-[#fdfbf7] rounded-xl p-3 sm:p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
             >
-              <p className="text-sm text-[#2c3e50]/60 mb-1">En attente</p>
-              <p className="text-2xl font-bold text-[#d4a574]">{stats.pendingReservations}</p>
+              <p className="text-xs sm:text-sm text-[#2c3e50]/60 mb-1">En attente</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#d4a574] truncate">{stats.pendingReservations}</p>
               <p className="text-xs text-[#d4a574]/70 mt-1">À confirmer</p>
             </button>
             <button
               onClick={() => setShowDetailsModal('completed')}
-              className="bg-gradient-to-br from-[#c9a084]/20 to-[#fdfbf7] rounded-xl p-4 hover:shadow-md transition-all text-left group border border-[#c9a084]/20"
+              className="bg-gradient-to-br from-[#c9a084]/20 to-[#fdfbf7] rounded-xl p-3 sm:p-4 hover:shadow-md transition-all text-left group border border-[#c9a084]/20"
             >
-              <p className="text-sm text-[#2c3e50]/60 mb-1">Aujourd'hui</p>
-              <p className="text-2xl font-bold text-[#c9a084]">{stats.completedToday}</p>
+              <p className="text-xs sm:text-sm text-[#2c3e50]/60 mb-1">Aujourd'hui</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#c9a084] truncate">{stats.completedToday}</p>
               <p className="text-xs text-[#c9a084]/70 mt-1">Terminés</p>
             </button>
             <button
               onClick={() => setShowDetailsModal('revenue')}
-              className="bg-gradient-to-br from-[#d4a574]/20 to-[#f5e6d3]/20 rounded-xl p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
+              className="bg-gradient-to-br from-[#d4a574]/20 to-[#f5e6d3]/20 rounded-xl p-3 sm:p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
             >
-              <p className="text-sm text-[#2c3e50]/60 mb-1">Revenus</p>
-              <p className="text-2xl font-bold text-[#d4a574]">{stats.totalRevenue}€</p>
+              <p className="text-xs sm:text-sm text-[#2c3e50]/60 mb-1">Revenus</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#d4a574] truncate">{stats.totalRevenue}€</p>
               <p className="text-xs text-[#d4a574]/70 mt-1">Total</p>
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              className="bg-gradient-to-br from-[#d4a574]/20 to-[#f5e6d3]/20 rounded-xl p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20"
+              className="bg-gradient-to-br from-[#d4a574]/20 to-[#f5e6d3]/20 rounded-xl p-3 sm:p-4 hover:shadow-md transition-all text-left group border border-[#d4a574]/20 col-span-2 sm:col-span-1"
             >
-              <p className="text-sm text-[#2c3e50]/60 mb-1">Satisfaction</p>
+              <p className="text-xs sm:text-sm text-[#2c3e50]/60 mb-1">Satisfaction</p>
               <div className="flex items-center gap-1">
-                <p className="text-2xl font-bold text-[#d4a574]">
+                <p className="text-xl sm:text-2xl font-bold text-[#d4a574]">
                   {reviewStats?.averageRating?.toFixed(1) || '0.0'}
                 </p>
-                <Star className="w-5 h-5 text-[#d4a574] fill-[#d4a574]" />
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4a574] fill-[#d4a574]" />
               </div>
               <p className="text-xs text-[#d4a574]/70">
                 {reviewStats?.satisfaction?.total || 0} avis

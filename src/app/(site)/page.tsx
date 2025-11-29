@@ -137,9 +137,9 @@ export default async function Home() {
 
   // Sinon, utiliser le design par défaut (pour LAIA Skin Institut principalement)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
+    <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] overflow-x-hidden">
       {/* Hero Section */}
-      <section className="pt-20 sm:pt-24 min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+      <section className="pt-20 sm:pt-24 min-h-[80vh] sm:min-h-screen flex items-center justify-center relative overflow-hidden px-3 sm:px-4">
         {/* Background Image (if configured) */}
         {config.heroImage && (
           <div className="absolute inset-0">
@@ -152,8 +152,8 @@ export default async function Home() {
           </div>
         )}
 
-        {/* Animated Background Elements (fallback or overlay) */}
-        <div className="absolute inset-0 overflow-hidden">
+        {/* Animated Background Elements - Hidden on mobile for performance */}
+        <div className="absolute inset-0 overflow-hidden hidden sm:block">
           <div
             className="absolute w-96 h-96 -top-48 -right-48 rounded-full blur-3xl animate-pulse"
             style={{ background: `linear-gradient(to bottom right, ${primaryColor}33, ${secondaryColor}33)` }}
@@ -164,25 +164,25 @@ export default async function Home() {
           ></div>
         </div>
 
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-playfair mb-8 animate-fade-in-up leading-tight tracking-normal ${config.heroImage ? 'text-white' : ''}`} style={!config.heroImage ? { color: accentColor } : undefined}>
+        <div className="relative z-10 text-center px-2 sm:px-4 max-w-5xl mx-auto">
+          <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-playfair mb-4 sm:mb-8 animate-fade-in-up leading-tight tracking-normal ${config.heroImage ? 'text-white' : ''}`} style={!config.heroImage ? { color: accentColor } : undefined}>
             <span className="block font-normal">{config.heroTitle || "Une peau respectée,"}</span>
             <span className={`block font-semibold mt-1 ${config.heroImage ? 'text-white/90' : ''}`} style={!config.heroImage ? { color: primaryColor } : undefined}>{config.heroSubtitle || "une beauté révélée"}</span>
           </h1>
-          <p className={`font-inter text-base sm:text-lg md:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal ${config.heroImage ? 'text-white/90' : ''}`} style={!config.heroImage ? { color: `${accentColor}99` } : undefined}>
+          <p className={`font-inter text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up animation-delay-200 tracking-normal px-2 ${config.heroImage ? 'text-white/90' : ''}`} style={!config.heroImage ? { color: `${accentColor}99` } : undefined}>
             {config.siteDescription || config.siteTagline || "Institut spécialisé dans les techniques esthétiques avancées"}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-fade-in-up animation-delay-400 px-4 sm:px-0">
             <Link
               href="/reservation"
-              className="text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              className="text-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-sm sm:text-base lg:text-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
               style={{ background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})` }}
             >
               Réserver un Soin
             </Link>
             <Link
               href="/prestations"
-              className="bg-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              className="bg-white px-6 sm:px-10 py-3 sm:py-4 rounded-full font-semibold text-sm sm:text-base lg:text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
               style={{ color: accentColor }}
             >
               Découvrir nos Soins

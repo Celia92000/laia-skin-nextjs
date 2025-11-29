@@ -673,42 +673,42 @@ function ReservationContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0]">
+    <div className="min-h-screen bg-gradient-to-br from-[#fdfbf7] to-[#f8f6f0] overflow-x-hidden">
       {/* Hero Section */}
-      <section className="pt-36 pb-16 relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
+      <section className="pt-24 sm:pt-36 pb-8 sm:pb-16 relative overflow-hidden">
+        {/* Animated Background Elements - Hidden on mobile for performance */}
+        <div className="absolute inset-0 overflow-hidden hidden sm:block">
           <div className="absolute w-96 h-96 -top-48 -right-48 bg-gradient-to-br from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute w-96 h-96 -bottom-48 -left-48 bg-gradient-to-tr from-[#d4b5a0]/20 to-[#c9a084]/20 rounded-full blur-3xl animate-pulse delay-700"></div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <Sparkles className="w-8 h-8 text-[#d4b5a0]" />
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-[#2c3e50] animate-fade-in-up">
-              {rescheduleId ? 'Reprogrammation' : 'Réservation en ligne'}
+        <div className="relative z-10 max-w-4xl mx-auto px-3 sm:px-4 text-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <Sparkles className="w-5 h-5 sm:w-8 sm:h-8 text-[#d4b5a0]" />
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-[#2c3e50] animate-fade-in-up">
+              {rescheduleId ? 'Reprogrammation' : 'Réservation'}
             </h1>
-            <Sparkles className="w-8 h-8 text-[#d4b5a0]" />
+            <Sparkles className="w-5 h-5 sm:w-8 sm:h-8 text-[#d4b5a0]" />
           </div>
 
           {rescheduleId && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-600" />
-                <p className="text-sm font-medium text-blue-800">
-                  Vous êtes en train de reprogrammer votre rendez-vous. L'ancien rendez-vous sera automatiquement annulé.
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                <p className="text-xs sm:text-sm font-medium text-blue-800 text-left">
+                  Vous reprogrammez votre rendez-vous. L'ancien sera annulé.
                 </p>
               </div>
             </div>
           )}
-          <p className="text-xl text-[#2c3e50]/80 mb-8 animate-fade-in-up animation-delay-200">
-            Réservez votre soin en quelques clics et offrez-vous un moment d'exception
+          <p className="text-sm sm:text-lg md:text-xl text-[#2c3e50]/80 mb-4 sm:mb-8 animate-fade-in-up animation-delay-200 px-2">
+            Réservez votre soin en quelques clics
           </p>
         </div>
       </section>
 
       <main className="pb-20">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4">
 
           {/* Progress Steps */}
           <div className="flex justify-center mb-8 sm:mb-16">
