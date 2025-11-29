@@ -34,8 +34,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
+    if (password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères");
       return;
     }
 
@@ -143,9 +143,9 @@ function ResetPasswordForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4b5a0] focus:border-transparent"
-                    placeholder="Minimum 6 caractères"
+                    placeholder="Minimum 8 caractères"
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                   <button
                     type="button"
