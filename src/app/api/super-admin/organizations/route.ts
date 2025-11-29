@@ -15,7 +15,7 @@ import { OrgPlan } from '@prisma/client'
 import { generateInvoiceNumber, getCurrentBillingPeriod, getNextBillingDate } from '@/lib/subscription-billing'
 import { sendInvoiceEmail } from '@/lib/email-service'
 import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
-import { createOnboardingContract } from '@/lib/contract-generator'
+// Contrat supprimé - les CGV suffisent légalement pour un SaaS B2B
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 import { log } from '@/lib/logger';
 import Stripe from 'stripe'
@@ -682,44 +682,7 @@ export async function POST(request: Request) {
       log.error('⚠️ Erreur facture:', error)
     }
 
-    try {
-      const contractResult = await createOnboardingContract({
-        organizationName: data.name,
-        legalName: data.legalName,
-        siret: data.siret,
-        tvaNumber: data.tvaNumber,
-        billingAddress: data.billingAddress,
-        billingPostalCode: data.billingPostalCode,
-        billingCity: data.billingCity,
-        billingCountry: data.billingCountry || 'France',
-        ownerFirstName: data.ownerFirstName || data.ownerEmail.split('@')[0],
-        ownerLastName: data.ownerLastName || '',
-        ownerEmail: data.ownerEmail,
-        ownerPhone: data.ownerPhone,
-        plan: data.plan,
-        monthlyAmount: monthlyAmount,
-        trialEndsAt: trialEndsAt,
-        subscriptionStartDate: new Date(),
-        sepaMandateRef: sepaMandateRef,
-        sepaMandateDate: new Date()
-      })
-      contractPdfBuffer = contractResult.pdfBuffer
-      contractNumber = contractResult.contractNumber
-      log.info(`✅ Contrat généré: ${contractNumber}`)
-
-      // Sauvegarder les infos du contrat dans l'organisation
-      await prisma.organization.update({
-        where: { id: organization.id },
-        data: {
-          contractNumber: contractResult.contractNumber,
-          contractPdfPath: contractResult.pdfPath,
-          contractSignedAt: new Date()
-        }
-      })
-      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
-    } catch (error) {
-      log.error('⚠️ Erreur contrat:', error)
-    }
+    // Contrat supprimé - les CGV acceptées lors du paiement suffisent légalement
 
     // Envoyer email de bienvenue
     try {

@@ -8,7 +8,7 @@ import { getSiteConfig } from '@/lib/config-service'
 import { generateOrganizationTemplate } from '@/lib/template-generator'
 import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-emails'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
-import { createOnboardingContract } from '@/lib/contract-generator'
+// Contrat supprimé - les CGV acceptées lors du paiement suffisent légalement
 import { logWelcomeEmailWithCredentials, logEmail } from '@/lib/communication-logger'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
@@ -1071,11 +1071,9 @@ async function handleSubscriptionPaymentCompleted(session: Stripe.Checkout.Sessi
 
     log.info(`✅ Organisation ${organization.name} activée avec Stripe Customer: ${stripeCustomerId}`)
 
-    // Générer facture et contrat
+    // Générer facture (pas de contrat - les CGV suffisent)
     let invoicePdfBuffer: Buffer | undefined
     let invoiceNumber: string | undefined
-    let contractPdfBuffer: Buffer | undefined
-    let contractNumber: string | undefined
 
     const planPrices: Record<string, number> = {
       SOLO: 49,
@@ -1095,54 +1093,26 @@ async function handleSubscriptionPaymentCompleted(session: Stripe.Checkout.Sessi
       log.error('⚠️ Erreur facture:', error)
     }
 
-    // Générer le contrat
-    try {
-      const contractResult = await createOnboardingContract({
-        organizationName: organization.name,
-        legalName: organization.legalName || organization.name,
-        siret: organization.config?.siret || '',
-        tvaNumber: organization.config?.tvaNumber || undefined,
-        billingAddress: organization.billingAddress || organization.config?.address || '',
-        billingPostalCode: organization.config?.postalCode || '',
-        billingCity: organization.config?.city || '',
-        billingCountry: 'France',
-        ownerFirstName: organization.ownerFirstName || '',
-        ownerLastName: organization.ownerLastName || '',
-        ownerEmail: organization.ownerEmail,
-        ownerPhone: organization.ownerPhone || undefined,
-        plan: organization.plan,
-        monthlyAmount: monthlyAmount,
-        trialEndsAt: organization.trialEndsAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        subscriptionStartDate: new Date(),
-        sepaIban: '',
-        sepaBic: '',
-        sepaAccountHolder: '',
-        sepaMandateRef: organization.sepaMandateRef || `LAIA-${organization.slug.toUpperCase()}-${Date.now()}`,
-        sepaMandateDate: organization.sepaMandateDate || new Date()
-      })
-      contractPdfBuffer = contractResult.pdfBuffer
-      contractNumber = contractResult.contractNumber
-      log.info(`✅ Contrat généré: ${contractNumber}`)
+    // Contrat supprimé - les CGV acceptées lors du paiement suffisent légalement
 
-      // Sauvegarder les infos du contrat dans l'organisation
-      await prisma.organization.update({
-        where: { id: organization.id },
-        data: {
-          contractNumber: contractResult.contractNumber,
-          contractPdfPath: contractResult.pdfPath,
-          contractSignedAt: new Date()
-        }
-      })
-      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
-    } catch (error) {
-      log.error('⚠️ Erreur contrat:', error)
-    }
+    // Le mot de passe provisoire a été envoyé lors de la création par le super-admin
+    // On génère un nouveau mot de passe provisoire pour cet email de confirmation
+    const tempPassword = crypto.randomBytes(8).toString('base64').replace(/[+/=]/g, 'x').slice(0, 12)
 
-    // Récupérer le mot de passe temporaire (si stocké chiffré)
-    let tempPassword = 'Mot de passe communiqué lors de la création du compte'
-    // Note: Le mot de passe a été communiqué lors de la création de l'organisation par le super-admin
+    // Mettre à jour le mot de passe de l'utilisateur owner
+    const hashedPassword = await bcrypt.hash(tempPassword, 10)
+    await prisma.user.updateMany({
+      where: {
+        organizationId: organization.id,
+        role: 'OWNER'
+      },
+      data: {
+        password: hashedPassword
+      }
+    })
+    log.info(`✅ Nouveau mot de passe provisoire généré pour ${organization.ownerEmail}`)
 
-    // Envoyer email de bienvenue avec facture et contrat
+    // Envoyer email de bienvenue avec facture et identifiants
     try {
       const adminUrl = process.env.NEXT_PUBLIC_APP_URL
         ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
@@ -1154,7 +1124,7 @@ async function handleSubscriptionPaymentCompleted(session: Stripe.Checkout.Sessi
         ownerFirstName: organization.ownerFirstName || organization.ownerEmail.split('@')[0],
         ownerLastName: organization.ownerLastName || '',
         ownerEmail: organization.ownerEmail,
-        tempPassword, // Le client a déjà reçu son mot de passe lors de la création
+        tempPassword, // Mot de passe provisoire généré ci-dessus
         plan: organization.plan,
         subdomain: organization.subdomain,
         customDomain: organization.domain || undefined,
@@ -1162,8 +1132,8 @@ async function handleSubscriptionPaymentCompleted(session: Stripe.Checkout.Sessi
         monthlyAmount: monthlyAmount,
         trialEndsAt: organization.trialEndsAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         sepaMandateRef: organization.sepaMandateRef || ''
-      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
-      log.info('✅ Email de bienvenue (post-paiement) envoyé avec facture et contrat')
+      }, invoicePdfBuffer, invoiceNumber) // Plus de contrat PDF
+      log.info('✅ Email de bienvenue (post-paiement) envoyé avec facture et identifiants')
     } catch (error) {
       log.error('⚠️ Erreur email bienvenue:', error)
     }
@@ -1435,11 +1405,9 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       log.error('⚠️ Erreur template:', error)
     }
 
-    // Générer facture et contrat
+    // Générer facture (pas de contrat - les CGV suffisent)
     let invoicePdfBuffer: Buffer | undefined
     let invoiceNumber: string | undefined
-    let contractPdfBuffer: Buffer | undefined
-    let contractNumber: string | undefined
 
     const planPrices: Record<string, number> = {
       SOLO: 49,
@@ -1459,47 +1427,7 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
       log.error('⚠️ Erreur facture:', error)
     }
 
-    try {
-      const contractResult = await createOnboardingContract({
-        organizationName: institutName,
-        legalName,
-        siret,
-        tvaNumber,
-        billingAddress: finalBillingAddress,
-        billingPostalCode: finalBillingPostalCode,
-        billingCity: finalBillingCity,
-        billingCountry: finalBillingCountry,
-        ownerFirstName,
-        ownerLastName,
-        ownerEmail,
-        ownerPhone,
-        plan: finalPlan,
-        monthlyAmount: planPrices[finalPlan] || 49,
-        trialEndsAt: organization.trialEndsAt!,
-        subscriptionStartDate: new Date(),
-        sepaIban: (organization as any).sepaIban || '',
-        sepaBic: (organization as any).sepaBic || '',
-        sepaAccountHolder: (organization as any).sepaAccountHolder || '',
-        sepaMandateRef,
-        sepaMandateDate: organization.sepaMandateDate!
-      })
-      contractPdfBuffer = contractResult.pdfBuffer
-      contractNumber = contractResult.contractNumber
-      log.info(`✅ Contrat généré: ${contractNumber}`)
-
-      // Sauvegarder les infos du contrat dans l'organisation
-      await prisma.organization.update({
-        where: { id: organization.id },
-        data: {
-          contractNumber: contractResult.contractNumber,
-          contractPdfPath: contractResult.pdfPath,
-          contractSignedAt: new Date()
-        }
-      })
-      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
-    } catch (error) {
-      log.error('⚠️ Erreur contrat:', error)
-    }
+    // Contrat supprimé - les CGV acceptées lors du paiement suffisent légalement
 
     // Envoyer emails
     try {
@@ -1521,8 +1449,8 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
         monthlyAmount: planPrices[finalPlan] || 49,
         trialEndsAt: organization.trialEndsAt!,
         sepaMandateRef
-      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
-      log.info('✅ Email de bienvenue envoyé')
+      }, invoicePdfBuffer, invoiceNumber) // Plus de contrat PDF
+      log.info('✅ Email de bienvenue envoyé avec identifiants')
 
       // Logger l'email dans l'historique du CRM
       try {
@@ -1533,16 +1461,12 @@ async function handleOnboardingCompleted(session: Stripe.Checkout.Session, metad
           generatedPassword: tempPassword,
           needsDataMigration: needsDataMigration === 'true',
           currentSoftware: currentSoftware || undefined,
-          attachments: [
+          attachments: invoicePdfBuffer ? [
             {
               name: `Facture-${invoiceNumber}.pdf`,
-              size: invoicePdfBuffer?.length
-            },
-            {
-              name: `Contrat-${contractNumber}.pdf`,
-              size: contractPdfBuffer?.length
+              size: invoicePdfBuffer.length
             }
-          ]
+          ] : []
         })
         log.info('✅ Email de bienvenue loggé dans le CRM')
       } catch (logError) {

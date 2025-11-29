@@ -312,45 +312,94 @@ export default function CGVPage() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Article 11 - Limitation de Responsabilité</h2>
 
-            <h3 className="text-lg font-semibold text-gray-800 mt-3 mb-2">11.1 - Responsabilité de LAIA Connect</h3>
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4">
+              <p className="text-sm text-amber-900">
+                <strong>⚠️ Article important :</strong> Le Client reconnaît avoir lu et accepté les limitations ci-dessous, essentielles à l'équilibre économique du contrat.
+              </p>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-800 mt-3 mb-2">11.1 - Obligation de moyens</h3>
             <p>
-              LAIA Connect est tenu à une <strong>obligation de moyens</strong> concernant la fourniture du Service. Sa responsabilité ne saurait être engagée en cas de :
+              LAIA Connect est tenu à une <strong>obligation de moyens</strong> et non de résultat concernant la fourniture du Service. Le Client reconnaît que les résultats commerciaux qu'il peut obtenir grâce au Service dépendent de nombreux facteurs extérieurs à LAIA Connect.
+            </p>
+
+            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.2 - Exclusions de responsabilité</h3>
+            <p>
+              La responsabilité de LAIA Connect ne saurait être engagée en cas de :
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li>Dommages indirects (perte de chiffre d'affaires, perte de clientèle, préjudice d'image)</li>
-              <li>Mauvaise utilisation du Service par le Client</li>
-              <li>Interruption due à un cas de force majeure</li>
-              <li>Défaillance d'un fournisseur tiers (hébergeur, service de paiement, etc.)</li>
-              <li>Acte malveillant d'un tiers (piratage, DDoS, etc.)</li>
-              <li>Contenu publié par le Client ou par les clients finaux</li>
+              <li><strong>Dommages indirects</strong> : perte de chiffre d'affaires, perte de clientèle, préjudice d'image, manque à gagner, perte d'opportunité commerciale</li>
+              <li><strong>Utilisation du Service</strong> : mauvaise utilisation, erreurs de saisie, paramétrage incorrect par le Client</li>
+              <li><strong>Contenus</strong> : contenus publiés par le Client ou par ses propres clients (avis, commentaires)</li>
+              <li><strong>Tiers</strong> : défaillance d'un fournisseur tiers (hébergeur, Stripe, réseau Internet, opérateur téléphonique)</li>
+              <li><strong>Sécurité</strong> : acte malveillant d'un tiers (piratage, DDoS, phishing), perte ou vol des identifiants du Client</li>
+              <li><strong>Force majeure</strong> : tout événement échappant au contrôle de LAIA Connect</li>
+              <li><strong>Indisponibilité temporaire</strong> : maintenance programmée ou urgente, mises à jour</li>
+              <li><strong>Données clients finaux</strong> : le Client est seul responsable du traitement des données de ses propres clients conformément au RGPD</li>
             </ul>
 
-            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.2 - Plafonnement</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.3 - Plafonnement strict de responsabilité</h3>
             <p>
-              En toute hypothèse, la responsabilité totale de LAIA Connect, tous dommages confondus, est strictement limitée au <strong>montant des sommes effectivement payées par le Client au cours des 12 derniers mois</strong> précédant le fait générateur.
+              <strong>En toute hypothèse</strong>, la responsabilité totale et cumulée de LAIA Connect, tous dommages confondus (directs ou indirects), est <strong>strictement et irrévocablement plafonnée</strong> au montant des sommes effectivement payées par le Client au cours des <strong>3 derniers mois</strong> précédant le fait générateur du dommage.
+            </p>
+            <p className="mt-2">
+              Ce plafond s'applique quel que soit le fondement juridique invoqué (contractuel, délictuel, quasi-délictuel) et constitue une condition essentielle et déterminante du consentement de LAIA Connect.
             </p>
 
-            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.3 - Perte de Données</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.4 - Données et sauvegardes</h3>
             <p>
-              Bien que LAIA Connect effectue des sauvegardes quotidiennes, il est <strong>fortement recommandé au Client d'effectuer ses propres sauvegardes</strong> de ses données critiques. LAIA Connect ne pourra être tenu responsable d'une perte de données.
+              Bien que LAIA Connect effectue des sauvegardes quotidiennes automatiques, le Client <strong>reconnaît et accepte</strong> qu'il est <strong>de sa responsabilité exclusive</strong> d'effectuer ses propres sauvegardes régulières de ses données critiques via les fonctions d'export disponibles.
+            </p>
+            <p className="mt-2">
+              LAIA Connect ne pourra en aucun cas être tenu responsable d'une perte de données, quelle qu'en soit la cause. Le Client renonce expressément à tout recours de ce chef.
+            </p>
+
+            <h3 className="text-lg font-semibold text-gray-800 mt-4 mb-2">11.5 - Acceptation des risques</h3>
+            <p>
+              Le Client déclare être un professionnel averti. Il reconnaît avoir été pleinement informé des caractéristiques du Service et accepte les risques inhérents à tout service informatique en ligne (interruptions, bugs, évolutions).
             </p>
           </section>
 
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">Article 12 - Force Majeure</h2>
             <p>
-              LAIA Connect ne saurait être tenu responsable de l'inexécution de ses obligations en cas de survenance d'un événement de force majeure tel que défini par la jurisprudence française, notamment :
+              LAIA Connect ne saurait être tenu responsable de l'inexécution de ses obligations en cas de survenance d'un événement de force majeure tel que défini par l'article 1218 du Code civil et la jurisprudence française, notamment :
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li>Catastrophes naturelles</li>
-              <li>Incendies, inondations</li>
-              <li>Défaillance des réseaux de télécommunication</li>
-              <li>Attaques informatiques majeures</li>
-              <li>Grèves générales</li>
-              <li>Décisions gouvernementales ou réglementaires</li>
+              <li>Catastrophes naturelles (séisme, inondation, tempête, etc.)</li>
+              <li>Incendies, explosion, dégât des eaux</li>
+              <li>Défaillance des réseaux de télécommunication ou d'électricité</li>
+              <li>Attaques informatiques majeures (DDoS, ransomware, etc.)</li>
+              <li>Pandémies, épidémies, crises sanitaires</li>
+              <li>Grèves générales, mouvements sociaux</li>
+              <li>Guerres, attentats, troubles civils</li>
+              <li>Décisions gouvernementales, réglementaires ou judiciaires</li>
+              <li>Défaillance majeure d'un fournisseur critique (hébergeur, Stripe, etc.)</li>
             </ul>
             <p className="mt-3">
-              En cas de force majeure, les obligations de LAIA Connect sont suspendues pour la durée de l'événement. Si la situation perdure plus de 30 jours, chaque partie peut résilier l'abonnement sans frais ni indemnité.
+              En cas de force majeure, les obligations de LAIA Connect sont <strong>suspendues de plein droit</strong> pour la durée de l'événement, sans que le Client puisse prétendre à un quelconque dédommagement. Si la situation perdure plus de 30 jours consécutifs, chaque partie peut résilier l'abonnement sans frais ni indemnité, par lettre recommandée avec accusé de réception.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Article 12 bis - Non-Garantie de Résultats</h2>
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+              <p className="text-sm text-red-900">
+                <strong>⚠️ Clause essentielle :</strong> Le Client reconnaît avoir lu et compris cette clause.
+              </p>
+            </div>
+            <p>
+              Le Client reconnaît expressément que LAIA Connect :
+            </p>
+            <ul className="list-disc pl-6 mt-2 space-y-1">
+              <li><strong>Ne garantit aucun résultat commercial</strong> : augmentation du chiffre d'affaires, du nombre de clients, de la rentabilité</li>
+              <li><strong>Ne garantit pas</strong> que le Service répondra à toutes les attentes spécifiques du Client</li>
+              <li><strong>Ne garantit pas</strong> l'absence totale de bugs, erreurs ou interruptions</li>
+              <li><strong>Ne garantit pas</strong> la compatibilité avec tous les équipements, navigateurs ou connexions Internet</li>
+              <li><strong>Ne peut être tenu responsable</strong> des choix commerciaux, tarifaires ou stratégiques du Client</li>
+            </ul>
+            <p className="mt-3">
+              Le Service est fourni « en l'état » (« as is »). Le Client est seul responsable de l'utilisation qu'il fait du Service et des résultats qu'il en tire.
             </p>
           </section>
 

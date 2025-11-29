@@ -60,11 +60,33 @@ function PaymentSuccessContent() {
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
               Paiement réussi ! 🎉
             </h1>
-            <p className="text-gray-600 mb-8">
-              Votre paiement a été effectué avec succès. Vous allez recevoir un email de confirmation.
+            <p className="text-gray-600 mb-6">
+              Votre paiement a été effectué avec succès. Bienvenue chez LAIA Connect !
             </p>
 
-            {/* Détails */}
+            {/* Info importante */}
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-5 mb-6 text-left">
+              <h3 className="font-bold text-purple-900 mb-2">📧 Vérifiez vos emails</h3>
+              <p className="text-sm text-purple-800 mb-3">
+                Nous vous avons envoyé un email contenant :
+              </p>
+              <ul className="text-sm text-purple-700 space-y-1">
+                <li className="flex items-start gap-2">
+                  <span>✓</span>
+                  <span>Vos <strong>identifiants de connexion</strong> (email + mot de passe provisoire)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✓</span>
+                  <span>Votre <strong>facture</strong> en pièce jointe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span>✓</span>
+                  <span>Le lien vers votre <strong>espace administration</strong></span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Détails transaction */}
             {sessionId && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
                 <p className="text-xs text-gray-500 mb-1">ID de transaction</p>
@@ -75,24 +97,27 @@ function PaymentSuccessContent() {
             {/* Actions */}
             <div className="space-y-3">
               <Link
-                href="/espace-client"
-                className="block w-full px-6 py-3 bg-gradient-to-r from-[#d4b5a0] to-[#c9a084] text-white rounded-lg hover:from-[#c9a084] hover:to-[#b89373] font-medium transition-all flex items-center justify-center gap-2"
+                href="/connexion"
+                className="block w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-lg hover:from-purple-700 hover:to-purple-600 font-medium transition-all flex items-center justify-center gap-2"
               >
-                Retour à mon espace
+                Se connecter à mon espace admin
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
               <Link
-                href="/"
+                href="/platform"
                 className="block w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-all"
               >
-                Retour à l'accueil
+                Retour à l'accueil LAIA Connect
               </Link>
             </div>
 
-            {/* Info */}
+            {/* CGV */}
             <p className="text-xs text-gray-500 mt-6">
-              Un reçu a été envoyé à votre adresse email
+              En effectuant ce paiement, vous avez accepté nos{' '}
+              <a href="/cgv-laia-connect" className="text-purple-600 hover:underline">
+                Conditions Générales de Vente
+              </a>
             </p>
           </div>
         )}
