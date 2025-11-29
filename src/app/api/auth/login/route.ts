@@ -14,15 +14,6 @@ const REFRESH_TOKEN_EXPIRY_REMEMBER_DAYS = 90; // Avec "Se souvenir de moi" (90 
 
 export async function POST(request: NextRequest) {
   try {
-    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation du site
-    const organizationId = await getCurrentOrganizationId();
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: 'Organisation non trouvée' },
-        { status: 404 }
-      );
-    }
-
     // 🔒 Rate limiting : 5 tentatives de connexion max par minute
     const ip = getClientIp(request);
     const { success, limit, remaining } = await checkStrictRateLimit(`login:${ip}`);
@@ -44,21 +35,37 @@ export async function POST(request: NextRequest) {
     // Utiliser getPrismaClient pour s'assurer que la connexion est active
     const prisma = await getPrismaClient();
 
+    // 🔒 SÉCURITÉ MULTI-TENANT : Récupérer l'organisation du site (optionnel pour super-admin)
+    const organizationId = await getCurrentOrganizationId();
+
     // 🔒 Chercher l'utilisateur par email
     // Pour le super-admin : accepter sans organizationId
     // Pour les autres : vérifier l'organizationId pour éviter la connexion cross-tenant
-    const user = await prisma.user.findFirst({
+    let user;
+
+    // D'abord chercher un super-admin avec cet email
+    user = await prisma.user.findFirst({
       where: {
         email,
-        OR: [
-          { role: 'SUPER_ADMIN' }, // Super-admin peut se connecter depuis n'importe où
-          { organizationId: organizationId } // Utilisateurs normaux doivent être sur le bon site
-        ]
+        role: 'SUPER_ADMIN'
       },
       include: {
         organization: true
       }
     });
+
+    // Si pas de super-admin trouvé, chercher un utilisateur normal dans l'organisation
+    if (!user && organizationId) {
+      user = await prisma.user.findFirst({
+        where: {
+          email,
+          organizationId: organizationId
+        },
+        include: {
+          organization: true
+        }
+      });
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Email ou mot de passe incorrect' }, { status: 401 });
