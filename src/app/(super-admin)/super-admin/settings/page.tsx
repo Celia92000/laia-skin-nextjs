@@ -634,6 +634,20 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Sécurité du compte */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Sécurité du compte</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Configurez l'authentification à deux facteurs (2FA) pour sécuriser votre compte super-admin.
+          </p>
+          <Link
+            href="/super-admin/security"
+            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Configurer le 2FA →
+          </Link>
+        </div>
+
         {/* Informations système */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-blue-900 mb-4">ℹ️ Informations système</h2>
