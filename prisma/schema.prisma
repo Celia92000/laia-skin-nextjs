@@ -1327,22 +1327,26 @@ model Discount {
 
 model PromoCode {
   id             String    @id @default(cuid())
-  organizationId String? // Organisation (multi-tenant)
+  organizationId String?   // null = code global LAIA Connect
   code           String    @unique
-  discount       Float // Montant de la réduction
-  type           String // birthday, referral, special, percentage, fixed
+  description    String?
+  discount       Float     @default(0) // Champ legacy - valeur de réduction
+  type           String    // PERCENTAGE, FIXED, FREE_TRIAL
+  value          Float     // Montant ou pourcentage
+  targetPlans    String?   // JSON array: ["SOLO", "DUO"] ou null = tous
   validFrom      DateTime  @default(now())
   validUntil     DateTime?
-  maxUses        Int? // Nombre max d'utilisations
-  usedCount      Int       @default(0)
-  userId         String? // Si le code est spécifique à un utilisateur
-  conditions     String? // Conditions d'utilisation (JSON)
-  active         Boolean   @default(true)
+  maxUses        Int?      // Nombre max d'utilisations
+  currentUses    Int       @default(0)
+  status         String    @default("ACTIVE") // ACTIVE, EXPIRED, DISABLED
+  stripeCouponId String?   // ID du coupon Stripe synchronisé
+  stripePromoId  String?   // ID du promotion code Stripe
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@index([organizationId])
   @@index([code])
+  @@index([status])
 }
 
 model EmailAutomation {

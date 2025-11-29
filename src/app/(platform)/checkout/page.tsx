@@ -4,70 +4,22 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, CreditCard, Lock, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { getAllPlanHighlights } from '@/lib/features-simple';
 
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic';
 
-// Prix centralisés : SOLO=49€, DUO=69€, TEAM=119€, PREMIUM=179€
-const PLANS = [
-  {
-    id: 'SOLO',
-    name: 'Solo',
-    price: 49,
-    setupFee: 0,
-    features: [
-      '1 praticien',
-      '1 emplacement',
-      'Réservations illimitées',
-      'Site web vitrine',
-      'Calendrier en ligne',
-      'Paiements en ligne'
-    ]
-  },
-  {
-    id: 'DUO',
-    name: 'Duo',
-    price: 69,
-    setupFee: 0,
-    features: [
-      'Jusqu\'à 3 praticiens',
-      '1 emplacement',
-      'Tout du plan Solo +',
-      'Blog intégré',
-      'Intégrations avancées',
-      'Marketing email'
-    ],
-    popular: true
-  },
-  {
-    id: 'TEAM',
-    name: 'Team',
-    price: 119,
-    setupFee: 0,
-    features: [
-      'Jusqu\'à 8 praticiens',
-      '3 emplacements',
-      'Tout du plan Duo +',
-      'Boutique produits',
-      'CRM & Leads',
-      'Multi-utilisateurs'
-    ]
-  },
-  {
-    id: 'PREMIUM',
-    name: 'Premium',
-    price: 179,
-    setupFee: 0,
-    features: [
-      'Praticiens illimités',
-      'Emplacements illimités',
-      'Tout du plan Team +',
-      'Gestion de stock avancé',
-      'Vente de formations',
-      'Support prioritaire'
-    ]
-  }
-];
+// Utiliser la source centralisée pour les plans - toutes les features
+const plansData = getAllPlanHighlights();
+const PLANS = plansData.map(p => ({
+  id: p.id,
+  name: p.name,
+  price: p.price,
+  setupFee: 0,
+  description: p.description,
+  features: p.features, // Toutes les features pour cohérence
+  popular: p.popular
+}));
 
 function CheckoutForm() {
   const router = useRouter();
@@ -324,7 +276,14 @@ function CheckoutForm() {
 
               <div className="space-y-3 text-sm text-gray-600">
                 <h4 className="font-semibold text-gray-900">Inclus dans votre plan :</h4>
-                {plan.features.map((feature, idx) => (
+                {plan.features
+                  .filter(feature =>
+                    !feature.includes('utilisateur') &&
+                    !feature.includes('emplacement') &&
+                    !feature.includes('Utilisateurs illimités') &&
+                    !feature.includes('Emplacements illimités')
+                  )
+                  .map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-green-500 mt-0.5" />
                     <span>{feature}</span>

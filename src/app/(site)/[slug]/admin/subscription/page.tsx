@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import LaiaInvoicesSection from '@/components/LaiaInvoicesSection'
+import { getAllPlanHighlights } from '@/lib/features-simple'
 
 interface Organization {
   id: string
@@ -74,77 +75,17 @@ export default function SubscriptionPage() {
     }
   }
 
-  const plans = [
-    {
-      id: 'SOLO',
-      name: 'Solo',
-      price: 49,
-      features: [
-        '1 emplacement',
-        '10 utilisateurs',
-        '100 services',
-        '50 produits',
-        'Support email',
-        'Réservations illimitées'
-      ],
-      color: 'from-gray-500 to-gray-600',
-      recommended: false
-    },
-    {
-      id: 'DUO',
-      name: 'Duo',
-      price: 89,
-      features: [
-        '2 emplacements',
-        '25 utilisateurs',
-        '250 services',
-        '150 produits',
-        'Support prioritaire',
-        'Réservations illimitées',
-        'Export de données'
-      ],
-      color: 'from-blue-500 to-blue-600',
-      recommended: true
-    },
-    {
-      id: 'TEAM',
-      name: 'Team',
-      price: 149,
-      features: [
-        '5 emplacements',
-        '100 utilisateurs',
-        '500 services',
-        '500 produits',
-        'Support prioritaire 24/7',
-        'Réservations illimitées',
-        'Export de données',
-        'API access',
-        'Formation personnalisée'
-      ],
-      color: 'from-purple-500 to-purple-600',
-      recommended: false
-    },
-    {
-      id: 'PREMIUM',
-      name: 'Premium',
-      price: 249,
-      features: [
-        'Emplacements illimités',
-        'Utilisateurs illimités',
-        'Services illimités',
-        'Produits illimités',
-        'Support dédié 24/7',
-        'Réservations illimitées',
-        'Export de données',
-        'API access complet',
-        'Formation personnalisée',
-        'Développement sur mesure',
-        'Manager dédié'
-      ],
-      color: 'from-indigo-500 to-indigo-600',
-      recommended: false
-    }
-  ]
+  // Utiliser la source centralisée pour les plans - toutes les features
+  const plansData = getAllPlanHighlights()
+  const plans = plansData.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    description: p.description,
+    features: p.features, // Toutes les features pour cohérence
+    color: p.color,
+    recommended: p.popular
+  }))
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -328,7 +269,14 @@ export default function SubscriptionPage() {
                     </div>
 
                     <ul className="space-y-3 mb-6">
-                      {plan.features.map((feature, idx) => (
+                      {plan.features
+                        .filter(feature =>
+                          !feature.includes('utilisateur') &&
+                          !feature.includes('emplacement') &&
+                          !feature.includes('Utilisateurs illimités') &&
+                          !feature.includes('Emplacements illimités')
+                        )
+                        .map((feature, idx) => (
                         <li key={idx} className="flex items-start text-sm text-gray-600">
                           <span className="text-green-500 mr-2 mt-0.5">✓</span>
                           {feature}

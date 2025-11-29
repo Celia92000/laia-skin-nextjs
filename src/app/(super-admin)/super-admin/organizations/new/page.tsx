@@ -7,7 +7,7 @@ import PlanFeaturesPreview from '@/components/super-admin/PlanFeaturesPreview'
 import AddonSelector from '@/components/super-admin/AddonSelector'
 import { OrgPlan } from '@prisma/client'
 import { websiteTemplates, getTemplatesForPlan } from '@/lib/website-templates'
-import { getPlanPrice } from '@/lib/features-simple'
+import { getPlanPrice, getAllPlanHighlights } from '@/lib/features-simple'
 
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,12 @@ function NewOrganizationForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<any>(null)
   const [selectedAddons, setSelectedAddons] = useState<string[]>([])
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
+  const [whatsAppSent, setWhatsAppSent] = useState(false)
+  const [sendToEmail, setSendToEmail] = useState('')
+  const [sendToPhone, setSendToPhone] = useState('')
   const [formData, setFormData] = useState({
     // Informations essentielles
     name: '',               // Nom de l'institut
@@ -137,6 +143,9 @@ function NewOrganizationForm() {
       if (response.ok) {
         const data = await response.json()
         setSuccess(data)
+        // Pré-remplir les champs d'envoi avec les données de l'organisation
+        setSendToEmail(data.adminEmail || formData.ownerEmail)
+        setSendToPhone(formData.ownerPhone || '')
         // Ne pas rediriger automatiquement, laisser le temps de copier les identifiants
       } else {
         const errorData = await response.json()
@@ -234,6 +243,233 @@ function NewOrganizationForm() {
             <div className="mb-6 p-6 bg-green-50 border-2 border-green-500 rounded-xl">
               <h3 className="text-2xl font-bold text-green-800 mb-4">✅ Organisation créée avec succès !</h3>
 
+              {/* 💳 Section Lien de Paiement Stripe */}
+              {success.stripePaymentLink && (
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-400 rounded-lg p-6 mb-6">
+                  <h4 className="text-lg font-semibold text-purple-800 mb-3">💳 Lien de paiement Stripe à envoyer au client</h4>
+
+                  <div className="bg-white border-2 border-purple-300 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={success.stripePaymentLink}
+                        readOnly
+                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded font-mono text-sm text-gray-800 overflow-hidden"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(success.stripePaymentLink)
+                          alert('Lien copié !')
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold whitespace-nowrap"
+                      >
+                        📋 Copier le lien
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Section Envoi par Email */}
+                  <div className="mb-4 bg-white/70 rounded-lg p-4 border border-purple-200">
+                    <label className="block text-sm font-medium text-purple-800 mb-2">
+                      📧 Envoyer par Email
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={sendToEmail}
+                        onChange={(e) => setSendToEmail(e.target.value)}
+                        placeholder="Adresse email du client"
+                        className="flex-1 px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-gray-800"
+                        disabled={emailSent}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!sendToEmail) {
+                            alert('Veuillez saisir une adresse email')
+                            return
+                          }
+                          setSendingEmail(true)
+                          try {
+                            const response = await fetch('/api/super-admin/send-payment-link-email', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                email: sendToEmail,
+                                organizationId: success.id,
+                                organizationName: formData.name,
+                                ownerFirstName: formData.ownerFirstName,
+                                ownerLastName: formData.ownerLastName,
+                                plan: success.plan,
+                                monthlyAmount: success.monthlyAmount,
+                                paymentLink: success.stripePaymentLink,
+                                loginEmail: success.adminEmail,
+                                tempPassword: success.defaultPassword
+                              })
+                            })
+
+                            if (response.ok) {
+                              setEmailSent(true)
+                              alert(`✅ Email envoyé avec succès à ${sendToEmail} !`)
+                            } else {
+                              const data = await response.json()
+                              alert(`❌ Erreur: ${data.error || 'Impossible d\'envoyer l\'email'}`)
+                            }
+                          } catch (err) {
+                            alert('❌ Erreur lors de l\'envoi de l\'email')
+                          } finally {
+                            setSendingEmail(false)
+                          }
+                        }}
+                        disabled={sendingEmail || emailSent || !sendToEmail}
+                        className={`px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+                          emailSent
+                            ? 'bg-green-100 text-green-800 border-2 border-green-300 cursor-not-allowed'
+                            : sendingEmail
+                            ? 'bg-purple-300 text-white cursor-wait'
+                            : !sendToEmail
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+                        }`}
+                      >
+                        {emailSent ? (
+                          <>✅ Envoyé</>
+                        ) : sendingEmail ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Envoi...
+                          </>
+                        ) : (
+                          <>📧 Envoyer</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-purple-600 mt-2">
+                      Contient : lien de paiement + identifiants + infos du plan
+                    </p>
+                  </div>
+
+                  {/* Section Envoi par WhatsApp */}
+                  <div className="mb-4 bg-white/70 rounded-lg p-4 border border-green-200">
+                    <label className="block text-sm font-medium text-green-800 mb-2">
+                      📱 Envoyer par WhatsApp
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="tel"
+                        value={sendToPhone}
+                        onChange={(e) => setSendToPhone(e.target.value)}
+                        placeholder="Numéro de téléphone (ex: 06 12 34 56 78)"
+                        className="flex-1 px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-800"
+                        disabled={whatsAppSent}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!sendToPhone) {
+                            alert('Veuillez saisir un numéro de téléphone')
+                            return
+                          }
+                          setSendingWhatsApp(true)
+                          try {
+                            const response = await fetch('/api/super-admin/send-payment-link-whatsapp', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                phone: sendToPhone,
+                                organizationId: success.id,
+                                organizationName: formData.name,
+                                ownerFirstName: formData.ownerFirstName,
+                                ownerLastName: formData.ownerLastName,
+                                plan: success.plan,
+                                monthlyAmount: success.monthlyAmount,
+                                paymentLink: success.stripePaymentLink,
+                                loginEmail: success.adminEmail,
+                                tempPassword: success.defaultPassword
+                              })
+                            })
+
+                            if (response.ok) {
+                              setWhatsAppSent(true)
+                              alert(`✅ WhatsApp envoyé avec succès à ${sendToPhone} !`)
+                            } else {
+                              const data = await response.json()
+                              alert(`❌ Erreur: ${data.error || 'Impossible d\'envoyer le WhatsApp'}`)
+                            }
+                          } catch (err) {
+                            alert('❌ Erreur lors de l\'envoi du WhatsApp')
+                          } finally {
+                            setSendingWhatsApp(false)
+                          }
+                        }}
+                        disabled={sendingWhatsApp || whatsAppSent || !sendToPhone}
+                        className={`px-6 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+                          whatsAppSent
+                            ? 'bg-green-100 text-green-800 border-2 border-green-300 cursor-not-allowed'
+                            : sendingWhatsApp
+                            ? 'bg-green-300 text-white cursor-wait'
+                            : !sendToPhone
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+                        }`}
+                      >
+                        {whatsAppSent ? (
+                          <>✅ Envoyé</>
+                        ) : sendingWhatsApp ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Envoi...
+                          </>
+                        ) : (
+                          <>📱 Envoyer</>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-green-600 mt-2">
+                      Contient : lien de paiement + identifiants + infos du plan
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <p className="text-purple-600 font-medium">Plan</p>
+                      <p className="text-gray-800 font-bold">{success.plan}</p>
+                    </div>
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <p className="text-purple-600 font-medium">Montant mensuel</p>
+                      <p className="text-gray-800 font-bold">{success.monthlyAmount}€/mois</p>
+                    </div>
+                    <div className="bg-white/50 p-3 rounded-lg">
+                      <p className="text-purple-600 font-medium">Essai gratuit</p>
+                      <p className="text-gray-800 font-bold">30 jours</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-purple-100 border border-purple-300 rounded">
+                    <p className="text-sm text-purple-800">
+                      ✨ <strong>Comment ça marche :</strong> Une fois le paiement effectué, le client recevra automatiquement
+                      son contrat et sa facture par email grâce au workflow. Le premier prélèvement sera effectué
+                      après 30 jours d'essai gratuit.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Erreur génération Stripe */}
+              {success.stripePaymentLinkError && (
+                <div className="bg-orange-50 border-2 border-orange-400 rounded-lg p-4 mb-6">
+                  <p className="text-orange-800 text-sm">
+                    ⚠️ <strong>Erreur Stripe :</strong> {success.stripePaymentLinkError}
+                    <br />
+                    Vous pourrez générer un nouveau lien depuis la page de l'organisation.
+                  </p>
+                </div>
+              )}
+
               <div className="bg-white border-2 border-green-300 rounded-lg p-6 mb-4">
                 <h4 className="text-lg font-semibold text-gray-800 mb-4">🔑 Identifiants à communiquer au client :</h4>
 
@@ -283,6 +519,33 @@ function NewOrganizationForm() {
                     ⚠️ <strong>Important :</strong> Le client devra changer ce mot de passe lors de sa première connexion.
                   </p>
                 </div>
+              </div>
+
+              {/* Bouton copier tout pour email */}
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    const message = `Bonjour,
+
+Votre espace LAIA Connect est prêt ! 🎉
+
+📧 Email de connexion : ${success.adminEmail}
+🔐 Mot de passe provisoire : ${success.defaultPassword}
+🌐 URL de connexion : http://localhost:3001/admin
+
+${success.stripePaymentLink ? `💳 Lien de paiement pour activer votre abonnement (30 jours d'essai gratuit) :
+${success.stripePaymentLink}
+
+` : ''}⚠️ Important : Pensez à changer votre mot de passe lors de votre première connexion.
+
+À très vite sur LAIA Connect !`
+                    navigator.clipboard.writeText(message)
+                    alert('Message complet copié !')
+                  }}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-semibold"
+                >
+                  📧 Copier le message complet à envoyer au client
+                </button>
               </div>
 
               <div className="flex gap-3">
@@ -476,7 +739,7 @@ function NewOrganizationForm() {
                   </p>
                 </div>
 
-                {/* 5. Plan */}
+                {/* 5. Plan - Utilise la source centralisée */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     5️⃣ Plan d'abonnement *
@@ -488,10 +751,11 @@ function NewOrganizationForm() {
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                     style={{ backgroundColor: 'white' }}
                   >
-                    <option value="SOLO">SOLO - 49€/mois (Pour démarrer) - 1 user</option>
-                    <option value="DUO">DUO - 69€/mois (Marketing de base) - 3 users</option>
-                    <option value="TEAM">TEAM - 119€/mois ⭐ POPULAIRE (Tous canaux de com) - 8 users</option>
-                    <option value="PREMIUM">PREMIUM - 179€/mois (Scale illimité) - Illimité</option>
+                    {getAllPlanHighlights().map(plan => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.id} - {plan.price}€/mois {plan.popular ? '⭐ POPULAIRE' : ''} ({plan.description})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -945,10 +1209,9 @@ function NewOrganizationForm() {
                       En cochant cette case, le client autorise LAIA à prélever automatiquement le montant de l'abonnement mensuel :
                     </p>
                     <ul className="text-gray-700 space-y-1 ml-4 mb-2">
-                      <li>• <strong>SOLO</strong> : 49€/mois - 1 user, base uniquement</li>
-                      <li>• <strong>DUO</strong> : 69€/mois - 3 users, +CRM +Email Marketing</li>
-                      <li>• <strong>TEAM</strong> : 119€/mois - 8 users, 3 sites, tous canaux ⭐</li>
-                      <li>• <strong>PREMIUM</strong> : 179€/mois - Illimité + Stock Avancé</li>
+                      {getAllPlanHighlights().map(plan => (
+                        <li key={plan.id}>• <strong>{plan.id}</strong> : {plan.price}€/mois - {plan.description} {plan.popular ? '⭐' : ''}</li>
+                      ))}
                     </ul>
                     <p className="text-gray-700 text-xs">
                       Le premier prélèvement aura lieu automatiquement à la fin de la période d'essai de 30 jours.

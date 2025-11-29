@@ -418,7 +418,14 @@ export default function CreateOrganizationModal({ lead, onClose, onSuccess }: Cr
                       <p className="text-center text-green-700 text-xs font-semibold">{plan.roi}</p>
                     </div>
                     <ul className="space-y-2 text-sm text-gray-600">
-                      {plan.features.map((feature, idx) => (
+                      {plan.features
+                        .filter(feature =>
+                          !feature.includes('utilisateur') &&
+                          !feature.includes('emplacement') &&
+                          !feature.includes('Utilisateurs illimités') &&
+                          !feature.includes('Emplacements illimités')
+                        )
+                        .map((feature, idx) => (
                         <li key={idx} className="flex items-center">
                           <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                           <span>{feature}</span>

@@ -18,6 +18,12 @@ import { sendWelcomeEmail, sendSuperAdminNotification } from '@/lib/onboarding-e
 import { createOnboardingContract } from '@/lib/contract-generator'
 import { createSubscriptionInvoice } from '@/lib/subscription-invoice-generator'
 import { log } from '@/lib/logger';
+import Stripe from 'stripe'
+
+// Initialiser Stripe pour créer les liens de paiement
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-09-30.clover'
+})
 
 export async function GET() {
   try {
@@ -765,11 +771,81 @@ export async function POST(request: Request) {
       log.error('⚠️ Erreur notification super-admin:', error)
     }
 
+    // 🔗 Générer un lien de paiement Stripe pour l'abonnement
+    let stripePaymentLink = null
+    let stripePaymentLinkError = null
+
+    try {
+      // Créer une Stripe Checkout Session pour abonnement récurrent
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: 'subscription', // Abonnement récurrent
+        customer_email: data.ownerEmail,
+        payment_method_types: ['card', 'sepa_debit'], // Carte + SEPA
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              product_data: {
+                name: `Abonnement LAIA Connect - ${data.plan}`,
+                description: `Plan ${data.plan} pour ${data.name} - ${monthlyAmount}€/mois`
+              },
+              unit_amount: Math.round(monthlyAmount * 100), // Montant en centimes
+              recurring: {
+                interval: 'month'
+              }
+            },
+            quantity: 1
+          }
+        ],
+        subscription_data: {
+          trial_period_days: 30, // 30 jours d'essai gratuit
+          metadata: {
+            organizationId: organization.id,
+            organizationName: data.name,
+            plan: data.plan,
+            monthlyAmount: monthlyAmount.toString()
+          }
+        },
+        metadata: {
+          type: 'subscription',
+          organizationId: organization.id,
+          organizationName: data.name,
+          plan: data.plan
+        },
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/payment/success?session_id={CHECKOUT_SESSION_ID}&org=${data.slug}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/payment/canceled?org=${data.slug}`,
+        billing_address_collection: 'required',
+        phone_number_collection: {
+          enabled: true
+        },
+        locale: 'fr'
+      })
+
+      stripePaymentLink = checkoutSession.url
+      log.info(`✅ Lien de paiement Stripe généré: ${stripePaymentLink}`)
+
+      // Sauvegarder le lien de paiement dans l'organisation
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: {
+          stripeCheckoutSessionId: checkoutSession.id
+        }
+      })
+    } catch (stripeError: any) {
+      log.error('⚠️ Erreur génération lien Stripe (non bloquant):', stripeError)
+      stripePaymentLinkError = stripeError.message || 'Erreur lors de la création du lien Stripe'
+    }
+
     return NextResponse.json({
       id: organization.id,
       message: 'Organisation créée avec succès',
       adminEmail: data.ownerEmail, // Email du propriétaire utilisé comme identifiant
-      defaultPassword: generatedPassword // Mot de passe ultra-sécurisé (16 caractères)
+      defaultPassword: generatedPassword, // Mot de passe ultra-sécurisé (16 caractères)
+      stripePaymentLink, // Lien de paiement Stripe à envoyer au client
+      stripePaymentLinkError, // Message d'erreur si échec
+      monthlyAmount, // Montant mensuel total
+      plan: data.plan,
+      trialEndsAt: trialEndsAt.toISOString()
     })
 
   } catch (error) {

@@ -153,6 +153,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return
     }
 
+    // Gérer le paiement d'abonnement pour une organisation créée manuellement par super-admin
+    if (metadata.type === 'subscription' && metadata.organizationId) {
+      await handleSubscriptionPaymentCompleted(session, metadata)
+      return
+    }
+
     // Gérer les paiements Connect (institut)
     if (metadata.organizationId) {
       await handleConnectedCheckoutCompleted(session)
@@ -1020,6 +1026,177 @@ async function handleConnectedCheckoutCompleted(session: Stripe.Checkout.Session
 
   } catch (error) {
     log.error('Erreur handleConnectedCheckoutCompleted:', error)
+  }
+}
+
+/**
+ * Gère le paiement d'abonnement pour une organisation créée manuellement par super-admin
+ * Envoie les mêmes documents que quand le client paie lui-même (contrat + facture + email de bienvenue)
+ */
+async function handleSubscriptionPaymentCompleted(session: Stripe.Checkout.Session, metadata: Record<string, any>) {
+  try {
+    const organizationId = metadata.organizationId
+    log.info(`🚀 Paiement abonnement reçu pour organisation ${organizationId}`)
+
+    // Récupérer l'organisation
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      include: { config: true }
+    })
+
+    if (!organization) {
+      log.error(`❌ Organisation ${organizationId} introuvable`)
+      return
+    }
+
+    // Extraire les IDs Stripe
+    const stripeCustomerId = typeof session.customer === 'string'
+      ? session.customer
+      : (session.customer && typeof session.customer === 'object' ? session.customer.id : null)
+
+    const stripeSubscriptionId = typeof session.subscription === 'string'
+      ? session.subscription
+      : (session.subscription && typeof session.subscription === 'object' ? session.subscription.id : null)
+
+    // Mettre à jour l'organisation avec les IDs Stripe et le statut ACTIVE
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        status: 'ACTIVE',
+        stripeCustomerId,
+        stripeSubscriptionId,
+        lastPaymentDate: new Date()
+      }
+    })
+
+    log.info(`✅ Organisation ${organization.name} activée avec Stripe Customer: ${stripeCustomerId}`)
+
+    // Générer facture et contrat
+    let invoicePdfBuffer: Buffer | undefined
+    let invoiceNumber: string | undefined
+    let contractPdfBuffer: Buffer | undefined
+    let contractNumber: string | undefined
+
+    const planPrices: Record<string, number> = {
+      SOLO: 49,
+      DUO: 69,
+      TEAM: 119,
+      PREMIUM: 179
+    }
+    const monthlyAmount = parseFloat(metadata.monthlyAmount) || planPrices[organization.plan] || 49
+
+    // Générer la facture (statut PAID car le paiement est confirmé)
+    try {
+      const invoiceResult = await createSubscriptionInvoice(organization.id, true, false, true)
+      invoicePdfBuffer = invoiceResult.pdfBuffer
+      invoiceNumber = invoiceResult.invoiceNumber
+      log.info(`✅ Facture générée et payée: ${invoiceNumber}`)
+    } catch (error) {
+      log.error('⚠️ Erreur facture:', error)
+    }
+
+    // Générer le contrat
+    try {
+      const contractResult = await createOnboardingContract({
+        organizationName: organization.name,
+        legalName: organization.legalName || organization.name,
+        siret: organization.config?.siret || '',
+        tvaNumber: organization.config?.tvaNumber || undefined,
+        billingAddress: organization.billingAddress || organization.config?.address || '',
+        billingPostalCode: organization.config?.postalCode || '',
+        billingCity: organization.config?.city || '',
+        billingCountry: 'France',
+        ownerFirstName: organization.ownerFirstName || '',
+        ownerLastName: organization.ownerLastName || '',
+        ownerEmail: organization.ownerEmail,
+        ownerPhone: organization.ownerPhone || undefined,
+        plan: organization.plan,
+        monthlyAmount: monthlyAmount,
+        trialEndsAt: organization.trialEndsAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        subscriptionStartDate: new Date(),
+        sepaIban: '',
+        sepaBic: '',
+        sepaAccountHolder: '',
+        sepaMandateRef: organization.sepaMandateRef || `LAIA-${organization.slug.toUpperCase()}-${Date.now()}`,
+        sepaMandateDate: organization.sepaMandateDate || new Date()
+      })
+      contractPdfBuffer = contractResult.pdfBuffer
+      contractNumber = contractResult.contractNumber
+      log.info(`✅ Contrat généré: ${contractNumber}`)
+
+      // Sauvegarder les infos du contrat dans l'organisation
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: {
+          contractNumber: contractResult.contractNumber,
+          contractPdfPath: contractResult.pdfPath,
+          contractSignedAt: new Date()
+        }
+      })
+      log.info(`✅ Contrat sauvegardé dans l'organisation: ${contractResult.pdfPath}`)
+    } catch (error) {
+      log.error('⚠️ Erreur contrat:', error)
+    }
+
+    // Récupérer le mot de passe temporaire (si stocké chiffré)
+    let tempPassword = 'Mot de passe communiqué lors de la création du compte'
+    // Note: Le mot de passe a été communiqué lors de la création de l'organisation par le super-admin
+
+    // Envoyer email de bienvenue avec facture et contrat
+    try {
+      const adminUrl = process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
+        : `https://${organization.subdomain}.laia-connect.fr/admin`
+
+      await sendWelcomeEmail({
+        organizationId: organization.id,
+        organizationName: organization.name,
+        ownerFirstName: organization.ownerFirstName || organization.ownerEmail.split('@')[0],
+        ownerLastName: organization.ownerLastName || '',
+        ownerEmail: organization.ownerEmail,
+        tempPassword, // Le client a déjà reçu son mot de passe lors de la création
+        plan: organization.plan,
+        subdomain: organization.subdomain,
+        customDomain: organization.domain || undefined,
+        adminUrl,
+        monthlyAmount: monthlyAmount,
+        trialEndsAt: organization.trialEndsAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        sepaMandateRef: organization.sepaMandateRef || ''
+      }, invoicePdfBuffer, invoiceNumber, contractPdfBuffer, contractNumber)
+      log.info('✅ Email de bienvenue (post-paiement) envoyé avec facture et contrat')
+    } catch (error) {
+      log.error('⚠️ Erreur email bienvenue:', error)
+    }
+
+    // Envoyer notification au super-admin
+    try {
+      await sendSuperAdminNotification({
+        organizationId: organization.id,
+        organizationName: organization.name,
+        ownerFirstName: organization.ownerFirstName || organization.ownerEmail.split('@')[0],
+        ownerLastName: organization.ownerLastName || '',
+        ownerEmail: organization.ownerEmail,
+        ownerPhone: organization.ownerPhone || undefined,
+        city: organization.config?.city || '',
+        plan: organization.plan,
+        monthlyAmount: monthlyAmount,
+        siret: organization.config?.siret || undefined,
+        legalName: organization.legalName || undefined,
+        subdomain: organization.subdomain,
+        customDomain: organization.domain || undefined,
+        trialEndsAt: organization.trialEndsAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: organization.createdAt
+      })
+      log.info('✅ Notification super-admin (paiement reçu) envoyée')
+    } catch (error) {
+      log.error('⚠️ Erreur notification super-admin:', error)
+    }
+
+    log.info(`🎉 Paiement abonnement terminé avec succès pour ${organization.name}!`)
+
+  } catch (error) {
+    log.error('❌ Erreur handleSubscriptionPaymentCompleted:', error)
+    throw error
   }
 }
 

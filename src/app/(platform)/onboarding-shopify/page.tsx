@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn, useSession } from 'next-auth/react'
 import { validateEmail, validatePhoneNumber } from '@/lib/validation'
+import { getAllPlanHighlights } from '@/lib/features-simple'
 
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic'
@@ -823,76 +824,19 @@ function OnboardingShopifyContent() {
                 </p>
               </div>
 
-              {/* Plan cards */}
+              {/* Plan cards - Utilise la source centralisée */}
               <div className="space-y-4 mb-8">
-                {[
-                  {
-                    id: 'SOLO',
-                    name: 'Solo',
-                    price: '49€',
-                    description: 'Esthéticienne indépendante seule',
-                    features: [
-                      '1 utilisateur',
-                      '1 emplacement',
-                      'Site vitrine personnalisable',
-                      'Réservations + Paiements',
-                      'Planning + Calendrier',
-                      'Gestion clients',
-                      'Programme fidélité complet',
-                      'Comptabilité + Factures'
-                    ],
-                    color: 'blue'
-                  },
-                  {
-                    id: 'DUO',
-                    name: 'Duo',
-                    price: '69€',
-                    description: 'Petit institut 2-3 personnes',
-                    features: [
-                      'Tout SOLO +',
-                      '3 utilisateurs max',
-                      '✨ CRM complet (leads + pipeline)',
-                      '✨ Email Marketing (campagnes + automations)',
-                      'Gestion multi-praticiens',
-                      'Statistiques avancées'
-                    ],
-                    color: 'purple'
-                  },
-                  {
-                    id: 'TEAM',
-                    name: 'Team',
-                    price: '119€',
-                    description: 'Institut établi - E-commerce complet',
-                    features: [
-                      'Tout DUO +',
-                      '8 utilisateurs max',
-                      '3 emplacements max',
-                      '✨ Boutique en ligne (produits + formations)',
-                      '✨ Blog + SEO',
-                      '✨ WhatsApp Marketing',
-                      '✨ SMS Marketing',
-                      '✨ Réseaux Sociaux (Instagram + Facebook)'
-                    ],
-                    color: 'pink'
-                  },
-                  {
-                    id: 'PREMIUM',
-                    name: 'Premium',
-                    price: '179€',
-                    description: 'Chaîne/Franchise - Outils avancés',
-                    features: [
-                      'Tout TEAM +',
-                      'Utilisateurs ILLIMITÉS',
-                      'Emplacements ILLIMITÉS',
-                      '✨ Stock avancé (inventaire + alertes)',
-                      'Rapports personnalisés',
-                      'Multi-devises',
-                      'API + Intégrations',
-                      'Support dédié'
-                    ],
-                    color: 'gradient'
+                {getAllPlanHighlights().map((planData) => {
+                  const plan = {
+                    id: planData.id,
+                    name: planData.name,
+                    price: `${planData.price}€`,
+                    description: planData.description,
+                    features: planData.features.slice(0, 8),
+                    color: planData.id === 'SOLO' ? 'blue' : planData.id === 'DUO' ? 'purple' : planData.id === 'TEAM' ? 'pink' : 'gradient'
                   }
-                ].map((plan) => {
+                  return plan
+                }).map((plan) => {
                   const isRecommended = plan.id === data.selectedPlan
                   const borderColor = isRecommended
                     ? 'border-green-500'
@@ -926,7 +870,14 @@ function OnboardingShopifyContent() {
                             <span className="text-gray-600">/mois</span>
                           </div>
                           <ul className="space-y-2">
-                            {plan.features.map((feature, idx) => (
+                            {plan.features
+                              .filter(feature =>
+                                !feature.includes('utilisateur') &&
+                                !feature.includes('emplacement') &&
+                                !feature.includes('Utilisateurs illimités') &&
+                                !feature.includes('Emplacements illimités')
+                              )
+                              .map((feature, idx) => (
                               <li key={idx} className="flex items-center gap-2 text-sm text-gray-700">
                                 <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

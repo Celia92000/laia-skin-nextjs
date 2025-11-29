@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { validateSIRENorSIRET, validateEmail, validatePhoneNumber } from '@/lib/validation'
-import { getPlanPrice, getPlanName } from '@/lib/features-simple'
+import { getPlanPrice, getPlanName, getAllPlanHighlights, type PlanHighlights } from '@/lib/features-simple'
 
 // Force dynamic rendering for pages with search params
 export const dynamic = 'force-dynamic'
@@ -44,8 +44,9 @@ function OnboardingV2Content() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const planFromUrl = searchParams.get('plan') as OnboardingData['selectedPlan'] || 'DUO'
+  const stepFromUrl = searchParams.get('step') as Step | null
 
-  const [currentStep, setCurrentStep] = useState<Step>('personal')
+  const [currentStep, setCurrentStep] = useState<Step>(stepFromUrl || 'personal')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -83,12 +84,18 @@ function OnboardingV2Content() {
     const savedStep = localStorage.getItem('onboarding_v2_step')
     if (savedData) {
       try {
-        setData(JSON.parse(savedData))
+        const parsed = JSON.parse(savedData)
+        // Garder le plan de l'URL s'il est différent du localStorage
+        if (planFromUrl && planFromUrl !== parsed.selectedPlan) {
+          parsed.selectedPlan = planFromUrl
+        }
+        setData(parsed)
       } catch (e) {
         console.error('Error restoring data:', e)
       }
     }
-    if (savedStep) {
+    // Ne pas restaurer l'étape si elle est spécifiée dans l'URL
+    if (savedStep && !stepFromUrl) {
       setCurrentStep(savedStep as Step)
     }
   }, [])
@@ -216,82 +223,8 @@ function OnboardingV2Content() {
     }
   }
 
-  const plans = [
-    {
-      id: 'SOLO' as const,
-      name: 'Solo',
-      price: 49,
-      description: 'Pour démarrer',
-      features: [
-        '🌐 Site web professionnel',
-        '📅 Réservations en ligne 24/7',
-        '👥 Gestion clients complète',
-        '🎁 Programme fidélité',
-        '💳 Paiement en ligne (Stripe)',
-        '⭐ Avis clients + Google Reviews',
-        '💰 Comptabilité & factures',
-        '📊 Statistiques temps réel',
-        '👤 1 utilisateur',
-        '📍 1 emplacement'
-      ],
-      color: 'from-gray-400 to-gray-600',
-      popular: false
-    },
-    {
-      id: 'DUO' as const,
-      name: 'Duo',
-      price: 69,
-      description: 'Pour développer',
-      features: [
-        '✨ Tout Solo +',
-        '🎯 CRM Commercial complet',
-        '📧 Email Marketing illimité',
-        '🤖 Automations marketing',
-        '📈 Reporting commercial',
-        '👥 3 utilisateurs',
-        '📍 1 emplacement'
-      ],
-      color: 'from-blue-500 to-blue-600',
-      popular: false
-    },
-    {
-      id: 'TEAM' as const,
-      name: 'Team',
-      price: 119,
-      description: '⭐ Le plus rentable',
-      features: [
-        '✨ Tout Duo +',
-        '📝 Blog professionnel SEO',
-        '🛍️ Boutique en ligne',
-        '📱 WhatsApp Business',
-        '📲 SMS Marketing',
-        '📱 Réseaux sociaux (IG + FB)',
-        '📦 Gestion stock',
-        '👥 10 utilisateurs',
-        '📍 3 emplacements'
-      ],
-      color: 'from-purple-500 to-purple-600',
-      popular: true
-    },
-    {
-      id: 'PREMIUM' as const,
-      name: 'Premium',
-      price: 179,
-      description: 'L\'expérience complète',
-      features: [
-        '✨ Tout Team +',
-        '📦 Stock avancé multi-sites',
-        '🔔 Alertes stock automatiques',
-        '🔌 API complète',
-        '📊 Export comptable auto',
-        '👥 Utilisateurs illimités',
-        '📍 Emplacements illimités',
-        '⚡ Support prioritaire 24/7'
-      ],
-      color: 'from-indigo-500 to-pink-600',
-      popular: false
-    }
-  ]
+  // Utiliser la source centralisée des plans
+  const plans = getAllPlanHighlights()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-purple-50 to-blue-50">
@@ -855,7 +788,14 @@ function OnboardingV2Content() {
                     </div>
 
                     <ul className="space-y-2 mb-6">
-                      {plan.features.map((feature, idx) => (
+                      {plan.features
+                        .filter(feature =>
+                          !feature.includes('utilisateur') &&
+                          !feature.includes('emplacement') &&
+                          !feature.includes('Utilisateurs illimités') &&
+                          !feature.includes('Emplacements illimités')
+                        )
+                        .map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
                           <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

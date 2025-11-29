@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getAllPlanHighlights } from '@/lib/features-simple'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -37,33 +38,16 @@ export default function RegisterPage() {
     sepaMandate: false
   })
 
-  const plans = [
-    {
-      id: 'SOLO',
-      name: 'Solo',
-      price: 49,
-      features: ['1 emplacement', '1 utilisateur', '5 GB stockage']
-    },
-    {
-      id: 'DUO',
-      name: 'Duo',
-      price: 69,
-      popular: true,
-      features: ['1 emplacement', '3 utilisateurs', '15 GB stockage']
-    },
-    {
-      id: 'TEAM',
-      name: 'Team',
-      price: 119,
-      features: ['3 emplacements', '8 utilisateurs', '30 GB stockage']
-    },
-    {
-      id: 'PREMIUM',
-      name: 'Premium',
-      price: 179,
-      features: ['Illimité', 'Illimité', 'Illimité']
-    }
-  ]
+  // Utiliser la source centralisée - afficher toutes les features
+  const plansData = getAllPlanHighlights()
+  const plans = plansData.map(p => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    popular: p.popular,
+    description: p.description,
+    features: p.features // Toutes les features pour cohérence
+  }))
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target
@@ -285,7 +269,14 @@ export default function RegisterPage() {
                         {plan.price}€<span className="text-sm text-gray-600">/mois</span>
                       </div>
                       <ul className="space-y-2 text-sm text-gray-600">
-                        {plan.features.map((feature, idx) => (
+                        {plan.features
+                          .filter(feature =>
+                            !feature.includes('utilisateur') &&
+                            !feature.includes('emplacement') &&
+                            !feature.includes('Utilisateurs illimités') &&
+                            !feature.includes('Emplacements illimités')
+                          )
+                          .map((feature, idx) => (
                           <li key={idx} className="flex items-center">
                             <span className="text-green-500 mr-2">✓</span>
                             {feature}

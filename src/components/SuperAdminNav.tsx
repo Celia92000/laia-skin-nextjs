@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, ScrollText, Settings, Home, Send, Target, Calendar, Palette, HelpCircle, TrendingDown, Zap, BarChart3 } from 'lucide-react'
+import { Building2, CreditCard, Sparkles, MessageCircle, Gift, Star, Bell, Settings, Home, Send, Target, Calendar, Palette, HelpCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function SuperAdminNav() {
@@ -55,10 +55,7 @@ export default function SuperAdminNav() {
 
   const tabs = [
     { name: 'Dashboard', href: '/super-admin', icon: Home },
-    { name: 'Métriques', href: '/super-admin/metrics', icon: BarChart3 },
     { name: 'CRM', href: '/super-admin/crm', icon: Target, badge: newLeadsCount },
-    { name: 'Churn', href: '/super-admin/churn', icon: TrendingDown },
-    { name: 'Workflows', href: '/super-admin/workflows', icon: Zap },
     { name: 'Démos', href: '/super-admin/demos', icon: Calendar, badge: newDemosCount },
     { name: 'Organisations', href: '/super-admin/organizations', icon: Building2 },
     { name: 'Facturation', href: '/super-admin/billing', icon: CreditCard },
@@ -69,7 +66,6 @@ export default function SuperAdminNav() {
     { name: 'Témoignages', href: '/super-admin/testimonials', icon: Star },
     { name: 'Templates Web', href: '/super-admin/templates', icon: Palette },
     { name: 'Push Notifications', href: '/super-admin/push-notifications', icon: Bell },
-    { name: 'Logs', href: '/super-admin/logs', icon: ScrollText },
     { name: 'Configuration', href: '/super-admin/settings', icon: Settings },
     { name: 'Centre d\'aide', href: '/aide', icon: HelpCircle, external: true },
   ]

@@ -23,6 +23,11 @@ export default function PromoCodesPage() {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     code: '',
@@ -32,6 +37,13 @@ export default function PromoCodesPage() {
     targetPlans: [] as string[],
     maxUses: '',
     validUntil: ''
+  })
+
+  const [editFormData, setEditFormData] = useState({
+    description: '',
+    maxUses: '',
+    validUntil: '',
+    status: 'ACTIVE' as PromoCode['status']
   })
 
   useEffect(() => {
@@ -58,6 +70,9 @@ export default function PromoCodesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setCreating(true)
+    setError(null)
+
     try {
       const response = await fetch('/api/super-admin/promo-codes', {
         method: 'POST',
@@ -68,6 +83,8 @@ export default function PromoCodesPage() {
           validUntil: formData.validUntil || null
         })
       })
+
+      const data = await response.json()
 
       if (response.ok) {
         setShowCreateModal(false)
@@ -81,9 +98,17 @@ export default function PromoCodesPage() {
           validUntil: ''
         })
         fetchPromoCodes()
+      } else {
+        setError(data.error || 'Erreur lors de la création du code promo')
+        if (response.status === 401) {
+          router.push('/login?redirect=/super-admin/promo-codes')
+        }
       }
     } catch (error) {
       console.error('Error creating promo code:', error)
+      setError('Erreur de connexion au serveur')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -100,6 +125,74 @@ export default function PromoCodesPage() {
       }
     } catch (error) {
       console.error('Error updating promo code:', error)
+    }
+  }
+
+  function openEditModal(promo: PromoCode) {
+    setEditingPromo(promo)
+    setEditFormData({
+      description: promo.description || '',
+      maxUses: promo.maxUses?.toString() || '',
+      validUntil: promo.validUntil ? new Date(promo.validUntil).toISOString().split('T')[0] : '',
+      status: promo.status
+    })
+    setError(null)
+    setShowEditModal(true)
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingPromo) return
+
+    setUpdating(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/super-admin/promo-codes/${editingPromo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: editFormData.description || null,
+          maxUses: editFormData.maxUses ? parseInt(editFormData.maxUses) : null,
+          validUntil: editFormData.validUntil || null,
+          status: editFormData.status
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setShowEditModal(false)
+        setEditingPromo(null)
+        fetchPromoCodes()
+      } else {
+        setError(data.error || 'Erreur lors de la modification')
+      }
+    } catch (error) {
+      console.error('Error updating promo code:', error)
+      setError('Erreur de connexion au serveur')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  async function handleDelete(id: string, code: string) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le code "${code}" ?`)) return
+
+    try {
+      const response = await fetch(`/api/super-admin/promo-codes/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        fetchPromoCodes()
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Erreur lors de la suppression')
+      }
+    } catch (error) {
+      console.error('Error deleting promo code:', error)
+      alert('Erreur de connexion au serveur')
     }
   }
 
@@ -230,13 +323,25 @@ export default function PromoCodesPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(promo.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                      <button
+                        onClick={() => openEditModal(promo)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        Modifier
+                      </button>
                       <button
                         onClick={() => handleToggleStatus(promo.id, promo.status)}
-                        className="hover:text-beige-900"
                         style={{ color: "#7c3aed" }}
+                        className="hover:opacity-70"
                       >
                         {promo.status === 'ACTIVE' ? 'Désactiver' : 'Activer'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(promo.id, promo.code)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Supprimer
                       </button>
                     </td>
                   </tr>
@@ -301,8 +406,8 @@ export default function PromoCodesPage() {
                     required
                     min="0"
                     step={formData.type === 'PERCENTAGE' ? '1' : '0.01'}
-                    value={formData.value}
-                    onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) })}
+                    value={formData.value || ''}
+                    onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
                   />
                 </div>
@@ -355,18 +460,131 @@ export default function PromoCodesPage() {
                 </div>
               </div>
 
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white hover:from-purple-700 hover:to-indigo-700"
+                  disabled={creating}
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
                 >
-                  Créer le code
+                  {creating ? 'Création en cours...' : 'Créer le code'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300"
+                  onClick={() => {
+                    setShowCreateModal(false)
+                    setError(null)
+                  }}
+                  disabled={creating}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal édition */}
+      {showEditModal && editingPromo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg p-8 max-w-xl w-full my-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Modifier le Code Promo</h2>
+            <p className="text-lg font-semibold mb-6" style={{ color: "#7c3aed" }}>{editingPromo.code}</p>
+
+            {/* Infos non modifiables */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Type:</span> {getTypeLabel(editingPromo.type)}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <span className="font-medium">Valeur:</span> {editingPromo.type === 'PERCENTAGE' ? `${editingPromo.value}%` : editingPromo.type === 'FIXED' ? `${editingPromo.value}€` : `+${editingPromo.value} jours`}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Utilisations:</span> {editingPromo.currentUses} {editingPromo.maxUses && `/ ${editingPromo.maxUses}`}
+              </p>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <input
+                  type="text"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                  placeholder="Description du code promo"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max utilisations</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editFormData.maxUses}
+                    onChange={(e) => setEditFormData({ ...editFormData, maxUses: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                    placeholder="Illimité"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date d'expiration</label>
+                  <input
+                    type="date"
+                    value={editFormData.validUntil}
+                    onChange={(e) => setEditFormData({ ...editFormData, validUntil: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as PromoCode['status'] })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                >
+                  <option value="ACTIVE">Actif</option>
+                  <option value="DISABLED">Désactivé</option>
+                  <option value="EXPIRED">Expiré</option>
+                </select>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="flex-1 px-6 py-3 rounded-lg font-semibold text-white hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(to right, #7c3aed, #6b46c1)" }}
+                >
+                  {updating ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false)
+                    setEditingPromo(null)
+                    setError(null)
+                  }}
+                  disabled={updating}
+                  className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
                 >
                   Annuler
                 </button>

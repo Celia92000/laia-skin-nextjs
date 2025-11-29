@@ -1238,6 +1238,208 @@ export async function sendInvoiceGenerationErrors({
 }
 
 /**
+ * Envoyer un email avec le lien de paiement Stripe à un nouveau client (création d'org par super-admin)
+ */
+interface SendPaymentLinkEmailParams {
+  email: string;
+  organizationName: string;
+  ownerFirstName: string;
+  ownerLastName: string;
+  plan: string;
+  monthlyAmount: number;
+  paymentLink: string;
+  loginEmail: string;
+  tempPassword: string;
+  trialDays?: number;
+}
+
+export async function sendPaymentLinkEmail({
+  email,
+  organizationName,
+  ownerFirstName,
+  ownerLastName,
+  plan,
+  monthlyAmount,
+  paymentLink,
+  loginEmail,
+  tempPassword,
+  trialDays = 30
+}: SendPaymentLinkEmailParams) {
+  const loginUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
+    : 'http://localhost:3001/admin';
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenue sur LAIA Connect - Activez votre compte</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f6f0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f6f0; padding: 40px 20px;">
+            <tr>
+                <td align="center">
+                    <table width="650" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%); padding: 40px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 600;">
+                                    🎉 Bienvenue sur LAIA Connect !
+                                </h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 15px 0 0; font-size: 16px;">
+                                    Votre espace ${organizationName} est prêt
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Content -->
+                        <tr>
+                            <td style="padding: 40px;">
+                                <p style="font-size: 18px; color: #2c3e50; margin: 0 0 20px;">
+                                    Bonjour ${ownerFirstName} ${ownerLastName},
+                                </p>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 0 0 20px; line-height: 1.6;">
+                                    Félicitations ! Votre espace <strong>${organizationName}</strong> a été créé sur LAIA Connect.
+                                    Vous bénéficiez de <strong>${trialDays} jours d'essai gratuit</strong> pour découvrir toutes les fonctionnalités. 🎊
+                                </p>
+
+                                <!-- Plan Info -->
+                                <div style="background: linear-gradient(135deg, #f3e7ff, #fce7f3); border-radius: 12px; padding: 20px; margin: 25px 0; border-left: 4px solid #9333ea;">
+                                    <p style="margin: 0 0 10px; font-weight: 600; color: #9333ea; font-size: 16px;">
+                                        📋 Votre forfait : ${plan}
+                                    </p>
+                                    <p style="margin: 0; color: #2c3e50; font-size: 20px; font-weight: 700;">
+                                        ${monthlyAmount}€/mois <span style="font-size: 14px; font-weight: 400; color: #666;">(après période d'essai)</span>
+                                    </p>
+                                </div>
+
+                                <!-- CTA Button - Payment Link -->
+                                <div style="text-align: center; margin: 35px 0;">
+                                    <p style="color: #666; font-size: 14px; margin: 0 0 15px;">
+                                        Activez votre abonnement pour continuer après la période d'essai :
+                                    </p>
+                                    <a href="${paymentLink}"
+                                       style="display: inline-block; background: linear-gradient(135deg, #9333ea, #ec4899);
+                                              color: white; text-decoration: none; padding: 18px 45px;
+                                              border-radius: 50px; font-weight: 700; font-size: 18px;
+                                              box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);">
+                                        💳 Activer mon abonnement
+                                    </a>
+                                    <p style="color: #999; font-size: 12px; margin: 15px 0 0;">
+                                        Paiement sécurisé par Stripe • 30 jours d'essai gratuit
+                                    </p>
+                                </div>
+
+                                <!-- Credentials -->
+                                <h3 style="color: #2c3e50; margin: 35px 0 15px; padding-top: 25px; border-top: 2px solid #f0f0f0;">
+                                    🔑 Vos identifiants de connexion
+                                </h3>
+                                <div style="background-color: #f8f6f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                    <table width="100%" cellpadding="10" cellspacing="0">
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50; width: 40%;">📧 Email :</td>
+                                            <td style="color: #2c3e50; font-family: monospace; font-size: 15px;">${loginEmail}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">🔐 Mot de passe :</td>
+                                            <td style="color: #9333ea; font-family: monospace; font-weight: 700; font-size: 15px;">${tempPassword}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #2c3e50;">🌐 URL connexion :</td>
+                                            <td>
+                                                <a href="${loginUrl}" style="color: #9333ea; text-decoration: none; font-size: 14px;">
+                                                    ${loginUrl}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                    <p style="margin: 0; color: #856404; font-size: 14px;">
+                                        <strong>⚠️ Important :</strong> Pensez à changer votre mot de passe dès votre première connexion.
+                                    </p>
+                                </div>
+
+                                <!-- CTA Button - Login -->
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${loginUrl}"
+                                       style="display: inline-block; background: #2c3e50;
+                                              color: white; text-decoration: none; padding: 14px 35px;
+                                              border-radius: 8px; font-weight: 600; font-size: 16px;">
+                                        🚀 Accéder à mon espace admin
+                                    </a>
+                                </div>
+
+                                <p style="font-size: 16px; color: #2c3e50; margin: 30px 0 20px; line-height: 1.6;">
+                                    Notre équipe est là pour vous accompagner dans la prise en main de votre espace. N'hésitez pas à nous contacter si vous avez des questions ! 💙
+                                </p>
+
+                                <p style="font-size: 14px; color: #7f8c8d; margin: 0;">
+                                    À très vite,<br>
+                                    L'équipe LAIA Connect
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
+                                <p style="color: #fff; font-size: 14px; margin: 0 0 10px;">
+                                    LAIA Connect
+                                </p>
+                                <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0;">
+                                    Votre partenaire digital pour instituts de beauté<br>
+                                    <a href="https://laiaconnect.fr" style="color: #9333ea; text-decoration: none;">laiaconnect.fr</a>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'demo_key') {
+      console.log('\n📧 SIMULATION EMAIL LIEN DE PAIEMENT');
+      console.log('Destinataire:', email);
+      console.log('Organisation:', organizationName);
+      console.log('Plan:', plan, '-', monthlyAmount, '€/mois');
+      console.log('Lien paiement:', paymentLink);
+      console.log('Login:', loginEmail);
+      console.log('Password:', tempPassword);
+      return { success: true, simulated: true };
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'LAIA Connect <bienvenue@laia-connect.fr>';
+
+    const { data, error } = await getResend().emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `🎉 Bienvenue ${organizationName} - Votre espace LAIA Connect est prêt !`,
+      html: htmlContent,
+    });
+
+    if (error) {
+      console.error('Erreur Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log('✅ Email lien de paiement envoyé:', email);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Erreur envoi email lien paiement:', error);
+    return { success: false, error };
+  }
+}
+
+/**
  * Envoyer un email de bienvenue au lead converti avec ses identifiants
  */
 interface SendLeadConvertedWelcomeParams {

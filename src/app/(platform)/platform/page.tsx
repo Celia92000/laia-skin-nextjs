@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import ContactForm from '@/components/platform/ContactForm'
 import DemoBooking from '@/components/platform/DemoBooking'
 import VideoDemo from '@/components/platform/VideoDemo'
+import { getAllPlanHighlights } from '@/lib/features-simple'
 
 export default function PlatformHomePage() {
   const [scrollY, setScrollY] = useState(0)
@@ -19,110 +20,8 @@ export default function PlatformHomePage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const plans = [
-    {
-      id: 'SOLO',
-      name: 'Solo',
-      price: 49,
-      description: 'Pour démarrer son activité',
-      features: [
-        '🌐 Site web professionnel multi-templates',
-        '📅 Réservations en ligne 24/7 automatiques',
-        '📊 Dashboard avec statistiques temps réel',
-        '👥 Gestion clients complète avec historique',
-        '💼 Catalogue prestations & tarifs',
-        '🎁 Programme fidélité VIP (points + paliers + parrainage)',
-        '💳 Cartes cadeaux digitales',
-        '⭐ Avis clients (collecte + photos avant/après)',
-        '🔗 Synchronisation Google Reviews automatique',
-        '💰 Comptabilité complète (factures + exports + rapports)',
-        '💳 Paiement en ligne sécurisé (Stripe)',
-        '🔐 Espace client sécurisé avec connexion',
-        '🎨 Design & Apparence (couleurs + logo + personnalisation)',
-        '📚 Guide de Formation complet inclus',
-        '🔌 API & Intégrations incluses',
-        '📧 Rappels automatiques par email',
-        '🔒 SSL gratuit + Sauvegardes quotidiennes',
-        '👤 1 utilisateur • 📍 1 emplacement'
-      ],
-      color: 'from-gray-400 to-gray-600',
-      popular: false,
-      roi: '+500€/mois de CA supplémentaire avec les réservations 24/7'
-    },
-    {
-      id: 'DUO',
-      name: 'Duo',
-      price: 69,
-      description: 'Pour développer son CA',
-      features: [
-        '✨ Tout Solo +',
-        '🎯 CRM Commercial complet (prospects + opportunités)',
-        '📧 Email Marketing professionnel (campagnes illimitées)',
-        '🤖 Automations marketing intelligentes',
-        '📊 Pipeline de vente & tunnel commercial',
-        '🎯 Segmentation clients avancée',
-        '📈 Reporting commercial détaillé',
-        '🔔 Notifications leads & opportunités',
-        '💼 Gestion des devis & propositions',
-        '📞 Historique communications clients',
-        '🚀 Campagnes de fidélisation automatiques',
-        '👥 Jusqu\'à 3 utilisateurs • 📍 1 emplacement'
-      ],
-      color: 'from-blue-500 to-blue-600',
-      popular: false,
-      roi: '+1200€/mois grâce au CRM et aux campagnes email'
-    },
-    {
-      id: 'TEAM',
-      name: 'Team',
-      price: 119,
-      description: '⭐ Le plus rentable',
-      features: [
-        '✨ Tout Duo +',
-        '📝 Blog professionnel (SEO optimisé)',
-        '🛍️ Boutique en ligne (produits + formations + packages)',
-        '💳 Paiement produits & abonnements',
-        '📦 Gestion commandes & expéditions',
-        '📱 WhatsApp Business (messages + campagnes)',
-        '📲 SMS Marketing (campagnes illimitées)',
-        '📱 Réseaux sociaux (Instagram + Facebook sync)',
-        '📸 Publications automatiques réseaux sociaux',
-        '🎨 Templates boutique professionnels',
-        '📊 Analytics e-commerce complet',
-        '🌍 Multi-emplacements (jusqu\'à 3 sites)',
-        '👥 Jusqu\'à 10 utilisateurs • 📍 3 emplacements'
-      ],
-      color: 'from-purple-500 to-purple-600',
-      popular: true,
-      roi: '+3500€/mois avec la boutique en ligne + multi-canaux'
-    },
-    {
-      id: 'PREMIUM',
-      name: 'Premium',
-      price: 179,
-      description: 'L\'expérience complète',
-      features: [
-        '✨ Tout Team +',
-        '📦 Gestion stock avancée multi-sites',
-        '🔔 Alertes stock automatiques & réapprovisionnement',
-        '📊 Inventaire en temps réel',
-        '🚚 Gestion fournisseurs & bons de commande',
-        '📈 Prévisions stock intelligentes',
-        '💼 Gestion achats & marges',
-        '🔌 API complète pour intégrations',
-        '📊 Export comptable automatique (Sage, Cegid, etc.)',
-        '🔗 Connexion logiciels tiers',
-        '🌍 Multi-emplacements illimités',
-        '👥 Utilisateurs illimités',
-        '🎯 Accompagnement personnalisé',
-        '⚡ Support prioritaire 24/7',
-        '♾️ Utilisateurs illimités • 📍 Emplacements illimités'
-      ],
-      color: 'from-indigo-500 to-pink-600',
-      popular: false,
-      roi: '+8000€/mois avec l\'optimisation stock + multi-sites'
-    }
-  ]
+  // Utiliser la source centralisée des plans - MÊME données partout
+  const plans = getAllPlanHighlights()
 
   const features = [
     {
@@ -845,25 +744,19 @@ export default function PlatformHomePage() {
                         <div className="text-blue-600">👥 Clients</div>
                       </div>
                     </div>
-                    {/* Ligne 2: Communication */}
+                    {/* Ligne 2: Communication - Emails, WhatsApp, SMS sur une ligne */}
                     <div className="grid grid-cols-3 gap-1 p-2 bg-gray-50 rounded-lg text-center text-xs">
-                      <div>
-                        <div className="font-bold text-gray-800">
-                          {plan.id === 'SOLO' ? '1K' : plan.id === 'DUO' ? '2K' : plan.id === 'TEAM' ? '5K' : '∞'}
-                        </div>
-                        <div className="text-gray-500">📧 Emails</div>
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="font-bold text-gray-800">{plan.id === 'SOLO' ? '1K' : plan.id === 'DUO' ? '2K' : plan.id === 'TEAM' ? '5K' : '∞'}</span>
+                        <span className="text-gray-500">📧</span>
                       </div>
-                      <div className="border-l border-gray-200">
-                        <div className="font-bold text-gray-800">
-                          {plan.id === 'SOLO' ? '200' : plan.id === 'DUO' ? '500' : plan.id === 'TEAM' ? '1K' : '∞'}
-                        </div>
-                        <div className="text-gray-500">💬 WhatsApp</div>
+                      <div className="flex flex-col items-center justify-center border-l border-gray-200">
+                        <span className="font-bold text-gray-800">{plan.id === 'SOLO' ? '200' : plan.id === 'DUO' ? '500' : plan.id === 'TEAM' ? '1K' : '∞'}</span>
+                        <span className="text-gray-500">💬</span>
                       </div>
-                      <div className="border-l border-gray-200">
-                        <div className="font-bold text-gray-800">
-                          {plan.id === 'SOLO' ? '—' : plan.id === 'DUO' ? '—' : plan.id === 'TEAM' ? '200' : '1K'}
-                        </div>
-                        <div className="text-gray-500">📱 SMS</div>
+                      <div className="flex flex-col items-center justify-center border-l border-gray-200">
+                        <span className="font-bold text-gray-800">{plan.id === 'SOLO' ? '—' : plan.id === 'DUO' ? '—' : plan.id === 'TEAM' ? '200' : '1K'}</span>
+                        <span className="text-gray-500">📱</span>
                       </div>
                     </div>
                   </div>
@@ -886,7 +779,15 @@ export default function PlatformHomePage() {
                   </Link>
 
                   <ul className="mt-8 space-y-3">
-                    {plan.features.map((feature, idx) => (
+                    {plan.features
+                      .filter(feature =>
+                        // Exclure les features déjà affichées dans les grilles de quotas ci-dessus
+                        !feature.includes('utilisateur') &&
+                        !feature.includes('emplacement') &&
+                        !feature.includes('Utilisateurs illimités') &&
+                        !feature.includes('Emplacements illimités')
+                      )
+                      .map((feature, idx) => (
                       <li key={idx} className="flex items-center text-sm text-gray-700">
                         <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

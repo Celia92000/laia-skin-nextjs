@@ -402,3 +402,183 @@ export function formatQuotaValue(value: number | string): string {
   if (typeof value === 'string') return value
   return value.toLocaleString('fr-FR')
 }
+
+/**
+ * 🎯 HIGHLIGHTS MARKETING - Pour affichage sur onboarding/pricing
+ * Source unique pour tous les affichages de plans
+ */
+export interface PlanHighlights {
+  id: OrgPlan
+  name: string
+  price: number
+  description: string
+  features: string[]
+  featuresDetailed: string[] // Version longue pour page platform
+  popular: boolean
+  color: string
+  roi: string // ROI estimé pour arguments commerciaux
+}
+
+/**
+ * Retourne les highlights marketing d'un plan pour affichage client
+ */
+export function getPlanHighlights(plan: OrgPlan): PlanHighlights {
+  const quotas = getPlanQuotas(plan)
+
+  // VERSION UNIQUE pour TOUTES les pages - liste complète et identique partout
+  const highlights: Record<OrgPlan, PlanHighlights> = {
+    SOLO: {
+      id: 'SOLO',
+      name: 'Solo',
+      price: 49,
+      description: 'Parfait pour démarrer',
+      features: [
+        '🌐 Site web professionnel personnalisable',
+        '📅 Réservations en ligne 24/7',
+        '💳 Paiement en ligne sécurisé (Stripe)',
+        '👥 Gestion clients complète',
+        '🎁 Programme fidélité (points + paliers + parrainage)',
+        '💳 Cartes cadeaux digitales',
+        '⭐ Avis clients + Google Reviews',
+        '💰 Comptabilité & factures automatiques',
+        '📊 Dashboard statistiques temps réel',
+        '📧 Rappels automatiques par email',
+        `👤 ${quotas.users} utilisateur`,
+        `📍 ${quotas.locations} emplacement`,
+      ],
+      featuresDetailed: [
+        '🌐 Site web professionnel personnalisable',
+        '📅 Réservations en ligne 24/7',
+        '💳 Paiement en ligne sécurisé (Stripe)',
+        '👥 Gestion clients complète',
+        '🎁 Programme fidélité (points + paliers + parrainage)',
+        '💳 Cartes cadeaux digitales',
+        '⭐ Avis clients + Google Reviews',
+        '💰 Comptabilité & factures automatiques',
+        '📊 Dashboard statistiques temps réel',
+        '📧 Rappels automatiques par email',
+        `👤 ${quotas.users} utilisateur`,
+        `📍 ${quotas.locations} emplacement`,
+      ],
+      popular: false,
+      color: 'from-gray-400 to-gray-600',
+      roi: '+500€/mois de CA avec les réservations 24/7',
+    },
+    DUO: {
+      id: 'DUO',
+      name: 'Duo',
+      price: 69,
+      description: 'Pour développer son CA',
+      features: [
+        '✅ Tout Solo inclus',
+        '🎯 CRM Commercial complet',
+        '📧 Email Marketing illimité',
+        '🤖 Automations marketing',
+        '📊 Pipeline de vente',
+        '🎯 Segmentation clients',
+        '📈 Reporting commercial',
+        `👥 Jusqu'à ${quotas.users} utilisateurs`,
+        `📍 ${quotas.locations} emplacement`,
+      ],
+      featuresDetailed: [
+        '✅ Tout Solo inclus',
+        '🎯 CRM Commercial complet',
+        '📧 Email Marketing illimité',
+        '🤖 Automations marketing',
+        '📊 Pipeline de vente',
+        '🎯 Segmentation clients',
+        '📈 Reporting commercial',
+        `👥 Jusqu'à ${quotas.users} utilisateurs`,
+        `📍 ${quotas.locations} emplacement`,
+      ],
+      popular: false,
+      color: 'from-blue-500 to-blue-600',
+      roi: '+1200€/mois grâce au CRM et email marketing',
+    },
+    TEAM: {
+      id: 'TEAM',
+      name: 'Team',
+      price: 119,
+      description: 'Le plus populaire',
+      features: [
+        '✅ Tout Duo inclus',
+        '🛍️ Boutique en ligne (produits + formations)',
+        '📝 Blog professionnel SEO',
+        '💬 WhatsApp Business',
+        '📱 SMS Marketing',
+        '📲 Réseaux sociaux (Instagram + Facebook)',
+        '📦 Gestion commandes',
+        `👥 Jusqu'à ${quotas.users} utilisateurs`,
+        `📍 Jusqu'à ${quotas.locations} emplacements`,
+      ],
+      featuresDetailed: [
+        '✅ Tout Duo inclus',
+        '🛍️ Boutique en ligne (produits + formations)',
+        '📝 Blog professionnel SEO',
+        '💬 WhatsApp Business',
+        '📱 SMS Marketing',
+        '📲 Réseaux sociaux (Instagram + Facebook)',
+        '📦 Gestion commandes',
+        `👥 Jusqu'à ${quotas.users} utilisateurs`,
+        `📍 Jusqu'à ${quotas.locations} emplacements`,
+      ],
+      popular: true,
+      color: 'from-purple-500 to-purple-600',
+      roi: '+3500€/mois avec la boutique + multi-canaux',
+    },
+    PREMIUM: {
+      id: 'PREMIUM',
+      name: 'Premium',
+      price: 179,
+      description: 'Solution complète',
+      features: [
+        '✅ Tout Team inclus',
+        '📦 Gestion stock avancée multi-sites',
+        '🔔 Alertes stock automatiques',
+        '🚚 Gestion fournisseurs',
+        '🔌 API complète',
+        '📊 Export comptable (Sage, Cegid...)',
+        '👥 Utilisateurs illimités',
+        '📍 Emplacements illimités',
+      ],
+      featuresDetailed: [
+        '✅ Tout Team inclus',
+        '📦 Gestion stock avancée multi-sites',
+        '🔔 Alertes stock automatiques',
+        '🚚 Gestion fournisseurs',
+        '🔌 API complète',
+        '📊 Export comptable (Sage, Cegid...)',
+        '👥 Utilisateurs illimités',
+        '📍 Emplacements illimités',
+      ],
+      popular: false,
+      color: 'from-indigo-500 to-pink-600',
+      roi: '+8000€/mois avec l\'optimisation stock + multi-sites',
+    },
+    // Anciens plans (compatibilité)
+    STARTER: {} as PlanHighlights,
+    ESSENTIAL: {} as PlanHighlights,
+    PROFESSIONAL: {} as PlanHighlights,
+    ENTERPRISE: {} as PlanHighlights,
+  }
+
+  // Pour les anciens plans, utiliser les features du nouveau plan équivalent
+  if (plan === 'STARTER') return { ...highlights.SOLO, id: 'STARTER' }
+  if (plan === 'ESSENTIAL') return { ...highlights.DUO, id: 'ESSENTIAL' }
+  if (plan === 'PROFESSIONAL') return { ...highlights.TEAM, id: 'PROFESSIONAL' }
+  if (plan === 'ENTERPRISE') return { ...highlights.PREMIUM, id: 'ENTERPRISE' }
+
+  return highlights[plan]
+}
+
+/**
+ * Retourne tous les plans disponibles avec leurs highlights
+ */
+export function getAllPlanHighlights(): PlanHighlights[] {
+  return [
+    getPlanHighlights('SOLO'),
+    getPlanHighlights('DUO'),
+    getPlanHighlights('TEAM'),
+    getPlanHighlights('PREMIUM'),
+  ]
+}

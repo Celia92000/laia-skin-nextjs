@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { getAllPlanHighlights, getPlanQuotas, getPlanHighlights, type PlanHighlights } from '@/lib/features-simple'
+import type { OrgPlan } from '@prisma/client'
 
 export interface Plan {
   id: string
@@ -19,8 +21,32 @@ export interface Plan {
 }
 
 /**
- * Hook pour charger les formules d'abonnement depuis l'API
- * Utilise un fallback vers les prix hardcodés si l'API échoue
+ * Convertit un PlanHighlights en Plan (interface existante)
+ */
+function convertHighlightsToPlan(h: PlanHighlights): Plan {
+  const quotas = getPlanQuotas(h.id as OrgPlan)
+  return {
+    id: `plan-${h.id.toLowerCase()}`,
+    planKey: h.id as 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM',
+    name: h.name,
+    displayName: `Formule ${h.name}`,
+    description: h.description,
+    priceMonthly: h.price,
+    priceYearly: h.price * 12,
+    maxLocations: typeof quotas.locations === 'number' ? quotas.locations : 999,
+    maxUsers: typeof quotas.users === 'number' ? quotas.users : 999,
+    maxStorage: typeof quotas.storageGB === 'number' ? quotas.storageGB : 100,
+    features: h.features,
+    highlights: h.featuresDetailed.slice(0, 6),
+    isPopular: h.popular,
+    isRecommended: h.id === 'TEAM',
+    stripePriceId: null,
+  }
+}
+
+/**
+ * Hook pour charger les formules d'abonnement
+ * Utilise la source centralisée features-simple.ts
  */
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([])
@@ -28,27 +54,11 @@ export function usePlans() {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    async function fetchPlans() {
-      try {
-        const res = await fetch('/api/plans')
-        if (res.ok) {
-          const data = await res.json()
-          setPlans(data.plans)
-        } else {
-          // Fallback vers prix hardcodés
-          setPlans(getFallbackPlans())
-        }
-      } catch (err) {
-        console.error('Error fetching plans:', err)
-        setError(err as Error)
-        // Fallback vers prix hardcodés
-        setPlans(getFallbackPlans())
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPlans()
+    // Utilise la source centralisée au lieu de l'API
+    const highlights = getAllPlanHighlights()
+    const convertedPlans = highlights.map(convertHighlightsToPlan)
+    setPlans(convertedPlans)
+    setLoading(false)
   }, [])
 
   return { plans, loading, error }
@@ -65,123 +75,17 @@ export function usePlan(planKey: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM') {
 }
 
 /**
- * Plans fallback si l'API n'est pas disponible
- */
-function getFallbackPlans(): Plan[] {
-  return [
-    {
-      id: 'fallback-solo',
-      planKey: 'SOLO',
-      name: 'Solo',
-      displayName: 'Formule Solo',
-      description: 'Parfait pour un institut indépendant avec 1 emplacement',
-      priceMonthly: 49,
-      priceYearly: 49 * 12,
-      maxLocations: 1,
-      maxUsers: 1,
-      maxStorage: 5,
-      features: [],
-      highlights: [
-        'Réservations en ligne illimitées',
-        'Planning intelligent',
-        'Paiements en ligne (Stripe)',
-        'Site web personnalisable',
-        'Support email standard',
-      ],
-      isPopular: false,
-      isRecommended: false,
-      stripePriceId: null,
-    },
-    {
-      id: 'fallback-duo',
-      planKey: 'DUO',
-      name: 'Duo',
-      displayName: 'Formule Duo',
-      description: 'Pour un institut en croissance avec une petite équipe',
-      priceMonthly: 69,
-      priceYearly: 69 * 12,
-      maxLocations: 1,
-      maxUsers: 3,
-      maxStorage: 10,
-      features: [],
-      highlights: [
-        'Tout de SOLO +',
-        'CRM complet',
-        'Email automation',
-        '3 utilisateurs',
-        'Outils SEO',
-      ],
-      isPopular: true,
-      isRecommended: false,
-      stripePriceId: null,
-    },
-    {
-      id: 'fallback-team',
-      planKey: 'TEAM',
-      name: 'Team',
-      displayName: 'Formule Team',
-      description: 'Pour les instituts établis avec plusieurs emplacements',
-      priceMonthly: 119,
-      priceYearly: 119 * 12,
-      maxLocations: 3,
-      maxUsers: 10,
-      maxStorage: 25,
-      features: [],
-      highlights: [
-        'Tout de DUO +',
-        'Boutique produits',
-        'WhatsApp & SMS automation',
-        'Publications réseaux sociaux',
-        '3 emplacements',
-        'Support prioritaire',
-      ],
-      isPopular: false,
-      isRecommended: true,
-      stripePriceId: null,
-    },
-    {
-      id: 'fallback-premium',
-      planKey: 'PREMIUM',
-      name: 'Premium',
-      displayName: 'Formule Premium',
-      description: 'Pour les chaînes et franchises, tout illimité',
-      priceMonthly: 179,
-      priceYearly: 179 * 12,
-      maxLocations: 999,
-      maxUsers: 999,
-      maxStorage: 100,
-      features: [],
-      highlights: [
-        'Tout de TEAM +',
-        'Gestion de stock complète',
-        'Emplacements illimités',
-        'Utilisateurs illimités',
-        'Account manager dédié',
-      ],
-      isPopular: false,
-      isRecommended: false,
-      stripePriceId: null,
-    },
-  ]
-}
-
-/**
  * Utilitaire pour obtenir le prix d'un plan (compatible avec le code existant)
+ * Utilise maintenant la source centralisée
  */
 export function getPlanPriceFromAPI(
   planKey: 'SOLO' | 'DUO' | 'TEAM' | 'PREMIUM',
   plans: Plan[]
 ): number {
   const plan = plans.find((p) => p.planKey === planKey)
-  return plan?.priceMonthly || getFallbackPrice(planKey)
-}
+  if (plan) return plan.priceMonthly
 
-function getFallbackPrice(planKey: string): number {
-  const prices: Record<string, number> = {
-    SOLO: 49,
-    DUO: 69,
-    TEAM: 119,
-    PREMIUM: 179,
-  }
-  return prices[planKey] || 0
+  // Fallback depuis la source centralisée
+  const highlights = getPlanHighlights(planKey as OrgPlan)
+  return highlights.price
 }
