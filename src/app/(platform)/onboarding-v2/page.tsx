@@ -51,6 +51,7 @@ function OnboardingV2Content() {
   const [error, setError] = useState('')
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [acceptCGV, setAcceptCGV] = useState(false)
 
   const [data, setData] = useState<OnboardingData>({
     ownerFirstName: '',
@@ -941,8 +942,33 @@ function OnboardingV2Content() {
                 </div>
               </div>
 
+              {/* Case à cocher CGV obligatoire */}
+              <div className="bg-white border-2 border-purple-200 rounded-2xl p-6 mt-6">
+                <label className="flex items-start gap-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptCGV}
+                    onChange={(e) => setAcceptCGV(e.target.checked)}
+                    className="w-6 h-6 mt-1 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                  />
+                  <div className="text-gray-700">
+                    <p className="font-semibold mb-1">
+                      J'ai lu et j'accepte les Conditions Générales de Vente
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      En cochant cette case, vous acceptez les{' '}
+                      <a href="/cgv-laia-connect" target="_blank" className="text-purple-600 hover:underline font-medium">
+                        Conditions Générales de Vente LAIA Connect
+                      </a>
+                      {' '}qui incluent le contrat de service, les modalités de paiement et la politique de résiliation.
+                      Le paiement vaut signature électronique du contrat.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mt-4">
                   {error}
                 </div>
               )}
@@ -978,8 +1004,12 @@ function OnboardingV2Content() {
             ) : (
               <button
                 onClick={handlePayment}
-                disabled={loading}
-                className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !acceptCGV}
+                className={`px-8 py-4 rounded-xl font-bold text-lg transition-all flex items-center gap-2 ${
+                  acceptCGV
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-xl'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {loading ? (
                   <>
@@ -988,6 +1018,10 @@ function OnboardingV2Content() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Redirection...
+                  </>
+                ) : !acceptCGV ? (
+                  <>
+                    ⚠️ Acceptez les CGV pour continuer
                   </>
                 ) : (
                   <>

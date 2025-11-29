@@ -818,7 +818,15 @@ export async function POST(request: Request) {
         phone_number_collection: {
           enabled: true
         },
-        locale: 'fr'
+        locale: 'fr',
+        custom_text: {
+          submit: {
+            message: `En validant ce paiement, vous acceptez les [Conditions Générales de Vente](${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/cgv-laia-connect) de LAIA Connect. Le paiement vaut signature électronique du contrat.`
+          }
+        },
+        consent_collection: {
+          terms_of_service: 'required'
+        }
       })
 
       stripePaymentLink = checkoutSession.url

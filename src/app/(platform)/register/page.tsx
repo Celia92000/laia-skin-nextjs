@@ -35,7 +35,8 @@ export default function RegisterPage() {
     sepaIban: '',
     sepaBic: '',
     sepaAccountHolder: '',
-    sepaMandate: false
+    sepaMandate: false,
+    acceptCGV: false
   })
 
   // Utiliser la source centralisée - afficher toutes les features
@@ -482,6 +483,28 @@ export default function RegisterPage() {
                     />
                   </div>
 
+                  {/* Case à cocher CGV */}
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <label className="flex items-start cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="acceptCGV"
+                        required
+                        checked={formData.acceptCGV}
+                        onChange={handleChange}
+                        className="mt-1 mr-3 w-5 h-5 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        J'ai lu et j'accepte les{' '}
+                        <a href="/cgv-laia-connect" target="_blank" className="text-purple-600 hover:underline font-medium">
+                          Conditions Générales de Vente LAIA Connect
+                        </a>
+                        . Le paiement vaut signature électronique du contrat.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Mandat SEPA */}
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <label className="flex items-start cursor-pointer">
                       <input
@@ -490,7 +513,7 @@ export default function RegisterPage() {
                         required
                         checked={formData.sepaMandate}
                         onChange={handleChange}
-                        className="mt-1 mr-3"
+                        className="mt-1 mr-3 w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-700">
                         J'autorise LAIA Connect à effectuer des prélèvements SEPA sur mon compte. Je bénéficie de <strong>30 jours d'essai gratuit</strong>, après quoi mon abonnement sera automatiquement renouvelé à <strong>{plans.find(p => p.id === formData.plan)?.price}€/mois</strong>. Je peux annuler à tout moment.

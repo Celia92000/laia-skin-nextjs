@@ -28,6 +28,7 @@ function CheckoutForm() {
   const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'DUO');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [acceptCGV, setAcceptCGV] = useState(false);
 
   // Données du questionnaire (depuis l'URL)
   const [leadData] = useState({
@@ -201,6 +202,27 @@ function CheckoutForm() {
                 </div>
               </div>
 
+              {/* Case à cocher CGV */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptCGV}
+                    onChange={(e) => setAcceptCGV(e.target.checked)}
+                    className="w-5 h-5 mt-0.5 text-purple-600 border-2 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                  />
+                  <div className="text-sm text-gray-700">
+                    <p>
+                      J'ai lu et j'accepte les{' '}
+                      <a href="/cgv-laia-connect" target="_blank" className="text-purple-600 hover:underline font-medium">
+                        Conditions Générales de Vente
+                      </a>
+                      . Le paiement vaut signature électronique du contrat.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               {/* Message d'erreur */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -211,13 +233,21 @@ function CheckoutForm() {
               {/* Bouton de paiement */}
               <button
                 onClick={handlePayment}
-                disabled={loading || !leadData.contactEmail}
-                className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !leadData.contactEmail || !acceptCGV}
+                className={`w-full flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                  acceptCGV
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-xl'
+                    : 'bg-gray-300 text-gray-500'
+                }`}
               >
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                     Préparation du paiement...
+                  </>
+                ) : !acceptCGV ? (
+                  <>
+                    Acceptez les CGV pour continuer
                   </>
                 ) : (
                   <>
