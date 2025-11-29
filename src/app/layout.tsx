@@ -126,9 +126,9 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: website,
     },
-    // Vérification pour Google Search Console (à configurer)
+    // Vérification pour Google Search Console (dynamique par institut)
     verification: {
-      google: "votre-code-verification-google",
+      google: config.googleVerificationCode || undefined,
       // yandex: "votre-code-yandex",
       // bing: "votre-code-bing",
     },

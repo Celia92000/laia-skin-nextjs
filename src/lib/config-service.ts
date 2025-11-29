@@ -52,6 +52,7 @@ export const getSiteConfig = unstable_cache(
         latitude: true,
         longitude: true,
         googleMapsUrl: true,
+        googleVerificationCode: true,
         // Champs lourds exclus pour performance (textes longs @db.Text, JSON arrays)
         // termsAndConditions, privacyPolicy, legalNotice, aboutIntro, aboutParcours
         // testimonials, formations, founderQuote, welcomeEmailText
@@ -114,6 +115,7 @@ export const getSiteConfig = unstable_cache(
         latitude: null,
         longitude: null,
         googleMapsUrl: null,
+        googleVerificationCode: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as SiteConfig;
