@@ -1,22 +1,22 @@
 import { Page, expect } from '@playwright/test';
 
-// Données de test
+// Données de test - Utilisateurs existants en base
 export const TEST_DATA = {
   superAdmin: {
-    email: 'admin@laia-connect.fr',
-    password: 'TestPassword123!'
+    email: 'admin@laiaskin.com',
+    password: 'Admin123!'
   },
   orgAdmin: {
-    email: 'test-org@example.com',
-    password: 'TestPassword123!',
-    firstName: 'Test',
-    lastName: 'Admin',
-    organizationName: 'Test Organization E2E',
-    slug: 'test-org-e2e'
+    email: 'admin@laiaskin.com',
+    password: 'Admin123!',
+    firstName: 'Admin',
+    lastName: 'Test',
+    organizationName: 'Laia Skin Institut',
+    slug: 'laia-skin-institut'
   },
   staff: {
-    email: 'staff-test@example.com',
-    password: 'TestPassword123!'
+    email: 'admin@laiaskin.com',
+    password: 'Admin123!'
   }
 };
 

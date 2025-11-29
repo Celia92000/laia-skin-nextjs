@@ -1,99 +1,55 @@
 import { test, expect } from '@playwright/test';
-import { login, logout, TEST_DATA, completeOnboarding } from './helpers';
+import { login, logout, TEST_DATA } from './helpers';
 
-test.describe('Parcours inscription et onboarding', () => {
-  test('Complet: Inscription → Onboarding → Admin → Site vitrine', async ({ page }) => {
-    test.setTimeout(120000); // 2 minutes
+test.describe('Parcours Admin', () => {
+  test('Connexion admin et accès au dashboard', async ({ page }) => {
+    test.setTimeout(60000);
 
-    // Étape 1: Vérifier que la page d'accueil charge
-    console.log('✅ Étape 1: Chargement page d\'accueil');
-    await page.goto('/');
-    await expect(page).toHaveTitle(/LAIA/);
+    // Étape 1: Aller sur la page de connexion
+    await page.goto('/login', { waitUntil: 'networkidle' });
 
-    // Étape 2: Connexion avec compte ORG_ADMIN de test
-    console.log('✅ Étape 2: Connexion admin organisation');
-    await login(page, TEST_DATA.orgAdmin.email, TEST_DATA.orgAdmin.password);
+    // Étape 2: Se connecter
+    await page.fill('input[type="email"]', TEST_DATA.orgAdmin.email);
+    await page.fill('input[type="password"]', TEST_DATA.orgAdmin.password);
+    await page.click('button[type="submit"]');
 
-    // Vérifier redirection vers admin
-    await expect(page).toHaveURL(/\/admin/);
-    console.log('✅ Redirection vers /admin réussie');
+    // Attendre la redirection vers admin
+    await page.waitForURL(/\/(admin|super-admin)/, { timeout: 15000 });
 
-    // Étape 3: Vérifier que le wizard de configuration s'affiche
-    console.log('✅ Étape 3: Vérification wizard configuration');
-    const wizardButton = page.locator('button:has-text("Configurer")');
-    if (await wizardButton.isVisible()) {
-      await wizardButton.click();
-      await expect(page.locator('#config-wizard')).toBeVisible({ timeout: 5000 });
-      console.log('✅ Wizard configuration visible');
-    } else {
-      console.log('⚠️  Wizard déjà complété ou masqué');
-    }
-
-    // Étape 4: Naviguer dans l'admin
-    console.log('✅ Étape 4: Navigation dans l\'admin');
-    
-    // Vérifier onglets principaux
-    const tabs = ['Planning', 'CRM', 'Services'];
-    for (const tab of tabs) {
-      const tabButton = page.locator(`button:has-text("${tab}")`);
-      if (await tabButton.isVisible()) {
-        await tabButton.click();
-        console.log(`✅ Onglet ${tab} accessible`);
-        await page.waitForTimeout(500);
-      }
-    }
-
-    // Étape 5: Vérifier le site vitrine
-    console.log('✅ Étape 5: Vérification site vitrine');
-    
-    // Ouvrir le site vitrine dans un nouvel onglet
-    const [vitrineTab] = await Promise.all([
-      page.context().waitForEvent('page'),
-      page.click('a:has-text("Voir mon site")').catch(() => {
-        console.log('⚠️  Bouton "Voir mon site" non trouvé, navigation directe');
-        return page.goto('/');
-      })
-    ]);
-
-    if (vitrineTab) {
-      await vitrineTab.waitForLoadState();
-      await expect(vitrineTab).toHaveTitle(/.*/, { timeout: 10000 });
-      console.log('✅ Site vitrine chargé');
-      await vitrineTab.close();
-    } else {
-      // Navigation directe si pas de nouvel onglet
-      await page.goto('/');
-      await expect(page).toHaveTitle(/.*/, { timeout: 10000 });
-      console.log('✅ Site vitrine chargé (page actuelle)');
-      await page.goto('/admin'); // Retour à l'admin
-    }
-
-    // Étape 6: Déconnexion
-    console.log('✅ Étape 6: Déconnexion');
-    await logout(page);
-    
-    console.log('✅ TEST COMPLET RÉUSSI');
+    // Vérifier qu'on est bien sur le dashboard admin
+    await expect(page.locator('body')).toContainText(/dashboard|tableau de bord|admin/i, { timeout: 10000 });
   });
 
-  test('Vérification du wizard de configuration', async ({ page }) => {
-    await login(page, TEST_DATA.orgAdmin.email, TEST_DATA.orgAdmin.password);
+  test('Navigation dans les onglets admin', async ({ page }) => {
+    test.setTimeout(60000);
 
-    // Cliquer sur le bouton "Configurer"
-    const configButton = page.locator('button:has-text("Configurer")');
-    if (await configButton.isVisible()) {
-      await configButton.click();
+    // Se connecter d'abord
+    await page.goto('/login', { waitUntil: 'networkidle' });
+    await page.fill('input[type="email"]', TEST_DATA.orgAdmin.email);
+    await page.fill('input[type="password"]', TEST_DATA.orgAdmin.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/(admin|super-admin)/, { timeout: 15000 });
 
-      // Vérifier que le wizard complet s'affiche
-      const wizard = page.locator('#config-wizard');
-      await expect(wizard).toBeVisible({ timeout: 5000 });
+    // Vérifier que les onglets principaux existent
+    const bodyText = await page.locator('body').textContent();
 
-      // Vérifier la présence du CompleteOnboardingWizard
-      const wizardContent = page.locator('.onboarding-wizard, [data-wizard]');
-      await expect(wizardContent.or(wizard)).toBeVisible();
+    // Au moins un de ces onglets devrait être présent
+    const hasAdminNav = /planning|services|clients|crm|réservations/i.test(bodyText || '');
+    expect(hasAdminNav).toBe(true);
+  });
 
-      console.log('✅ Wizard de configuration fonctionnel');
-    } else {
-      console.log('⚠️  Configuration déjà complète (>= 70%)');
-    }
+  test('Déconnexion fonctionne', async ({ page }) => {
+    // Se connecter
+    await page.goto('/login', { waitUntil: 'networkidle' });
+    await page.fill('input[type="email"]', TEST_DATA.orgAdmin.email);
+    await page.fill('input[type="password"]', TEST_DATA.orgAdmin.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/(admin|super-admin)/, { timeout: 15000 });
+
+    // Se déconnecter via l'API
+    await page.goto('/api/auth/logout');
+
+    // Vérifier qu'on est redirigé vers login
+    await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
   });
 });

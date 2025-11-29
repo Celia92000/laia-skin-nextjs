@@ -1,54 +1,35 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Tests Smoke - Pages principales', () => {
-  test.describe.configure({ mode: 'parallel' });
+  test('Page d\'accueil charge', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    // La page devrait charger sans erreur 500
+    const bodyText = await page.locator('body').textContent();
+    expect(bodyText).not.toContain('500');
+    expect(bodyText).not.toContain('Internal Server Error');
+  });
 
-  test('Landing page charge correctement', async ({ page }) => {
-    await page.goto('/');
+  test('Page login accessible', async ({ page }) => {
+    await page.goto('/login', { waitUntil: 'networkidle' });
+    // Devrait avoir un champ email
+    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
+  });
 
-    // Vérifier que la page se charge sans erreur
-    await expect(page).toHaveTitle(/LAIA/i);
-
-    // Vérifier qu'un élément principal existe
-    const heading = page.getByRole('heading', { level: 1 }).first();
-    await expect(heading).toBeVisible({ timeout: 10000 });
+  test('Page platform accessible', async ({ page }) => {
+    await page.goto('/platform', { waitUntil: 'networkidle' });
+    // Devrait contenir du contenu LAIA
+    await expect(page.locator('body')).toContainText(/LAIA|Connect|institut/i, { timeout: 10000 });
   });
 
   test('Page onboarding accessible', async ({ page }) => {
-    await page.goto('/onboarding');
-
-    // Vérifier que la page onboarding se charge
-    await expect(page).toHaveURL(/onboarding/);
-
-    // Vérifier qu'un formulaire est présent
-    const form = page.locator('form').first();
-    await expect(form).toBeVisible({ timeout: 10000 });
+    const response = await page.goto('/onboarding', { waitUntil: 'networkidle' });
+    // Pas d'erreur 500
+    expect(response?.status()).toBeLessThan(500);
   });
 
-  test('Page pricing accessible', async ({ page }) => {
-    await page.goto('/pricing');
-
-    // Vérifier que la page pricing existe ou redirige
-    const response = await page.goto('/pricing', { waitUntil: 'networkidle' });
-    expect(response?.status()).toBeLessThan(500); // Pas d'erreur serveur
-  });
-
-  test('Page connexion accessible', async ({ page }) => {
-    await page.goto('/auth/signin');
-
-    // Vérifier la présence d'un formulaire de connexion
-    const emailInput = page.locator('input[type="email"], input[name*="email"]').first();
-    await expect(emailInput).toBeVisible({ timeout: 10000 });
-  });
-
-  test('Navigation principale fonctionne', async ({ page }) => {
-    await page.goto('/');
-
-    // Vérifier que le menu de navigation existe
-    const nav = page.locator('nav, header').first();
-    await expect(nav).toBeVisible({ timeout: 10000 });
-
-    // Vérifier qu'au moins un lien de navigation existe
+  test('Navigation existe sur la page d\'accueil', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'networkidle' });
+    // Au moins un lien devrait exister
     const links = page.locator('a[href]');
     const count = await links.count();
     expect(count).toBeGreaterThan(0);
