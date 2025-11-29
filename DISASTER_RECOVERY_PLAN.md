@@ -408,11 +408,11 @@ gpg --symmetric --cipher-algo AES256 backup_file.sql
 
 | Rôle | Nom | Contact | Responsabilités |
 |------|-----|---------|----------------|
-| **Incident Commander** | [À définir] | 24/7 | Décisions finales, communication |
-| **Tech Lead** | [À définir] | 24/7 | Diagnostic technique, restauration |
-| **DevOps** | [À définir] | 24/7 | Infrastructure, déploiements |
-| **DPO** | [À définir] | Heures bureau | RGPD, notifications légales |
-| **Support Client** | [À définir] | 8h-20h | Communication clients |
+| **Incident Commander** | Célia (CEO) | contact@laiaconnect.fr | Décisions finales, communication |
+| **Tech Lead** | Célia (CEO) | contact@laiaconnect.fr | Diagnostic technique, restauration |
+| **DevOps** | Célia (CEO) | contact@laiaconnect.fr | Infrastructure, déploiements |
+| **DPO** | Célia (CEO) | contact@laiaconnect.fr | RGPD, notifications légales |
+| **Support Client** | Célia (CEO) | support@laiaconnect.fr | Communication clients |
 
 ### Escalade
 
@@ -442,8 +442,8 @@ Niveau 4: CEO + Tous les stakeholders
 
 ### Contacts Légaux
 
-- **Avocat** : [À définir]
-- **Assurance Cyber** : [À définir]
+- **Avocat** : À contacter si nécessaire (cabinet spécialisé RGPD/Tech)
+- **Assurance Cyber** : À souscrire (recommandé : Hiscox, AXA Cyber)
 - **CNIL** : donnees-personnelles@cnil.fr
 
 ---
@@ -520,14 +520,14 @@ Niveau 4: CEO + Tous les stakeholders
 
 - [x] Backups automatiques configurés
 - [x] Monitoring actif (uptime, erreurs)
-- [ ] Sentry activé en production
-- [ ] Page de statut publique créée
-- [ ] Contacts d'urgence à jour
-- [ ] Équipe de crise définie
-- [ ] Tests de restauration documentés
+- [x] Sentry activé en production
+- [ ] Page de statut publique créée (optionnel)
+- [x] Contacts d'urgence à jour
+- [x] Équipe de crise définie
+- [ ] Tests de restauration documentés (mensuel)
 - [x] Documentation DRP à jour
-- [ ] Assurance cyber souscrite
-- [ ] Failover Vercel configuré
+- [ ] Assurance cyber souscrite (recommandé)
+- [ ] Failover Vercel configuré (optionnel)
 
 ### Vérification Mensuelle
 
@@ -598,6 +598,7 @@ Niveau 4: CEO + Tous les stakeholders
 
 **FIN DU DOCUMENT**
 
-**Prochaine révision** : 18 février 2026
-**Propriétaire** : LAIA Connect - Tech Lead
-**Approbation** : CEO LAIA Connect
+**Prochaine révision** : 28 février 2026
+**Propriétaire** : Célia - CEO LAIA Connect
+**Approbation** : Célia - CEO LAIA Connect
+**Dernière mise à jour** : 29 novembre 2025
