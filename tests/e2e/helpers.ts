@@ -4,11 +4,11 @@ import { Page, expect } from '@playwright/test';
 export const TEST_DATA = {
   superAdmin: {
     email: 'admin@laiaskin.com',
-    password: 'Admin123!'
+    password: 'admin'
   },
   orgAdmin: {
     email: 'admin@laiaskin.com',
-    password: 'Admin123!',
+    password: 'admin',
     firstName: 'Admin',
     lastName: 'Test',
     organizationName: 'Laia Skin Institut',
@@ -16,7 +16,7 @@ export const TEST_DATA = {
   },
   staff: {
     email: 'admin@laiaskin.com',
-    password: 'Admin123!'
+    password: 'admin'
   }
 };
 
