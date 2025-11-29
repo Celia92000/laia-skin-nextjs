@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         })
 
         // Calculer le montant total (forfait + add-ons récurrents) via les prix centralisés
-        const totalAmount = calculateInvoiceTotal(org.plan, org.addonsJson)
+        const totalAmount = calculateInvoiceTotal(org.plan, org.addons)
 
         // Ajouter une ligne pour l'abonnement
         await stripe.invoiceItems.create({
